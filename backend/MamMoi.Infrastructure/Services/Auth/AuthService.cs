@@ -55,7 +55,7 @@ public class AuthService : IAuthService
             PasswordHash = passwordHash,
             RoleId = 3, // Role Farmer mặc định - có thể tạo vườn và giao cho Staff
             IsActive = false, // Chưa active vì chưa verify email
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         // 4. Lưu user vào DB
@@ -71,7 +71,7 @@ public class AuthService : IAuthService
         { 
             Code = otpCode, 
             UserId = userEntity.UserId,
-            CreatedAt = DateTime.UtcNow 
+            CreatedAt = DateTime.Now 
         };
         _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(5));
 
@@ -130,7 +130,7 @@ public class AuthService : IAuthService
 
         // 4. Active user (đã verify email)
         userEntity.IsActive = true;
-        userEntity.UpdatedAt = DateTime.UtcNow;
+        userEntity.UpdatedAt = DateTime.Now;
         await _userRepository.UpdateAsync(userEntity);
 
         // 5. Xóa OTP khỏi cache (đã dùng rồi)
@@ -172,7 +172,7 @@ public class AuthService : IAuthService
             IsEmailVerified = true,
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            TokenExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            TokenExpiresAt = DateTime.Now.AddMinutes(60),
             Message = "Xác thực thành công! Chào mừng bạn đến với MamMoi."
         };
     }
@@ -206,7 +206,7 @@ public class AuthService : IAuthService
         { 
             Code = otpCode, 
             UserId = userEntity.UserId,
-            CreatedAt = DateTime.UtcNow 
+            CreatedAt = DateTime.Now 
         };
         _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(5));
 
@@ -276,7 +276,7 @@ public class AuthService : IAuthService
         _cache.Set(tokenToUserKey, userEntity.UserId, TimeSpan.FromDays(7)); // Lưu userId
 
         // 6. Cập nhật last login
-        userEntity.LastLoginAt = DateTime.UtcNow;
+        userEntity.LastLoginAt = DateTime.Now;
         await _userRepository.UpdateAsync(userEntity);
 
         // 7. Trả response
@@ -288,7 +288,7 @@ public class AuthService : IAuthService
             IsEmailVerified = true,
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            TokenExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            TokenExpiresAt = DateTime.Now.AddMinutes(60),
             Message = "Đăng nhập thành công!"
         };
     }
@@ -340,7 +340,7 @@ public class AuthService : IAuthService
             roles: roles
         );
 
-        var tokenExpiry = DateTime.UtcNow.AddMinutes(60); // Access Token hết hạn sau 60 phút
+        var tokenExpiry = DateTime.Now.AddMinutes(60); // Access Token hết hạn sau 60 phút
 
         // 6. Trả về token mới (Refresh Token giữ nguyên)
         return new AuthResponseDto
@@ -450,7 +450,7 @@ public class AuthService : IAuthService
 
         // 5. Cập nhật password trong DB
         user.PasswordHash = newPasswordHash;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.Now;
         await _userRepository.UpdateAsync(user);
 
         // 6. Xóa reset token khỏi cache
@@ -496,7 +496,7 @@ public class AuthService : IAuthService
 
         // 5. Cập nhật password trong DB
         user.PasswordHash = newPasswordHash;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTime.Now;
         await _userRepository.UpdateAsync(user);
 
         // 6. Xóa refresh token (force re-login)
