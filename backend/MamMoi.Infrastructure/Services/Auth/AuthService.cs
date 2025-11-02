@@ -1,0 +1,352 @@
+using MamMoi.Application.DTOs.Auth;
+using MamMoi.Application.Interfaces.Auth;
+using MamMoi.Domain.Interfaces;
+using MamMoi.Infrastructure.Models;
+using MamMoi.Infrastructure.Security;
+using Microsoft.Extensions.Caching.Memory;
+using System.Security.Cryptography;
+using System.Text;
+
+namespace MamMoi.Infrastructure.Services.Auth;
+
+/// <summary>
+/// Authentication Service - Xử lý logic đăng ký, đăng nhập, OTP
+/// Dùng IMemoryCache để lưu OTP tạm (không lưu DB)
+/// </summary>
+public class AuthService : IAuthService
+{
+    private readonly IUserRepository _userRepository;
+    private readonly IEmailService _emailService;
+    private readonly TokenService _tokenService;
+    private readonly IMemoryCache _cache;
+
+    public AuthService(
+        IUserRepository userRepository, 
+        IEmailService emailService,
+        TokenService tokenService,
+        IMemoryCache cache)
+    {
+        _userRepository = userRepository;
+        _emailService = emailService;
+        _tokenService = tokenService;
+        _cache = cache;
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 1: Đăng ký user mới + Gửi OTP
+    /// </summary>
+    public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
+    {
+        // 1. Kiểm tra email đã tồn tại chưa
+        if (await _userRepository.ExistsAsync(request.Email))
+        {
+            throw new InvalidOperationException("Email đã được đăng ký. Vui lòng dùng email khác.");
+        }
+
+        // 2. Hash password
+        var passwordHash = HashPassword(request.Password);
+
+        // 3. Tạo user mới (chưa verify)
+        var user = new User
+        {
+            Email = request.Email,
+            FullName = request.FullName,
+            Phone = request.Phone,
+            PasswordHash = passwordHash,
+            RoleId = 3, // Role Farmer mặc định - có thể tạo vườn và giao cho Staff
+            IsActive = false, // Chưa active vì chưa verify email
+            CreatedAt = DateTime.UtcNow
+        };
+
+        // 4. Lưu user vào DB
+        var createdUser = await _userRepository.AddAsync(user);
+        var userEntity = (User)createdUser;
+
+        // 5. Generate OTP (6 số random)
+        var otpCode = GenerateOtp();
+
+        // 6. Lưu OTP vào cache (expire sau 5 phút)
+        var cacheKey = $"otp_{request.Email}";
+        var otpData = new 
+        { 
+            Code = otpCode, 
+            UserId = userEntity.UserId,
+            CreatedAt = DateTime.UtcNow 
+        };
+        _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(5));
+
+        // 7. Gửi OTP qua email (TEMPORARY: Skip để test)
+        try
+        {
+            await _emailService.SendOtpEmailAsync(request.Email, request.FullName, otpCode);
+        }
+        catch (Exception ex)
+        {
+            // Log lỗi email nhưng không throw - cho phép register tiếp
+            Console.WriteLine($"[WARNING] Failed to send OTP email: {ex.Message}");
+            // OTP vẫn lưu trong cache, user có thể lấy từ log
+            Console.WriteLine($"[OTP CODE for {request.Email}]: {otpCode}");
+        }
+
+        // 8. Trả response (chưa có token vì chưa verify)
+        return new AuthResponseDto
+        {
+            UserId = userEntity.UserId,
+            Email = userEntity.Email,
+            FullName = userEntity.FullName,
+            IsEmailVerified = false,
+            AccessToken = null,
+            RefreshToken = null,
+            Message = "Đăng ký thành công! Vui lòng kiểm tra email để nhận mã OTP."
+        };
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 2: Xác thực OTP
+    /// </summary>
+    public async Task<AuthResponseDto> VerifyOtpAsync(VerifyOtpRequestDto request)
+    {
+        // 1. Lấy OTP từ cache
+        var cacheKey = $"otp_{request.Email}";
+        if (!_cache.TryGetValue<dynamic>(cacheKey, out var otpData) || otpData == null)
+        {
+            throw new InvalidOperationException("Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại.");
+        }
+
+        // 2. Kiểm tra OTP có đúng không
+        if (otpData.Code != request.OtpCode)
+        {
+            throw new InvalidOperationException("Mã OTP không đúng. Vui lòng thử lại.");
+        }
+
+        // 3. Lấy user từ DB
+        var user = await _userRepository.GetByIdAsync((int)otpData.UserId);
+        if (user == null)
+        {
+            throw new InvalidOperationException("Không tìm thấy user.");
+        }
+
+        var userEntity = (User)user;
+
+        // 4. Active user (đã verify email)
+        userEntity.IsActive = true;
+        userEntity.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(userEntity);
+
+        // 5. Xóa OTP khỏi cache (đã dùng rồi)
+        _cache.Remove(cacheKey);
+
+        // 6. Generate tokens
+        var accessToken = _tokenService.GenerateToken(
+            userEntity.UserId.ToString(), 
+            userEntity.FullName, 
+            userEntity.Email,
+            new[] { userEntity.Role?.RoleName ?? "User" }
+        );
+
+        var refreshToken = GenerateRefreshToken();
+
+        // 7. Lưu refresh token vào cache (expire sau 7 ngày)
+        var refreshTokenKey = $"refresh_{userEntity.UserId}";
+        _cache.Set(refreshTokenKey, refreshToken, TimeSpan.FromDays(7));
+
+        // 8. Gửi email chào mừng (TEMPORARY: Skip để test)
+        try
+        {
+            await _emailService.SendWelcomeEmailAsync(userEntity.Email, userEntity.FullName);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WARNING] Failed to send welcome email: {ex.Message}");
+        }
+
+        // 9. Trả response với tokens
+        return new AuthResponseDto
+        {
+            UserId = userEntity.UserId,
+            Email = userEntity.Email,
+            FullName = userEntity.FullName,
+            IsEmailVerified = true,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            TokenExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            Message = "Xác thực thành công! Chào mừng bạn đến với MamMoi."
+        };
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 3: Gửi lại OTP
+    /// </summary>
+    public async Task<AuthResponseDto> ResendOtpAsync(ResendOtpRequestDto request)
+    {
+        // 1. Kiểm tra email có tồn tại không
+        var user = await _userRepository.GetByEmailAsync(request.Email);
+        if (user == null)
+        {
+            throw new InvalidOperationException("Email không tồn tại trong hệ thống.");
+        }
+
+        var userEntity = (User)user;
+
+        // 2. Kiểm tra user đã verify chưa
+        if (userEntity.IsActive)
+        {
+            throw new InvalidOperationException("Email đã được xác thực rồi.");
+        }
+
+        // 3. Generate OTP mới
+        var otpCode = GenerateOtp();
+
+        // 4. Lưu OTP mới vào cache (ghi đè OTP cũ)
+        var cacheKey = $"otp_{request.Email}";
+        var otpData = new 
+        { 
+            Code = otpCode, 
+            UserId = userEntity.UserId,
+            CreatedAt = DateTime.UtcNow 
+        };
+        _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(5));
+
+        // 5. Gửi OTP mới qua email (TEMPORARY: Skip để test)
+        try
+        {
+            await _emailService.SendOtpEmailAsync(request.Email, userEntity.FullName, otpCode);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[WARNING] Failed to send OTP email: {ex.Message}");
+            Console.WriteLine($"[OTP CODE for {request.Email}]: {otpCode}");
+        }
+
+        // 6. Trả response
+        return new AuthResponseDto
+        {
+            UserId = userEntity.UserId,
+            Email = userEntity.Email,
+            FullName = userEntity.FullName,
+            IsEmailVerified = false,
+            Message = "Đã gửi lại mã OTP mới. Vui lòng kiểm tra email."
+        };
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 4: Đăng nhập với Email/Password
+    /// </summary>
+    public async Task<AuthResponseDto> LoginAsync(string email, string password)
+    {
+        // 1. Tìm user theo email
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null)
+        {
+            throw new InvalidOperationException("Email hoặc mật khẩu không đúng.");
+        }
+
+        var userEntity = (User)user;
+
+        // 2. Kiểm tra password
+        if (!VerifyPassword(password, userEntity.PasswordHash))
+        {
+            throw new InvalidOperationException("Email hoặc mật khẩu không đúng.");
+        }
+
+        // 3. Kiểm tra đã verify email chưa
+        if (!userEntity.IsActive)
+        {
+            throw new InvalidOperationException("Vui lòng xác thực email trước khi đăng nhập.");
+        }
+
+        // 4. Generate tokens
+        var accessToken = _tokenService.GenerateToken(
+            userEntity.UserId.ToString(), 
+            userEntity.FullName, 
+            userEntity.Email,
+            new[] { userEntity.Role?.RoleName ?? "User" }
+        );
+
+        var refreshToken = GenerateRefreshToken();
+
+        // 5. Lưu refresh token vào cache
+        var refreshTokenKey = $"refresh_{userEntity.UserId}";
+        _cache.Set(refreshTokenKey, refreshToken, TimeSpan.FromDays(7));
+
+        // 6. Cập nhật last login
+        userEntity.LastLoginAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(userEntity);
+
+        // 7. Trả response
+        return new AuthResponseDto
+        {
+            UserId = userEntity.UserId,
+            Email = userEntity.Email,
+            FullName = userEntity.FullName,
+            IsEmailVerified = true,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            TokenExpiresAt = DateTime.UtcNow.AddMinutes(60),
+            Message = "Đăng nhập thành công!"
+        };
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 5: Làm mới Access Token bằng Refresh Token
+    /// </summary>
+    public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken)
+    {
+        // TODO: Implement refresh token logic
+        throw new NotImplementedException("Chức năng Refresh Token sẽ implement sau.");
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 6: Đăng xuất (xóa refresh token)
+    /// </summary>
+    public async Task LogoutAsync(int userId)
+    {
+        // Xóa refresh token khỏi cache
+        var refreshTokenKey = $"refresh_{userId}";
+        _cache.Remove(refreshTokenKey);
+        
+        await Task.CompletedTask;
+    }
+
+    #region Helper Methods
+
+    /// <summary>
+    /// Generate OTP ngẫu nhiên (6 số)
+    /// </summary>
+    private string GenerateOtp()
+    {
+        var random = new Random();
+        return random.Next(100000, 999999).ToString();
+    }
+
+    /// <summary>
+    /// Generate Refresh Token ngẫu nhiên
+    /// </summary>
+    private string GenerateRefreshToken()
+    {
+        var randomBytes = new byte[32];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+        return Convert.ToBase64String(randomBytes);
+    }
+
+    /// <summary>
+    /// Hash password bằng SHA256 (nên dùng BCrypt trong production)
+    /// </summary>
+    private byte[] HashPassword(string password)
+    {
+        using var sha256 = SHA256.Create();
+        return sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
+    }
+
+    /// <summary>
+    /// Verify password
+    /// </summary>
+    private bool VerifyPassword(string password, byte[] passwordHash)
+    {
+        var inputHash = HashPassword(password);
+        return inputHash.SequenceEqual(passwordHash);
+    }
+
+    #endregion
+}

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MamMoi.Application.Interfaces;
+using MamMoi.Application.Interfaces.Auth;
 using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Repositories;
@@ -31,8 +32,15 @@ public static class DependencyInjection
         // Register application services
         services.AddScoped<IUserService, MamMoi.Infrastructure.Services.UserService>();
         
+        // Register authentication services
+        services.AddScoped<IAuthService, MamMoi.Infrastructure.Services.Auth.AuthService>();
+        services.AddScoped<IEmailService, MamMoi.Infrastructure.Services.Auth.EmailService>();
+        
         // Register infrastructure services
         services.AddScoped<TokenService>();
+        
+        // Add MemoryCache for OTP storage
+        services.AddMemoryCache();
 
         return services;
     }
