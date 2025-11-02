@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MamMoi.Infrastructure.Models;
 
-public partial class CapstoneDb01Context : DbContext
+public partial class CapstoneDbContext : DbContext
 {
-    public CapstoneDb01Context()
+    public CapstoneDbContext()
     {
     }
 
-    public CapstoneDb01Context(DbContextOptions<CapstoneDb01Context> options)
+    public CapstoneDbContext(DbContextOptions<CapstoneDbContext> options)
         : base(options)
     {
     }
@@ -61,12 +61,11 @@ public partial class CapstoneDb01Context : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
 
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ActivityLog>(entity =>
         {
-            entity.HasKey(e => e.LogId).HasName("PK__Activity__5E5499A8EA104B36");
+            entity.HasKey(e => e.LogId).HasName("PK__Activity__5E5499A8560E8DD7");
 
             entity.Property(e => e.LogId).HasColumnName("LogID");
             entity.Property(e => e.ActivityDescription).HasMaxLength(500);
@@ -92,7 +91,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<Aiconsultation>(entity =>
         {
-            entity.HasKey(e => e.ConsultationId).HasName("PK__AIConsul__5D014A78AC1C9BDC");
+            entity.HasKey(e => e.ConsultationId).HasName("PK__AIConsul__5D014A783E6665D6");
 
             entity.ToTable("AIConsultations");
 
@@ -117,7 +116,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<Airecommendation>(entity =>
         {
-            entity.HasKey(e => e.RecommendationId).HasName("PK__AIRecomm__AA15BEC474D95980");
+            entity.HasKey(e => e.RecommendationId).HasName("PK__AIRecomm__AA15BEC4DF8B3B68");
 
             entity.ToTable("AIRecommendations");
 
@@ -142,7 +141,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<CareSchedule>(entity =>
         {
-            entity.HasKey(e => e.ScheduleId).HasName("PK__CareSche__9C8A5B691E493D0F");
+            entity.HasKey(e => e.ScheduleId).HasName("PK__CareSche__9C8A5B69DF253909");
 
             entity.Property(e => e.ScheduleId).HasColumnName("ScheduleID");
             entity.Property(e => e.ActualFertilizerAmountGrams).HasColumnType("decimal(6, 2)");
@@ -200,11 +199,11 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<DiseaseLibrary>(entity =>
         {
-            entity.HasKey(e => e.DiseaseId).HasName("PK__DiseaseL__69B533A947E42678");
+            entity.HasKey(e => e.DiseaseId).HasName("PK__DiseaseL__69B533A9294A364D");
 
             entity.ToTable("DiseaseLibrary");
 
-            entity.HasIndex(e => e.DiseaseName, "UQ__DiseaseL__5112584D63916352").IsUnique();
+            entity.HasIndex(e => e.DiseaseName, "UQ__DiseaseL__5112584DB3FF2493").IsUnique();
 
             entity.Property(e => e.DiseaseId).HasColumnName("DiseaseID");
             entity.Property(e => e.AffectedParts).HasMaxLength(200);
@@ -218,7 +217,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<Garden>(entity =>
         {
-            entity.HasKey(e => e.GardenId).HasName("PK__Gardens__0191D06386E37FE1");
+            entity.HasKey(e => e.GardenId).HasName("PK__Gardens__0191D063741F62DF");
 
             entity.HasIndex(e => e.UserId, "IX_Gardens_UserID");
 
@@ -238,7 +237,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<GardenMember>(entity =>
         {
-            entity.HasKey(e => e.MemberId).HasName("PK__GardenMe__0CF04B388796EAFE");
+            entity.HasKey(e => e.MemberId).HasName("PK__GardenMe__0CF04B38173D80CF");
 
             entity.HasIndex(e => new { e.GardenId, e.UserId }, "UX_GardenMembers_Garden_User").IsUnique();
 
@@ -268,7 +267,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<GardenSoil>(entity =>
         {
-            entity.HasKey(e => e.GardenSoilId).HasName("PK__GardenSo__0F59789AA27099DF");
+            entity.HasKey(e => e.GardenSoilId).HasName("PK__GardenSo__0F59789ABEEBF83E");
 
             entity.HasIndex(e => e.GardenId, "IX_GardenSoils_GardenID");
 
@@ -295,7 +294,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<Notification>(entity =>
         {
-            entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__20CF2E3207EAF6A7");
+            entity.HasKey(e => e.NotificationId).HasName("PK__Notifica__20CF2E32DCA11BE1");
 
             entity.HasIndex(e => e.UserId, "IX_Notifications_UserID");
 
@@ -343,7 +342,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A58A4D73B43");
+            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A5824A17A38");
 
             entity.HasIndex(e => e.UserId, "IX_Payments_UserID");
 
@@ -394,7 +393,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE3A2CC7014C");
+            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE3A1F3DCE02");
 
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
             entity.Property(e => e.RoleName).HasMaxLength(100);
@@ -402,7 +401,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<SoilMaster>(entity =>
         {
-            entity.HasKey(e => e.SoilMasterId).HasName("PK__SoilMast__718F92EF3838A7B3");
+            entity.HasKey(e => e.SoilMasterId).HasName("PK__SoilMast__718F92EF30C8FA51");
 
             entity.ToTable("SoilMaster");
 
@@ -431,7 +430,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<Subscription>(entity =>
         {
-            entity.HasKey(e => e.SubscriptionId).HasName("PK__Subscrip__9A2B24BD93D76F91");
+            entity.HasKey(e => e.SubscriptionId).HasName("PK__Subscrip__9A2B24BD5C073E2D");
 
             entity.Property(e => e.SubscriptionId).HasColumnName("SubscriptionID");
             entity.Property(e => e.Currency)
@@ -453,7 +452,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<SupportRequest>(entity =>
         {
-            entity.HasKey(e => e.RequestId).HasName("PK__SupportR__33A8519A33716DDD");
+            entity.HasKey(e => e.RequestId).HasName("PK__SupportR__33A8519A164E4D15");
 
             entity.HasIndex(e => e.UserId, "IX_Support_UserID");
 
@@ -489,9 +488,9 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<SystemSetting>(entity =>
         {
-            entity.HasKey(e => e.SettingId).HasName("PK__SystemSe__54372AFD37C693D6");
+            entity.HasKey(e => e.SettingId).HasName("PK__SystemSe__54372AFD1DA95A6D");
 
-            entity.HasIndex(e => e.SettingKey, "UQ__SystemSe__01E719ADBCBA1026").IsUnique();
+            entity.HasIndex(e => e.SettingKey, "UQ__SystemSe__01E719AD93942E59").IsUnique();
 
             entity.Property(e => e.SettingId).HasColumnName("SettingID");
             entity.Property(e => e.Category).HasMaxLength(50);
@@ -511,7 +510,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<Tree>(entity =>
         {
-            entity.HasKey(e => e.TreeId).HasName("PK__Trees__35F324C5891BA846");
+            entity.HasKey(e => e.TreeId).HasName("PK__Trees__35F324C50191F884");
 
             entity.ToTable(tb =>
                 {
@@ -609,7 +608,7 @@ public partial class CapstoneDb01Context : DbContext
                         .HasConstraintName("FK_TreesDiseases_Trees"),
                     j =>
                     {
-                        j.HasKey("TreeId", "DiseaseId").HasName("PK__Trees_Di__B36877FFDE6E965D");
+                        j.HasKey("TreeId", "DiseaseId").HasName("PK__Trees_Di__B36877FFEFC871C5");
                         j.ToTable("Trees_DiseaseLibrary");
                         j.IndexerProperty<int>("TreeId").HasColumnName("TreeID");
                         j.IndexerProperty<int>("DiseaseId").HasColumnName("DiseaseID");
@@ -618,7 +617,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<TreeGrowthStage>(entity =>
         {
-            entity.HasKey(e => e.StageId).HasName("PK__TreeGrow__03EB7AF8C13E413E");
+            entity.HasKey(e => e.StageId).HasName("PK__TreeGrow__03EB7AF8FB0B33EE");
 
             entity.HasIndex(e => e.TreeTypeId, "IX_TreeGrowth_TreeTypeID");
 
@@ -642,7 +641,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<TreeImage>(entity =>
         {
-            entity.HasKey(e => e.ImageId).HasName("PK__TreeImag__7516F4ECE522FC93");
+            entity.HasKey(e => e.ImageId).HasName("PK__TreeImag__7516F4EC0CCF634F");
 
             entity.Property(e => e.ImageId).HasColumnName("ImageID");
             entity.Property(e => e.AffectedArea).HasMaxLength(100);
@@ -681,7 +680,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<TreeType>(entity =>
         {
-            entity.HasKey(e => e.TreeTypeId).HasName("PK__TreeType__7AD87BF48D3F77AA");
+            entity.HasKey(e => e.TreeTypeId).HasName("PK__TreeType__7AD87BF47B0C0F18");
 
             entity.HasIndex(e => e.SoilMasterId, "IX_TreeTypes_SoilMasterID");
 
@@ -710,11 +709,11 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CCAC6F0B5B29");
+            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CCAC91D5D2C1");
 
             entity.HasIndex(e => e.Email, "IX_Users_Email");
 
-            entity.HasIndex(e => e.Email, "UQ__Users__A9D10534E2041B5F").IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__Users__A9D10534A5F4E500").IsUnique();
 
             entity.Property(e => e.UserId).HasColumnName("UserID");
             entity.Property(e => e.Address).HasMaxLength(255);
@@ -743,7 +742,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<WeatherAlert>(entity =>
         {
-            entity.HasKey(e => e.AlertId).HasName("PK__WeatherA__EBB16AEDA6382CA3");
+            entity.HasKey(e => e.AlertId).HasName("PK__WeatherA__EBB16AED98B6F4D2");
 
             entity.Property(e => e.AlertId).HasColumnName("AlertID");
             entity.Property(e => e.AcknowledgedAt).HasPrecision(0);
@@ -790,7 +789,7 @@ public partial class CapstoneDb01Context : DbContext
 
         modelBuilder.Entity<WeatherHistory>(entity =>
         {
-            entity.HasKey(e => e.WeatherId).HasName("PK__WeatherH__0BF97BD51E4E0F02");
+            entity.HasKey(e => e.WeatherId).HasName("PK__WeatherH__0BF97BD561FF1829");
 
             entity.HasIndex(e => e.TreeId, "IX_Weather_TreeID");
 

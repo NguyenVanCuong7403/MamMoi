@@ -22,8 +22,7 @@ public class UserService : IUserService
 
     public async Task<object?> GetByIdAsync(Guid id)
     {
-        // User.UserId is int, convert from Guid
-        // Note: Adjust this if your UserId should be Guid
+        
         var userId = int.Parse(id.ToString().Split('-')[0], System.Globalization.NumberStyles.HexNumber) % int.MaxValue;
         var user = await _userRepository.GetByIdAsync(userId);
         
@@ -31,39 +30,57 @@ public class UserService : IUserService
             return null;
 
         // Map to DTO để không expose entity trực tiếp
-        return MapToDto((User)user);
+        return MapToDetailDto((User)user);
     }
 
-    public async Task<object> CreateAsync(object dto)
+    public async Task<UserDto> CreateAsync(CreateUserDto createDto)
     {
-        if (dto is not CreateUserDto createDto)
-            throw new ArgumentException("Invalid DTO type");
-
-        // Validation
         if (string.IsNullOrEmpty(createDto.Email))
-            throw new ArgumentException("Email is required");
+            throw new ArgumentException("Email là bắt buộc");
 
-        // Check duplicate
         if (await _userRepository.ExistsAsync(createDto.Email))
-            throw new InvalidOperationException("Email already exists");
+            throw new InvalidOperationException("Email này đã tồn tại");
 
-        // Create entity
-        var user = new User
+        var userEntity = new User
         {
             Email = createDto.Email,
-            FullName = createDto.FullName ?? string.Empty,
+            FullName = createDto.FullName,
             PasswordHash = HashPassword(createDto.Password),
-            RoleId = 2, // Default role (adjust based on your Role table)
+            RoleId = createDto.RoleId, 
+            Phone = createDto.Phone,
+            Address = createDto.Address,
+            ProfileImageUrl = createDto.ProfileImageUrl,
+            PreferredLanguage = createDto.PreferredLanguage,
             CreatedAt = DateTime.UtcNow,
             IsActive = true
         };
 
-        // Save
-        var createdUser = await _userRepository.AddAsync(user);
-        
-        return MapToDto((User)createdUser);
+        var createdUser = (User)await _userRepository.AddAsync(userEntity);
+        var finalUser = (User)await _userRepository.GetByIdAsync(createdUser.UserId); 
+        return MapToDto(finalUser);
     }
+    public async Task<UserDetailDto?> UpdateAsync(Guid id, AdminUpdateUserDto updateDto)
+    {
+     
+        var userId = int.Parse(id.ToString().Split('-')[0], System.Globalization.NumberStyles.HexNumber) % int.MaxValue;
+        var userEntity = (User?)await _userRepository.GetByIdAsync(userId);
 
+        if (userEntity == null)
+        {
+            return null;
+        }
+
+        userEntity.FullName = updateDto.FullName;
+        userEntity.Phone = updateDto.Phone;
+        userEntity.Address = updateDto.Address;
+        userEntity.RoleId = updateDto.RoleId;
+        userEntity.IsActive = updateDto.IsActive; 
+        userEntity.UpdatedAt = DateTime.UtcNow; 
+
+        await _userRepository.UpdateAsync(userEntity);
+
+        return MapToDetailDto(userEntity);
+    }
     public async Task<object?> UpdateAsync(Guid id, object dto)
     {
         if (dto is not UpdateUserDto updateDto)
@@ -76,7 +93,6 @@ public class UserService : IUserService
 
         var userEntity = (User)user;
 
-        // Update fields
         if (!string.IsNullOrEmpty(updateDto.Email))
             userEntity.Email = updateDto.Email;
         
@@ -97,7 +113,8 @@ public class UserService : IUserService
         if (user == null)
             return false;
 
-        await _userRepository.DeleteAsync(userId);
+        var userEntity = (User)user;
+        await _userRepository.DeleteAsync(userEntity.UserId);
         return true;
     }
 
@@ -110,9 +127,9 @@ public class UserService : IUserService
         return MapToDto((User)user);
     }
 
-    public async Task<IEnumerable<object>> GetAllAsync()
+    public async Task<IEnumerable<UserDto>> GetAllAsync(string? searchName, string? email, int? roleId)
     {
-        var users = await _userRepository.GetAllAsync();
+        var users = await _userRepository.GetAllAsync(searchName,email,roleId);
         return users.Select(u => MapToDto((User)u));
     }
 
@@ -121,17 +138,57 @@ public class UserService : IUserService
     {
         return new UserDto
         {
-            Id = Guid.NewGuid(), // Generate new Guid or map from UserId
+            Id = new Guid(user.UserId, (short)0, (short)0, new byte[8]), 
             Email = user.Email,
             FullName = user.FullName,
+            RoleName = user.Role?.RoleName ?? "N/A",
             CreatedAt = user.CreatedAt
         };
     }
+    private UserDetailDto MapToDetailDto(User user)
+    {
+        return new UserDetailDto
+        {
+            Id = new Guid(user.UserId, (short)0, (short)0, new byte[8]),
+            RoleName = user.Role?.RoleName ?? "N/A",
+            FullName = user.FullName,
+            Email = user.Email,
+            Phone = user.Phone,
+            Address = user.Address,
+            ProfileImageUrl = user.ProfileImageUrl,
+            ExperienceLevel = user.ExperienceLevel,
+            PreferredLanguage = user.PreferredLanguage,
+            NotificationPreferences = user.NotificationPreferences,
+            IsActive = user.IsActive,
+            LastLoginAt = user.LastLoginAt,
+            CreatedAt = user.CreatedAt,
+            UpdatedAt = user.UpdatedAt
+        };
+    }
 
+    public async Task<bool> ResetPasswordAsync(Guid id, AdminResetPasswordDto dto)
+    {
+
+        var userId = int.Parse(id.ToString().Split('-')[0], System.Globalization.NumberStyles.HexNumber) % int.MaxValue;
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            return false; 
+        }
+
+        var userEntity = (User)user;
+        userEntity.PasswordHash = HashPassword(dto.NewPassword);
+        userEntity.UpdatedAt = DateTime.UtcNow; 
+
+        await _userRepository.UpdateAsync(userEntity);
+        return true;
+    }
     private byte[] HashPassword(string password)
     {
         
         using var sha256 = System.Security.Cryptography.SHA256.Create();
         return sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
     }
+
+  
 }

@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MamMoi.Application;
 using MamMoi.Infrastructure;
+using Microsoft.EntityFrameworkCore;
+using MamMoi.Infrastructure.Models;
 
 namespace MamMoi.Api
 {
@@ -82,6 +84,9 @@ namespace MamMoi.Api
                     }
                 });
             });
+
+            builder.Services.AddDbContext<CapstoneDbContext>(options =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
             var app = builder.Build();
 

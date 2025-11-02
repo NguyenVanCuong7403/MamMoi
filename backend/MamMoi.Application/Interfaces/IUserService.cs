@@ -1,3 +1,4 @@
+using MamMoi.Application.DTOs;
 using System;
 using System.Threading.Tasks;
 
@@ -10,9 +11,10 @@ namespace MamMoi.Application.Interfaces;
 public interface IUserService
 {
     Task<object?> GetByIdAsync(Guid id);
-    Task<object> CreateAsync(object dto);
-    Task<object?> UpdateAsync(Guid id, object dto);
+    Task<UserDto> CreateAsync(CreateUserDto createDto);
+    Task<UserDetailDto?> UpdateAsync(Guid id, AdminUpdateUserDto updateDto);
     Task<bool> DeleteAsync(Guid id);
     Task<object?> GetByEmailAsync(string email);
-    Task<IEnumerable<object>> GetAllAsync();
+    Task<IEnumerable<UserDto>> GetAllAsync(string? searchName, string? email, int? roleId);
+    Task<bool> ResetPasswordAsync(Guid id, AdminResetPasswordDto dto);
 }

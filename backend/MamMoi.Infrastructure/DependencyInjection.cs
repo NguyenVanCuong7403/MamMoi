@@ -19,7 +19,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         // Add DbContext
-        services.AddDbContext<CapstoneDb01Context>(options =>
+        services.AddDbContext<CapstoneDbContext>(options =>
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection")));
 

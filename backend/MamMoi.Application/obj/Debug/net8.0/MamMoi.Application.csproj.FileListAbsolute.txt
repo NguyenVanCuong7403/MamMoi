@@ -1,0 +1,16 @@
+D:\prn231\Đồ án\backend\MamMoi.Application\bin\Debug\net8.0\MamMoi.Application.deps.json
+D:\prn231\Đồ án\backend\MamMoi.Application\bin\Debug\net8.0\MamMoi.Application.dll
+D:\prn231\Đồ án\backend\MamMoi.Application\bin\Debug\net8.0\MamMoi.Application.pdb
+D:\prn231\Đồ án\backend\MamMoi.Application\bin\Debug\net8.0\MamMoi.Domain.dll
+D:\prn231\Đồ án\backend\MamMoi.Application\bin\Debug\net8.0\MamMoi.Domain.pdb
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.csproj.AssemblyReference.cache
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.GeneratedMSBuildEditorConfig.editorconfig
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.AssemblyInfoInputs.cache
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.AssemblyInfo.cs
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.csproj.CoreCompileInputs.cache
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.sourcelink.json
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.A.9D422848.Up2Date
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.dll
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\refint\MamMoi.Application.dll
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.pdb
+D:\prn231\Đồ án\backend\MamMoi.Application\obj\Debug\net8.0\ref\MamMoi.Application.dll

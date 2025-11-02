@@ -6,26 +6,49 @@ namespace MamMoi.Infrastructure.Repositories;
 
 public class UserRepository : IUserRepository
 {
-    private readonly CapstoneDb01Context _context;
+    private readonly CapstoneDbContext _context;
 
-    public UserRepository(CapstoneDb01Context context)
+    public UserRepository(CapstoneDbContext context)
     {
         _context = context;
     }
 
     public async Task<dynamic?> GetByIdAsync(int userId)
     {
-        return await _context.Users.FindAsync(userId);
+        return await _context.Users
+            .Include(u => u.Role) 
+            .FirstOrDefaultAsync(u => u.UserId == userId); 
     }
-
     public async Task<dynamic?> GetByEmailAsync(string email)
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
     }
 
-    public async Task<IEnumerable<dynamic>> GetAllAsync()
+    public async Task<IEnumerable<dynamic>> GetAllAsync(string? searchName, string? email, int? roleId)
     {
-        var users = await _context.Users.Include(u => u.Role).ToListAsync();
+        var query = _context.Users
+            .Include(u => u.Role)
+            .AsQueryable();
+        if (!string.IsNullOrWhiteSpace(searchName))
+        {
+            var searchTerm = searchName.Trim().ToLower();
+            query = query.Where(u => u.FullName.ToLower().Contains(searchTerm));
+        }
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            var searchEmail = email.Trim().ToLower();
+            query = query.Where(u => u.Email.ToLower().Contains(searchEmail));
+        }
+
+        if (roleId.HasValue && roleId.Value > 0)
+        {
+            query = query.Where(u => u.RoleId == roleId.Value);
+        }
+        var users = await query
+            .AsNoTracking()
+            .ToListAsync();
+
         return users.Cast<dynamic>();
     }
 
