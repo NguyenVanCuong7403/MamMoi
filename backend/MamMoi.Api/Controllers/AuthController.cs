@@ -166,6 +166,36 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// CHỨC NĂNG 5: Làm mới Access Token bằng Refresh Token
+    /// POST /api/auth/refresh-token
+    /// </summary>
+    [HttpPost("refresh-token")]
+    public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.RefreshTokenAsync(request.RefreshToken);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new AuthResponseDto
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new AuthResponseDto
+            {
+                Success = false,
+                Message = "Có lỗi xảy ra khi xử lý yêu cầu: " + ex.Message
+            });
+        }
+    }
+
+    /// <summary>
     /// CHỨC NĂNG 6: Đăng xuất
     /// POST /api/auth/logout
     /// </summary>

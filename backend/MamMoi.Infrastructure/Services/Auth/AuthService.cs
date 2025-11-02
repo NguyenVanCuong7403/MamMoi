@@ -146,9 +146,12 @@ public class AuthService : IAuthService
 
         var refreshToken = GenerateRefreshToken();
 
-        // 7. Lưu refresh token vào cache (expire sau 7 ngày)
+        // 7. Lưu refresh token vào cache (expire sau 7 ngày, 2 mappings)
         var refreshTokenKey = $"refresh_{userEntity.UserId}";
+        var tokenToUserKey = $"token_{refreshToken}"; // Mapping ngược: token → userId
+        
         _cache.Set(refreshTokenKey, refreshToken, TimeSpan.FromDays(7));
+        _cache.Set(tokenToUserKey, userEntity.UserId, TimeSpan.FromDays(7)); // Lưu userId
 
         // 8. Gửi email chào mừng (TEMPORARY: Skip để test)
         try
@@ -265,9 +268,12 @@ public class AuthService : IAuthService
 
         var refreshToken = GenerateRefreshToken();
 
-        // 5. Lưu refresh token vào cache
+        // 5. Lưu refresh token vào cache (2 mappings)
         var refreshTokenKey = $"refresh_{userEntity.UserId}";
+        var tokenToUserKey = $"token_{refreshToken}"; // Mapping ngược: token → userId
+        
         _cache.Set(refreshTokenKey, refreshToken, TimeSpan.FromDays(7));
+        _cache.Set(tokenToUserKey, userEntity.UserId, TimeSpan.FromDays(7)); // Lưu userId
 
         // 6. Cập nhật last login
         userEntity.LastLoginAt = DateTime.UtcNow;
@@ -292,8 +298,63 @@ public class AuthService : IAuthService
     /// </summary>
     public async Task<AuthResponseDto> RefreshTokenAsync(string refreshToken)
     {
-        // TODO: Implement refresh token logic
-        throw new NotImplementedException("Chức năng Refresh Token sẽ implement sau.");
+        if (string.IsNullOrWhiteSpace(refreshToken))
+        {
+            throw new InvalidOperationException("Refresh token không hợp lệ.");
+        }
+
+        // 1. Lấy userId từ mapping: token → userId
+        var tokenToUserKey = $"token_{refreshToken}";
+        if (!_cache.TryGetValue(tokenToUserKey, out int userId))
+        {
+            throw new InvalidOperationException("Refresh token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.");
+        }
+
+        // 2. Verify token còn khớp với user không
+        var refreshTokenKey = $"refresh_{userId}";
+        if (!_cache.TryGetValue(refreshTokenKey, out string? cachedToken) || cachedToken != refreshToken)
+        {
+            throw new InvalidOperationException("Refresh token không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại.");
+        }
+
+        // 3. Lấy thông tin user từ DB
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new InvalidOperationException("User không tồn tại.");
+        }
+
+        // 4. Kiểm tra user còn active không
+        if (!user.IsActive)
+        {
+            throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa.");
+        }
+
+        // 5. Generate Access Token mới
+        var roleName = user.Role?.RoleName ?? "User";
+        string[] roles = new string[] { roleName };
+        var newAccessToken = _tokenService.GenerateToken(
+            userId: user.UserId.ToString(),
+            username: user.FullName,
+            email: user.Email,
+            roles: roles
+        );
+
+        var tokenExpiry = DateTime.UtcNow.AddMinutes(60); // Access Token hết hạn sau 60 phút
+
+        // 6. Trả về token mới (Refresh Token giữ nguyên)
+        return new AuthResponseDto
+        {
+            Success = true,
+            UserId = user.UserId,
+            Email = user.Email,
+            FullName = user.FullName,
+            IsEmailVerified = true,
+            AccessToken = newAccessToken,
+            RefreshToken = refreshToken, // Giữ nguyên Refresh Token cũ
+            TokenExpiresAt = tokenExpiry,
+            Message = "Access token đã được làm mới thành công."
+        };
     }
 
     /// <summary>
@@ -301,9 +362,16 @@ public class AuthService : IAuthService
     /// </summary>
     public async Task LogoutAsync(int userId)
     {
-        // Xóa refresh token khỏi cache
+        // Lấy refresh token trước khi xóa
         var refreshTokenKey = $"refresh_{userId}";
-        _cache.Remove(refreshTokenKey);
+        if (_cache.TryGetValue(refreshTokenKey, out string? refreshToken))
+        {
+            // Xóa cả 2 mappings
+            var tokenToUserKey = $"token_{refreshToken}";
+            _cache.Remove(tokenToUserKey); // Xóa mapping: token → userId
+        }
+        
+        _cache.Remove(refreshTokenKey); // Xóa mapping: userId → token
         
         await Task.CompletedTask;
     }
