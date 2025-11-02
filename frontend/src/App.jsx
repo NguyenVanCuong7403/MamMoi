@@ -1,13 +1,17 @@
 import React from "react";
-import UserList from "./components/UserList";
-import TreeList from "./components/TreeList";
+import { BrowserRouter as Router } from "react-router-dom";
+import RouteManager from "./RouteManager";
+import Header from "./components/layout/Header";
+import Footer from "./components/layout/Footer";
 
-export default function App() {
+function App() {
   return (
-    <div style={{ padding: 20 }}>
-      <h1>Mầm Mới Frontend</h1>
-      <UserList />
-      <TreeList />
-    </div>
+    <Router>
+        <Header />
+        <RouteManager />
+        <Footer />
+    </Router>
   );
 }
+
+export default App;
