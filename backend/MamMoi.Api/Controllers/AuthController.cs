@@ -231,4 +231,110 @@ public class AuthController : ControllerBase
             }
         });
     }
+
+    /// <summary>
+    /// API 7: Forgot Password - Gửi mã reset password qua email
+    /// </summary>
+    /// <param name="request">Email cần reset password</param>
+    /// <returns>Thông báo đã gửi email</returns>
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.ForgotPasswordAsync(request);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new AuthResponseDto
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new AuthResponseDto
+            {
+                Success = false,
+                Message = "Có lỗi xảy ra khi xử lý yêu cầu: " + ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// API 8: Reset Password - Đổi password với reset token từ email
+    /// </summary>
+    /// <param name="request">Email, reset token và password mới</param>
+    /// <returns>Thông báo reset thành công</returns>
+    [HttpPost("reset-password")]
+    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.ResetPasswordAsync(request);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new AuthResponseDto
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new AuthResponseDto
+            {
+                Success = false,
+                Message = "Có lỗi xảy ra khi xử lý yêu cầu: " + ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// API 9: Change Password - Đổi password khi đã đăng nhập
+    /// </summary>
+    /// <param name="request">Password hiện tại và password mới</param>
+    /// <returns>Thông báo đổi password thành công</returns>
+    [Authorize]
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequestDto request)
+    {
+        try
+        {
+            // Lấy userId từ JWT token
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new AuthResponseDto
+                {
+                    Success = false,
+                    Message = "Token không hợp lệ"
+                });
+            }
+
+            var result = await _authService.ChangePasswordAsync(userId, request);
+            return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new AuthResponseDto
+            {
+                Success = false,
+                Message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new AuthResponseDto
+            {
+                Success = false,
+                Message = "Có lỗi xảy ra khi xử lý yêu cầu: " + ex.Message
+            });
+        }
+    }
 }
+

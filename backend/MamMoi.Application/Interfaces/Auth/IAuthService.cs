@@ -50,4 +50,26 @@ public interface IAuthService
     /// </summary>
     /// <param name="userId">ID của user</param>
     Task LogoutAsync(int userId);
+
+    /// <summary>
+    /// Gửi mã reset password qua email
+    /// </summary>
+    /// <param name="request">Email cần reset password</param>
+    /// <returns>Response xác nhận đã gửi</returns>
+    Task<AuthResponseDto> ForgotPasswordAsync(ForgotPasswordRequestDto request);
+
+    /// <summary>
+    /// Reset password với token từ email
+    /// </summary>
+    /// <param name="request">Email, reset token và password mới</param>
+    /// <returns>Response xác nhận đã reset thành công</returns>
+    Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordRequestDto request);
+
+    /// <summary>
+    /// Đổi password khi user đã đăng nhập
+    /// </summary>
+    /// <param name="userId">ID của user</param>
+    /// <param name="request">Password hiện tại và password mới</param>
+    /// <returns>Response xác nhận đã đổi thành công</returns>
+    Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordRequestDto request);
 }

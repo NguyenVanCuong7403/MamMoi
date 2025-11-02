@@ -7,6 +7,11 @@ namespace MamMoi.Application.DTOs.Auth;
 public class AuthResponseDto
 {
     /// <summary>
+    /// Trạng thái thành công hay thất bại
+    /// </summary>
+    public bool Success { get; set; }
+
+    /// <summary>
     /// ID của user
     /// </summary>
     public int UserId { get; set; }

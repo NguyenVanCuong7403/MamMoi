@@ -308,6 +308,140 @@ public class AuthService : IAuthService
         await Task.CompletedTask;
     }
 
+    /// <summary>
+    /// CHỨC NĂNG 7: Forgot Password - Gửi reset token qua email
+    /// </summary>
+    public async Task<AuthResponseDto> ForgotPasswordAsync(ForgotPasswordRequestDto request)
+    {
+        // 1. Kiểm tra user có tồn tại không
+        var user = await _userRepository.GetByEmailAsync(request.Email);
+        if (user == null)
+        {
+            throw new InvalidOperationException("Email không tồn tại trong hệ thống.");
+        }
+
+        // 2. Kiểm tra tài khoản đã được kích hoạt chưa
+        if (!user.IsActive)
+        {
+            throw new InvalidOperationException("Tài khoản chưa được kích hoạt. Vui lòng xác thực OTP trước.");
+        }
+
+        // 3. Generate reset token (6 số)
+        var resetToken = GenerateOtp();
+
+        // 4. Lưu reset token vào cache (15 phút)
+        var resetTokenKey = $"reset_{user.Email}";
+        _cache.Set(resetTokenKey, resetToken, TimeSpan.FromMinutes(15));
+
+        // 5. Gửi reset token qua email
+        try
+        {
+            await _emailService.SendPasswordResetEmailAsync(user.Email, user.FullName, resetToken);
+        }
+        catch (Exception ex)
+        {
+            // Nếu gửi email lỗi, hiển thị token trong console để test
+            Console.WriteLine($"[RESET TOKEN for {user.Email}]: {resetToken}");
+            Console.WriteLine($"Email error: {ex.Message}");
+        }
+
+        return new AuthResponseDto
+        {
+            Success = true,
+            Message = "Mã reset password đã được gửi đến email của bạn. Vui lòng kiểm tra (có thể trong spam)."
+        };
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 8: Reset Password - Đổi password với reset token
+    /// </summary>
+    public async Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordRequestDto request)
+    {
+        // 1. Kiểm tra user có tồn tại không
+        var user = await _userRepository.GetByEmailAsync(request.Email);
+        if (user == null)
+        {
+            throw new InvalidOperationException("Email không tồn tại trong hệ thống.");
+        }
+
+        // 2. Lấy reset token từ cache
+        var resetTokenKey = $"reset_{user.Email}";
+        if (!_cache.TryGetValue(resetTokenKey, out string? cachedToken))
+        {
+            throw new InvalidOperationException("Mã reset password không hợp lệ hoặc đã hết hạn.");
+        }
+
+        // 3. Verify reset token
+        if (cachedToken != request.ResetToken)
+        {
+            throw new InvalidOperationException("Mã reset password không đúng.");
+        }
+
+        // 4. Hash password mới
+        var newPasswordHash = HashPassword(request.NewPassword);
+
+        // 5. Cập nhật password trong DB
+        user.PasswordHash = newPasswordHash;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(user);
+
+        // 6. Xóa reset token khỏi cache
+        _cache.Remove(resetTokenKey);
+
+        // 7. Xóa refresh token cũ (force logout)
+        var refreshTokenKey = $"refresh_{user.UserId}";
+        _cache.Remove(refreshTokenKey);
+
+        return new AuthResponseDto
+        {
+            Success = true,
+            Message = "Password đã được reset thành công. Vui lòng đăng nhập với password mới."
+        };
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 9: Change Password - Đổi password khi đã login
+    /// </summary>
+    public async Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordRequestDto request)
+    {
+        // 1. Lấy thông tin user
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+        {
+            throw new InvalidOperationException("User không tồn tại.");
+        }
+
+        // 2. Verify password hiện tại
+        if (!VerifyPassword(request.CurrentPassword, user.PasswordHash))
+        {
+            throw new InvalidOperationException("Password hiện tại không đúng.");
+        }
+
+        // 3. Kiểm tra password mới khác password cũ
+        if (request.CurrentPassword == request.NewPassword)
+        {
+            throw new InvalidOperationException("Password mới phải khác password hiện tại.");
+        }
+
+        // 4. Hash password mới
+        var newPasswordHash = HashPassword(request.NewPassword);
+
+        // 5. Cập nhật password trong DB
+        user.PasswordHash = newPasswordHash;
+        user.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(user);
+
+        // 6. Xóa refresh token (force re-login)
+        var refreshTokenKey = $"refresh_{user.UserId}";
+        _cache.Remove(refreshTokenKey);
+
+        return new AuthResponseDto
+        {
+            Success = true,
+            Message = "Password đã được thay đổi thành công. Vui lòng đăng nhập lại."
+        };
+    }
+
     #region Helper Methods
 
     /// <summary>
