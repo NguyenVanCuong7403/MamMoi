@@ -1,0 +1,82 @@
+### Test User Profile API Endpoints
+
+### 1. View User Profile
+GET https://localhost:5001/api/UserProfile/1
+Accept: application/json
+
+###
+
+### 2. Edit User Profile
+PUT https://localhost:5001/api/UserProfile/1
+Content-Type: application/json
+
+{
+  "fullName": "Nguyen Van A",
+  "email": "nguyenvana@example.com",
+  "phone": "+84901234567",
+  "address": "123 Le Loi, District 1, Ho Chi Minh City",
+  "experienceLevel": "Intermediate",
+  "preferredLanguage": "vi",
+  "notificationPreferences": "email,push"
+}
+
+###
+
+### 3. Upload Avatar (Note: Use Postman or Swagger for file upload)
+### This is a multipart/form-data request
+POST https://localhost:5001/api/UserProfile/1/avatar
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="image"; filename="avatar.jpg"
+Content-Type: image/jpeg
+
+< ./avatar.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="cropX"
+
+10
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="cropY"
+
+10
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="cropWidth"
+
+80
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="cropHeight"
+
+80
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+###
+
+### 4. Delete Avatar
+DELETE https://localhost:5001/api/UserProfile/1/avatar
+Accept: application/json
+
+###
+
+### Test Validation - Missing Required Field
+PUT https://localhost:5001/api/UserProfile/1
+Content-Type: application/json
+
+{
+  "fullName": "",
+  "email": "invalid-email"
+}
+
+###
+
+### Test Validation - Invalid Experience Level
+PUT https://localhost:5001/api/UserProfile/1
+Content-Type: application/json
+
+{
+  "fullName": "Test User",
+  "email": "test@example.com",
+  "experienceLevel": "Master"
+}
+
+###

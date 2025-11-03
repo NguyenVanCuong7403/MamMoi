@@ -1,0 +1,77 @@
+{
+  "Version": 1,
+  "Hash": "TzA2GMtKCkO2sJ3kzrjD3JVBKCSgKguMCIxbuqg7qJM=",
+  "Source": "MamMoi.Api",
+  "BasePath": "_content/MamMoi.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [
+    {
+      "Name": "MamMoi.Api\\wwwroot",
+      "Source": "MamMoi.Api",
+      "ContentRoot": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\wwwroot\\",
+      "BasePath": "_content/MamMoi.Api",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\wwwroot\\README.md",
+      "SourceId": "MamMoi.Api",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\wwwroot\\",
+      "BasePath": "_content/MamMoi.Api",
+      "RelativePath": "README.md",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\README.md"
+    },
+    {
+      "Identity": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\wwwroot\\uploads\\avatars\\.gitignore",
+      "SourceId": "MamMoi.Api",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\wwwroot\\",
+      "BasePath": "_content/MamMoi.Api",
+      "RelativePath": "uploads/avatars/.gitignore",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\avatars\\.gitignore"
+    },
+    {
+      "Identity": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\wwwroot\\uploads\\avatars\\.gitkeep",
+      "SourceId": "MamMoi.Api",
+      "SourceType": "Discovered",
+      "ContentRoot": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\wwwroot\\",
+      "BasePath": "_content/MamMoi.Api",
+      "RelativePath": "uploads/avatars/.gitkeep",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "AssetMergeBehavior": "PreferTarget",
+      "AssetMergeSource": "",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot\\uploads\\avatars\\.gitkeep"
+    }
+  ]
+}

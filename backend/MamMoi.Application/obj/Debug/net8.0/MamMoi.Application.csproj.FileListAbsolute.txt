@@ -1,0 +1,16 @@
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\bin\Debug\net8.0\MamMoi.Application.deps.json
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\bin\Debug\net8.0\MamMoi.Application.dll
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\bin\Debug\net8.0\MamMoi.Application.pdb
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\bin\Debug\net8.0\MamMoi.Domain.dll
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\bin\Debug\net8.0\MamMoi.Domain.pdb
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.csproj.AssemblyReference.cache
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.AssemblyInfoInputs.cache
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.AssemblyInfo.cs
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.csproj.CoreCompileInputs.cache
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.sourcelink.json
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.A.9D422848.Up2Date
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.dll
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\refint\MamMoi.Application.dll
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\MamMoi.Application.pdb
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Application\obj\Debug\net8.0\ref\MamMoi.Application.dll

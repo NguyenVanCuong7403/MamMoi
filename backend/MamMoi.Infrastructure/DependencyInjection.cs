@@ -30,7 +30,8 @@ public static class DependencyInjection
 
         // Register application services
         services.AddScoped<IUserService, MamMoi.Infrastructure.Services.UserService>();
-        
+        services.AddScoped<IUserProfileService, MamMoi.Infrastructure.Services.UserProfileService>();
+
         // Register infrastructure services
         services.AddScoped<TokenService>();
 

@@ -1,0 +1,12 @@
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\bin\Debug\net8.0\MamMoi.Domain.deps.json
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\bin\Debug\net8.0\MamMoi.Domain.dll
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\bin\Debug\net8.0\MamMoi.Domain.pdb
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.AssemblyInfoInputs.cache
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.AssemblyInfo.cs
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.csproj.CoreCompileInputs.cache
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.sourcelink.json
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.dll
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\refint\MamMoi.Domain.dll
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.pdb
+C:\Users\Nguyen Tuan Anh\Documents\GitHub\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\ref\MamMoi.Domain.dll

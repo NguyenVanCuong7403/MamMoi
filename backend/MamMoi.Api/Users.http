@@ -1,0 +1,67 @@
+### Test Users API Endpoints
+
+### 1. Get All Users
+GET https://localhost:7237/api/Users
+Accept: application/json
+
+###
+
+### 2. Get User By ID
+GET https://localhost:7237/api/Users/00000000-0000-0000-0000-000000000001
+Accept: application/json
+
+###
+
+### 3. Create New User
+POST https://localhost:7237/api/Users
+Content-Type: application/json
+
+{
+  "username": "testuser",
+  "email": "testuser@example.com",
+  "password": "password123",
+  "fullName": "Test User"
+}
+
+###
+
+### 4. Update User
+PUT https://localhost:7237/api/Users/00000000-0000-0000-0000-000000000001
+Content-Type: application/json
+
+{
+  "email": "updated@example.com",
+  "fullName": "Updated Name"
+}
+
+###
+
+### 5. Delete User
+DELETE https://localhost:7237/api/Users/00000000-0000-0000-0000-000000000001
+Accept: application/json
+
+###
+
+### Test Validation - Create User with Missing Fields
+POST https://localhost:7237/api/Users
+Content-Type: application/json
+
+{
+  "username": "",
+  "email": "invalid-email",
+  "password": "123"
+}
+
+###
+
+### Test Validation - Invalid Email Format
+POST https://localhost:7237/api/Users
+Content-Type: application/json
+
+{
+  "username": "validuser",
+  "email": "not-an-email",
+  "password": "password123"
+}
+
+###

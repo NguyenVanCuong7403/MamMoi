@@ -1,0 +1,270 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.api\\controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.api\\controllers\\userprofilecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\userprofilecontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.application\\dependencyinjection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dependencyinjection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.infrastructure\\dependencyinjection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\dependencyinjection.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.infrastructure\\services\\userprofileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\userprofileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.infrastructure\\security\\tokenservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\security\\tokenservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.infrastructure\\repositories\\userrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\repositories\\userrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{3A8CB951-1111-4071-9157-DE9B69C64544}|MamMoi.Domain\\MamMoi.Domain.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.domain\\interfaces\\iuserrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{3A8CB951-1111-4071-9157-DE9B69C64544}|MamMoi.Domain\\MamMoi.Domain.csproj|solutionrelative:mammoi.domain\\interfaces\\iuserrepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.application\\dtos\\userprofiledto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\userprofiledto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.application\\dtos\\userdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\userdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.infrastructure\\services\\userservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\userservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.application\\interfaces\\iuserservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\interfaces\\iuserservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.application\\interfaces\\iuserprofileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\interfaces\\iuserprofileservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|c:\\users\\nguyen tuan anh\\documents\\github\\mammoi\\backend\\mammoi.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 6,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\Program.cs",
+              "RelativeDocumentMoniker": "MamMoi.Api\\Program.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\Program.cs",
+              "RelativeToolTip": "MamMoi.Api\\Program.cs",
+              "ViewState": "AQIAAAYAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T15:34:10.202Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "DependencyInjection.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Application\\DependencyInjection.cs",
+              "RelativeDocumentMoniker": "MamMoi.Application\\DependencyInjection.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Application\\DependencyInjection.cs",
+              "RelativeToolTip": "MamMoi.Application\\DependencyInjection.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T15:34:06.228Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "DependencyInjection.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Infrastructure\\DependencyInjection.cs",
+              "RelativeDocumentMoniker": "MamMoi.Infrastructure\\DependencyInjection.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Infrastructure\\DependencyInjection.cs",
+              "RelativeToolTip": "MamMoi.Infrastructure\\DependencyInjection.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T15:33:45.905Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "TokenService.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Infrastructure\\Security\\TokenService.cs",
+              "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Security\\TokenService.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Infrastructure\\Security\\TokenService.cs",
+              "RelativeToolTip": "MamMoi.Infrastructure\\Security\\TokenService.cs",
+              "ViewState": "AQIAADsAAAAAAAAAAAAwwAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T15:33:34.749Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "UserRepository.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Infrastructure\\Repositories\\UserRepository.cs",
+              "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Repositories\\UserRepository.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Infrastructure\\Repositories\\UserRepository.cs",
+              "RelativeToolTip": "MamMoi.Infrastructure\\Repositories\\UserRepository.cs",
+              "ViewState": "AQIAACIAAAAAAAAAAAAcwAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T15:33:24.617Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "UserProfileController.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\Controllers\\UserProfileController.cs",
+              "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\UserProfileController.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\Controllers\\UserProfileController.cs",
+              "RelativeToolTip": "MamMoi.Api\\Controllers\\UserProfileController.cs",
+              "ViewState": "AQIAAGgAAAAAAAAAAAAwwAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T09:42:51.821Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "UsersController.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\Controllers\\UsersController.cs",
+              "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\UsersController.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\Controllers\\UsersController.cs",
+              "RelativeToolTip": "MamMoi.Api\\Controllers\\UsersController.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABkAAAALAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T09:56:02.331Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "IUserRepository.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Domain\\Interfaces\\IUserRepository.cs",
+              "RelativeDocumentMoniker": "MamMoi.Domain\\Interfaces\\IUserRepository.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Domain\\Interfaces\\IUserRepository.cs",
+              "RelativeToolTip": "MamMoi.Domain\\Interfaces\\IUserRepository.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T15:33:01.535Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "UserDto.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Application\\DTOs\\UserDto.cs",
+              "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\UserDto.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Application\\DTOs\\UserDto.cs",
+              "RelativeToolTip": "MamMoi.Application\\DTOs\\UserDto.cs",
+              "ViewState": "AQIAAAMAAAAAAAAAAAAAACAAAABQAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T13:15:14.16Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "IUserService.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IUserService.cs",
+              "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\IUserService.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IUserService.cs",
+              "RelativeToolTip": "MamMoi.Application\\Interfaces\\IUserService.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABQAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T13:23:19.705Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\appsettings.json",
+              "RelativeDocumentMoniker": "MamMoi.Api\\appsettings.json",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\appsettings.json",
+              "RelativeToolTip": "MamMoi.Api\\appsettings.json",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABIAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-11-02T09:48:36.091Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "UserProfileService.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\UserProfileService.cs",
+              "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\UserProfileService.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\UserProfileService.cs",
+              "RelativeToolTip": "MamMoi.Infrastructure\\Services\\UserProfileService.cs",
+              "ViewState": "AQIAAFkAAAAAAAAAAAAIwAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T09:42:32.306Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "UserService.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\UserService.cs",
+              "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\UserService.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\UserService.cs",
+              "RelativeToolTip": "MamMoi.Infrastructure\\Services\\UserService.cs",
+              "ViewState": "AQIAAGsAAAAAAAAAAAAAAH0AAAAkAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T13:23:34.191Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "IUserProfileService.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IUserProfileService.cs",
+              "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\IUserProfileService.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IUserProfileService.cs",
+              "RelativeToolTip": "MamMoi.Application\\Interfaces\\IUserProfileService.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABoAAAAaAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T09:41:56.349Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "UserProfileDto.cs",
+              "DocumentMoniker": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Application\\DTOs\\UserProfileDto.cs",
+              "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\UserProfileDto.cs",
+              "ToolTip": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Application\\DTOs\\UserProfileDto.cs",
+              "RelativeToolTip": "MamMoi.Application\\DTOs\\UserProfileDto.cs",
+              "ViewState": "AQIAABcAAAAAAAAAAAAuwCsAAAABAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-02T09:41:45.422Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

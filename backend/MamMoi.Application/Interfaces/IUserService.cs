@@ -15,4 +15,6 @@ public interface IUserService
     Task<bool> DeleteAsync(Guid id);
     Task<object?> GetByEmailAsync(string email);
     Task<IEnumerable<object>> GetAllAsync();
+    Task<bool> BanUserAsync(int userId);
+    Task<bool> UnbanUserAsync(int userId);
 }

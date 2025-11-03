@@ -1,0 +1,33 @@
+{
+  "Files": [
+    {
+      "Id": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\wwwroot\\README.md",
+      "PackagePath": "staticwebassets\\README.md"
+    },
+    {
+      "Id": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\wwwroot\\uploads\\avatars\\.gitignore",
+      "PackagePath": "staticwebassets\\uploads\\avatars\\.gitignore"
+    },
+    {
+      "Id": "C:\\Users\\Nguyen Tuan Anh\\Documents\\GitHub\\MamMoi\\backend\\MamMoi.Api\\wwwroot\\uploads\\avatars\\.gitkeep",
+      "PackagePath": "staticwebassets\\uploads\\avatars\\.gitkeep"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.MamMoi.Api.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.build.MamMoi.Api.props",
+      "PackagePath": "build\\MamMoi.Api.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildMultiTargeting.MamMoi.Api.props",
+      "PackagePath": "buildMultiTargeting\\MamMoi.Api.props"
+    },
+    {
+      "Id": "obj\\Debug\\net8.0\\staticwebassets\\msbuild.buildTransitive.MamMoi.Api.props",
+      "PackagePath": "buildTransitive\\MamMoi.Api.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

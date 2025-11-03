@@ -26,7 +26,7 @@ public class UserService : IUserService
         // Note: Adjust this if your UserId should be Guid
         var userId = int.Parse(id.ToString().Split('-')[0], System.Globalization.NumberStyles.HexNumber) % int.MaxValue;
         var user = await _userRepository.GetByIdAsync(userId);
-        
+
         if (user == null)
             return null;
 
@@ -60,7 +60,7 @@ public class UserService : IUserService
 
         // Save
         var createdUser = await _userRepository.AddAsync(user);
-        
+
         return MapToDto((User)createdUser);
     }
 
@@ -79,14 +79,14 @@ public class UserService : IUserService
         // Update fields
         if (!string.IsNullOrEmpty(updateDto.Email))
             userEntity.Email = updateDto.Email;
-        
+
         if (!string.IsNullOrEmpty(updateDto.FullName))
             userEntity.FullName = updateDto.FullName;
 
         userEntity.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateAsync(userEntity);
-        
+
         return MapToDto(userEntity);
     }
 
@@ -116,6 +116,34 @@ public class UserService : IUserService
         return users.Select(u => MapToDto((User)u));
     }
 
+    public async Task<bool> BanUserAsync(int userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+            return false;
+
+        var userEntity = (User)user;
+        userEntity.IsActive = false;
+        userEntity.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.UpdateAsync(userEntity);
+        return true;
+    }
+
+    public async Task<bool> UnbanUserAsync(int userId)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+            return false;
+
+        var userEntity = (User)user;
+        userEntity.IsActive = true;
+        userEntity.UpdatedAt = DateTime.UtcNow;
+
+        await _userRepository.UpdateAsync(userEntity);
+        return true;
+    }
+
     // Helper methods
     private UserDto MapToDto(User user)
     {
@@ -130,7 +158,7 @@ public class UserService : IUserService
 
     private byte[] HashPassword(string password)
     {
-        
+
         using var sha256 = System.Security.Cryptography.SHA256.Create();
         return sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
     }
