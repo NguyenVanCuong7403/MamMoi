@@ -6,6 +6,7 @@ using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Repositories;
 using MamMoi.Infrastructure.Security;
+using MamMoi.Infrastructure.Services;
 
 namespace MamMoi.Infrastructure;
 
@@ -19,7 +20,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         // Add DbContext
-        services.AddDbContext<CapstoneDb01Context>(options =>
+        services.AddDbContext<MamMoiDbContext>(options =>
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection")));
 
@@ -33,7 +34,10 @@ public static class DependencyInjection
         
         // Register infrastructure services
         services.AddScoped<TokenService>();
-
+        services.AddScoped<ITreeTypeService, TreeTypeService>();
+        services.AddScoped<ITreeQueryService, TreeQueryService>();
+        services.AddScoped<ITreeCommandService, TreeCommandService>();
+        services.AddScoped<ITreeImageService, TreeImageService>();
         return services;
     }
 }

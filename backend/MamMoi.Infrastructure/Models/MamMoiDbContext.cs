@@ -4,13 +4,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MamMoi.Infrastructure.Models;
 
-public partial class CapstoneDb01Context : DbContext
+public partial class MamMoiDbContext : DbContext
 {
-    public CapstoneDb01Context()
+    public MamMoiDbContext()
     {
     }
 
-    public CapstoneDb01Context(DbContextOptions<CapstoneDb01Context> options)
+    public MamMoiDbContext(DbContextOptions<MamMoiDbContext> options)
         : base(options)
     {
     }

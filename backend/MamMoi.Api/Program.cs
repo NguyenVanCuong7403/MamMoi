@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MamMoi.Application;
@@ -12,14 +12,14 @@ namespace MamMoi.Api
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
+            // Controllers
             builder.Services.AddControllers();
-            
-            // Add Application and Infrastructure layers
+
+            // Application & Infrastructure (yêu cầu AddInfrastructure(IConfiguration) của bạn đã cấu hình DbContext)
             builder.Services.AddApplication();
             builder.Services.AddInfrastructure(builder.Configuration);
 
-            // Configure JWT Authentication
+            // JWT (bật khi có cấu hình)
             var jwtKey = builder.Configuration["Jwt:Key"];
             if (!string.IsNullOrEmpty(jwtKey))
             {
@@ -40,43 +40,33 @@ namespace MamMoi.Api
                     });
             }
 
-            // Configure CORS if needed
+            // CORS
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll", policy =>
-                {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyMethod()
-                          .AllowAnyHeader();
-                });
+                    policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
             });
 
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            // Swagger
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new() { Title = "MamMoi API", Version = "v1" });
-                
-                // Configure JWT authentication in Swagger
+
                 c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
                 {
-                    Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token.",
+                    Description = "JWT Bearer: nhập 'Bearer {token}'",
                     Name = "Authorization",
                     In = Microsoft.OpenApi.Models.ParameterLocation.Header,
                     Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
                     Scheme = "Bearer"
                 });
-
                 c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
                 {
-                    {
-                        new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                    { new Microsoft.OpenApi.Models.OpenApiSecurityScheme
                         {
                             Reference = new Microsoft.OpenApi.Models.OpenApiReference
-                            {
-                                Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
-                                Id = "Bearer"
-                            }
+                            { Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "Bearer" }
                         },
                         Array.Empty<string>()
                     }
@@ -85,7 +75,6 @@ namespace MamMoi.Api
 
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
@@ -93,10 +82,9 @@ namespace MamMoi.Api
             }
 
             app.UseHttpsRedirection();
-
             app.UseCors("AllowAll");
 
-            app.UseAuthentication();
+            app.UseAuthentication();   // chỉ có hiệu lực nếu đã cấu hình Jwt ở trên
             app.UseAuthorization();
 
             app.MapControllers();
