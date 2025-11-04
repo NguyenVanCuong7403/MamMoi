@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using MamMoi.Domain.Entities;
 
 namespace MamMoi.Infrastructure.Models;
 
@@ -59,6 +60,7 @@ public partial class CapstoneDbContext : DbContext
 
     public virtual DbSet<WeatherHistory> WeatherHistories { get; set; }
 
+   
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)

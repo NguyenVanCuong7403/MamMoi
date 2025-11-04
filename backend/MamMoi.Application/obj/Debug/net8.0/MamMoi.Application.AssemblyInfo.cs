@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MamMoi.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7eb6fd53af13adf7ef114acaf1caacf904108289")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c1e8e487fcb5a853eecc9d7819371d3688f7a51c")]
 [assembly: System.Reflection.AssemblyProductAttribute("MamMoi.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MamMoi.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
