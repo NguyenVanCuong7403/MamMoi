@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MamMoi.Application;
 using MamMoi.Infrastructure;
+using MamMoi.Infrastructure.External.Weather; // <-- để dùng AlertThresholds
 
 namespace MamMoi.Api
 {
@@ -15,9 +16,13 @@ namespace MamMoi.Api
             // Controllers
             builder.Services.AddControllers();
 
-            // Application & Infrastructure (yêu cầu AddInfrastructure(IConfiguration) của bạn đã cấu hình DbContext)
+            // Application & Infrastructure
             builder.Services.AddApplication();
             builder.Services.AddInfrastructure(builder.Configuration);
+
+            // ---- Bind ngưỡng cảnh báo (dùng bởi WeatherService) ----
+            builder.Services.Configure<AlertThresholds>(
+                builder.Configuration.GetSection("AlertThresholds"));
 
             // JWT (bật khi có cấu hình)
             var jwtKey = builder.Configuration["Jwt:Key"];
@@ -84,7 +89,7 @@ namespace MamMoi.Api
             app.UseHttpsRedirection();
             app.UseCors("AllowAll");
 
-            app.UseAuthentication();   // chỉ có hiệu lực nếu đã cấu hình Jwt ở trên
+            app.UseAuthentication();
             app.UseAuthorization();
 
             app.MapControllers();

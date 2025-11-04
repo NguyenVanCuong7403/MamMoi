@@ -7,6 +7,7 @@ using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Repositories;
 using MamMoi.Infrastructure.Security;
 using MamMoi.Infrastructure.Services;
+using MamMoi.Infrastructure.External.Weather;
 
 namespace MamMoi.Infrastructure;
 
@@ -38,6 +39,14 @@ public static class DependencyInjection
         services.AddScoped<ITreeQueryService, TreeQueryService>();
         services.AddScoped<ITreeCommandService, TreeCommandService>();
         services.AddScoped<ITreeImageService, TreeImageService>();
+
+        services.AddHttpClient<IWeatherProvider, OpenWeatherMapProvider>();
+        services.AddScoped<IWeatherService, WeatherService>();
+        services.Configure<AlertThresholds>(configuration.GetSection("WeatherAlerts"));
+        services.AddHttpClient<IWeatherProvider, OpenWeatherMapProvider>();
+        services.AddScoped<IWeatherService, WeatherService>();
+        services.Configure<AlertThresholds>(configuration.GetSection("AlertThresholds"));
+
         return services;
     }
 }
