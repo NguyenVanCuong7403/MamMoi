@@ -6,6 +6,7 @@ using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Repositories;
 using MamMoi.Infrastructure.Security;
+using MamMoi.Infrastructure.Services;
 
 namespace MamMoi.Infrastructure;
 
@@ -25,12 +26,16 @@ public static class DependencyInjection
 
         // Register repositories - đơn giản, chỉ register những gì cần
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<ISystemSettingRepository, SystemSettingRepository>();
+        services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
         // Thêm repositories khác khi cần:
         // services.AddScoped<ITreeRepository, TreeRepository>();
 
         // Register application services
         services.AddScoped<IUserService, MamMoi.Infrastructure.Services.UserService>();
-        
+        services.AddScoped<ISystemSettingService, SystemSettingService>();
+        services.AddScoped<IActivityLogService, ActivityLogService>();
+        services.AddScoped<IDashboardService, DashboardService>();
         // Register infrastructure services
         services.AddScoped<TokenService>();
 

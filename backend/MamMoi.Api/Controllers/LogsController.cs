@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 namespace MamMoi.Api.Controllers
 {
     [ApiController]
-    [Route("api/logs")]
-    [Authorize(Roles = "System Admin")] // <<< KHÓA CHỨC NĂNG NÀY CHO ADMIN
+    [Route("api/admin/logs")]
+    [Authorize(Roles = "System Admin")]
     public class LogsController : ControllerBase
     {
         private readonly IActivityLogService _logService;
