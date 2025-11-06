@@ -65,7 +65,7 @@ public class GardenService : IGardenService
             GardenId = createdGarden.GardenId,
             UserId = userId,
             RoleId = 3, // Farmer role as Owner
-            JoinedAt = DateTime.Now
+            CreatedAt = DateTime.Now
         };
         await _gardenMemberRepository.AddAsync(gardenMember);
 

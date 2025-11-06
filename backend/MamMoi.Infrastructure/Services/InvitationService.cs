@@ -117,7 +117,7 @@ public class InvitationService : IInvitationService
 
         // 3. Check if garden already has a staff (1 garden = 1 staff rule)
         var existingStaffInGarden = await _context.GardenMembers
-            .FirstOrDefaultAsync(gm => gm.GardenId == gardenId && gm.Status == "Active");
+            .FirstOrDefaultAsync(gm => gm.GardenId == gardenId);
 
         if (existingStaffInGarden != null)
         {
@@ -127,7 +127,7 @@ public class InvitationService : IInvitationService
 
         // 4. Check if staff is already assigned to another garden
         var staffOtherAssignments = await _context.GardenMembers
-            .FirstOrDefaultAsync(gm => gm.UserId == staffId && gm.Status == "Active");
+            .FirstOrDefaultAsync(gm => gm.UserId == staffId);
 
         if (staffOtherAssignments != null)
         {
@@ -135,15 +135,13 @@ public class InvitationService : IInvitationService
             throw new InvalidOperationException("Staff is already assigned to another garden. One staff can only work in one garden.");
         }
 
-        // 4. Create garden member record
+        // 5. Create garden member record
         var gardenMember = new GardenMember
         {
             GardenId = gardenId,
             UserId = staffId,
             RoleId = 4, // Staff
-            Status = "Active",
-            JoinedAt = DateTime.Now,
-            InvitedByUserId = farmerId
+            CreatedAt = DateTime.Now
         };
 
         _context.GardenMembers.Add(gardenMember);
@@ -160,7 +158,7 @@ public class InvitationService : IInvitationService
             RoleId = 4,
             RoleName = "Staff",
             Status = "Active",
-            JoinedAt = gardenMember.JoinedAt,
+            JoinedAt = gardenMember.CreatedAt,
             InvitedByUserId = farmerId,
             InvitedByName = (await _context.Users.FindAsync(farmerId))?.FullName
         };
@@ -175,7 +173,7 @@ public class InvitationService : IInvitationService
 
         // 2. Find garden member
         var gardenMember = await _context.GardenMembers
-            .FirstOrDefaultAsync(gm => gm.GardenId == gardenId && gm.UserId == staffId && gm.Status == "Active");
+            .FirstOrDefaultAsync(gm => gm.GardenId == gardenId && gm.UserId == staffId);
 
         if (gardenMember == null)
             throw new KeyNotFoundException("Staff is not assigned to this garden");
@@ -193,9 +191,8 @@ public class InvitationService : IInvitationService
             .Include(gm => gm.User)
             .Include(gm => gm.Role)
             .Include(gm => gm.Garden)
-            .Include(gm => gm.InvitedByUser)
             .Where(gm => gm.GardenId == gardenId)
-            .OrderByDescending(gm => gm.JoinedAt ?? gm.InvitedAt)
+            .OrderByDescending(gm => gm.CreatedAt)
             .ToListAsync();
 
         return members.Select(gm => new GardenMemberResponseDto
@@ -204,45 +201,19 @@ public class InvitationService : IInvitationService
             GardenId = gm.GardenId,
             GardenName = gm.Garden.Name,
             UserId = gm.UserId,
-            Email = gm.User?.Email ?? "Pending",
+            Email = gm.User?.Email ?? "",
             FullName = gm.User?.FullName,
             RoleId = gm.RoleId,
             RoleName = gm.Role.RoleName,
-            Status = gm.Status,
-            JoinedAt = gm.JoinedAt,
-            InvitedAt = gm.InvitedAt,
-            InvitedByUserId = gm.InvitedByUserId,
-            InvitedByName = gm.InvitedByUser?.FullName
+            Status = "Active",
+            JoinedAt = gm.CreatedAt,
+            InvitedAt = null,
+            InvitedByUserId = null,
+            InvitedByName = null
         }).ToList();
     }
 
-    public async Task<List<GardenMemberResponseDto>> GetPendingInvitationsAsync(int gardenId)
-    {
-        var pendingInvitations = await _context.GardenMembers
-            .Include(gm => gm.Role)
-            .Include(gm => gm.Garden)
-            .Include(gm => gm.InvitedByUser)
-            .Where(gm => gm.GardenId == gardenId && gm.Status == "Pending")
-            .OrderByDescending(gm => gm.InvitedAt)
-            .ToListAsync();
 
-        return pendingInvitations.Select(gm => new GardenMemberResponseDto
-        {
-            MemberId = gm.MemberId,
-            GardenId = gm.GardenId,
-            GardenName = gm.Garden.Name,
-            UserId = null,
-            Email = "Pending",
-            FullName = null,
-            RoleId = gm.RoleId,
-            RoleName = gm.Role.RoleName,
-            Status = "Pending",
-            JoinedAt = null,
-            InvitedAt = gm.InvitedAt,
-            InvitedByUserId = gm.InvitedByUserId,
-            InvitedByName = gm.InvitedByUser?.FullName
-        }).ToList();
-    }
 
     /// <summary>
     /// Generate temporary password for new staff

@@ -244,7 +244,10 @@ public partial class CapstoneDb01Context : DbContext
 
             entity.Property(e => e.MemberId).HasColumnName("MemberID");
             entity.Property(e => e.GardenId).HasColumnName("GardenID");
-            entity.Property(e => e.JoinedAt)
+            // entity.Property(e => e.JoinedAt)
+            //     .HasPrecision(0)
+            //     .HasDefaultValueSql("(sysdatetime())");
+            entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
