@@ -115,16 +115,24 @@ public class InvitationService : IInvitationService
         if (staff.RoleId != 4) // Staff = 4
             throw new InvalidOperationException("Only Staff users can be assigned to gardens");
 
-        // 3. Check if already assigned
-        var existingMember = await _context.GardenMembers
-            .FirstOrDefaultAsync(gm => gm.GardenId == gardenId && gm.UserId == staffId);
+        // 3. Check if garden already has a staff (1 garden = 1 staff rule)
+        var existingStaffInGarden = await _context.GardenMembers
+            .FirstOrDefaultAsync(gm => gm.GardenId == gardenId && gm.Status == "Active");
 
-        if (existingMember != null)
+        if (existingStaffInGarden != null)
         {
-            if (existingMember.Status == "Active")
-                throw new InvalidOperationException("Staff is already assigned to this garden");
-            else
-                throw new InvalidOperationException("Staff has a pending status in this garden");
+            var existingStaff = await _context.Users.FindAsync(existingStaffInGarden.UserId);
+            throw new InvalidOperationException("Garden already has a staff assigned. One garden can only have one staff.");
+        }
+
+        // 4. Check if staff is already assigned to another garden
+        var staffOtherAssignments = await _context.GardenMembers
+            .FirstOrDefaultAsync(gm => gm.UserId == staffId && gm.Status == "Active");
+
+        if (staffOtherAssignments != null)
+        {
+            var otherGarden = await _context.Gardens.FindAsync(staffOtherAssignments.GardenId);
+            throw new InvalidOperationException("Staff is already assigned to another garden. One staff can only work in one garden.");
         }
 
         // 4. Create garden member record
