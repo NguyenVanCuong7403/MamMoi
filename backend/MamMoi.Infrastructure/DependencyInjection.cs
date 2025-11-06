@@ -26,11 +26,15 @@ public static class DependencyInjection
 
         // Register repositories - đơn giản, chỉ register những gì cần
         services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<IGardenRepository, GardenRepository>();
+        services.AddScoped<IGardenMemberRepository, GardenMemberRepository>();
         // Thêm repositories khác khi cần:
         // services.AddScoped<ITreeRepository, TreeRepository>();
 
         // Register application services
         services.AddScoped<IUserService, MamMoi.Infrastructure.Services.UserService>();
+        services.AddScoped<IGardenService, MamMoi.Infrastructure.Services.GardenService>();
+        services.AddScoped<IInvitationService, MamMoi.Infrastructure.Services.InvitationService>();
         
         // Register authentication services
         services.AddScoped<IAuthService, MamMoi.Infrastructure.Services.Auth.AuthService>();

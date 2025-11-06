@@ -14,7 +14,7 @@ namespace MamMoi.Api
 
             // Add services to the container.
             builder.Services.AddControllers();
-            
+
             // Add Application and Infrastructure layers
             builder.Services.AddApplication();
             builder.Services.AddInfrastructure(builder.Configuration);
@@ -56,7 +56,7 @@ namespace MamMoi.Api
             builder.Services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new() { Title = "MamMoi API", Version = "v1" });
-                
+
                 // Configure JWT authentication in Swagger
                 c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
                 {

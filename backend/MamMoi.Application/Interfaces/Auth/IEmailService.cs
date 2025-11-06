@@ -29,4 +29,12 @@ public interface IEmailService
     /// <param name="userName">Tên người nhận</param>
     /// <param name="resetToken">Token để reset password</param>
     Task SendPasswordResetEmailAsync(string toEmail, string userName, string resetToken);
+
+    /// <summary>
+    /// Gửi email generic (subject và body tự do)
+    /// </summary>
+    /// <param name="toEmail">Email người nhận</param>
+    /// <param name="subject">Tiêu đề email</param>
+    /// <param name="body">Nội dung email (HTML)</param>
+    Task SendEmailAsync(string toEmail, string subject, string body);
 }

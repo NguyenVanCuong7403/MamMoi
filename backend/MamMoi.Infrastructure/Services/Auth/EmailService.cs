@@ -101,9 +101,9 @@ public class EmailService : IEmailService
     }
 
     /// <summary>
-    /// Private method - Gửi email thực tế qua SMTP
+    /// Gửi email generic (public method cho invitation và các mục đích khác)
     /// </summary>
-    private async Task SendEmailAsync(string toEmail, string subject, string htmlBody)
+    public async Task SendEmailAsync(string toEmail, string subject, string htmlBody)
     {
         try
         {
