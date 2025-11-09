@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState,useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,9 +30,15 @@ import { LivingBackground } from "@/components/background";
  * - UX: CapsLock cảnh báo, password strength, divider, social buttons
  * - Giữ cấu trúc Tabs/Login/Register/Reset như bản gốc
  */
-export default function AuthScreen() {
+export default function AuthScreen({ defaultTab = "login" }) {
   const [showReset, setShowReset] = useState(false);
-  const [tab, setTab] = useState("login");
+  const [tab, setTab] = useState(defaultTab);
+
+  useEffect(() => {
+    setTab(defaultTab);
+    setShowReset(false);
+  }, [defaultTab]);
+
 
   return (
     <div className="relative min-h-screen overflow-hidden text-slate-900">

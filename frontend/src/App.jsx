@@ -8,6 +8,7 @@ import Footer from "./components/layout/Footer";
 // keep the AmbientBackdrop you can switch back, but the portal allows
 // stacking contexts to remain intact.
 import { BackgroundPortal } from "./components/background";
+import { AuthProvider } from "./API/context/AuthContext";
 
 function App() {
   return (
@@ -17,8 +18,17 @@ function App() {
 
       {/* Toàn bộ UI đặt trên lớp hiệu ứng */}
       <div className="relative z-10">
-        <Header />
-        <RouteManager />
+        <Header
+          onLogin={() => {
+            setAuthTab("login");
+          }}
+          onRegister={() => {
+            setAuthTab("register");
+          }}
+        />
+          <AuthProvider>
+            <RouteManager authTab={authTab} />
+          </AuthProvider>
         <Footer />
       </div>
     </Router>
