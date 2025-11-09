@@ -13,7 +13,7 @@ import PaymentHistory from "./components/user/PAYMENT_HISTORY";
 import LoginGuard from "./guards/LoginGuard";
 import RoleGuard from "./guards/RoleGuard";
 
-export default function RouteManager() {
+export default function RouteManager({ authTab }) {
   return (
     <Routes>
       <Route path="/" element={<Home />} />

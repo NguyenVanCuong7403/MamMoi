@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { BrowserRouter as Router } from "react-router-dom";
 import RouteManager from "./RouteManager";
 import Header from "./components/layout/Header";
@@ -10,7 +10,9 @@ import Footer from "./components/layout/Footer";
 import { BackgroundPortal } from "./components/background";
 import { AuthProvider } from "./API/context/AuthContext";
 
+
 function App() {
+  const [authTab, setAuthTab] = useState("login");
   return (
     <Router>
       {/* Hiệu ứng nền toàn cục (luôn nằm sau). Base color can be set via prop */}

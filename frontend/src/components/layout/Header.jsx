@@ -31,12 +31,12 @@ export default function MMHeader({
 
   const handleLoginClick = () => {
     onLogin();
-    navigate("/login");
+    navigate("/auth");
   };
 
   const handleRegisterClick = () => {
     onRegister();
-    navigate("/login");
+    navigate("/auth");
   };
 
   const palette = useMemo(
@@ -123,7 +123,8 @@ export default function MMHeader({
           <a
             href="#"
             className="inline-flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-white/50 rounded flex-shrink-0"
-            onClick={(e) => e.preventDefault()}
+            onClick={(e) => { navigate("/")} 
+        } 
           >
             <div
               className="w-11 h-11 rounded-full grid place-items-center shadow"
