@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { LivingBackground } from "@/components/background";
 import {
   Sprout,
   Calendar,
@@ -2032,6 +2033,7 @@ export default function TreeDetail() {
 
   return (
     <div className="min-h-screen bg-transparent isolate overflow-x-hidden">
+      <LivingBackground density={28} baseColor="#1F302F" />
       <main className="mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-10 2xl:px-16 pt-20 md:pt-24 pb-10 space-y-8">
         {/* daily overdue toast */}
         {dailyToast.show && (

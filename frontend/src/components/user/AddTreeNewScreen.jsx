@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import LivingBackground from "@/components/background/LivingBackground";
+
 import {
   Calendar as CalIcon,
   Image as ImageIcon,
@@ -328,8 +330,7 @@ function ImagePicker({ code, value, onChange }) {
     if (!code) return;
     const saved = imageRegistry.get(code);
     if (saved && !value) onChange(saved);
-    // eslint-disable-next-line
-  }, [code]);
+  }, [code]); // eslint-disable-line
 
   function handleFile(e) {
     const f = e.target.files?.[0];
@@ -396,8 +397,24 @@ function ImagePicker({ code, value, onChange }) {
   );
 }
 
+/* ------------------------------ Header offset helper ----------------------------- */
+function useHeaderOffset(selector = "[data-app-header],[data-header],header") {
+  useEffect(() => {
+    const el = document.querySelector(selector);
+    const apply = () => {
+      const h = el?.offsetHeight || 88;
+      document.documentElement.style.setProperty("--mm-header-h", `${h}px`);
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, [selector]);
+}
+
 /* ------------------------------ Main Screen ------------------------------ */
 export default function AddTreeNewScreen() {
+  useHeaderOffset(); // đẩy trang xuống theo chiều cao header
+
   // States
   const [code, setCode] = useState("");
   const [userEditedCode, setUserEditedCode] = useState(false);
@@ -564,104 +581,27 @@ export default function AddTreeNewScreen() {
 
   return (
     <div
-      className="min-h-screen pt-20 relative overflow-hidden"
-      style={{ backgroundColor: "#1F302F" }}
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        backgroundColor: "#1F302F",
+        paddingTop: "calc(var(--mm-header-h, 88px) + 12px)", // tránh dính header
+      }}
     >
-      {/* --- Decorative aurora / spotlights --- */}
-      <style>{`
-  /* Aurora rõ & có chuyển động rất nhẹ */
-  @keyframes mm-aurora-pan {
-    0%   { transform: translateY(-2%) translateX(0);   filter: saturate(115%); }
-    100% { transform: translateY( 2%) translateX(1%);  filter: saturate(130%); }
-  }
-
-  .mm-aurora{
-    position:absolute;inset:-10%;
-    background:
-      radial-gradient(680px 360px at 14% 8%,   rgba(16,185,129,.18),  transparent 60%),
-      radial-gradient(760px 340px at 86% 10%,  rgba(56,189,248,.16),  transparent 60%),
-      radial-gradient(980px 480px at 50% 118%, rgba(250,204,21,.12),  transparent 66%),
-      radial-gradient(540px 300px at 0% 82%,   rgba(16,185,129,.14),  transparent 62%),
-      radial-gradient(560px 300px at 100% 84%, rgba(56,189,248,.14),  transparent 62%);
-    animation: mm-aurora-pan 28s ease-in-out infinite alternate;
-    pointer-events:none;
-  }
-  .mm-aurora:after{
-    content:"";position:absolute;inset:0;pointer-events:none;
-    background:
-      linear-gradient(90deg, rgba(255,255,255,.05), transparent 40%, transparent 60%, rgba(255,255,255,.05)),
-      linear-gradient(rgba(255,255,255,.04), transparent 60%);
-    mask-image: radial-gradient(closest-side, rgba(255,255,255,.6), transparent);
-  }
-
-  /* Lưới mờ (hạt) */
-  .mm-grid:before{
-    content:"";position:absolute;inset:0;pointer-events:none;
-    background-image:
-      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-    background-size:28px 28px;background-position:center;
-    mask-image: radial-gradient(closest-side, rgba(255,255,255,.45), transparent);
-    opacity:.16;
-  }
-
-  /* Vignette hai bên – TĂNG độ rộng & độ tối để dễ thấy */
-  .mm-frame{position:fixed;inset:0;pointer-events:none}
-  .mm-frame:before,.mm-frame:after{
-    content:"";position:absolute;top:0;bottom:0;width:min(30vw, 440px)
-  }
-  .mm-frame:before{
-    left:0;
-    background:linear-gradient(to right, rgba(0,0,0,.34), rgba(31,48,47,0) 62%);
-  }
-  .mm-frame:after{
-    right:0;
-    background:linear-gradient(to left,  rgba(0,0,0,.34), rgba(31,48,47,0) 62%);
-  }
-
-  /* Vignette góc để “ôm” layout hơn (rất nhẹ) */
-  .mm-corners{
-    position:fixed;inset:0;pointer-events:none;
-    background:
-      radial-gradient(600px 420px at -8% -8%, rgba(0,0,0,.28), transparent 60%),
-      radial-gradient(600px 420px at 108% -8%, rgba(0,0,0,.28), transparent 60%),
-      radial-gradient(520px 360px at 0% 100%, rgba(0,0,0,.20), transparent 60%),
-      radial-gradient(520px 360px at 100% 100%, rgba(0,0,0,.20), transparent 60%);
-  }
-
-  /* Dải tối phần đáy để đỡ trống */
-  .mm-bottom{
-    position:fixed;left:0;right:0;bottom:0;height:30vh;pointer-events:none;
-    background:linear-gradient(to top, rgba(9,16,16,.78), rgba(31,48,47,0) 68%);
-  }
-
-  /* Top shine thật mỏng để tách header với nền */
-  .mm-topshine{
-    position:fixed;left:0;right:0;top:0;height:14vh;pointer-events:none;
-    background:linear-gradient(to bottom, rgba(255,255,255,.06), rgba(255,255,255,0));
-    mix-blend-mode:soft-light;
-  }
-
-  /* Noise mịn */
-  .mm-noise{
-    position:fixed;inset:0;pointer-events:none;opacity:.05;
-    background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1px);
-    background-size:2px 2px;mix-blend-mode:overlay;
-  }
-`}</style>
-
-
-<div className="mm-aurora" />
-<div className="mm-grid absolute inset-0" />
-<div className="mm-frame" aria-hidden />
-<div className="mm-corners" aria-hidden />   {/* <-- thêm */}
-<div className="mm-topshine" aria-hidden />  {/* <-- thêm */}
-<div className="mm-bottom" aria-hidden />
-<div className="mm-noise" aria-hidden />
+      {/* LivingBackground — aurora */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <LivingBackground
+          theme="aurora"
+          baseColor="#1F302F"
+          accents={["#10b981", "#38bdf8", "#facc15"]}
+          density={40}
+          grain={0.06}
+          blur={14}
+          speed={28}
+        />
+      </div>
 
       {/* Header */}
       <section className="relative">
-        {/* NEW: mở rộng bề ngang trên màn hình lớn */}
         <div className="mx-auto max-w-7xl xl:max-w-[1320px] 2xl:max-w-[1500px] px-4 sm:px-6 lg:px-8 pb-3">
           <div className="flex items-center gap-2 text-emerald-100/80 text-xs">
             <span className="opacity-80">Mầm Mới</span>
@@ -934,29 +874,32 @@ export default function AddTreeNewScreen() {
 
             {/* Action bar dính */}
             <div className="sticky bottom-4 z-30">
-  <div className="flex justify-end gap-3">
-    <Button
-      className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
-      onClick={handleCreate}
-    >
-      <CheckCircle2 className="w-4 h-4 mr-1" />
-      Tạo cây
-    </Button>
+              <div className="flex justify-end gap-3">
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+                  onClick={handleCreate}
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                  Tạo cây
+                </Button>
 
-    <Button
-      type="button"
-      variant="outline"
-      onClick={resetAll}
-      className="rounded-xl bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100"
-    >
-      Xóa nội dung
-    </Button>
-  </div>
-</div>
-</div>        
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetAll}
+                  className="rounded-xl bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100"
+                >
+                  Xóa nội dung
+                </Button>
+              </div>
+            </div>
+          </div>
 
           {/* RIGHT – preview */}
-          <div className="space-y-6 lg:sticky lg:top-24">
+          <div
+            className="space-y-6 lg:sticky"
+            style={{ top: "calc(var(--mm-header-h, 88px) + 8px)" }}
+          >
             <Card className="rounded-2xl overflow-hidden bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
               <CardHeader className="pb-3">
                 <CardTitle>Ảnh & Preview</CardTitle>

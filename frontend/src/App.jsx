@@ -3,13 +3,17 @@ import { BrowserRouter as Router } from "react-router-dom";
 import RouteManager from "./RouteManager";
 import Header from "./components/layout/Header";
 import Footer from "./components/layout/Footer";
-import AmbientBackdrop from "./components/AmbientBackdrop"; // <— thêm
+// Use our new background portal from the background folder. This renders
+// the animated backdrop across the entire application. If you prefer to
+// keep the AmbientBackdrop you can switch back, but the portal allows
+// stacking contexts to remain intact.
+import { BackgroundPortal } from "./components/background";
 
 function App() {
   return (
     <Router>
-      {/* Hiệu ứng nền toàn cục (luôn nằm sau) */}
-      <AmbientBackdrop color="#1F302F" />
+      {/* Hiệu ứng nền toàn cục (luôn nằm sau). Base color can be set via prop */}
+      <BackgroundPortal enabled density={28} baseColor="#1F302F" />
 
       {/* Toàn bộ UI đặt trên lớp hiệu ứng */}
       <div className="relative z-10">
