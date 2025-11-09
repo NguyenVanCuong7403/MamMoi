@@ -36,6 +36,8 @@ public static class DependencyInjection
         services.AddScoped<ISystemSettingService, SystemSettingService>();
         services.AddScoped<IActivityLogService, ActivityLogService>();
         services.AddScoped<IDashboardService, DashboardService>();
+        services.AddScoped<ICustomerService, CustomerService>();
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
         // Register infrastructure services
         services.AddScoped<TokenService>();
 
