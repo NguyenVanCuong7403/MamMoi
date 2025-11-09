@@ -33,12 +33,6 @@ public partial class Tree
 
     public string? Location { get; set; }
 
-    public decimal? AltitudeMeters { get; set; }
-
-    public string? TimeZone { get; set; }
-
-    public string? ClimateZone { get; set; }
-
     public DateTime? LastWateredAt { get; set; }
 
     public DateTime? NextWateringAt { get; set; }
@@ -46,8 +40,6 @@ public partial class Tree
     public int? WateringFrequencyDays { get; set; }
 
     public decimal? LastWateringAmountLiters { get; set; }
-
-    public bool AutoAdjustWatering { get; set; }
 
     public int? MinWateringIntervalDays { get; set; }
 
@@ -63,13 +55,7 @@ public partial class Tree
 
     public decimal? LastFertilizerAmountGrams { get; set; }
 
-    public string? SunlightExposure { get; set; }
-
-    public decimal? SoilPh { get; set; }
-
     public int? GardenSoilId { get; set; }
-
-    public bool? IsIndoor { get; set; }
 
     public bool? IsActive { get; set; }
 
