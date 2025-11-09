@@ -20,4 +20,9 @@ public interface IGardenMemberRepository
     /// Remove a member from a garden
     /// </summary>
     Task RemoveAsync(int memberId);
+
+    /// <summary>
+    /// Get all garden memberships for a user
+    /// </summary>
+    Task<List<dynamic>> GetByUserIdAsync(int userId);
 }

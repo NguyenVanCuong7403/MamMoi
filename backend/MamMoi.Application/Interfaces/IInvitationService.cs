@@ -1,4 +1,5 @@
 using MamMoi.Application.DTOs.Invitation;
+using MamMoi.Application.DTOs;
 
 namespace MamMoi.Application.Interfaces;
 
@@ -26,4 +27,9 @@ public interface IInvitationService
     /// Lấy danh sách members của vườn
     /// </summary>
     Task<List<GardenMemberResponseDto>> GetGardenMembersAsync(int gardenId);
+
+    /// <summary>
+    /// Lấy danh sách staff inactive có thể mời lại
+    /// </summary>
+    Task<List<UserDto>> GetInactiveStaffAsync();
 }

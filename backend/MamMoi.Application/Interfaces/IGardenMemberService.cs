@@ -20,5 +20,5 @@ public interface IGardenMemberService
     /// <summary>
     /// Get tất cả gardens mà Staff được assign
     /// </summary>
-    Task<List<GardenMemberDto>> GetMyAssignedGardensAsync(int userId);
+    Task<List<AssignedGardenDto>> GetMyAssignedGardensAsync(int userId);
 }

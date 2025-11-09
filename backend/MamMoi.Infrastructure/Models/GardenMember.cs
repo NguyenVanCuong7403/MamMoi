@@ -13,7 +13,9 @@ public partial class GardenMember
 
     public int RoleId { get; set; }
 
-    public DateTime CreatedAt { get; set; } // Thay JoinedAt
+    public string Status { get; set; } = "Active";
+
+    public DateTime CreatedAt { get; set; }
 
     public virtual Garden Garden { get; set; } = null!;
 

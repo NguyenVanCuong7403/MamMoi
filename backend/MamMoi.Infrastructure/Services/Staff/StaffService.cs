@@ -3,14 +3,16 @@ using System.Linq;
 using System.Text;
 using Microsoft.EntityFrameworkCore;
 using MamMoi.Application.DTOs.Invitation;
+using MamMoi.Application.DTOs;
 using MamMoi.Application.Interfaces;
 using MamMoi.Application.Interfaces.Auth;
 using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
+using GardenMemberEntity = MamMoi.Infrastructure.Models.GardenMember;
 
-namespace MamMoi.Infrastructure.Services;
+namespace MamMoi.Infrastructure.Services.Staff;
 
-public class InvitationService : IInvitationService
+public class StaffService : IInvitationService
 {
     private readonly IUserRepository _userRepository;
     private readonly IGardenRepository _gardenRepository;
@@ -18,7 +20,7 @@ public class InvitationService : IInvitationService
     private readonly IEmailService _emailService;
     private readonly CapstoneDb01Context _context;
 
-    public InvitationService(
+    public StaffService(
         IUserRepository userRepository,
         IGardenRepository gardenRepository,
         IGardenMemberRepository gardenMemberRepository,
@@ -115,9 +117,17 @@ public class InvitationService : IInvitationService
         if (staff.RoleId != 4) // Staff = 4
             throw new InvalidOperationException("Only Staff users can be assigned to gardens");
 
+        // 2.5. Enable tài khoản nếu inactive
+        if (!staff.IsActive)
+        {
+            staff.IsActive = true;
+            _context.Users.Update(staff);
+        }
+
         // 3. Check if garden already has a staff (1 garden = 1 staff rule)
+        // Only count Staff role (roleId = 4), not Farmer role (roleId = 3)
         var existingStaffInGarden = await _context.GardenMembers
-            .FirstOrDefaultAsync(gm => gm.GardenId == gardenId);
+            .FirstOrDefaultAsync(gm => gm.GardenId == gardenId && gm.RoleId == 4); // Staff role only
 
         if (existingStaffInGarden != null)
         {
@@ -136,11 +146,12 @@ public class InvitationService : IInvitationService
         }
 
         // 5. Create garden member record
-        var gardenMember = new GardenMember
+        var gardenMember = new GardenMemberEntity
         {
             GardenId = gardenId,
             UserId = staffId,
             RoleId = 4, // Staff
+            Status = "Active",
             CreatedAt = DateTime.Now
         };
 
@@ -158,7 +169,7 @@ public class InvitationService : IInvitationService
             RoleId = 4,
             RoleName = "Staff",
             Status = "Active",
-            JoinedAt = gardenMember.CreatedAt,
+            CreatedAt = gardenMember.CreatedAt,
             InvitedByUserId = farmerId,
             InvitedByName = (await _context.Users.FindAsync(farmerId))?.FullName
         };
@@ -173,14 +184,22 @@ public class InvitationService : IInvitationService
 
         // 2. Find garden member
         var gardenMember = await _context.GardenMembers
-            .FirstOrDefaultAsync(gm => gm.GardenId == gardenId && gm.UserId == staffId);
+            .FirstOrDefaultAsync(gm => gm.GardenId == gardenId && gm.UserId == staffId && gm.Status == "Active");
 
         if (gardenMember == null)
-            throw new KeyNotFoundException("Staff is not assigned to this garden");
+            throw new KeyNotFoundException("Staff is not actively assigned to this garden");
 
-        // 3. Remove from garden (hard delete)
-        _context.GardenMembers.Remove(gardenMember);
+        // 3. Set inactive thay vì xóa
+        gardenMember.Status = "Inactive";
         await _context.SaveChangesAsync();
+
+        // 4. Disable tài khoản user
+        var user = await _context.Users.FindAsync(staffId);
+        if (user != null)
+        {
+            user.IsActive = false;
+            await _context.SaveChangesAsync();
+        }
 
         return true;
     }
@@ -191,7 +210,7 @@ public class InvitationService : IInvitationService
             .Include(gm => gm.User)
             .Include(gm => gm.Role)
             .Include(gm => gm.Garden)
-            .Where(gm => gm.GardenId == gardenId)
+            .Where(gm => gm.GardenId == gardenId && gm.Status == "Active")
             .OrderByDescending(gm => gm.CreatedAt)
             .ToListAsync();
 
@@ -205,11 +224,28 @@ public class InvitationService : IInvitationService
             FullName = gm.User?.FullName,
             RoleId = gm.RoleId,
             RoleName = gm.Role.RoleName,
-            Status = "Active",
-            JoinedAt = gm.CreatedAt,
+            Status = gm.Status,
+            CreatedAt = gm.CreatedAt,
             InvitedAt = null,
             InvitedByUserId = null,
             InvitedByName = null
+        }).ToList();
+    }
+
+    public async Task<List<UserDto>> GetInactiveStaffAsync()
+    {
+        var inactiveStaff = await _context.Users
+            .Where(u => u.RoleId == 4 && !u.IsActive) // Staff role = 4, inactive
+            .OrderBy(u => u.FullName)
+            .ToListAsync();
+
+        return inactiveStaff.Select(u => new UserDto
+        {
+            Id = Guid.NewGuid(), // Temporary ID for DTO
+            Username = u.Email, // Use email as username
+            Email = u.Email,
+            FullName = u.FullName,
+            CreatedAt = u.CreatedAt
         }).ToList();
     }
 

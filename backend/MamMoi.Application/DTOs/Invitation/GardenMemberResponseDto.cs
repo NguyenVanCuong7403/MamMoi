@@ -35,7 +35,7 @@ public class GardenMemberResponseDto
     /// <summary>
     /// Khi nào join (NULL nếu pending)
     /// </summary>
-    public DateTime? JoinedAt { get; set; }
+    public DateTime? CreatedAt { get; set; }
     
     /// <summary>
     /// Khi nào được mời (chỉ có nếu là invitation)

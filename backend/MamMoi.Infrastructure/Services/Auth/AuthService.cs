@@ -3,6 +3,7 @@ using MamMoi.Application.Interfaces.Auth;
 using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Security;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Security.Cryptography;
 using System.Text;
@@ -19,17 +20,20 @@ public class AuthService : IAuthService
     private readonly IEmailService _emailService;
     private readonly TokenService _tokenService;
     private readonly IMemoryCache _cache;
+    private readonly CapstoneDb01Context _context;
 
     public AuthService(
         IUserRepository userRepository, 
         IEmailService emailService,
         TokenService tokenService,
-        IMemoryCache cache)
+        IMemoryCache cache,
+        CapstoneDb01Context context)
     {
         _userRepository = userRepository;
         _emailService = emailService;
         _tokenService = tokenService;
         _cache = cache;
+        _context = context;
     }
 
     /// <summary>
@@ -191,9 +195,28 @@ public class AuthService : IAuthService
 
         var userEntity = (User)user;
 
-        // 2. Kiểm tra user đã verify chưa
-        if (userEntity.IsActive)
+        // 2. Kiểm tra tài khoản có bị khóa không
+        if (!userEntity.IsActive)
         {
+            // Nếu là staff và không có vườn active nào → tài khoản bị khóa hoàn toàn
+            if (userEntity.RoleId == 4) // Staff role
+            {
+                var hasActiveGarden = await _context.GardenMembers
+                    .AnyAsync(gm => gm.UserId == userEntity.UserId && gm.Status == "Active");
+                
+                if (!hasActiveGarden)
+                {
+                    throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa. Liên hệ admin để kích hoạt lại.");
+                }
+            }
+            else
+            {
+                // Farmer/Admin chưa verify email → cho phép resend OTP
+            }
+        }
+        else
+        {
+            // Tài khoản đã active → không cần resend OTP
             throw new InvalidOperationException("Email đã được xác thực rồi.");
         }
 
@@ -252,10 +275,10 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Email hoặc mật khẩu không đúng.");
         }
 
-        // 3. Kiểm tra đã verify email chưa
+        // 3. Kiểm tra tài khoản có active không
         if (!userEntity.IsActive)
         {
-            throw new InvalidOperationException("Vui lòng xác thực email trước khi đăng nhập.");
+            throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa. Liên hệ admin để kích hoạt lại.");
         }
 
         // 4. Generate tokens
@@ -430,6 +453,24 @@ public class AuthService : IAuthService
         if (user == null)
         {
             throw new InvalidOperationException("Email không tồn tại trong hệ thống.");
+        }
+
+        var userEntity = (User)user;
+
+        // 1.5. Kiểm tra tài khoản có bị khóa không
+        if (!userEntity.IsActive)
+        {
+            // Nếu là staff và không có vườn active nào → tài khoản bị khóa hoàn toàn
+            if (userEntity.RoleId == 4) // Staff role
+            {
+                var hasActiveGarden = await _context.GardenMembers
+                    .AnyAsync(gm => gm.UserId == userEntity.UserId && gm.Status == "Active");
+                
+                if (!hasActiveGarden)
+                {
+                    throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa. Liên hệ admin để kích hoạt lại.");
+                }
+            }
         }
 
         // 2. Lấy reset token từ cache

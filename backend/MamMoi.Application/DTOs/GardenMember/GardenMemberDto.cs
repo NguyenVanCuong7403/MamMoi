@@ -13,7 +13,7 @@ public class GardenMemberDto
     public int RoleId { get; set; }
     public string RoleName { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
-    public DateTime? JoinedAt { get; set; }
+    public DateTime? CreatedAt { get; set; }
     public DateTime? InvitedAt { get; set; }
     public string? InvitedByName { get; set; }
 }

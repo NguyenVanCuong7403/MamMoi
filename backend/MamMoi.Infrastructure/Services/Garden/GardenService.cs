@@ -2,8 +2,10 @@ using MamMoi.Application.DTOs.Garden;
 using MamMoi.Application.Interfaces;
 using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
+using GardenEntity = MamMoi.Infrastructure.Models.Garden;
+using GardenMemberEntity = MamMoi.Infrastructure.Models.GardenMember;
 
-namespace MamMoi.Infrastructure.Services;
+namespace MamMoi.Infrastructure.Services.Gardens;
 
 /// <summary>
 /// Garden Service - Xử lý business logic cho quản lý vườn
@@ -16,7 +18,7 @@ public class GardenService : IGardenService
     private readonly IGardenMemberRepository _gardenMemberRepository;
 
     public GardenService(
-        IGardenRepository gardenRepository, 
+        IGardenRepository gardenRepository,
         IUserRepository userRepository,
         IGardenMemberRepository gardenMemberRepository)
     {
@@ -47,11 +49,13 @@ public class GardenService : IGardenService
         }
 
         // 3. Tạo Garden entity
-        var garden = new Garden
+        var garden = new GardenEntity
         {
             UserId = userId,
             Name = dto.Name.Trim(),
             Location = dto.Location?.Trim(),
+            TimeZone = dto.TimeZone?.Trim(),
+            ClimateZone = dto.ClimateZone?.Trim(),
             CreatedAt = DateTime.Now
         };
 
@@ -60,7 +64,7 @@ public class GardenService : IGardenService
         var createdGarden = (Garden)createdGardenDynamic;
 
         // 5. Tự động thêm Owner vào GardenMember (RoleId = 3 - Farmer làm Owner)
-        var gardenMember = new GardenMember
+        var gardenMember = new GardenMemberEntity
         {
             GardenId = createdGarden.GardenId,
             UserId = userId,
@@ -102,6 +106,8 @@ public class GardenService : IGardenService
             GardenId = g.GardenId,
             Name = g.Name,
             Location = g.Location,
+            TimeZone = g.TimeZone,
+            ClimateZone = g.ClimateZone,
             CreatedAt = g.CreatedAt,
             TotalTrees = g.Trees?.Count ?? 0,
             IsOwner = g.UserId == userId
@@ -180,6 +186,20 @@ public class GardenService : IGardenService
                 : dto.Location.Trim();
         }
 
+        if (dto.TimeZone != null) // Allow clearing time zone
+        {
+            garden.TimeZone = string.IsNullOrWhiteSpace(dto.TimeZone)
+                ? null
+                : dto.TimeZone.Trim();
+        }
+
+        if (dto.ClimateZone != null) // Allow clearing climate zone
+        {
+            garden.ClimateZone = string.IsNullOrWhiteSpace(dto.ClimateZone)
+                ? null
+                : dto.ClimateZone.Trim();
+        }
+
         // 4. Lưu thay đổi
         await _gardenRepository.UpdateAsync(garden);
 
@@ -194,7 +214,7 @@ public class GardenService : IGardenService
     /// <summary>
     /// Helper: Map Garden entity sang GardenResponseDto với statistics
     /// </summary>
-    private GardenResponseDto MapToResponseDto(Garden garden, int currentUserId)
+    private GardenResponseDto MapToResponseDto(GardenEntity garden, int currentUserId)
     {
         // Calculate statistics
         var totalTrees = garden.Trees?.Count ?? 0;
@@ -212,6 +232,8 @@ public class GardenService : IGardenService
             OwnerName = garden.User?.FullName ?? garden.User?.Email ?? "Unknown",
             Name = garden.Name,
             Location = garden.Location,
+            TimeZone = garden.TimeZone,
+            ClimateZone = garden.ClimateZone,
             CreatedAt = garden.CreatedAt,
             IsOwner = garden.UserId == currentUserId,
             Statistics = new GardenStatistics

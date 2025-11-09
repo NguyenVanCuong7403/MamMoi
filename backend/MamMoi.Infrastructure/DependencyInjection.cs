@@ -7,6 +7,7 @@ using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Repositories;
 using MamMoi.Infrastructure.Security;
+using MamMoi.Infrastructure.Services.Auth;
 
 namespace MamMoi.Infrastructure;
 
@@ -32,9 +33,10 @@ public static class DependencyInjection
         // services.AddScoped<ITreeRepository, TreeRepository>();
 
         // Register application services
-        services.AddScoped<IUserService, MamMoi.Infrastructure.Services.UserService>();
-        services.AddScoped<IGardenService, MamMoi.Infrastructure.Services.GardenService>();
-        services.AddScoped<IInvitationService, MamMoi.Infrastructure.Services.InvitationService>();
+        // services.AddScoped<IUserService, MamMoi.Infrastructure.Services.Users.UserService>(); // Template code, not used
+        services.AddScoped<IGardenService, MamMoi.Infrastructure.Services.Gardens.GardenService>();
+        services.AddScoped<IInvitationService, MamMoi.Infrastructure.Services.Staff.StaffService>();
+        services.AddScoped<IGardenMemberService, MamMoi.Infrastructure.Services.GardenMember.GardenMemberService>();
         
         // Register authentication services
         services.AddScoped<IAuthService, MamMoi.Infrastructure.Services.Auth.AuthService>();

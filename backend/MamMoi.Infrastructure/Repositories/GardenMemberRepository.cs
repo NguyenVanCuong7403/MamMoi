@@ -53,4 +53,17 @@ public class GardenMemberRepository : IGardenMemberRepository
             await _context.SaveChangesAsync();
         }
     }
+
+    /// <summary>
+    /// Get all garden memberships for a user
+    /// </summary>
+    public async Task<List<dynamic>> GetByUserIdAsync(int userId)
+    {
+        var memberships = await _context.GardenMembers
+            .Include(gm => gm.Garden)
+            .Where(gm => gm.UserId == userId)
+            .ToListAsync();
+
+        return memberships.Cast<dynamic>().ToList();
+    }
 }
