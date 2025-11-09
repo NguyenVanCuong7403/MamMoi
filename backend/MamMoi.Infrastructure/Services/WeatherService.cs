@@ -181,7 +181,6 @@ public sealed class WeatherService : IWeatherService
 
         tree.Latitude = (decimal)req.Latitude;
         tree.Longitude = (decimal)req.Longitude;
-        tree.TimeZone = req.TimeZone;
         tree.Location = req.LocationNote;
 
         await _db.SaveChangesAsync(ct);

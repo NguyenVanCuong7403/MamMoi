@@ -102,12 +102,13 @@ public class TreeQueryService : ITreeQueryService
             Page = page,
             PageSize = pageSize
         };
-    }
+    } 
+
 
     public async Task<TreeDetailDto?> GetDetailAsync(int treeId, int? currentUserId, CancellationToken ct = default)
     {
-        // Nếu muốn chỉ xem cây của mình: thêm điều kiện UserId == currentUserId
-        var q = _db.Set<Tree>().AsNoTracking()
+        var q = _db.Set<Tree>()
+            .AsNoTracking()
             .Where(t => t.TreeId == treeId);
 
         if (currentUserId is not null)
@@ -121,16 +122,25 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeId, t.GardenId, t.UserId, t.TreeTypeId, t.StageId,
                 t.TreeCode, t.TreeName, t.PlantDate, t.HeightMeters,
                 t.HealthStatus, t.HealthScore, t.Latitude, t.Longitude, t.Location,
-                t.AltitudeMeters, t.TimeZone, t.ClimateZone,
+
+                // (bỏ AltitudeMeters/TimeZone/ClimateZone của Tree)
+
                 t.LastWateredAt, t.NextWateringAt, t.WateringFrequencyDays, t.LastWateringAmountLiters,
-                t.AutoAdjustWatering, t.MinWateringIntervalDays, t.MaxWateringIntervalDays,
+                t.MinWateringIntervalDays, t.MaxWateringIntervalDays,
                 t.LastFertilizedAt, t.NextFertilizingAt, t.FertilizingFrequencyDays,
-                t.LastFertilizerType, t.LastFertilizerAmountGrams, t.SunlightExposure, t.SoilPh,
-                t.GardenSoilId, t.IsIndoor, t.IsActive, t.IsFruiting, t.ExpectedHarvestDate,
+                t.LastFertilizerType, t.LastFertilizerAmountGrams,
+
+                // (bỏ SunlightExposure/SoilPh/IsIndoor)
+
+                t.GardenSoilId, t.IsActive, t.IsFruiting, t.ExpectedHarvestDate,
                 t.LastHarvestDate, t.TotalHarvestedKg, t.AverageYieldPerYearKg,
                 t.Notes, t.QrcodeUrl, t.CreatedAt, t.UpdatedAt,
-                t.Garden.Name, t.TreeType.TreeTypeName, t.Stage.StageName
+                t.Garden.Name, t.TreeType.TreeTypeName, t.Stage.StageName,
+
+                // ⬇️ map từ Garden
+                t.Garden.TimeZone, t.Garden.ClimateZone
             ))
             .FirstOrDefaultAsync(ct);
     }
+
 }
