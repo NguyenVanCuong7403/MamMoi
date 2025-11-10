@@ -4,6 +4,6 @@ import { useAuth } from "../API/context/AuthContext"
 
 export default function LoginGuard({ children }) {
   const { token } = useAuth();
-  if (!token) return <Navigate to="/login" replace />;
+  if (!token) return <Navigate to="/auth" replace />;
   return children;
 }
