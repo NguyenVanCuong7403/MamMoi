@@ -20,6 +20,8 @@ import {
 
 // Import animated background
 import { LivingBackground } from "@/components/background";
+import { useAuth } from "@/API/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 /**
  * AuthScreen — v3 (polished)
@@ -143,6 +145,7 @@ function LoginForm({ onForgot }) {
   const [acct, setAcct] = useState("");
   const { login, loading } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
