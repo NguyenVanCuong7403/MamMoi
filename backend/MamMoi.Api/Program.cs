@@ -92,9 +92,10 @@ namespace MamMoi.Api
                 app.UseSwaggerUI();
             }
 
-            app.UseHttpsRedirection();
-
+            // CORS phải đặt trước HttpsRedirection
             app.UseCors("AllowAll");
+
+            app.UseHttpsRedirection();
 
             app.UseAuthentication();
             app.UseAuthorization();

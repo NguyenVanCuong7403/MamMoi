@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { LivingBackground } from "@/components/background";
 import {
   Sprout,
   Calendar,
@@ -1079,43 +1080,152 @@ function AsideCards({
   // ===== LỊCH SỬ CÔNG VIỆC ĐÃ HOÀN THÀNH (gom CHÍNH + PHỤ) =====
   const DONE_PAGE_SIZE = 5;
   const completedList = useMemo(() => {
-    const mains = (planned || [])
-      .filter((p) => p.completed && p.completedAt)
-      .map((p) => ({
-        id: `main-${p.id}`,
-        kind: "main",
-        type: p.type,
-        title: p.title,
-        due: p.due,
-        completedAt: p.completedAt,
-        details: p.details,
-        note: p.completedNote || "",
-      }));
-    const aux = (auxTasks || [])
-      .filter((t) => t.completed && t.completedAt)
-      .map((t) => ({
-        id: `aux-${t.id}`,
-        kind: "aux",
-        type: "aux",
-        title: t.title,
-        due: t.due,
-        completedAt: t.completedAt,
-        details: t.details,
-        note: t.completedNote || "",
-      }));
-    const all = [...mains, ...aux];
-    return all.sort((a, b) =>
-      (b.completedAt || "").localeCompare(a.completedAt || "")
-    );
-  }, [planned, auxTasks]);
+  const mains = (planned || [])
+    .filter((p) => p.completed && p.completedAt)
+    .map((p) => ({
+      id: `main-${p.id}`,
+      kind: "main",
+      type: p.type,
+      title: p.title,
+      due: p.due,
+      completedAt: p.completedAt,
+      details: p.details,
+      note: p.completedNote || "",
+    }));
 
-  const [donePage, setDonePage] = useState(1);
-  useEffect(() => setDonePage(1), [completedList.length]); // reset khi danh sách đổi
+  const aux = (auxTasks || [])
+    .filter((t) => t.completed && t.completedAt)
+    .map((t) => ({
+      id: `aux-${t.id}`,
+      kind: "aux",
+      type: "aux",
+      title: t.title,
+      due: t.due,
+      completedAt: t.completedAt,
+      details: t.details,
+      note: t.completedNote || "",
+    }));
 
-  const doneTotal = completedList.length;
-  const doneStart = (donePage - 1) * DONE_PAGE_SIZE;
-  const doneItems = completedList.slice(doneStart, doneStart + DONE_PAGE_SIZE);
-  const doneTotalPages = Math.max(1, Math.ceil(doneTotal / DONE_PAGE_SIZE));
+  const all = [...mains, ...aux];
+  return all.sort((a, b) =>
+    (b.completedAt || "").localeCompare(a.completedAt || "")
+  );
+}, [planned, auxTasks]);
+// Panel state + ref cho "Bộ lọc" (Lịch sử đã hoàn thành)
+const [doneFilterOpen, setDoneFilterOpen] = useState(false);
+const filterRef = useRef(null);
+
+// Đóng panel khi click ra ngoài
+useEffect(() => {
+  function onClickOutside(e) {
+    if (!filterRef.current) return;
+    if (!filterRef.current.contains(e.target)) setDoneFilterOpen(false);
+  }
+  document.addEventListener("mousedown", onClickOutside);
+  return () => document.removeEventListener("mousedown", onClickOutside);
+}, []);
+
+
+  
+    // --- Filters (nhỏ) cho "Lịch sử công việc đã hoàn thành"
+const [doneKind, setDoneKind]   = useState("all");   // all | main | aux
+const [doneType, setDoneType]   = useState("all");   // all | water | fert | pest (chỉ áp cho main)
+const [doneLate, setDoneLate]   = useState("all");   // all | ontime | late | nodue
+const [doneQuery, setDoneQuery] = useState("");      // tìm toàn văn
+const [doneFrom, setDoneFrom] = useState("");
+const [doneTo, setDoneTo] = useState("");
+// Panel "Bộ lọc"
+const doneFiltered = React.useMemo(() => {
+  const q = (doneQuery || "").trim().toLowerCase();
+
+  return (completedList || []).filter((it) => {
+    // Lọc theo loại: all | main | aux
+    if (doneKind !== "all" && it.kind !== doneKind) return false;
+
+    // Lọc theo hạng mục (chỉ áp cho main: water/fert/pest)
+    if (doneKind !== "aux" && doneType !== "all" && it.kind === "main") {
+      if (it.type !== doneType) return false;
+    }
+
+    // Lọc theo trạng thái đúng hạn / trễ hạn / không có hạn
+    if (doneLate !== "all") {
+      const hasDue = !!it.due;
+      const hasComp = !!it.completedAt;
+      const isLate = hasDue && hasComp ? lateDays(it.completedAt, it.due) > 0 : false;
+
+      if (doneLate === "ontime" && (!hasDue || !hasComp || isLate)) return false;
+      if (doneLate === "late"   && !isLate) return false;
+      if (doneLate === "nodue"  && hasDue) return false;
+    }
+
+    // Lọc theo khoảng ngày hoàn thành
+    if (doneFrom && (!it.completedAt || it.completedAt < doneFrom)) return false;
+    if (doneTo   && (!it.completedAt || it.completedAt > doneTo))   return false;
+
+    // Tìm kiếm toàn văn: tiêu đề, ghi chú, chi tiết
+    if (q) {
+      const hay = [
+        it.title || "",
+        it.note || "",
+        Array.isArray(it.details) ? it.details.join(" ") : (it.details || ""),
+      ]
+        .join(" ")
+        .toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+
+    return true;
+  });
+}, [completedList, doneKind, doneType, doneLate, doneFrom, doneTo, doneQuery]);
+
+// Chấm đỏ báo đang có filter hoạt động
+const hasActiveDoneFilter =
+  doneKind !== "all" ||
+  doneType !== "all" ||
+  doneLate !== "all" ||
+  !!doneFrom ||
+  !!doneTo ||
+  !!(doneQuery || "").trim();
+const [donePage, setDonePage] = useState(1);
+useEffect(() => setDonePage(1), [
+  completedList.length, doneKind, doneType, doneLate, doneFrom, doneTo, doneQuery,
+]);
+const doneTotal = doneFiltered.length;
+const doneStart = (donePage - 1) * DONE_PAGE_SIZE;
+const doneItems = doneFiltered.slice(doneStart, doneStart + DONE_PAGE_SIZE);
+const doneTotalPages = Math.max(1, Math.ceil(doneTotal / DONE_PAGE_SIZE));
+
+  
+// ===== PHÂN TRANG VIỆC PHỤ =====
+const AUX_PAGE_SIZE = 5;
+const [auxPage, setAuxPage] = useState(1);
+
+// Order: TODO (due gần nhất trước, không có hạn để cuối) -> DONE (mới nhất trước)
+const auxOrdered = useMemo(() => {
+  const src = Array.isArray(auxTasks) ? auxTasks : [];
+
+  const todo = src
+    .filter(t => !t.completed)
+    .sort((a, b) => {
+      const ad = isYYYYMMDD(a?.due) ? a.due : "9999-12-31";
+      const bd = isYYYYMMDD(b?.due) ? b.due : "9999-12-31";
+      return ad.localeCompare(bd); // gần hạn trước
+    });
+
+  const done = src
+    .filter(t => !!t.completed)
+    .sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || "")); // mới nhất trước
+
+  return [...todo, ...done];
+}, [auxTasks]);
+
+// reset về trang 1 khi số lượng/ordering thay đổi
+useEffect(() => setAuxPage(1), [auxOrdered.length]);
+
+const auxTotal = auxOrdered.length;
+const auxStart = (auxPage - 1) * AUX_PAGE_SIZE;
+const auxItems = auxOrdered.slice(auxStart, auxStart + AUX_PAGE_SIZE);
+const auxTotalPages = Math.max(1, Math.ceil(auxTotal / AUX_PAGE_SIZE));
 
   return (
     <>
@@ -1194,36 +1304,175 @@ function AsideCards({
           <CardTitle>Việc cần làm (Phụ)</CardTitle>
         </CardHeader>
         <CardContent>
-          {auxTasks.length === 0 ? (
-            <div className="text-sm text-neutral-500">Chưa có việc phụ.</div>
-          ) : (
-            <ul className="text-sm space-y-2">
-              {auxTasks.map((t) => (
-                <AuxRow
-                  key={t.id}
-                  t={t}
-                  onEdit={openEditAux}
-                  onComplete={openAuxComplete}
-                  disabled={readOnly}
-                />
-              ))}
-            </ul>
-          )}
-          <div className="text-xs text-neutral-500 mt-3">
-            Các việc hỗ trợ: tỉa cành, dọn cỏ, vệ sinh bồn, buộc cành, che mưa
-            nắng…
-          </div>
-        </CardContent>
+ {auxItems.length === 0 ? (
+  <div className="text-sm text-neutral-500">Chưa có việc phụ.</div>
+) : (
+  <ul className="text-sm space-y-2">
+    {auxItems.map((t) => (
+      <AuxRow
+        key={t.id}
+        t={t}
+        onEdit={openEditAux}
+        onComplete={openAuxComplete}
+        disabled={readOnly}
+      />
+    ))}
+  </ul>
+)}
+
+  {/* Điều hướng trang (giống phần lịch sử) */}
+  <div
+    className={
+      "mt-2 flex items-center text-xs text-neutral-600 " +
+      (auxTotal > AUX_PAGE_SIZE ? "justify-between" : "justify-start")
+    }
+  >
+    <div>
+      Hiển thị {auxTotal === 0 ? 0 : Math.min(auxTotal, auxStart + 1)}–
+      {Math.min(auxTotal, auxStart + auxItems.length)} / {auxTotal}
+    </div>
+
+    {auxTotal > AUX_PAGE_SIZE && (
+      <div className="flex items-center gap-2">
+        <button
+          className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
+          onClick={() => setAuxPage(Math.max(1, auxPage - 1))}
+          disabled={auxPage <= 1}
+        >
+          Trang trước
+        </button>
+
+        <span>{auxPage}/{auxTotalPages}</span>
+
+        <button
+          className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
+          onClick={() => setAuxPage(Math.min(auxTotalPages, auxPage + 1))}
+          disabled={auxPage >= auxTotalPages}
+        >
+          Trang sau
+        </button>
+      </div>
+    )}
+  </div>
+
+  <div className="text-xs text-neutral-500 mt-3">
+    Các việc hỗ trợ: tỉa cành, dọn cỏ, vệ sinh bồn, buộc cành, che mưa nắng…
+  </div>
+</CardContent>
+
       </Card>
 
       {/* Lịch sử công việc ĐÃ hoàn thành (hover popover) */}
       <Card>
-        <CardHeader>
-          <CardTitle>
-            Lịch sử công việc <span className="lowercase">đã</span> hoàn thành
-          </CardTitle>
-        </CardHeader>
+        <CardHeader className="flex items-center justify-between">
+  <CardTitle>
+    Lịch sử công việc <span className="lowercase">đã</span> hoàn thành
+  </CardTitle>
+
+  {/* Nút + panel bộ lọc đặt ngay cạnh tiêu đề */}
+  <div className="relative">
+    <Button
+      variant="outline"
+      className="h-8 px-3"
+      onClick={() => setDoneFilterOpen(v => !v)}
+    >
+      Bộ lọc
+      {hasActiveDoneFilter ? (
+        <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-emerald-600" />
+      ) : null}
+    </Button>
+
+    {doneFilterOpen && (
+      <div
+        ref={filterRef}
+        className="absolute right-0 top-full mt-2 z-[60] w-[560px] max-w-[calc(100vw-4rem)] rounded-2xl border bg-white p-3 shadow-xl"
+      >
+        <div className="text-sm font-medium mb-2">Bộ lọc lịch sử đã hoàn thành</div>
+
+        {/* Hàng 1: Chính/Phụ */}
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+          <div className="flex gap-1">
+            <FilterChip active={doneKind === "all"}  onClick={() => setDoneKind("all")}>Tất cả</FilterChip>
+            <FilterChip active={doneKind === "main"} onClick={() => setDoneKind("main")}>Chính</FilterChip>
+            <FilterChip active={doneKind === "aux"}  onClick={() => setDoneKind("aux")}>Phụ</FilterChip>
+          </div>
+        </div>
+
+        {/* Hàng 2: Selects + Range ngày */}
+        <div className="grid sm:grid-cols-2 gap-2">
+          <select
+            className="h-9 rounded-xl border px-3 bg-white text-sm"
+            value={doneType}
+            onChange={(e) => setDoneType(e.target.value)}
+            title="Hạng mục (chỉ áp cho công việc CHÍNH)"
+            disabled={doneKind === "aux"}
+          >
+            <option value="all">Hạng mục: Tất cả</option>
+            <option value="water">Tưới tiêu</option>
+            <option value="fert">Phân bón</option>
+            <option value="pest">Sâu bệnh</option>
+          </select>
+
+          <select
+            className="h-9 rounded-xl border px-3 bg-white text-sm"
+            value={doneLate}
+            onChange={(e) => setDoneLate(e.target.value)}
+            title="Trạng thái hoàn thành so với hạn"
+          >
+            <option value="all">Tất cả</option>
+            <option value="ontime">Đúng hạn</option>
+            <option value="late">Muộn hạn</option>
+            <option value="nodue">Không có hạn</option>
+          </select>
+
+          <div className="flex items-center gap-2 sm:col-span-2">
+            <input type="date" value={doneFrom} onChange={(e) => setDoneFrom(e.target.value)} className="h-9 w-full rounded-xl border px-3 bg-white text-sm" max="9999-12-31" />
+            <span className="text-neutral-400">→</span>
+            <input type="date" value={doneTo} onChange={(e) => setDoneTo(e.target.value)} className="h-9 w-full rounded-xl border px-3 bg-white text-sm" max="9999-12-31" />
+          </div>
+        </div>
+
+        {/* Hàng 3: Search */}
+        <div className="mt-2">
+          <input
+            className="h-9 w-full rounded-xl border px-3 bg-white text-sm"
+            placeholder="Tìm tiêu đề / ghi chú…"
+            value={doneQuery}
+            onChange={(e) => setDoneQuery(e.target.value)}
+          />
+        </div>
+
+        {/* Hàng 4: Actions */}
+        <div className="mt-3 flex items-center justify-between">
+          <Button
+            variant="outline"
+            className="h-9 px-3"
+            onClick={() => {
+              setDoneKind("all");
+              setDoneType("all");
+              setDoneLate("all");
+              setDoneFrom("");
+              setDoneTo("");
+              setDoneQuery("");
+            }}
+          >
+            Reset
+          </Button>
+
+          <div className="flex gap-2">
+            <Button variant="outline" className="h-9 px-3" onClick={() => setDoneFilterOpen(false)}>Đóng</Button>
+            <Button className="h-9 px-3" onClick={() => setDoneFilterOpen(false)}>Áp dụng</Button>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+</CardHeader>
         <CardContent className="space-y-3">
+          {/* --- Tiny filter bar --- */}
+{/* --- Filter trigger (1 nút mở panel) --- */}
+
+
           {doneItems.length === 0 ? (
             <div className="text-sm text-neutral-500">
               Chưa có công việc đã hoàn thành.
@@ -2032,6 +2281,7 @@ export default function TreeDetail() {
 
   return (
     <div className="min-h-screen bg-transparent isolate overflow-x-hidden">
+      <LivingBackground density={28} baseColor="#1F302F" />
       <main className="mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-10 2xl:px-16 pt-20 md:pt-24 pb-10 space-y-8">
         {/* daily overdue toast */}
         {dailyToast.show && (
@@ -2814,11 +3064,10 @@ export default function TreeDetail() {
             <div
               className="
                 space-y-6
-                xl:sticky xl:top-24
-                xl:max-h-[calc(100vh-120px)]
-                xl:overflow-y-auto
-                xl:pr-2
-              "
+      xl:sticky xl:top-24
+      xl:overflow-visible
+      xl:pr-2
+    "
             >
               <AsideCards
                 image={image}
@@ -3545,3 +3794,4 @@ function pagesanity(total) {
     /* noop */
   }
 }
+

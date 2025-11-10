@@ -1,4 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
+import LivingBackground from "@/components/background/LivingBackground";
+
 import {
   Calendar as CalIcon,
   Image as ImageIcon,
@@ -17,10 +19,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 /**
- * MamMoi — AddTreeNewScreen (UI Revamped, Progress=8 fields, SafeImage + Aurora + Side ornaments)
- * - Giữ NGUYÊN UI/UX & logic.
- * - Thêm “ornaments” 2 bên + dải nền đáy để lấp khoảng trống.
- * - Mở rộng bề ngang container trên màn hình lớn.
+ * MamMoi — AddTreeNewScreen (balanced grid + always visible Flower/Fruit with phase-gated input)
+ * - Thứ tự field (trái→phải rồi xuống): mã cây → loại cây → giống → tuổi trước khi trồng → ngày trồng → mô tả lá → mô tả cành → loại đất → giai đoạn → mô tả hoa → mô tả quả → vườn
+ * - Hoa/Quả luôn HIỆN; chỉ CHO NHẬP khi giai đoạn >= "Ra hoa đậu quả".
+ * - Bỏ các note: "Tự ước tính (từ dữ liệu)...", "(có thể ghi đè)" và note dưới ImagePicker.
+ * - Cân đối lưới: dùng grid-cols-12, mỗi field col-span-3 (xl).
+ * - 4 giai đoạn: 1. Sinh trưởng & phát triển  2. Ra hoa đậu quả  3. Thu hoach  4. Sau thu.
+ * - Progress: khi phase < "Ra hoa đậu quả" không tính Hoa/Quả vào mẫu số; khi phase ≥, thêm 2 field vào mẫu số.
  */
 
 /* ------------------------------ Species & Varieties ------------------------------ */
@@ -37,8 +42,8 @@ const VARIETIES = {
   durian: ["Ri6", "Monthong", "Musang King"],
 };
 
-/* --------------------------- Phase Dictionaries --------------------------- */
-const PHASES = [
+/* --------------------------- Legacy Phase Dictionaries (giữ nguyên để tính toán) --------------------------- */
+const LEGACY_PHASES = [
   "Cây non",
   "Sinh trưởng thân lá",
   "Ra hoa (dự kiến)",
@@ -83,6 +88,24 @@ const SPECIES_RULES = {
     { min: 60, max: 9999, name: "Trước thu/Cho thu" },
   ],
 };
+
+/* --------------------------- 4-Phase hiển thị --------------------------- */
+const PHASES4 = [
+  "Sinh trưởng & phát triển",
+  "Ra hoa đậu quả",
+  "Thu hoach",
+  "Sau thu",
+];
+const PHASE_ORDER = [...PHASES4];
+
+function mapLegacyTo4(name = "") {
+  const s = String(name).toLowerCase();
+  if (/cây non|sinh trưởng thân lá/.test(s)) return "Sinh trưởng & phát triển";
+  if (/ra hoa|đậu|nuôi quả/.test(s)) return "Ra hoa đậu quả";
+  if (/trước thu|cho thu|thu\b/.test(s)) return "Thu hoach";
+  if (/sau thu|phục hồi/.test(s)) return "Sau thu";
+  return "Sinh trưởng & phát triển";
+}
 
 /* --------------------------- Heuristics --------------------------- */
 const REGION_OFFSETS = {
@@ -170,14 +193,14 @@ function pickRules(speciesName) {
   const key = normalizeSpecies(speciesName);
   return SPECIES_RULES[key] || BASE_PHASE_RULES;
 }
-function computePhase({ totalAge, regionTag, speciesName, soil, status }) {
+function computeLegacyPhase({ totalAge, regionTag, speciesName, soil, status }) {
   const shiftRegion = REGION_OFFSETS[regionTag] ?? 0;
   const shiftSoil = soilAdjust(soil);
   const shiftStatus = statusAdjust(status);
   const effective = clamp(totalAge + shiftRegion + shiftSoil + shiftStatus, 0, 9999);
   const rules = pickRules(speciesName);
   const rule = rules.find((r) => effective >= r.min && effective < r.max);
-  return rule ? rule.name : PHASES[1];
+  return rule ? rule.name : LEGACY_PHASES[1];
 }
 
 /* ----------------------- Local image registry (LS) ----------------------- */
@@ -199,58 +222,6 @@ const imageRegistry = {
   },
 };
 
-/* -------------------------- Gardens (DB + fallback) -------------------------- */
-const GARDENS_FALLBACK = [
-  { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
-  { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
-  { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
-];
-
-/* -------------------------------- Utilities -------------------------------- */
-function monthsBetween(aStr, b = new Date()) {
-  if (!aStr) return 0;
-  const a = new Date(aStr + "T00:00:00");
-  let m =
-    (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
-  if (b.getDate() < a.getDate()) m -= 1;
-  return Math.max(0, m);
-}
-function firstLetterVi(s = "") {
-  if (!s.trim()) return "";
-  const ch = s.trim()[0];
-  return ch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
-}
-
-/* ------------------------------ Fancy UI helpers ------------------------------ */
-function StepDot({ active, done, label }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div
-        className={
-          "relative grid place-items-center w-7 h-7 rounded-full border " +
-          (done
-            ? "bg-emerald-600 border-emerald-600 text-white"
-            : active
-            ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-            : "bg-white/70 border-white/60 text-neutral-500")
-        }
-      >
-        <Sprout className={"w-4 h-4 " + (done ? "opacity-100" : "opacity-70")} />
-        {active && (
-          <span className="absolute -z-10 inline-flex h-7 w-7 rounded-full bg-emerald-400/30 animate-ping" />
-        )}
-      </div>
-      <span
-        className={
-          "text-sm " + (done ? "text-white" : active ? "text-emerald-100" : "text-emerald-200")
-        }
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
-
 /* ------------------------------ Safe Image ------------------------------ */
 function normalizeImageUrl(raw = "") {
   if (!raw) return "";
@@ -270,14 +241,11 @@ function normalizeImageUrl(raw = "") {
 function looksBlockedHost(u = "") {
   try {
     const h = new URL(u).hostname;
-    return /(learn-attachment\.microsoft\.com|microsoft\.com|onedrive\.live\.com|sharepoint\.com)/i.test(
-      h
-    );
+    return /(learn-attachment\.microsoft\.com|microsoft\.com|onedrive\.live\.com|sharepoint\.com)/i.test(h);
   } catch {
     return false;
   }
 }
-
 function SafeImage({ src, alt = "", className = "" }) {
   const [url, setUrl] = useState("");
   const [failed, setFailed] = useState(false);
@@ -291,16 +259,11 @@ function SafeImage({ src, alt = "", className = "" }) {
   }, [src]);
 
   function onError() {
-    if (triedRetry) {
-      setFailed(true);
-      return;
-    }
+    if (triedRetry) { setFailed(true); return; }
     setTriedRetry(true);
     if (/drive\.google\.com\/uc\?/.test(url)) {
       setUrl(url.replace("export=view", "export=download"));
-    } else {
-      setFailed(true);
-    }
+    } else setFailed(true);
   }
 
   if (!url || failed) {
@@ -328,8 +291,7 @@ function ImagePicker({ code, value, onChange }) {
     if (!code) return;
     const saved = imageRegistry.get(code);
     if (saved && !value) onChange(saved);
-    // eslint-disable-next-line
-  }, [code]);
+  }, [code]); // eslint-disable-line
 
   function handleFile(e) {
     const f = e.target.files?.[0];
@@ -390,20 +352,34 @@ function ImagePicker({ code, value, onChange }) {
           </Button>
         </div>
       )}
-
-      <div className="text-xs text-neutral-600">Ảnh sẽ hiển thị ở khung Preview và đồng bộ theo mã cây.</div>
     </div>
   );
 }
 
+/* ------------------------------ Header offset helper ----------------------------- */
+function useHeaderOffset(selector = "[data-app-header],[data-header],header") {
+  useEffect(() => {
+    const el = document.querySelector(selector);
+    const apply = () => {
+      const h = el?.offsetHeight || 88;
+      document.documentElement.style.setProperty("--mm-header-h", `${h}px`);
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, [selector]);
+}
+
 /* ------------------------------ Main Screen ------------------------------ */
 export default function AddTreeNewScreen() {
+  useHeaderOffset(); // đẩy trang xuống theo chiều cao header
+
   // States
   const [code, setCode] = useState("");
   const [userEditedCode, setUserEditedCode] = useState(false);
   const [speciesKey, setSpeciesKey] = useState("");
   const [variety, setVariety] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(""); // GIỮ để bảo toàn payload (không render form)
   const [soil, setSoil] = useState("");
   const [gardens, setGardens] = useState([]);
   const [gardenId, setGardenId] = useState("");
@@ -420,6 +396,15 @@ export default function AddTreeNewScreen() {
   const [lastCreatedSpecies, setLastCreatedSpecies] = useState("");
   const [lastCreatedVariety, setLastCreatedVariety] = useState("");
 
+  // Morphology fields
+  const [branchInfo, setBranchInfo] = useState(""); // Cành
+  const [leafInfo, setLeafInfo] = useState("");     // Lá
+  const [flowerInfo, setFlowerInfo] = useState(""); // Hoa
+  const [fruitInfo, setFruitInfo] = useState("");   // Quả
+
+  // Phase override
+  const [phaseOverride, setPhaseOverride] = useState("");
+
   useEffect(() => { setVariety(""); setSoil(""); }, [speciesKey]);
 
   useEffect(() => {
@@ -430,9 +415,25 @@ export default function AddTreeNewScreen() {
         if (!mounted) return;
         if (res.ok) {
           const data = await res.json();
-          setGardens(Array.isArray(data) ? data : GARDENS_FALLBACK);
-        } else setGardens(GARDENS_FALLBACK);
-      } catch { if (mounted) setGardens(GARDENS_FALLBACK); }
+          setGardens(Array.isArray(data) ? data : [
+            { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
+            { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
+            { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
+          ]);
+        } else {
+          setGardens([
+            { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
+            { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
+            { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
+          ]);
+        }
+      } catch {
+        setGardens([
+          { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
+          { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
+          { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
+        ]);
+      }
     })();
     return () => { mounted = false; };
   }, []);
@@ -451,10 +452,20 @@ export default function AddTreeNewScreen() {
     [speciesKey]
   );
 
-  const computedPhase = useMemo(
-    () => computePhase({ totalAge, regionTag, speciesName: speciesKey, soil, status }),
+  // Legacy compute then map to 4-phase
+  const legacyPhase = useMemo(
+    () => computeLegacyPhase({ totalAge, regionTag, speciesName: speciesKey, soil, status }),
     [totalAge, regionTag, speciesKey, soil, status]
   );
+  const defaultPhase4 = useMemo(() => mapLegacyTo4(legacyPhase), [legacyPhase]);
+  const effectivePhase4 = phaseOverride || defaultPhase4;
+
+  // Can edit flower/fruit?
+  const canEditFlowerFruit = useMemo(() => {
+    const idx = PHASE_ORDER.indexOf(effectivePhase4);
+    const gate = PHASE_ORDER.indexOf("Ra hoa đậu quả");
+    return idx >= gate && gate !== -1;
+  }, [effectivePhase4]);
 
   // Auto mã cây
   useEffect(() => {
@@ -483,7 +494,7 @@ export default function AddTreeNewScreen() {
     })();
   }, [speciesKey, variety, speciesLabel, userEditedCode]);
 
-  // Validate submit (GIỮ NGUYÊN: 6 trường)
+  // Validate submit (GIỮ NGUYÊN: 6 trường bắt buộc)
   const REQUIRED_MSG = {
     code: "Vui lòng nhập mã cây (tự gợi ý sau khi chọn Loại + Giống).",
     speciesKey: "Chọn loại cây",
@@ -509,28 +520,31 @@ export default function AddTreeNewScreen() {
     setGardenId(""); setPlantDate(""); setPreAge("");
     setImage(""); setCareGoal(""); setNote(""); setUserIntent("");
     setErrors({});
+    setBranchInfo(""); setLeafInfo(""); setFlowerInfo(""); setFruitInfo("");
+    setPhaseOverride("");
   }
 
   function handleCreate() {
     const e = validateBasic();
     if (Object.keys(e).length) { setErrors(e); return; }
 
-    const createdCode = code;
-    const createdSpecies = speciesLabel;
-    const createdVar = variety;
-
     const payload = {
       code, speciesKey, speciesLabel, variety, status, soil,
       gardenId, gardenName: gardenObj?.name || "",
       plantDate, preAge: preAgeNum, region: regionTag || "",
-      phase: computedPhase, image, careGoal, note, userIntent,
+      legacyPhase, phase4Default: defaultPhase4, phase4Override: phaseOverride || null,
+      phase: effectivePhase4,
+      image, careGoal, note, userIntent,
       ageMonths: totalAge,
+      branchInfo, leafInfo,
+      flowerInfo: canEditFlowerFruit ? flowerInfo : "",
+      fruitInfo:  canEditFlowerFruit ? fruitInfo  : "",
     };
     console.log("Create Tree Payload", payload);
 
-    setLastCreatedCode(createdCode);
-    setLastCreatedSpecies(createdSpecies);
-    setLastCreatedVariety(createdVar);
+    setLastCreatedCode(code);
+    setLastCreatedSpecies(speciesLabel);
+    setLastCreatedVariety(variety);
     setShowSuccess(true);
     setSuccessOpen(true);
     resetAll();
@@ -539,130 +553,63 @@ export default function AddTreeNewScreen() {
 
   const successName = [lastCreatedSpecies, lastCreatedVariety].filter(Boolean).join(" ");
 
-  /* ---------------- Progress = đủ 8 trường thông tin cơ bản ---------------- */
-  const basicChecks = useMemo(
-    () => ({
+  /* ---------------- Progress (động theo gate Hoa/Quả) ---------------- */
+  const progressChecks = useMemo(() => {
+    const base = {
       code: !!code.trim(),
       speciesKey: !!speciesKey,
       variety: !!variety,
-      status: !!status.trim(),
-      plantDate: !!plantDate,
       preAge: preAge !== "",
+      plantDate: !!plantDate,
+      leafInfo: !!leafInfo.trim(),
+      branchInfo: !!branchInfo.trim(),
       soil: !!soil,
+      phase: !!(phaseOverride || defaultPhase4),
       gardenId: !!gardenId,
-    }),
-    [code, speciesKey, variety, status, plantDate, preAge, soil, gardenId]
-  );
+    };
+    if (canEditFlowerFruit) {
+      base.flowerInfo = !!flowerInfo.trim();
+      base.fruitInfo = !!fruitInfo.trim();
+    }
+    return base;
+  }, [
+    code, speciesKey, variety, preAge, plantDate, leafInfo, branchInfo, soil,
+    phaseOverride, defaultPhase4, gardenId, canEditFlowerFruit, flowerInfo, fruitInfo
+  ]);
 
-  const doneCount = Object.values(basicChecks).filter(Boolean).length;
-  const totalCount = Object.keys(basicChecks).length; // 8
-  const progress = Math.round((doneCount / totalCount) * 100);
+  const doneCount = Object.values(progressChecks).filter(Boolean).length;
+  const totalCount = Object.keys(progressChecks).length;
+  const progress = Math.round((doneCount / Math.max(1, totalCount)) * 100);
 
   const infoDone = doneCount >= totalCount;
   const previewDone = Boolean(image);
   const noteDone = Boolean(userIntent);
 
+  /* ------------------------------ UI ------------------------------ */
   return (
     <div
-      className="min-h-screen pt-20 relative overflow-hidden"
-      style={{ backgroundColor: "#1F302F" }}
+      className="min-h-screen relative overflow-hidden"
+      style={{
+        backgroundColor: "#1F302F",
+        paddingTop: "calc(var(--mm-header-h, 88px) + 12px)",
+      }}
     >
-      {/* --- Decorative aurora / spotlights --- */}
-      <style>{`
-  /* Aurora rõ & có chuyển động rất nhẹ */
-  @keyframes mm-aurora-pan {
-    0%   { transform: translateY(-2%) translateX(0);   filter: saturate(115%); }
-    100% { transform: translateY( 2%) translateX(1%);  filter: saturate(130%); }
-  }
-
-  .mm-aurora{
-    position:absolute;inset:-10%;
-    background:
-      radial-gradient(680px 360px at 14% 8%,   rgba(16,185,129,.18),  transparent 60%),
-      radial-gradient(760px 340px at 86% 10%,  rgba(56,189,248,.16),  transparent 60%),
-      radial-gradient(980px 480px at 50% 118%, rgba(250,204,21,.12),  transparent 66%),
-      radial-gradient(540px 300px at 0% 82%,   rgba(16,185,129,.14),  transparent 62%),
-      radial-gradient(560px 300px at 100% 84%, rgba(56,189,248,.14),  transparent 62%);
-    animation: mm-aurora-pan 28s ease-in-out infinite alternate;
-    pointer-events:none;
-  }
-  .mm-aurora:after{
-    content:"";position:absolute;inset:0;pointer-events:none;
-    background:
-      linear-gradient(90deg, rgba(255,255,255,.05), transparent 40%, transparent 60%, rgba(255,255,255,.05)),
-      linear-gradient(rgba(255,255,255,.04), transparent 60%);
-    mask-image: radial-gradient(closest-side, rgba(255,255,255,.6), transparent);
-  }
-
-  /* Lưới mờ (hạt) */
-  .mm-grid:before{
-    content:"";position:absolute;inset:0;pointer-events:none;
-    background-image:
-      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-    background-size:28px 28px;background-position:center;
-    mask-image: radial-gradient(closest-side, rgba(255,255,255,.45), transparent);
-    opacity:.16;
-  }
-
-  /* Vignette hai bên – TĂNG độ rộng & độ tối để dễ thấy */
-  .mm-frame{position:fixed;inset:0;pointer-events:none}
-  .mm-frame:before,.mm-frame:after{
-    content:"";position:absolute;top:0;bottom:0;width:min(30vw, 440px)
-  }
-  .mm-frame:before{
-    left:0;
-    background:linear-gradient(to right, rgba(0,0,0,.34), rgba(31,48,47,0) 62%);
-  }
-  .mm-frame:after{
-    right:0;
-    background:linear-gradient(to left,  rgba(0,0,0,.34), rgba(31,48,47,0) 62%);
-  }
-
-  /* Vignette góc để “ôm” layout hơn (rất nhẹ) */
-  .mm-corners{
-    position:fixed;inset:0;pointer-events:none;
-    background:
-      radial-gradient(600px 420px at -8% -8%, rgba(0,0,0,.28), transparent 60%),
-      radial-gradient(600px 420px at 108% -8%, rgba(0,0,0,.28), transparent 60%),
-      radial-gradient(520px 360px at 0% 100%, rgba(0,0,0,.20), transparent 60%),
-      radial-gradient(520px 360px at 100% 100%, rgba(0,0,0,.20), transparent 60%);
-  }
-
-  /* Dải tối phần đáy để đỡ trống */
-  .mm-bottom{
-    position:fixed;left:0;right:0;bottom:0;height:30vh;pointer-events:none;
-    background:linear-gradient(to top, rgba(9,16,16,.78), rgba(31,48,47,0) 68%);
-  }
-
-  /* Top shine thật mỏng để tách header với nền */
-  .mm-topshine{
-    position:fixed;left:0;right:0;top:0;height:14vh;pointer-events:none;
-    background:linear-gradient(to bottom, rgba(255,255,255,.06), rgba(255,255,255,0));
-    mix-blend-mode:soft-light;
-  }
-
-  /* Noise mịn */
-  .mm-noise{
-    position:fixed;inset:0;pointer-events:none;opacity:.05;
-    background-image: radial-gradient(rgba(255,255,255,.6) 1px, transparent 1px);
-    background-size:2px 2px;mix-blend-mode:overlay;
-  }
-`}</style>
-
-
-<div className="mm-aurora" />
-<div className="mm-grid absolute inset-0" />
-<div className="mm-frame" aria-hidden />
-<div className="mm-corners" aria-hidden />   {/* <-- thêm */}
-<div className="mm-topshine" aria-hidden />  {/* <-- thêm */}
-<div className="mm-bottom" aria-hidden />
-<div className="mm-noise" aria-hidden />
+      {/* Background */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <LivingBackground
+          theme="aurora"
+          baseColor="#1F302F"
+          accents={["#10b981", "#38bdf8", "#facc15"]}
+          density={40}
+          grain={0.06}
+          blur={14}
+          speed={28}
+        />
+      </div>
 
       {/* Header */}
       <section className="relative">
-        {/* NEW: mở rộng bề ngang trên màn hình lớn */}
-        <div className="mx-auto max-w-7xl xl:max-w-[1320px] 2xl:max-w-[1500px] px-4 sm:px-6 lg:px-8 pb-3">
+        <div className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 pb-3">
           <div className="flex items-center gap-2 text-emerald-100/80 text-xs">
             <span className="opacity-80">Mầm Mới</span>
             <span className="opacity-40">/</span>
@@ -677,7 +624,7 @@ export default function AddTreeNewScreen() {
                 Thêm cây mới
               </h1>
               <p className="text-emerald-100/80 text-sm mt-1">
-                Điền thông tin cơ bản, tải ảnh và bổ sung ghi chú cho AI. Hệ thống sẽ gợi ý mã cây & ước tính giai đoạn sinh trưởng.
+                Điền thông tin cơ bản, tải ảnh và bổ sung ghi chú cho AI.
               </p>
             </div>
 
@@ -688,7 +635,7 @@ export default function AddTreeNewScreen() {
                 <StepDot label="Ảnh & Preview" active={infoDone && !previewDone} done={previewDone} />
                 <StepDot label="Ghi chú" active={true} done={noteDone} />
               </div>
-              <div className="w-[320px] h-2 rounded-full bg-white/10 overflow-hidden ring-1 ring-white/10">
+              <div className="w-[360px] h-2 rounded-full bg-white/10 overflow-hidden ring-1 ring-white/10">
                 <div
                   className="h-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-sky-400 transition-all duration-500"
                   style={{ width: `${Math.max(8, progress)}%` }}
@@ -701,10 +648,10 @@ export default function AddTreeNewScreen() {
       </section>
 
       {/* Main */}
-      <main className="mx-auto max-w-7xl xl:max-w-[1320px] 2xl:max-w-[1500px] px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        <div className="grid lg:grid-cols-3 gap-6 items-start">
+      <main className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 py-6 space-y-6">
+        <div className="grid lg:grid-cols-12 gap-6 items-start">
           {/* LEFT – form */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-8 space-y-6">
             <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
               <CardHeader className="pb-3">
                 <CardTitle className="flex items-center gap-2">
@@ -715,15 +662,16 @@ export default function AddTreeNewScreen() {
                 </CardTitle>
               </CardHeader>
 
-              <CardContent className="grid md:grid-cols-2 gap-6 text-sm">
-                {/* Mã cây */}
-                <div className="grid gap-1">
+              {/* Balanced grid: 12 cols, mỗi field chiếm 3 cols ở xl */}
+              <CardContent className="grid grid-cols-12 gap-5 text-sm">
+                {/* 1. Mã cây */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
                   <Label htmlFor="code" className="text-neutral-700">Mã cây</Label>
                   <div className="relative">
                     <Input
                       id="code"
                       value={code}
-                      placeholder="Mã cây là định danh duy nhất để quản lý (VD: BD-03). Hệ thống sẽ tự gợi ý sau khi chọn Loại + Giống."
+                      placeholder="Mã cây duy nhất (VD: BD-03)."
                       onChange={(e) => {
                         setCode(e.target.value);
                         setUserEditedCode(true);
@@ -740,8 +688,8 @@ export default function AddTreeNewScreen() {
                   {errors.code && <p className="text-xs text-red-500 mt-1">{errors.code}</p>}
                 </div>
 
-                {/* Loại cây */}
-                <div className="grid gap-1">
+                {/* 2. Loại cây */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
                   <Label className="text-neutral-700">Loại cây</Label>
                   <select
                     value={speciesKey}
@@ -761,8 +709,8 @@ export default function AddTreeNewScreen() {
                   {errors.speciesKey && <p className="text-xs text-red-500 mt-1">{errors.speciesKey}</p>}
                 </div>
 
-                {/* Giống */}
-                <div className="grid gap-1">
+                {/* 3. Giống */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
                   <Label className="text-neutral-700">Giống</Label>
                   <select
                     value={variety}
@@ -784,19 +732,23 @@ export default function AddTreeNewScreen() {
                   {errors.variety && <p className="text-xs text-red-500 mt-1">{errors.variety}</p>}
                 </div>
 
-                {/* Tình trạng */}
-                <div className="grid gap-1">
-                  <Label className="text-neutral-700">Tình trạng hiện tại</Label>
-                  <Input
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    placeholder="VD: lá vàng nhẹ, sinh trưởng ổn…"
-                    className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500"
-                  />
+                {/* 4. Tuổi trước khi trồng */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                  <Label className="text-neutral-700">Tuổi trước khi trồng (tháng)</Label>
+                  <div className="relative">
+                    <Input
+                      type="number"
+                      min={0}
+                      value={preAge}
+                      onChange={(e) => setPreAge(e.target.value)}
+                      className="rounded-xl h-11 pr-12 w-full bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
+                    />
+                    <span className="absolute right-3 top-2.5 text-sm text-neutral-600">tháng</span>
+                  </div>
                 </div>
 
-                {/* Ngày trồng */}
-                <div className="grid gap-1">
+                {/* 5. Ngày trồng */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
                   <Label className="text-neutral-700">Ngày trồng</Label>
                   <div className="relative">
                     <Input
@@ -815,27 +767,31 @@ export default function AddTreeNewScreen() {
                   {errors.plantDate && <p className="text-xs text-red-500 mt-1">{errors.plantDate}</p>}
                 </div>
 
-                {/* Tuổi trước khi trồng */}
-                <div className="grid gap-1">
-                  <Label className="text-neutral-700">Tuổi trước khi trồng (tháng)</Label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={preAge}
-                      onChange={(e) => setPreAge(e.target.value)}
-                      className="rounded-xl h-11 pr-12 w-full bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
-                    />
-                    <span className="absolute right-3 top-2.5 text-sm text-neutral-600">tháng</span>
-                  </div>
+                {/* 6. Mô tả tình trạng lá */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                  <Label className="text-neutral-700">Mô tả tình trạng lá</Label>
+                  <Input
+                    value={leafInfo}
+                    onChange={(e) => setLeafInfo(e.target.value)}
+                    placeholder="VD: lá xanh tốt, vàng nhẹ, sâu…"
+                    className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500"
+                  />
                 </div>
 
-                {/* Loại đất */}
-                <div className="grid gap-1">
+                {/* 7. Mô tả tình trạng cành */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                  <Label className="text-neutral-700">Mô tả tình trạng cành</Label>
+                  <Input
+                    value={branchInfo}
+                    onChange={(e) => setBranchInfo(e.target.value)}
+                    placeholder="Tình trạng cành, ..."
+                    className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500"
+                  />
+                </div>
+
+                {/* 8. Loại đất */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
                   <Label className="text-neutral-700">Loại đất</Label>
-                  <div className="text-xs text-neutral-500">
-                    Hãy chọn loại đất <b>THỰC TẾ</b> bạn đang trồng.
-                  </div>
                   <select
                     value={soil}
                     onChange={(e) => {
@@ -854,21 +810,50 @@ export default function AddTreeNewScreen() {
                     ))}
                   </select>
                   {errors.soil && <p className="text-xs text-red-500 mt-1">{errors.soil}</p>}
-                  {speciesKey && soilKB?.recommend && (
-                    <div className="mt-1 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
-                      <div className="text-xs text-emerald-900">
-                        <span className="font-medium">Gợi ý:</span> Cây {speciesShortVi(speciesKey)} nên trồng với{" "}
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
-                          {soilKB.options?.[0] || "đất phù hợp"}
-                        </span>{" "}
-                        để phát triển tốt nhất.
-                      </div>
-                    </div>
-                  )}
                 </div>
 
-                {/* Vườn */}
-                <div className="grid gap-1">
+                {/* 9. Giai đoạn */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                  <Label className="text-neutral-700">Giai đoạn</Label>
+                  <select
+                    value={phaseOverride || defaultPhase4}
+                    onChange={(e) => setPhaseOverride(e.target.value)}
+                    className="h-11 rounded-xl border bg-white px-3 text-sm appearance-none border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
+                  >
+                    {PHASES4.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 10. Mô tả tình trạng hoa (always visible, gated) */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                  <Label className="text-neutral-700">Mô tả tình trạng hoa</Label>
+                  <Input
+                    value={flowerInfo}
+                    onChange={(e) => setFlowerInfo(e.target.value)}
+                    disabled={!canEditFlowerFruit}
+                    placeholder="Mô tả tình trạng, tỉ lệ ra hoa, ..."
+                    className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500
+                      border-neutral-300 ${!canEditFlowerFruit ? "opacity-60 cursor-not-allowed" : ""}`}
+                  />
+                </div>
+
+                {/* 11. Mô tả tình trạng quả (always visible, gated) */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                  <Label className="text-neutral-700">Mô tả tình trạng quả</Label>
+                  <Input
+                    value={fruitInfo}
+                    onChange={(e) => setFruitInfo(e.target.value)}
+                    disabled={!canEditFlowerFruit}
+                    placeholder="Số lượng, kích thước, tình trạng, ..."
+                    className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500
+                      border-neutral-300 ${!canEditFlowerFruit ? "opacity-60 cursor-not-allowed" : ""}`}
+                  />
+                </div>
+
+                {/* 12. Vườn */}
+                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
                   <Label htmlFor="garden" className="text-neutral-700">Vườn</Label>
                   <select
                     id="garden"
@@ -893,6 +878,13 @@ export default function AddTreeNewScreen() {
                     </div>
                   )}
                 </div>
+
+                {/* NOTE cuối card */}
+                <div className="col-span-12">
+                  <div className="mt-1 pt-3 border-t text-xs text-neutral-600 italic">
+                    Các trường thông tin mô tả không điền sẽ mặc định là bình thường.
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -903,13 +895,11 @@ export default function AddTreeNewScreen() {
               </CardHeader>
               <CardContent className="text-sm text-neutral-700">
                 <ol className="list-decimal ml-5 space-y-1">
-                  <li><b>Mã cây</b> tự gợi ý sau khi chọn <b>Loại</b> & <b>Giống</b>; bạn có thể chỉnh tay.</li>
-                  <li>Chọn <b>Loại cây</b> → mở khóa <b>Giống</b>.</li>
-                  <li><b>Ngày trồng</b> là ngày thực tế để ước tính giai đoạn.</li>
-                  <li><b>Tuổi trước khi trồng</b> không bắt buộc.</li>
-                  <li>Chọn <b>Vườn</b> để hệ thống suy <b>miền khí hậu</b>.</li>
-                  <li>Chọn <b>Loại đất</b> thực tế (sẽ có gợi ý theo loài).</li>
-                  <li>Thêm <b>Ảnh</b> (upload/link) — đồng bộ theo <b>mã cây</b>.</li>
+                  <li><b>Mã cây</b> tự gợi ý sau khi chọn <b>Loại</b> & <b>Giống</b>; có thể chỉnh tay.</li>
+                  <li>Nhập <b>Tuổi trước khi trồng</b> (tháng) và <b>Ngày trồng</b> để ước tính tuổi tổng.</li>
+                  <li><b>Mô tả lá/cành</b> giúp AI hiểu cây; nếu bỏ trống, hệ thống hiểu là <i>bình thường</i>.</li>
+                  <li><b>Giai đoạn</b> quyết định khả năng nhập <b>Hoa</b>/<b>Quả</b>: khi giai đoạn <b>≥ Ra hoa đậu quả</b> mới cho nhập.</li>
+                  <li>Chọn <b>Vườn</b> để suy ra <b>miền khí hậu</b>; <b>Loại đất</b> nên chọn đúng thực tế.</li>
                 </ol>
               </CardContent>
             </Card>
@@ -934,29 +924,32 @@ export default function AddTreeNewScreen() {
 
             {/* Action bar dính */}
             <div className="sticky bottom-4 z-30">
-  <div className="flex justify-end gap-3">
-    <Button
-      className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
-      onClick={handleCreate}
-    >
-      <CheckCircle2 className="w-4 h-4 mr-1" />
-      Tạo cây
-    </Button>
+              <div className="flex justify-end gap-3">
+                <Button
+                  className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+                  onClick={handleCreate}
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                  Tạo cây
+                </Button>
 
-    <Button
-      type="button"
-      variant="outline"
-      onClick={resetAll}
-      className="rounded-xl bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100"
-    >
-      Xóa nội dung
-    </Button>
-  </div>
-</div>
-</div>        
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={resetAll}
+                  className="rounded-xl bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100"
+                >
+                  Xóa nội dung
+                </Button>
+              </div>
+            </div>
+          </div>
 
           {/* RIGHT – preview */}
-          <div className="space-y-6 lg:sticky lg:top-24">
+          <div
+            className="lg:col-span-4 space-y-6 lg:sticky"
+            style={{ top: "calc(var(--mm-header-h, 88px) + 8px)" }}
+          >
             <Card className="rounded-2xl overflow-hidden bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
               <CardHeader className="pb-3">
                 <CardTitle>Ảnh & Preview</CardTitle>
@@ -964,9 +957,9 @@ export default function AddTreeNewScreen() {
               <CardContent className="space-y-4">
                 <ImagePicker code={code} value={image} onChange={setImage} />
                 <div className="rounded-xl border bg-white overflow-hidden ring-1 ring-black/5">
-                  <div className="h-44 w-full bg-neutral-100 grid place-items-center">
+                  <div className="h-52 w-full bg-neutral-100 grid place-items-center">
                     {image && image.trim() ? (
-                      <SafeImage src={image} alt="tree" className="w-full h-44 object-cover" />
+                      <SafeImage src={image} alt="tree" className="w-full h-52 object-cover" />
                     ) : (
                       <ImageIcon className="h-7 w-7 text-neutral-400" />
                     )}
@@ -975,11 +968,11 @@ export default function AddTreeNewScreen() {
                     <div className="flex items-center justify-between">
                       <div className="font-semibold">{speciesLabel || "Chưa đặt tên"}</div>
                       <Badge className="rounded-full bg-emerald-600 text-white border-emerald-600 shadow">
-                        {computedPhase}
+                        {effectivePhase4}
                       </Badge>
                     </div>
 
-                    {/* FIX parse: tách text trong chip */}
+                    {/* Chips */}
                     <div className="flex flex-wrap gap-2 text-xs mt-1">
                       <span className="inline-flex items-center rounded-full border px-2 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200">
                         <span>Tổng tuổi:</span>
@@ -1003,7 +996,10 @@ export default function AddTreeNewScreen() {
                       <Field label="Tuổi" value={`${totalAge} tháng`} />
                       <Field label="Vườn" value={gardenObj?.name || "—"} />
                       <Field label="Giống" value={variety || "—"} />
-                      <Field label="Trạng thái" value={status || "—"} />
+                      {branchInfo ? <Field label="Cành" value={branchInfo} /> : null}
+                      {leafInfo ? <Field label="Lá" value={leafInfo} /> : null}
+                      {canEditFlowerFruit && flowerInfo ? <Field label="Hoa" value={flowerInfo} /> : null}
+                      {canEditFlowerFruit && fruitInfo ? <Field label="Quả" value={fruitInfo} /> : null}
                     </div>
                   </div>
                 </div>
@@ -1024,7 +1020,6 @@ export default function AddTreeNewScreen() {
                   <li>Dropdown <b>không cho gõ text</b> — hãy chọn trong danh sách.</li>
                   <li>Trường bị mờ là do phụ thuộc: <b>Giống</b> & <b>Loại đất</b> chỉ mở sau khi chọn <b>Loại cây</b>.</li>
                   <li><b>Ngày trồng</b> dùng để ước tính tuổi & giai đoạn.</li>
-                  <li>Nếu loại đất không có trong danh sách, chọn loại gần nhất và ghi chi tiết ở <b>Ghi chú bổ sung</b>.</li>
                 </ul>
               </CardContent>
             </Card>
@@ -1112,6 +1107,46 @@ export default function AddTreeNewScreen() {
 }
 
 /* ------------------------------- Helpers ------------------------------- */
+function StepDot({ active, done, label }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className={
+          "relative grid place-items-center w-7 h-7 rounded-full border " +
+          (done
+            ? "bg-emerald-600 border-emerald-600 text-white"
+            : active
+            ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+            : "bg-white/70 border-white/60 text-neutral-500")
+        }
+      >
+        <Sprout className={"w-4 h-4 " + (done ? "opacity-100" : "opacity-70")} />
+        {active && (
+          <span className="absolute -z-10 inline-flex h-7 w-7 rounded-full bg-emerald-400/30 animate-ping" />
+        )}
+      </div>
+      <span
+        className={
+          "text-sm " + (done ? "text-white" : active ? "text-emerald-100" : "text-emerald-200")
+        }
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+function monthsBetween(aStr, b = new Date()) {
+  if (!aStr) return 0;
+  const a = new Date(aStr + "T00:00:00");
+  let m = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+  if (b.getDate() < a.getDate()) m -= 1;
+  return Math.max(0, m);
+}
+function firstLetterVi(s = "") {
+  if (!s.trim()) return "";
+  const ch = s.trim()[0];
+  return ch.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+}
 function Field({ label, value }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-start sm:gap-2">

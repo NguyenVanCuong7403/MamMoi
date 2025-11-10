@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import TreeRepository from "../api/repositories/TreeRepository";
+import TreeRepository from "../API/repositories/TreeRepository";
 
 export default function TreeList() {
   const [trees, setTrees] = useState([]);
