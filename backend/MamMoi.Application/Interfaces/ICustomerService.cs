@@ -1,4 +1,5 @@
-﻿using MamMoi.Application.DTOs;
+﻿using MamMoi.Application.DTOs.BusinessAdminDto;
+using MamMoi.Application.DTOs.SystemAdminDto;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

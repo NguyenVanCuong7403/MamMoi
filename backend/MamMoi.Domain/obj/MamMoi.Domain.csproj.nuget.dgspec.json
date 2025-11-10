@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj": {}
+    "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj": {}
   },
   "projects": {
-    "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj": {
+    "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj",
+        "projectUniqueName": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj",
         "projectName": "MamMoi.Domain",
-        "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj",
+        "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj",
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-        "outputPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\obj\\",
+        "outputPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",

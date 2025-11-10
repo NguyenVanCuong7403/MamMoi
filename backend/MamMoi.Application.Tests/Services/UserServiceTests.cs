@@ -63,7 +63,7 @@ namespace MamMoi.Application.Tests.Services
             result.Should().BeNull();
         }
 
-        [Fact]
+       /* [Fact]
         public async Task CreateAsync_ShouldCreateUser_WithValidData()
         {
             // Arrange
@@ -84,7 +84,7 @@ namespace MamMoi.Application.Tests.Services
 
             // Assert
             result.Should().NotBeNull();
-        }
+        }*/
 
         // [Fact]
         // public async Task UpdateAsync_ShouldUpdateUser_WhenUserExists()

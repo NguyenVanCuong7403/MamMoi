@@ -1,18 +1,19 @@
-﻿using MamMoi.Application.DTOs;
+﻿using MamMoi.Application.DTOs.BusinessAdminDto;
+using MamMoi.Application.DTOs.SystemAdminDto;
 using MamMoi.Application.Interfaces;
-using MamMoi.Infrastructure.Models; 
-using Microsoft.EntityFrameworkCore; 
+using MamMoi.Infrastructure.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace MamMoi.Infrastructure.Services
+namespace MamMoi.Infrastructure.Services.BusinessAdminServices
 {
+
     public class CustomerService : ICustomerService
     {
         private readonly CapstoneDbContext _context;
 
-     
         public CustomerService(CapstoneDbContext context)
         {
             _context = context;
@@ -23,14 +24,13 @@ namespace MamMoi.Infrastructure.Services
             string? email,
             bool? isActive)
         {
-            
+
             var query = _context.Users
                 .Include(u => u.Role)
                 .AsQueryable();
 
             query = query.Where(u => _context.Payments.Any(p => p.UserId == u.UserId));
 
- 
             if (!string.IsNullOrWhiteSpace(searchName))
             {
                 query = query.Where(u => u.FullName.ToLower().Contains(searchName.Trim().ToLower()));
@@ -45,13 +45,13 @@ namespace MamMoi.Infrastructure.Services
             }
 
             var customers = await query
-                .OrderBy(u => u.FullName) 
+                .OrderBy(u => u.FullName)
                 .AsNoTracking()
                 .ToListAsync();
 
             return customers.Select(user => new UserDto
             {
-                Id = new Guid(user.UserId, (short)0, (short)0, new byte[8]),
+                Id = new Guid(user.UserId, 0, 0, new byte[8]),
                 Email = user.Email,
                 FullName = user.FullName,
                 CreatedAt = user.CreatedAt,
@@ -61,7 +61,7 @@ namespace MamMoi.Infrastructure.Services
 
         public async Task<CustomerDetailDto?> GetCustomerDetailsAsync(int userId)
         {
-            
+
             var user = await _context.Users
                 .Include(u => u.Role)
                 .AsNoTracking()
@@ -69,11 +69,7 @@ namespace MamMoi.Infrastructure.Services
                     u.UserId == userId &&
                     _context.Payments.Any(p => p.UserId == u.UserId)
                 );
-
-            if (user == null)
-            {
-                return null;
-            }
+            if (user == null) return null;
 
             var payments = await _context.Payments
                 .Where(p => p.UserId == userId)
@@ -82,12 +78,13 @@ namespace MamMoi.Infrastructure.Services
                 .ToListAsync();
 
             var subscriptions = await _context.Subscriptions
+                .Include(s => s.Plan)
                 .Where(s => s.UserId == userId)
                 .OrderByDescending(s => s.StartDate)
                 .AsNoTracking()
                 .ToListAsync();
 
-            
+
             var customerDetail = new CustomerDetailDto
             {
                 UserId = user.UserId,
@@ -96,11 +93,10 @@ namespace MamMoi.Infrastructure.Services
                 Phone = user.Phone,
                 Address = user.Address,
                 ProfileImageUrl = user.ProfileImageUrl,
-                IsActive = user.IsActive, 
+                IsActive = user.IsActive,
                 RoleName = user.Role?.RoleName ?? "N/A",
                 CreatedAt = user.CreatedAt,
                 LastLoginAt = user.LastLoginAt,
-
 
                 Payments = payments.Select(p => new CustomerDetailDto.PaymentHistoryDto
                 {
@@ -116,16 +112,18 @@ namespace MamMoi.Infrastructure.Services
                 Subscriptions = subscriptions.Select(s => new CustomerDetailDto.SubscriptionHistoryDto
                 {
                     SubscriptionID = s.SubscriptionId,
-                    PlanName = s.PlanName,
                     Status = s.Status,
                     StartDate = s.StartDate,
                     EndDate = s.EndDate,
-                    Price = s.Price
+
+                    PlanName = s.Plan?.PlanName ?? "N/A",
+                    Price = s.Plan?.Price ?? 0
                 }).ToList()
             };
 
             return customerDetail;
         }
+
         public async Task<IEnumerable<ActivityLogDto>?> GetCustomerActivityLogsAsync(int userId)
         {
 
@@ -135,14 +133,14 @@ namespace MamMoi.Infrastructure.Services
 
             if (!isCustomer)
             {
-                return null; 
+                return null;
             }
 
             var logs = await _context.ActivityLogs
                 .Where(log => log.UserId == userId)
                 .AsNoTracking()
-                .OrderByDescending(log => log.CreatedAt) 
-                .Select(log => new ActivityLogDto 
+                .OrderByDescending(log => log.CreatedAt)
+                .Select(log => new ActivityLogDto
                 {
                     LogID = log.LogId,
                     CreatedAt = log.CreatedAt,

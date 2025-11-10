@@ -1,4 +1,4 @@
-﻿namespace MamMoi.Application.DTOs
+﻿namespace MamMoi.Application.DTOs.SystemAdminDto
 {
     public class ActivityLogDto
     {

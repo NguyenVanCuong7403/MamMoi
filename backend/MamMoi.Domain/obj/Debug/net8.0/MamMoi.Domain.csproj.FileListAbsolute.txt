@@ -10,3 +10,15 @@ D:\prn231\Đồ án\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.dll
 D:\prn231\Đồ án\backend\MamMoi.Domain\obj\Debug\net8.0\refint\MamMoi.Domain.dll
 D:\prn231\Đồ án\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.pdb
 D:\prn231\Đồ án\backend\MamMoi.Domain\obj\Debug\net8.0\ref\MamMoi.Domain.dll
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\bin\Debug\net8.0\MamMoi.Domain.deps.json
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\bin\Debug\net8.0\MamMoi.Domain.dll
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\bin\Debug\net8.0\MamMoi.Domain.pdb
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.AssemblyInfoInputs.cache
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.AssemblyInfo.cs
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.csproj.CoreCompileInputs.cache
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.sourcelink.json
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.dll
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\refint\MamMoi.Domain.dll
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\MamMoi.Domain.pdb
+D:\prn231\Đồ án\MamMoi\backend\MamMoi.Domain\obj\Debug\net8.0\ref\MamMoi.Domain.dll

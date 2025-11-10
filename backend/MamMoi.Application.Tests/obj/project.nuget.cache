@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "VQ2wurV5UsA=",
+  "dgSpecHash": "Gq/TnuTWW78=",
   "success": true,
-  "projectFilePath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application.Tests\\MamMoi.Application.Tests.csproj",
+  "projectFilePath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application.Tests\\MamMoi.Application.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\admin\\.nuget\\packages\\castle.core\\5.1.1\\castle.core.5.1.1.nupkg.sha512",
     "C:\\Users\\admin\\.nuget\\packages\\coverlet.collector\\6.0.2\\coverlet.collector.6.0.2.nupkg.sha512",

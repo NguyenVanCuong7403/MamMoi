@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace MamMoi.Application.DTOs
+namespace MamMoi.Application.DTOs.BusinessAdminDto
 {
 
     public class CustomerDetailDto
     {
         // 1. Thông tin cá nhân (Từ Users)
         public int UserId { get; set; }
-        public string Email { get; set; }
-        public string FullName { get; set; }
+        public string? Email { get; set; }
+        public string? FullName { get; set; }
         public string? Phone { get; set; }
         public string? Address { get; set; }
         public string? ProfileImageUrl { get; set; }
@@ -45,10 +45,10 @@ namespace MamMoi.Application.DTOs
         public class SubscriptionHistoryDto
         {
             public int SubscriptionID { get; set; }
-            public string PlanName { get; set; }
-            public string Status { get; set; }
-            public DateOnly StartDate { get; set; } // Dùng DateOnly vì kiểu DATE trong DB
-            public DateOnly? EndDate { get; set; } // Dùng DateOnly? vì kiểu DATE trong DB
+            public string? PlanName { get; set; }
+            public string? Status { get; set; }
+            public DateOnly StartDate { get; set; }
+            public DateOnly? EndDate { get; set; }
             public decimal Price { get; set; }
         }
     }

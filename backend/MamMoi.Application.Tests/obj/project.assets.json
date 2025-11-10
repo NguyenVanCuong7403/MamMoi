@@ -1197,11 +1197,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application.Tests\\MamMoi.Application.Tests.csproj",
+      "projectUniqueName": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application.Tests\\MamMoi.Application.Tests.csproj",
       "projectName": "MamMoi.Application.Tests",
-      "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application.Tests\\MamMoi.Application.Tests.csproj",
+      "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application.Tests\\MamMoi.Application.Tests.csproj",
       "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-      "outputPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application.Tests\\obj\\",
+      "outputPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -1219,8 +1219,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\MamMoi.Application.csproj": {
-              "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\MamMoi.Application.csproj"
+            "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj": {
+              "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj"
             }
           }
         }

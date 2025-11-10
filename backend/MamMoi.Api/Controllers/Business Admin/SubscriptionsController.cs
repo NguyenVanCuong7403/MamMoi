@@ -1,5 +1,5 @@
-﻿using MamMoi.Application.DTOs;
-using MamMoi.Application.Interfaces; 
+﻿using MamMoi.Application.DTOs.BusinessAdminDto;
+using MamMoi.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading.Tasks;
@@ -8,7 +8,7 @@ namespace MamMoi.Api.Controllers
 {
     [ApiController]
     [Route("api/subscriptions")]
-    [Authorize(Roles = "Business Admin")] 
+    //[Authorize(Roles = "Business Admin")] 
     public class SubscriptionsController : ControllerBase
     {
         private readonly ISubscriptionService _subscriptionService;
@@ -73,6 +73,28 @@ namespace MamMoi.Api.Controllers
                 return NotFound();
             }
             return NoContent(); 
+        }
+
+        [HttpPut("{id}/change-plan")]
+        [ProducesResponseType(typeof(SubscriptionDto), 200)] // Trả về Gói Mới
+        [ProducesResponseType(400)] // Bad Request
+        [ProducesResponseType(404)] // Not Found
+        public async Task<IActionResult> ChangePlan(
+            int id,
+            [FromBody] SubscriptionChangePlanDto dto)
+        {
+            var newSubscription = await _subscriptionService.ChangeSubscriptionPlanAsync(
+                id, // oldSubscriptionId
+                dto.NewPlanId
+            );
+
+            if (newSubscription == null)
+            return BadRequest(new
+            {
+                Message = "Cannot change plan. Old subscription not found, not active, or new plan ID invalid."
+            });
+
+            return Ok(newSubscription);
         }
     }
 }

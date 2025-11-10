@@ -6,7 +6,8 @@ using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Repositories;
 using MamMoi.Infrastructure.Security;
-using MamMoi.Infrastructure.Services;
+using MamMoi.Infrastructure.Services.SystemAdminServices;
+using MamMoi.Infrastructure.Services.BusinessAdminServices;
 
 namespace MamMoi.Infrastructure;
 
@@ -32,12 +33,14 @@ public static class DependencyInjection
         // services.AddScoped<ITreeRepository, TreeRepository>();
 
         // Register application services
-        services.AddScoped<IUserService, MamMoi.Infrastructure.Services.UserService>();
+        services.AddScoped<IUserService, UserService>();
         services.AddScoped<ISystemSettingService, SystemSettingService>();
         services.AddScoped<IActivityLogService, ActivityLogService>();
         services.AddScoped<IDashboardService, DashboardService>();
         services.AddScoped<ICustomerService, CustomerService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
+        services.AddScoped<IPaymentService, PaymentService>();
+        services.AddScoped<ISubscriptionPlanService, SubscriptionPlanService>();
         // Register infrastructure services
         services.AddScoped<TokenService>();
 

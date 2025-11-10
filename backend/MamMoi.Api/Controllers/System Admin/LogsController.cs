@@ -1,7 +1,7 @@
 ﻿using MamMoi.Application.Interfaces;
-using MamMoi.Application.DTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using MamMoi.Application.DTOs.SystemAdminDto;
 
 namespace MamMoi.Api.Controllers
 {

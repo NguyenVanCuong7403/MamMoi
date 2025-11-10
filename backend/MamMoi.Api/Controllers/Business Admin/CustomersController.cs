@@ -1,5 +1,6 @@
-﻿using MamMoi.Application.DTOs;
-using MamMoi.Application.Interfaces; 
+﻿using MamMoi.Application.DTOs.BusinessAdminDto;
+using MamMoi.Application.DTOs.SystemAdminDto;
+using MamMoi.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;

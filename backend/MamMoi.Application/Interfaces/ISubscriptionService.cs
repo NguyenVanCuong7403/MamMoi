@@ -1,4 +1,4 @@
-﻿using MamMoi.Application.DTOs;
+﻿using MamMoi.Application.DTOs.BusinessAdminDto;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,5 +13,9 @@ namespace MamMoi.Application.Interfaces
         Task<SubscriptionDto> CreateSubscriptionAsync(SubscriptionCreateUpdateDto dto);
         Task<bool> UpdateSubscriptionAsync(int subscriptionId, SubscriptionCreateUpdateDto dto);
         Task<bool> DeleteSubscriptionAsync(int subscriptionId);
+        Task<SubscriptionDto?> ChangeSubscriptionPlanAsync(
+            int oldSubscriptionId,
+            int newPlanId
+        );
     }
 }

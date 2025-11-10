@@ -1,10 +1,10 @@
-using MamMoi.Application.DTOs;
+using MamMoi.Application.DTOs.SystemAdminDto;
 using MamMoi.Application.Interfaces;
 using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Security;
 
-namespace MamMoi.Infrastructure.Services;
+namespace MamMoi.Infrastructure.Services.SystemAdminServices;
 
 /// <summary>
 /// User service - xử lý business logic cho User
@@ -22,10 +22,10 @@ public class UserService : IUserService
 
     public async Task<object?> GetByIdAsync(Guid id)
     {
-        
+
         var userId = int.Parse(id.ToString().Split('-')[0], System.Globalization.NumberStyles.HexNumber) % int.MaxValue;
         var user = await _userRepository.GetByIdAsync(userId);
-        
+
         if (user == null)
             return null;
 
@@ -46,7 +46,7 @@ public class UserService : IUserService
             Email = createDto.Email,
             FullName = createDto.FullName,
             PasswordHash = HashPassword(createDto.Password),
-            RoleId = createDto.RoleId, 
+            RoleId = createDto.RoleId,
             Phone = createDto.Phone,
             Address = createDto.Address,
             ProfileImageUrl = createDto.ProfileImageUrl,
@@ -56,12 +56,12 @@ public class UserService : IUserService
         };
 
         var createdUser = (User)await _userRepository.AddAsync(userEntity);
-        var finalUser = (User)await _userRepository.GetByIdAsync(createdUser.UserId); 
+        var finalUser = (User)await _userRepository.GetByIdAsync(createdUser.UserId);
         return MapToDto(finalUser);
     }
     public async Task<UserDetailDto?> UpdateAsync(Guid id, AdminUpdateUserDto updateDto)
     {
-     
+
         var userId = int.Parse(id.ToString().Split('-')[0], System.Globalization.NumberStyles.HexNumber) % int.MaxValue;
         var userEntity = (User?)await _userRepository.GetByIdAsync(userId);
 
@@ -74,8 +74,8 @@ public class UserService : IUserService
         userEntity.Phone = updateDto.Phone;
         userEntity.Address = updateDto.Address;
         userEntity.RoleId = updateDto.RoleId;
-        userEntity.IsActive = updateDto.IsActive; 
-        userEntity.UpdatedAt = DateTime.UtcNow; 
+        userEntity.IsActive = updateDto.IsActive;
+        userEntity.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateAsync(userEntity);
 
@@ -95,14 +95,14 @@ public class UserService : IUserService
 
         if (!string.IsNullOrEmpty(updateDto.Email))
             userEntity.Email = updateDto.Email;
-        
+
         if (!string.IsNullOrEmpty(updateDto.FullName))
             userEntity.FullName = updateDto.FullName;
 
         userEntity.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateAsync(userEntity);
-        
+
         return MapToDto(userEntity);
     }
 
@@ -129,7 +129,7 @@ public class UserService : IUserService
 
     public async Task<IEnumerable<UserDto>> GetAllAsync(string? searchName, string? email, int? roleId)
     {
-        var users = await _userRepository.GetAllAsync(searchName,email,roleId);
+        var users = await _userRepository.GetAllAsync(searchName, email, roleId);
         return users.Select(u => MapToDto((User)u));
     }
 
@@ -138,7 +138,7 @@ public class UserService : IUserService
     {
         return new UserDto
         {
-            Id = new Guid(user.UserId, (short)0, (short)0, new byte[8]), 
+            Id = new Guid(user.UserId, 0, 0, new byte[8]),
             Email = user.Email,
             FullName = user.FullName,
             RoleName = user.Role?.RoleName ?? "N/A",
@@ -149,7 +149,7 @@ public class UserService : IUserService
     {
         return new UserDetailDto
         {
-            Id = new Guid(user.UserId, (short)0, (short)0, new byte[8]),
+            Id = new Guid(user.UserId, 0, 0, new byte[8]),
             RoleName = user.Role?.RoleName ?? "N/A",
             FullName = user.FullName,
             Email = user.Email,
@@ -173,22 +173,22 @@ public class UserService : IUserService
         var user = await _userRepository.GetByIdAsync(userId);
         if (user == null)
         {
-            return false; 
+            return false;
         }
 
         var userEntity = (User)user;
         userEntity.PasswordHash = HashPassword(dto.NewPassword);
-        userEntity.UpdatedAt = DateTime.UtcNow; 
+        userEntity.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateAsync(userEntity);
         return true;
     }
     private byte[] HashPassword(string password)
     {
-        
+
         using var sha256 = System.Security.Cryptography.SHA256.Create();
         return sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
     }
 
-  
+
 }

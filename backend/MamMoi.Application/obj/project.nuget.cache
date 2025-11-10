@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "yv5g0qOnr0c=",
+  "dgSpecHash": "ZsoNtE1M6J4=",
   "success": true,
-  "projectFilePath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\MamMoi.Application.csproj",
+  "projectFilePath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\admin\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.0\\microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512"
   ],

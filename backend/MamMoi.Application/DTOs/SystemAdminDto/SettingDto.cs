@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MamMoi.Application.DTOs
+namespace MamMoi.Application.DTOs.SystemAdminDto
 {
     public class SystemSettingDto
     {
@@ -11,7 +11,7 @@ namespace MamMoi.Application.DTOs
         public string? Description { get; set; }
         public bool IsPublic { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public string UpdatedByUserEmail { get; set; } = string.Empty; 
+        public string UpdatedByUserEmail { get; set; } = string.Empty;
     }
 
 

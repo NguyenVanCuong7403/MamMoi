@@ -1,10 +1,10 @@
-﻿using MamMoi.Application.DTOs;
+﻿using MamMoi.Application.DTOs.SystemAdminDto;
 using MamMoi.Application.Interfaces;
 using MamMoi.Infrastructure.Models;
-using Microsoft.EntityFrameworkCore; 
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
-namespace MamMoi.Infrastructure.Services
+namespace MamMoi.Infrastructure.Services.SystemAdminServices
 {
     public class DashboardService : IDashboardService
     {

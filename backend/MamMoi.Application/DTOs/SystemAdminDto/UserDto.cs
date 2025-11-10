@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MamMoi.Application.DTOs;
+namespace MamMoi.Application.DTOs.SystemAdminDto;
 
 /// <summary>
 /// Data Transfer Object for User.
@@ -18,7 +18,7 @@ public class UserDto
 
 public class UserDetailDto
 {
-    public Guid Id { get; set; } 
+    public Guid Id { get; set; }
     public string RoleName { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
@@ -27,7 +27,7 @@ public class UserDetailDto
     public string? ProfileImageUrl { get; set; }
     public string? ExperienceLevel { get; set; }
     public string? PreferredLanguage { get; set; }
-    public string? NotificationPreferences { get; set; } 
+    public string? NotificationPreferences { get; set; }
     public bool IsActive { get; set; }
     public DateTime? LastLoginAt { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -41,7 +41,7 @@ public class CreateUserDto
     public string Email { get; set; } = string.Empty;
 
     [Required]
-    [MinLength(6)] 
+    [MinLength(6)]
     public string Password { get; set; } = string.Empty;
 
     [Required]
@@ -66,9 +66,9 @@ public class AdminUpdateUserDto
     public string FullName { get; set; } = string.Empty;
 
     [Required]
-    public int RoleId { get; set; } 
+    public int RoleId { get; set; }
 
-    public bool IsActive { get; set; } 
+    public bool IsActive { get; set; }
     [MaxLength(20)]
     public string? Phone { get; set; }
 

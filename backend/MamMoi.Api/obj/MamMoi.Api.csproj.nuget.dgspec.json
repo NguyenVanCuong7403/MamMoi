@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\prn231\\Đồ án\\backend\\MamMoi.Api\\MamMoi.Api.csproj": {}
+    "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Api\\MamMoi.Api.csproj": {}
   },
   "projects": {
-    "D:\\prn231\\Đồ án\\backend\\MamMoi.Api\\MamMoi.Api.csproj": {
+    "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Api\\MamMoi.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\prn231\\Đồ án\\backend\\MamMoi.Api\\MamMoi.Api.csproj",
+        "projectUniqueName": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Api\\MamMoi.Api.csproj",
         "projectName": "MamMoi.Api",
-        "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Api\\MamMoi.Api.csproj",
+        "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Api\\MamMoi.Api.csproj",
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-        "outputPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Api\\obj\\",
+        "outputPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -29,11 +29,11 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\MamMoi.Application.csproj": {
-                "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\MamMoi.Application.csproj"
+              "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj": {
+                "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj"
               },
-              "D:\\prn231\\Đồ án\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj": {
-                "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj"
+              "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj": {
+                "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj"
               }
             }
           }
@@ -91,14 +91,14 @@
         }
       }
     },
-    "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\MamMoi.Application.csproj": {
+    "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\MamMoi.Application.csproj",
+        "projectUniqueName": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj",
         "projectName": "MamMoi.Application",
-        "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\MamMoi.Application.csproj",
+        "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj",
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-        "outputPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\obj\\",
+        "outputPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -116,8 +116,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj": {
-                "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj"
+              "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj": {
+                "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj"
               }
             }
           }
@@ -162,14 +162,14 @@
         }
       }
     },
-    "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj": {
+    "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj",
+        "projectUniqueName": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj",
         "projectName": "MamMoi.Domain",
-        "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj",
+        "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj",
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-        "outputPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\obj\\",
+        "outputPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -223,14 +223,14 @@
         }
       }
     },
-    "D:\\prn231\\Đồ án\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj": {
+    "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\prn231\\Đồ án\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj",
+        "projectUniqueName": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj",
         "projectName": "MamMoi.Infrastructure",
-        "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj",
+        "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj",
         "packagesPath": "C:\\Users\\admin\\.nuget\\packages\\",
-        "outputPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Infrastructure\\obj\\",
+        "outputPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\admin\\AppData\\Roaming\\NuGet\\NuGet.Config",
@@ -248,11 +248,11 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\MamMoi.Application.csproj": {
-                "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Application\\MamMoi.Application.csproj"
+              "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj": {
+                "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj"
               },
-              "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj": {
-                "projectPath": "D:\\prn231\\Đồ án\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj"
+              "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj": {
+                "projectPath": "D:\\prn231\\Đồ án\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj"
               }
             }
           }

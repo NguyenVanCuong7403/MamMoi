@@ -1,10 +1,10 @@
-﻿using MamMoi.Application.DTOs;
+﻿using MamMoi.Application.DTOs.SystemAdminDto;
 using MamMoi.Application.Interfaces;
 using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using System.Linq;
 
-namespace MamMoi.Infrastructure.Services
+namespace MamMoi.Infrastructure.Services.SystemAdminServices
 {
     public class ActivityLogService : IActivityLogService
     {
@@ -25,7 +25,7 @@ namespace MamMoi.Infrastructure.Services
 
             return logs.Select(log =>
             {
-                var logEntity = (ActivityLog)log; 
+                var logEntity = (ActivityLog)log;
                 return new ActivityLogDto
                 {
                     LogID = logEntity.LogId,
@@ -33,7 +33,7 @@ namespace MamMoi.Infrastructure.Services
                     ActivityType = logEntity.ActivityType,
                     ActivityDescription = logEntity.ActivityDescription,
                     EntityType = logEntity.EntityType,
-                    EntityID = logEntity.EntityId, 
+                    EntityID = logEntity.EntityId,
                     CreatedAt = logEntity.CreatedAt
                 };
             });

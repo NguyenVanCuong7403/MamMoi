@@ -9,9 +9,7 @@ public partial class Subscription
 
     public int UserId { get; set; }
 
-    public string PlanName { get; set; } = null!;
-
-    public string? PlanType { get; set; }
+    public int PlanId { get; set; }
 
     public DateOnly StartDate { get; set; }
 
@@ -19,11 +17,9 @@ public partial class Subscription
 
     public string Status { get; set; } = null!;
 
-    public decimal Price { get; set; }
-
-    public string Currency { get; set; } = null!;
-
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+
+    public virtual SubscriptionPlan Plan { get; set; } = null!;
 
     public virtual User User { get; set; } = null!;
 }
