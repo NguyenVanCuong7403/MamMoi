@@ -141,6 +141,19 @@ function LoginForm({ onForgot }) {
   const [show, setShow] = useState(false);
   const [caps, setCaps] = useState(false);
   const [acct, setAcct] = useState("");
+  const { login, loading } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    const res = await login(form.email, form.password, remember);
+    if (res.success) {
+      navigate("/");
+    } else {
+      setError(res.message || "Đăng nhập thất bại");
+    }
+  };
 
   const mode = useMemo(() => {
     if (!acct) return "unknown";
@@ -152,7 +165,7 @@ function LoginForm({ onForgot }) {
   }, [acct]);
 
   return (
-    <form className="grid gap-4">
+    <form className="grid gap-4" onSubmit={handleSubmit}>
       <Field
         label="Email hoặc SĐT"
         icon={
@@ -219,8 +232,10 @@ function LoginForm({ onForgot }) {
         </button>
       </div>
 
-      <Button type="submit" className="w-full gap-2">
-        Đăng nhập
+{error && <p className="text-red-500 text-sm">{error}</p>}
+
+      <Button type="submit" className="w-full gap-2" disabled={loading}>
+        {loading ? "Đang đăng nhập..." : "Đăng nhập" }
         <ArrowRight className="h-4 w-4" />
       </Button>
 
