@@ -128,9 +128,37 @@ function LifecycleTimeline({
     .flow-arc-slow { animation: dashFlowSlow 5.5s linear infinite; will-change: stroke-dashoffset; }
     @keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
     .fade-in-160 { animation: fadeIn .16s ease-out both; }
-    @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    .animate-spin-once { animation: spin-once 1s ease-in-out; transform-origin: 50% 50%; }
   `;
+
+  const isBackwardStep = !!(transitionFlow && transientConfig && transientConfig.retract);
+  const removingArcIdx = isBackwardStep ? transientConfig?.toIdx : -1;
+
+  /* ====== SVG MASK: chỉ cho phép vẽ trên vòng tròn, nhưng phần “dưới node” bị che đi ====== */
+  const renderRingMask = () => {
+    const N = cyclePhases.length;
+    const circles = cyclePhases.map((_, idx) => {
+      const { x, y } = getCirclePosition(idx, N);
+      return (
+        <circle
+          key={`mask-node-${idx}`}
+          cx={x}
+          cy={y}
+          r={nodeR + MASK_INSET}
+          fill="black"
+        />
+      );
+    });
+    return (
+      <mask id="ringMask" maskUnits="userSpaceOnUse">
+        {/* Nền đen → ẩn hết */}
+        <rect x="0" y="0" width={RING_SIZE} height={RING_SIZE} fill="black" />
+        {/* Vẽ stroke trắng dày quanh bán kính để CHO PHÉP hiển thị ngay trên vòng */}
+        <circle cx={centerX} cy={centerY} r={radius} fill="none" stroke="white" strokeWidth={STROKE * 6} />
+        {/* Đục lỗ đen ở vị trí node để che phần line “lún” vào trong */}
+        {circles}
+      </mask>
+    );
+  };
 
   return (
     <div className="w-full">
@@ -193,6 +221,11 @@ function LifecycleTimeline({
           </div>
 
           <div className={`absolute inset-0 ${isSpinning ? "animate-spin-once" : ""}`} style={{ transformOrigin: "50% 50%" }}>
+            <style>{`
+              @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+              .animate-spin-once { animation: spin-once 1s ease-in-out; }
+            `}</style>
+
             {/* ARCS + MASK */}
             <svg className="absolute inset-0 w-full h-full z-10" viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} shapeRendering="geometricPrecision">
               {renderRingMask()}
@@ -206,8 +239,6 @@ function LifecycleTimeline({
                 const isPreview = previewPhase === cyclePhases[index].id;
 
                 const persistedBase = isPhase1Completed && trailIndex >= 1 && index <= trailIndex - 1;
-                const isBackwardStep = !!(transitionFlow && transientConfig && transientConfig.retract);
-                const removingArcIdx = isBackwardStep ? transientConfig?.toIdx : -1;
                 const persisted = (isBackwardStep && index === removingArcIdx) ? false : persistedBase;
 
                 const phaseColor = PHASE_COLORS[phase.id] || "#10b981";
@@ -226,7 +257,6 @@ function LifecycleTimeline({
                   <g key={`arc-${phase.id}`} mask="url(#ringMask)">
                     {isPhase1Completed && (
                       <>
-                        {/* ARCs đã hoàn thành: nét đứt chảy */}
                         <path
                           d={dArc}
                           fill="none"
@@ -239,7 +269,6 @@ function LifecycleTimeline({
                           strokeDasharray={persisted ? "16 12" : undefined}
                           className={persisted ? "flow-arc-slow" : undefined}
                         />
-                        {/* mũi tĩnh */}
                         <g
                           transform={`translate(${endX}, ${endY}) rotate(${tanDeg})`}
                           opacity={hideStaticFrom || hideStaticTo || hideStaticCurrent || hideRemovingArc || hidePost ? 0 : 1}
@@ -256,32 +285,6 @@ function LifecycleTimeline({
                   </g>
                 );
               })}
-
-              {/* ===== IDLE FLOW: cung kế tiếp của node đang active (luôn chảy khi rảnh) ===== */}
-              {isPhase1Completed && !transitionFlow && (() => {
-                const activeIdx = cyclePhases.findIndex(p => p.id === activePhase);
-                if (activeIdx < 0) return null;
-                const nextIdx = (activeIdx + 1) % cyclePhases.length;
-                const { thetaStart, thetaEnd } = trimAngles(activeIdx, nextIdx);
-                const dArc = buildArcD(thetaStart, thetaEnd, radius, 1);
-                const color = PHASE_COLORS[cyclePhases[activeIdx].id] || "#10b981";
-                return (
-                  <g mask="url(#ringMask)">
-                    <path
-                      d={dArc}
-                      fill="none"
-                      stroke={color}
-                      strokeWidth={STROKE}
-                      opacity="0.55"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      style={{ vectorEffect: "non-scaling-stroke" }}
-                      strokeDasharray="16 12"
-                      className="flow-arc-slow"
-                    />
-                  </g>
-                );
-              })()}
 
               {/* TRANSIENT */}
               {transitionFlow && transientConfig && (
@@ -317,9 +320,6 @@ function LifecycleTimeline({
                   isPreview
                 );
 
-                // Ping luôn hiện khi node đang active (không phụ thuộc completed)
-                const showPing = (isActive || isPreview) && phase.id !== suppressId;
-
                 return (
                   <div
                     key={`node-${phase.id}`}
@@ -331,7 +331,7 @@ function LifecycleTimeline({
                                       ${getColorClasses(phase.color, nodeHasColor)}`}>
                         <span className={nodeHasColor ? "" : "grayscale opacity-40"}>{phase.icon}</span>
 
-                        {showPing && (
+                        {((allowActiveColor && isActive && phase.id !== suppressId) || isPreview) && (
                           <span className={`pointer-events-none absolute inset-0 rounded-full animate-ping opacity-60
                             ${phase.color === "pink" ? "bg-pink-400" : phase.color === "lime" ? "bg-lime-400" : phase.color === "amber" ? "bg-amber-400" : "bg-teal-400"}`} />
                         )}
@@ -420,6 +420,7 @@ function TransientPath({ d, color, duration = 950, headSize = 10, headPad = 8, m
     rafRef.current = requestAnimationFrame(step);
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      // stop flag
       // eslint-disable-next-line no-unused-expressions
       (stopped = true);
     };
