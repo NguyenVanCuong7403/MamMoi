@@ -174,7 +174,7 @@ export default function TreeManagement() {
   const [caretakers, setCaretakers] = useState(new Set());
   const [phases, setPhases] = useState(new Set());
   const [dateFrom, setDateFrom] = useState("");
-   const [dateTo, setDateTo] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [dateOrder, setDateOrder] = useState("desc"); // mặc định: mới nhất trước
   const [onlyOverdue, setOnlyOverdue] = useState(false);
 
@@ -309,18 +309,12 @@ export default function TreeManagement() {
         }
       `}</style>
 
-      {/* HERO */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[#1F302F]" />
-        <div
-          className="absolute -left-24 -top-24 h-[26rem] w-[26rem] rounded-full blur-3xl opacity-15"
-          style={{ background: "radial-gradient(circle at 30% 30%, #D1DFB6, transparent 60%)" }}
-        />
-        <div
-          className="absolute -right-24 -bottom-24 h-[26rem] w-[26rem] rounded-full blur-3xl opacity-15"
-          style={{ background: "radial-gradient(circle at 70% 70%, #FFFFA5, transparent 60%)" }}
-        />
-        <div className="relative mx-auto max-w-[1600px] w-full px-6 xl:px-10 2xl:px-12 flex items-center justify-between py-12 md:py-16">
+      {/* ===== Header nhỏ gọn (đã bỏ HERO lớn) ===== */}
+      <main className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-4 space-y-6">
+        <section
+          aria-label="Page header"
+          className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6"
+        >
           <div className="max-w-[760px]">
             <span
               className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium"
@@ -328,46 +322,45 @@ export default function TreeManagement() {
             >
               Bảng quản lý vườn
             </span>
-            <h1 className="mt-3 text-white text-4xl md:text-5xl font-semibold tracking-tight leading-tight">
+            <h1 className="mt-2 text-white text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
               Vườn cây ăn quả của tôi
             </h1>
-            <p className="text-white/85 mt-2 text-sm md:text-base">
+            <p className="text-white/85 mt-1 text-sm md:text-base">
               Theo dõi tuổi cây, giai đoạn sinh trưởng, công việc và tình trạng chăm sóc — tất cả trên một màn hình.
             </p>
+          </div>
+
+          <div className="w-full md:w-auto flex items-stretch md:items-center gap-3 md:gap-4">
             <Button
-              className="mt-5 h-12 md:h-14 px-6 md:px-8 rounded-2xl text-base md:text-lg font-semibold
-                         shadow-[0_14px_40px_rgba(255,255,165,0.24)] ring-1 ring-black/5
-                         transition-all hover:shadow-[0_18px_60px_rgba(255,255,165,0.30)] hover:-translate-y-0.5"
+              className="h-12 md:h-12 px-5 md:px-6 rounded-2xl text-base font-semibold
+                         shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5
+                         transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5"
               style={{ background: "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)", color: "#1F302F" }}
             >
               <span className="inline-flex items-center gap-3">
-                <span className="grid place-items-center w-9 h-9 rounded-xl bg-white/70 backdrop-blur">
+                <span className="grid place-items-center w-8 h-8 rounded-xl bg-white/70 backdrop-blur">
                   <Plus className="w-5 h-5" />
                 </span>
                 Thêm cây ăn quả
               </span>
             </Button>
-          </div>
-          <div className="hidden md:block">
-            <div className="rounded-3xl p-5 w-64 md:w-72 backdrop-blur-md text-white border border-white/15 bg-white/10 shadow-2xl">
+
+            {/* Thẻ thời tiết giữ nguyên nội dung, đổi sang dạng card độc lập */}
+            <div className="rounded-2xl p-4 w-64 md:w-72 backdrop-blur-md text-white border border-white/15 bg-white/10 shadow-2xl">
               <div className="text-sm font-medium flex items-center gap-1">
                 <MapPin className="w-4 h-4 opacity-80" />
                 Hanoi, Vietnam
               </div>
-              <div className="text-4xl font-semibold mt-1">29°</div>
+              <div className="text-3xl md:text-4xl font-semibold mt-1">29°</div>
               <div className="text-xs opacity-80">Nắng nhẹ · Gió 5km/h</div>
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 <span className="px-2 py-1 rounded-full text-[11px] border border-white/20 bg-white/10">UV thấp</span>
                 <span className="px-2 py-1 rounded-full text-[11px] border border-white/20 bg-white/10">Độ ẩm 65%</span>
               </div>
             </div>
           </div>
-        </div>
-        <div className="absolute -bottom-1 left-0 right-0 h-2 bg-[#1F302F] pointer-events-none" />
-      </section>
+        </section>
 
-      {/* Toolbar + Stats */}
-      <main className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-6 space-y-6">
         {/* search + filter */}
         <section className="sticky top-[64px] z-[50] overflow-visible">
           <div
@@ -397,7 +390,7 @@ export default function TreeManagement() {
                   side="bottom"
                   sideOffset={10}
                   collisionPadding={24}
-                  className="z-[1000] min-w-[320px] rounded-xl border border-neutral-200 bg-white shadow-2xl overflow-visible"
+                  className="z-[1000] min-w=[320px] rounded-xl border border-neutral-200 bg-white shadow-2xl overflow-visible"
                 >
                   <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] text-neutral-500">
                     Trạng thái
@@ -615,7 +608,7 @@ export default function TreeManagement() {
           })}
         </section>
 
-        {/* Cards grid – 4 cột, thẻ lịch sử bị giảm độ tương phản */}
+        {/* Cards grid – 4 cột */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-7 items-stretch">
           {pageItems.map((t) => {
             const stopped = isStopped(t);
@@ -670,7 +663,7 @@ export default function TreeManagement() {
                     </div>
                   </div>
 
-                  {/* Việc cần làm: dừng hoạt động => ngừng nhắc/gợi ý, chỉ hiển thị lịch sử */}
+                  {/* Việc cần làm */}
                   <div className="mt-4">
                     <div className="flex items-center justify-between">
                       <div className="text-neutral-500 text-sm">Việc cần làm</div>

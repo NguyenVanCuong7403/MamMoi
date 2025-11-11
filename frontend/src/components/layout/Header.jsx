@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Menu } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const DEFAULT_MENU = [
   { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
@@ -26,6 +27,17 @@ export default function MMHeader({
 
   const searchInputRef = useRef(null);
   const openedAtRef = useRef(0);
+  const navigate = useNavigate();
+
+  const handleLoginClick = () => {
+    onLogin();
+    navigate("/auth");
+  };
+
+  const handleRegisterClick = () => {
+    onRegister();
+    navigate("/auth");
+  };
 
   const palette = useMemo(
     () => ({ bg: "#1F302F", leaf: "#D1DFB6", ivory: "#FBFFDF", accent: "#FFFFA5" }),
@@ -111,7 +123,8 @@ export default function MMHeader({
           <a
             href="#"
             className="inline-flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-white/50 rounded flex-shrink-0"
-            onClick={(e) => e.preventDefault()}
+            onClick={(e) => { navigate("/")} 
+        } 
           >
             <div
               className="w-11 h-11 rounded-full grid place-items-center shadow"
@@ -233,14 +246,14 @@ export default function MMHeader({
               style={{ borderColor: palette.ivory }}
             >
               <button
-                onClick={onLogin}
+                onClick={handleLoginClick}
                 className="px-5 py-2.5 text-base bg-white/0 text-white hover:bg-white/10 focus:outline-none"
               >
                 Đăng nhập
               </button>
               <div className="w-px bg-white/20" />
               <button
-                onClick={onRegister}
+                onClick={handleRegisterClick}
                 className="px-5 py-2.5 text-base font-medium focus:outline-none"
                 style={{ background: palette.accent, color: "#1F302F" }}
               >
@@ -331,7 +344,7 @@ export default function MMHeader({
             <div className="sticky bottom-0 left-0 right-0 p-6 bg-[#1A3433]/90 backdrop-blur-sm">
               <div className="flex gap-3">
               <button
-  onClick={onLogin}
+  onClick={handleLoginClick}
   className="
     flex-1 h-11 rounded-full px-5
     text-[15px] font-medium text-[#EAF5C8]
@@ -345,7 +358,7 @@ export default function MMHeader({
   Đăng nhập
 </button>
                 <button
-                  onClick={onRegister}
+                  onClick={handleRegisterClick}
                   className="
                     flex-1 h-11 rounded-full
                     text-[15px] font-semibold
