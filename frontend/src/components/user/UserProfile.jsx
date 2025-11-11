@@ -396,7 +396,7 @@ function Segmented({ value, onChange, options = [] }) {
   );
 }
 
-function SearchInput({ value, onChange, placeholder = "Tìm kiếm..." }) {
+function SearchInput({ value, onChange, placeholder = "Tìm kiếm...", className = "" }) {
   return (
     <div className="relative">
       <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
@@ -405,7 +405,8 @@ function SearchInput({ value, onChange, placeholder = "Tìm kiếm..." }) {
         inputMode="search"
         autoComplete="off"
         spellCheck={false}
-        className="h-12 w-[320px] rounded-2xl pl-9 pr-10 text-base"
+        // giữ mặc định 320px, nhưng className truyền vào ở cuối sẽ override
+        className={`h-12 w-[320px] rounded-2xl pl-9 pr-10 text-base ${className}`}
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -2729,13 +2730,25 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
             {/* Staffs */}
             <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
               <CardContent className="p-8">
-              <div className="mb-3 flex items-center justify-between gap-3">
-  <div className="text-base font-semibold">Nhân viên & phân công</div>
-  <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
+              <div className="mb-3">
+  {/* Hàng 1: tiêu đề + CTA, luôn gọn gàng */}
+  <div className="flex items-center justify-between gap-3">
+    <div className="text-base font-semibold">Nhân viên & phân công</div>
+    <Button
+      className={`${COMPACT.btn} ${BTN.primary} ${BTN.base} gap-2 shrink-0`}
+      onClick={openStaffModal}
+      title="Tạo tài khoản nhân viên"
+    >
+      <Plus className="h-5 w-5" /> Thêm nhân viên
+    </Button>
+  </div>
+
+  {/* Hàng 2: bộ lọc + tìm kiếm, cho phép xuống dòng khi thiếu chỗ */}
+  <div className="mt-2 flex items-center gap-2 flex-wrap xl:flex-nowrap">
     <select
       value={staffGardenFilter}
       onChange={(e) => setStaffGardenFilter(e.target.value)}
-      className={`${COMPACT.select} w-[240px] shrink-0`}
+      className={`${COMPACT.select} w-[220px] shrink-0`}
       title="Lọc theo vườn"
     >
       <option value="all">Tất cả vườn</option>
@@ -2750,7 +2763,7 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
     <select
       value={staffStatusFilter}
       onChange={(e) => setStaffStatusFilter(e.target.value)}
-      className={`${COMPACT.select} w-[220px] shrink-0`}
+      className={`${COMPACT.select} w-[200px] md:w-[220px] shrink-0`}
       title="Lọc theo trạng thái"
     >
       <option value="all">Tất cả trạng thái</option>
@@ -2758,21 +2771,16 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
       <option value="inactive">Tạm ngưng</option>
     </select>
 
+    {/* Ô tìm kiếm co giãn: full chiều ngang khi cần, thu về 260/300/320px tuỳ breakpoint */}
     <SearchInput
       value={searchStaff}
       onChange={setSearchStaff}
       placeholder="Tìm tên / email / SĐT / vai trò…"
+      className="w-full sm:w-[260px] md:w-[300px] xl:w-[320px]"
     />
-
-    <Button
-      className={`${COMPACT.btn} ${BTN.primary} ${BTN.base} gap-2 shrink-0`}
-      onClick={openStaffModal}
-      title="Tạo tài khoản nhân viên"
-    >
-      <Plus className="h-5 w-5" /> Thêm nhân viên
-    </Button>
   </div>
 </div>
+
 
                 <div className="space-y-2">
                   {filteredStaffs.map((s, idx) => (
