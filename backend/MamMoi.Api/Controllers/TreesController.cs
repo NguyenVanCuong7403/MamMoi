@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using MamMoi.Application.Interfaces;
 using MamMoi.Application.DTOs;
+using System.Linq; // <- nhớ có namespace này để dùng FirstOrDefault
 
 namespace MamMoi.Api.Controllers;
 
@@ -26,21 +27,42 @@ public class TreesController : ControllerBase
         _treeImg = treeImg;
     }
 
-    // Helper: lấy userId từ JWT (sub/NameIdentifier). Không có -> null
     private int? GetUserIdFromClaims()
     {
         var idClaim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("sub");
         return int.TryParse(idClaim?.Value, out var id) ? id : (int?)null;
     }
 
-    // ===================== 1) Tree Types List =====================
-    // GET /api/trees/types
+    // Helper an toàn: lấy userId từ JWT hoặc ?userId=; nếu thiếu thì trả 400
+    private bool TryResolveUserId(out int userId, out IActionResult? errorResult)
+    {
+        var fromJwt = GetUserIdFromClaims();
+        if (fromJwt is int uid && uid > 0)
+        {
+            userId = uid;
+            errorResult = null;
+            return true;
+        }
+
+        var q = HttpContext?.Request?.Query["userId"].FirstOrDefault();
+        if (!string.IsNullOrWhiteSpace(q) && int.TryParse(q, out var parsed) && parsed > 0)
+        {
+            userId = parsed;
+            errorResult = null;
+            return true;
+        }
+
+        userId = 0;
+        errorResult = BadRequest("Thiếu userId: hãy gửi JWT hợp lệ hoặc thêm ?userId={id}.");
+        return false;
+    }
+
+    // ===================== 1) Tree Types =====================
     [HttpGet("types")]
     public async Task<IActionResult> GetTreeTypes(CancellationToken ct)
         => Ok(await _treeType.GetAllAsync(ct));
 
-    // ===================== 2) View My Trees List =====================
-    // GET /api/trees/my?userId=1&page=1&pageSize=20&sort=createdAt_desc&gardenId=&treeTypeId=&isActive=true
+    // ===================== 2) My Trees =====================
     [HttpGet("my")]
     public async Task<IActionResult> GetMyTrees(
         [FromQuery] int? userId,
@@ -54,7 +76,7 @@ public class TreesController : ControllerBase
     {
         var uid = GetUserIdFromClaims() ?? userId;
         if (uid is null || uid <= 0)
-            return BadRequest("Vui lòng truyền userId (query) hoặc gửi kèm JWT hợp lệ.");
+            return BadRequest("Vui lòng truyền userId (query) hoặc gửi JWT hợp lệ.");
 
         var result = await _treeQuery.GetMyTreesAsync(
             uid.Value, page, pageSize, sort, gardenId, treeTypeId, isActive, ct);
@@ -62,8 +84,7 @@ public class TreesController : ControllerBase
         return Ok(result);
     }
 
-    // ===================== 3) Search Trees =====================
-    // GET /api/trees/search?q=cam&gardenId=&treeTypeId=&page=1&pageSize=20
+    // ===================== 3) Search =====================
     [HttpGet("search")]
     public async Task<IActionResult> Search(
         [FromQuery] string q = "",
@@ -77,106 +98,84 @@ public class TreesController : ControllerBase
         return Ok(result);
     }
 
-    // ===================== 4) View Tree Detail =====================
-    // GET /api/trees/{id}
+    // ===================== 4) Detail =====================
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetDetail([FromRoute] int id, CancellationToken ct)
     {
-        // public detail -> currentUserId: null (nếu muốn chỉ owner xem, truyền GetUserIdFromClaims())
         var dto = await _treeQuery.GetDetailAsync(id, currentUserId: null, ct);
         if (dto is null) return NotFound();
         return Ok(dto);
     }
 
-    // ===================== 5) Add New Tree =====================
-    // POST /api/trees
-    // body: CreateTreeRequest
+    // ===================== 5) Create =====================
     [HttpPost]
-    // [Authorize]
     public async Task<IActionResult> Create([FromBody] CreateTreeRequest req, CancellationToken ct)
     {
-        // Dev fallback: nếu chưa có JWT, cho phép truyền userId qua query ?userId=1
-        var userId = GetUserIdFromClaims() ?? int.Parse(Request.Query["userId"]);
+        if (!TryResolveUserId(out var userId, out var error)) return error!;
         var created = await _treeCmd.CreateAsync(userId, req, ct);
         return CreatedAtAction(nameof(GetDetail), new { id = created.TreeId }, created);
     }
 
-    // ===================== 6) Edit Tree Information =====================
-    // PUT /api/trees/{id}
+    // ===================== 6) Update =====================
     [HttpPut("{id:int}")]
-    // [Authorize]
     public async Task<IActionResult> Update([FromRoute] int id, [FromBody] UpdateTreeRequest req, CancellationToken ct)
     {
-        var userId = GetUserIdFromClaims() ?? int.Parse(Request.Query["userId"]);
+        if (!TryResolveUserId(out var userId, out var error)) return error!;
         var dto = await _treeCmd.UpdateAsync(userId, id, req, ct);
         if (dto is null) return NotFound();
         return Ok(dto);
     }
 
-    // ===================== 7) Update Tree Status =====================
-    // PATCH /api/trees/{id}/status
+    // ===================== 7) Update Status =====================
     [HttpPatch("{id:int}/status")]
-    // [Authorize]
     public async Task<IActionResult> UpdateStatus([FromRoute] int id, [FromBody] UpdateTreeStatusRequest req, CancellationToken ct)
     {
-        var userId = GetUserIdFromClaims() ?? int.Parse(Request.Query["userId"]);
+        if (!TryResolveUserId(out var userId, out var error)) return error!;
         var ok = await _treeCmd.UpdateStatusAsync(userId, id, req, ct);
         return ok ? NoContent() : NotFound();
     }
 
-    // ===================== 8) Delete Tree =====================
-    // DELETE /api/trees/{id}
+    // ===================== 8) Delete =====================
     [HttpDelete("{id:int}")]
-    // [Authorize]
     public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken ct)
     {
-        var userId = GetUserIdFromClaims() ?? int.Parse(Request.Query["userId"]);
+        if (!TryResolveUserId(out var userId, out var error)) return error!;
         var ok = await _treeCmd.DeleteAsync(userId, id, ct);
         return ok ? NoContent() : NotFound();
     }
 
-    // ===================== 9) Tree Image Gallery =====================
-    // GET /api/trees/{id}/images
+    // ===================== 9) Images =====================
     [HttpGet("{id:int}/images")]
     public async Task<IActionResult> GetImages([FromRoute] int id, CancellationToken ct)
         => Ok(await _treeImg.GetGalleryAsync(id, ct));
 
-    // ===================== 10) Upload Tree Images (URL-based) =====================
-    // POST /api/trees/{id}/images
     [HttpPost("{id:int}/images")]
-    // [Authorize]
     public async Task<IActionResult> UploadImage([FromRoute] int id, [FromBody] UploadTreeImageRequest req, CancellationToken ct)
     {
-        var userId = GetUserIdFromClaims() ?? int.Parse(Request.Query["userId"]);
+        if (!TryResolveUserId(out var userId, out var error)) return error!;
         var dto = await _treeImg.AddImageAsync(userId, id, req, ct);
         return Ok(dto);
     }
 
-    // ===================== 11) Delete Tree Image =====================
-    // DELETE /api/trees/{id}/images/{imageId}
     [HttpDelete("{id:int}/images/{imageId:int}")]
-    // [Authorize]
     public async Task<IActionResult> DeleteImage([FromRoute] int id, [FromRoute] int imageId, CancellationToken ct)
     {
-        var userId = GetUserIdFromClaims() ?? int.Parse(Request.Query["userId"]);
+        if (!TryResolveUserId(out var userId, out var error)) return error!;
         var ok = await _treeImg.DeleteImageAsync(userId, id, imageId, ct);
         return ok ? NoContent() : NotFound();
     }
 
-    // ===================== 12) View Tree Growth History =====================
-    // GET /api/trees/{id}/growth-history
+    // ===================== 12) Growth History =====================
     [HttpGet("{id:int}/growth-history")]
     public async Task<IActionResult> GrowthHistory([FromRoute] int id, CancellationToken ct)
         => Ok(await _treeImg.GetGrowthHistoryAsync(id, ct));
 
-    // ===================== 13) Tree Growth Chart =====================
-    // GET /api/trees/{id}/growth-chart?from=&to=
+    // ===================== 13) Growth Chart =====================
     [HttpGet("{id:int}/growth-chart")]
     public async Task<IActionResult> GrowthChart([FromRoute] int id, [FromQuery] DateTime? from, [FromQuery] DateTime? to, CancellationToken ct)
         => Ok(await _treeImg.GetGrowthChartAsync(id, from, to, ct));
 
-    // ===================== 14) View Tree Growth Stages =====================
-    // GET /api/trees/{id}/stages
+    // ===================== 14) Stages =====================
     [HttpGet("{id:int}/stages")]
     public async Task<IActionResult> Stages([FromRoute] int id, CancellationToken ct)
         => Ok(await _treeImg.GetStagesForTreeAsync(id, ct));

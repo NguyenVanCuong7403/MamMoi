@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using MamMoi.Application;
 using MamMoi.Infrastructure;
 using MamMoi.Infrastructure.External.Weather; // <-- để dùng AlertThresholds
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MamMoi.Api
 {
@@ -23,6 +24,7 @@ namespace MamMoi.Api
             // ---- Bind ngưỡng cảnh báo (dùng bởi WeatherService) ----
             builder.Services.Configure<AlertThresholds>(
                 builder.Configuration.GetSection("AlertThresholds"));
+            builder.Services.AddMemoryCache();
 
             // JWT (bật khi có cấu hình)
             var jwtKey = builder.Configuration["Jwt:Key"];

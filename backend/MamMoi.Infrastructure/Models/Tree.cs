@@ -16,24 +16,27 @@ public partial class Tree
     public string? TreeName { get; set; }
     public DateOnly? PlantDate { get; set; }
 
-    public string HealthStatus { get; set; } = "Healthy";
     public string? Location { get; set; }
-
     public int? GardenSoilId { get; set; }
+
     public bool? IsActive { get; set; } = true;
     public bool? IsFruiting { get; set; }
 
     public DateOnly? ExpectedHarvestDate { get; set; }
-    public DateOnly? LastHarvestDate { get; set; }
-    public decimal? TotalHarvestedKg { get; set; }
-    public decimal? AverageYieldPerYearKg { get; set; }
 
     public string? Notes { get; set; }
     public string? QrcodeUrl { get; set; }
+
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
 
-    // Navigations
+    // ======= Bổ sung 4 trạng thái theo thiết kế UI =======
+    public string? LeafStatus { get; set; } = "Bình thường";
+    public string? BranchStatus { get; set; } = "Bình thường";
+    public string? FlowerStatus { get; set; } = "Bình thường";
+    public string? FruitStatus { get; set; } = "Bình thường";
+
+    // ======= Navigations =======
     public virtual Garden Garden { get; set; } = null!;
     public virtual GardenSoil? GardenSoil { get; set; }
     public virtual TreeGrowthStage Stage { get; set; } = null!;

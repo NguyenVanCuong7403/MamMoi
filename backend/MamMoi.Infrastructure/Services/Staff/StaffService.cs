@@ -18,14 +18,14 @@ public class StaffService : IInvitationService
     private readonly IGardenRepository _gardenRepository;
     private readonly IGardenMemberRepository _gardenMemberRepository;
     private readonly IEmailService _emailService;
-    private readonly CapstoneDb01Context _context;
+    private readonly MamMoiDbContext _context;
 
     public StaffService(
         IUserRepository userRepository,
         IGardenRepository gardenRepository,
         IGardenMemberRepository gardenMemberRepository,
         IEmailService emailService,
-        CapstoneDb01Context context)
+        MamMoiDbContext context)
     {
         _userRepository = userRepository;
         _gardenRepository = gardenRepository;

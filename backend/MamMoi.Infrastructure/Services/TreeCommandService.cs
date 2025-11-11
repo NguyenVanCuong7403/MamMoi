@@ -40,14 +40,19 @@ namespace MamMoi.Infrastructure.Services
                 UserId = userId,
                 TreeTypeId = req.TreeTypeId,
                 StageId = req.StageId,
-                TreeCode = req.TreeCode,
+                TreeCode = string.IsNullOrWhiteSpace(req.TreeCode) ? null : req.TreeCode,
                 TreeName = req.TreeName,
                 PlantDate = req.PlantDate,
                 GardenSoilId = req.GardenSoilId,
                 Location = req.Location,
                 Notes = req.Notes,
-                HealthStatus = "Healthy",
-                IsActive = true,
+                // trạng thái mặc định nếu FE không gửi
+                LeafStatus = string.IsNullOrWhiteSpace(req.LeafStatus) ? "Bình thường" : req.LeafStatus,
+                BranchStatus = string.IsNullOrWhiteSpace(req.BranchStatus) ? "Bình thường" : req.BranchStatus,
+                FlowerStatus = string.IsNullOrWhiteSpace(req.FlowerStatus) ? "Bình thường" : req.FlowerStatus,
+                FruitStatus = string.IsNullOrWhiteSpace(req.FruitStatus) ? "Bình thường" : req.FruitStatus,
+                IsActive = req.IsActive ?? true,
+                IsFruiting = req.IsFruiting ?? false,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -99,6 +104,13 @@ namespace MamMoi.Infrastructure.Services
             tree.IsActive = req.IsActive ?? tree.IsActive;
             tree.ExpectedHarvestDate = req.ExpectedHarvestDate ?? tree.ExpectedHarvestDate;
             tree.Notes = req.Notes ?? tree.Notes;
+
+            // cập nhật 4 trạng thái nếu FE gửi
+            tree.LeafStatus = req.LeafStatus ?? tree.LeafStatus;
+            tree.BranchStatus = req.BranchStatus ?? tree.BranchStatus;
+            tree.FlowerStatus = req.FlowerStatus ?? tree.FlowerStatus;
+            tree.FruitStatus = req.FruitStatus ?? tree.FruitStatus;
+
             tree.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
@@ -122,7 +134,12 @@ namespace MamMoi.Infrastructure.Services
             if (tree == null) return false;
             if (!await IsGardenOwner(userId, tree.GardenId, ct)) throw new UnauthorizedAccessException();
 
-            tree.HealthStatus = req.HealthStatus ?? tree.HealthStatus;
+            // thay HealthStatus bằng 4 trạng thái chi tiết
+            tree.LeafStatus = req.LeafStatus ?? tree.LeafStatus;
+            tree.BranchStatus = req.BranchStatus ?? tree.BranchStatus;
+            tree.FlowerStatus = req.FlowerStatus ?? tree.FlowerStatus;
+            tree.FruitStatus = req.FruitStatus ?? tree.FruitStatus;
+
             tree.IsActive = req.IsActive ?? tree.IsActive;
             tree.IsFruiting = req.IsFruiting ?? tree.IsFruiting;
             tree.UpdatedAt = DateTime.UtcNow;

@@ -1,5 +1,4 @@
-﻿// Application/DTOs/TreeIoDtos.cs
-namespace MamMoi.Application.DTOs
+﻿namespace MamMoi.Application.DTOs
 {
     public record CreateTreeRequest(
         int GardenId,
@@ -9,8 +8,15 @@ namespace MamMoi.Application.DTOs
         string? TreeName,
         DateOnly? PlantDate,
         int? GardenSoilId,
-        string? Location = null,          // FE có ô “Vị trí”
-        string? Notes = null              // FE có “Ghi chú”
+        string? Location = null,
+        string? Notes = null,
+        // mô tả trạng thái lá/cành/hoa/quả trên form
+        string? LeafStatus = null,
+        string? BranchStatus = null,
+        string? FlowerStatus = null,
+        string? FruitStatus = null,
+        bool? IsFruiting = null,
+        bool? IsActive = null
     );
 
     public record UpdateTreeRequest(
@@ -23,11 +29,19 @@ namespace MamMoi.Application.DTOs
         bool? IsFruiting,
         bool? IsActive,
         DateOnly? ExpectedHarvestDate,
-        string? Notes
+        string? Notes,
+        string? LeafStatus,
+        string? BranchStatus,
+        string? FlowerStatus,
+        string? FruitStatus
     );
 
+    // Bỏ HealthStatus vì DB không có; gom các trạng thái cần update nhanh
     public record UpdateTreeStatusRequest(
-        string? HealthStatus,
+        string? LeafStatus,
+        string? BranchStatus,
+        string? FlowerStatus,
+        string? FruitStatus,
         bool? IsActive,
         bool? IsFruiting
     );

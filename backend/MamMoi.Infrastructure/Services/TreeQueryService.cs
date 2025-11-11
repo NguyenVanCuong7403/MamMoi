@@ -44,12 +44,19 @@ public class TreeQueryService : ITreeQueryService
                 t.Garden.Name,
                 t.TreeType.TreeTypeName,
                 t.Stage.StageName,
-                t.HealthStatus,
+                // tổng hợp “health/status” cho cột hiển thị ngắn gọn
+                (t.FruitStatus ?? t.FlowerStatus ?? t.LeafStatus ?? "Bình thường"),
                 t.CreatedAt
             ))
             .ToListAsync(ct);
 
-        return new PagedResult<TreeListItemDto> { Items = items, Total = total, Page = page, PageSize = pageSize };
+        return new PagedResult<TreeListItemDto>
+        {
+            Items = items,
+            Total = total,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     public async Task<PagedResult<TreeListItemDto>> SearchAsync(
@@ -82,12 +89,18 @@ public class TreeQueryService : ITreeQueryService
                 t.Garden.Name,
                 t.TreeType.TreeTypeName,
                 t.Stage.StageName,
-                t.HealthStatus,
+                (t.FruitStatus ?? t.FlowerStatus ?? t.LeafStatus ?? "Bình thường"),
                 t.CreatedAt
             ))
             .ToListAsync(ct);
 
-        return new PagedResult<TreeListItemDto> { Items = items, Total = total, Page = page, PageSize = pageSize };
+        return new PagedResult<TreeListItemDto>
+        {
+            Items = items,
+            Total = total,
+            Page = page,
+            PageSize = pageSize
+        };
     }
 
     public async Task<TreeDetailDto?> GetDetailAsync(int treeId, int? currentUserId, CancellationToken ct = default)
@@ -100,17 +113,33 @@ public class TreeQueryService : ITreeQueryService
             .Include(t => t.TreeType)
             .Include(t => t.Stage)
             .Select(t => new TreeDetailDto(
-    t.TreeId, t.GardenId, t.UserId, t.TreeTypeId, t.StageId,
-    t.TreeCode, t.TreeName, t.PlantDate,
-    t.HealthStatus, t.Location,
-    t.GardenSoilId, t.IsActive, t.IsFruiting,
-    t.ExpectedHarvestDate, t.LastHarvestDate,
-    t.TotalHarvestedKg, t.AverageYieldPerYearKg,
-    t.Notes, t.QrcodeUrl, t.CreatedAt, t.UpdatedAt,
-    t.Garden.Name, t.TreeType.TreeTypeName, t.Stage.StageName,
-
-    // TRƯỚC: t.Garden.TimeZone, t.Garden.ClimateZone
-    (string?)null, (string?)null
+    t.TreeId,
+    t.GardenId,
+    t.UserId,
+    t.TreeTypeId,
+    t.StageId,
+    t.TreeCode,
+    t.TreeName,
+    t.PlantDate,
+    t.Location,
+    t.GardenSoilId,
+    t.IsActive,
+    t.IsFruiting,
+    t.ExpectedHarvestDate,
+    null,               // LastHarvestDate (DB không còn, truyền null)
+    null,               // TotalHarvestedKg (DB không còn, truyền null)
+    null,               // AverageYieldPerYearKg (DB không còn, truyền null)
+    t.Notes,
+    t.QrcodeUrl,
+    t.CreatedAt,
+    t.UpdatedAt,
+    t.Garden.Name,
+    t.TreeType.TreeTypeName,
+    t.Stage.StageName,
+    t.LeafStatus,
+    t.BranchStatus,
+    t.FlowerStatus,
+    t.FruitStatus
 ))
             .FirstOrDefaultAsync(ct);
     }

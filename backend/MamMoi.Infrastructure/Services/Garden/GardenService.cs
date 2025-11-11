@@ -214,17 +214,28 @@ public class GardenService : IGardenService
     /// <summary>
     /// Helper: Map Garden entity sang GardenResponseDto với statistics
     /// </summary>
-    private GardenResponseDto MapToResponseDto(GardenEntity garden, int currentUserId)
+    private GardenResponseDto MapToResponseDto(Garden garden, int currentUserId)
     {
-        // Calculate statistics
+        // ---- Calculate statistics ----
         var totalTrees = garden.Trees?.Count ?? 0;
-        var healthyTrees = garden.Trees?.Count(t => t.HealthStatus == "Healthy") ?? 0;
+
+        // Healthy nếu cả 4 trạng thái đều “Bình thường”
+        var healthyTrees = garden.Trees?.Count(t =>
+            t.LeafStatus == "Bình thường" &&
+            t.BranchStatus == "Bình thường" &&
+            t.FlowerStatus == "Bình thường" &&
+            t.FruitStatus == "Bình thường") ?? 0;
+
+        // Cần chú ý nếu có bất kỳ trạng thái nào khác "Bình thường"
         var treesNeedingAttention = garden.Trees?.Count(t =>
-            t.HealthStatus == "Sick" ||
-            t.HealthStatus == "NeedsAttention" ||
-            t.HealthStatus == "Critical") ?? 0;
+            t.LeafStatus != "Bình thường" ||
+            t.BranchStatus != "Bình thường" ||
+            t.FlowerStatus != "Bình thường" ||
+            t.FruitStatus != "Bình thường") ?? 0;
+
         var totalStaff = garden.GardenMembers?.Count(gm => gm.RoleId == 4) ?? 0; // Staff role = 4
 
+        // ---- Build DTO ----
         return new GardenResponseDto
         {
             GardenId = garden.GardenId,
@@ -232,10 +243,13 @@ public class GardenService : IGardenService
             OwnerName = garden.User?.FullName ?? garden.User?.Email ?? "Unknown",
             Name = garden.Name,
             Location = garden.Location,
-            TimeZone = garden.TimeZone,
-            ClimateZone = garden.ClimateZone,
             CreatedAt = garden.CreatedAt,
             IsOwner = garden.UserId == currentUserId,
+
+            // (Bỏ TimeZone & ClimateZone nếu đã loại khỏi model)
+            // TimeZone = garden.TimeZone,
+            // ClimateZone = garden.ClimateZone,
+
             Statistics = new GardenStatistics
             {
                 TotalTrees = totalTrees,

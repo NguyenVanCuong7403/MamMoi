@@ -122,38 +122,42 @@ namespace MamMoi.Infrastructure.Services
         }
 
         public async Task<IReadOnlyList<GrowthChartPointDto>> GetGrowthChartAsync(
-            int treeId, DateTime? from, DateTime? to, CancellationToken ct)
+    int treeId, DateTime? from, DateTime? to, CancellationToken ct)
         {
-            // Điểm từ ảnh (có HealthScore trong TreeImages)
+            // ---- Điểm từ ảnh (TreeImages có HealthScore) ----
             var pointsFromImages = _db.TreeImages.AsNoTracking()
-                .Where(i => i.TreeId == treeId && i.UploadedAt != null);
+                .Where(i => i.TreeId == treeId && (i.UploadedAt != null || i.CapturedAt != null));
 
-            if (from.HasValue) pointsFromImages = pointsFromImages.Where(i => i.UploadedAt >= from.Value);
-            if (to.HasValue) pointsFromImages = pointsFromImages.Where(i => i.UploadedAt <= to.Value);
+            if (from.HasValue)
+                pointsFromImages = pointsFromImages.Where(i => (i.CapturedAt ?? i.UploadedAt) >= from.Value);
+            if (to.HasValue)
+                pointsFromImages = pointsFromImages.Where(i => (i.CapturedAt ?? i.UploadedAt) <= to.Value);
 
             var imagesProjected = pointsFromImages
                 .Select(i => new GrowthChartPointDto(
-                    i.UploadedAt!.Value,
-                    null,                  // Trees đã bỏ HeightMeters
-                    i.HealthScore,         // dùng HealthScore từ ảnh (nếu có)
-                    null
+                    (i.CapturedAt ?? i.UploadedAt)!.Value,  // thời điểm đo
+                    null,                                   // HeightMeters — đã bỏ
+                    i.HealthScore,                          // từ ảnh
+                    null                                    // sản lượng — không còn trong Tree
                 ));
 
-            // Điểm hiện tại: chỉ có TotalHarvestedKg ở Trees; Height/Health để null
+            // ---- Điểm hiện tại (chỉ thời gian) ----
             var latestPoint = _db.Trees.AsNoTracking()
                 .Where(t => t.TreeId == treeId)
                 .Select(t => new GrowthChartPointDto(
-                    DateTime.UtcNow,
-                    null,                  // HeightMeters đã bỏ
-                    null,                  // HealthScore đã bỏ
-                    t.TotalHarvestedKg
+                    (DateTime?)(t.UpdatedAt ?? t.CreatedAt) ?? DateTime.UtcNow,
+                    null,  // HeightMeters
+                    null,  // HealthScore
+                    null   // sản lượng (đã bỏ)
                 ));
 
+            // ---- Tổng hợp ----
             return await imagesProjected
                 .Concat(latestPoint)
                 .OrderBy(p => p.When)
                 .ToListAsync(ct);
         }
+
 
         public async Task<IReadOnlyList<GrowthStageDto>> GetStagesForTreeAsync(int treeId, CancellationToken ct)
         {
