@@ -35,6 +35,7 @@ public class AuthController : ControllerBase
             return Ok(new
             {
                 success = true,
+                message = response.Message,
                 data = response
             });
         }
@@ -71,6 +72,7 @@ public class AuthController : ControllerBase
             return Ok(new
             {
                 success = true,
+                message = response.Message,
                 data = response
             });
         }
@@ -107,6 +109,7 @@ public class AuthController : ControllerBase
             return Ok(new
             {
                 success = true,
+                message = response.Message,
                 data = response
             });
         }
@@ -143,6 +146,7 @@ public class AuthController : ControllerBase
             return Ok(new
             {
                 success = true,
+                message = response.Message,
                 data = response
             });
         }
@@ -175,7 +179,12 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authService.RefreshTokenAsync(request.RefreshToken);
-            return Ok(result);
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Message,
+                data = result
+            });
         }
         catch (InvalidOperationException ex)
         {
@@ -273,7 +282,12 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authService.ForgotPasswordAsync(request);
-            return Ok(result);
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Message,
+                data = result
+            });
         }
         catch (InvalidOperationException ex)
         {
@@ -304,7 +318,12 @@ public class AuthController : ControllerBase
         try
         {
             var result = await _authService.ResetPasswordAsync(request);
-            return Ok(result);
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Message,
+                data = result
+            });
         }
         catch (InvalidOperationException ex)
         {
@@ -347,7 +366,12 @@ public class AuthController : ControllerBase
             }
 
             var result = await _authService.ChangePasswordAsync(userId, request);
-            return Ok(result);
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Message,
+                data = result
+            });
         }
         catch (InvalidOperationException ex)
         {

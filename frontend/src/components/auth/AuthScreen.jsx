@@ -16,12 +16,16 @@ import {
   Phone,
   ArrowRight,
   Sparkles,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  X,
 } from "lucide-react";
+import { useAuth } from "../../API/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 // Import animated background
 import { LivingBackground } from "@/components/background";
-import { useAuth } from "@/API/context/AuthContext";
-import { useNavigate } from "react-router-dom";
 
 /**
  * AuthScreen — v3 (polished)
@@ -35,6 +39,7 @@ import { useNavigate } from "react-router-dom";
 export default function AuthScreen({ defaultTab = "login" }) {
   const [showReset, setShowReset] = useState(false);
   const [tab, setTab] = useState(defaultTab);
+  const [pendingEmail, setPendingEmail] = useState(""); // Email cần verify OTP
 
   useEffect(() => {
     setTab(defaultTab);
@@ -63,9 +68,11 @@ export default function AuthScreen({ defaultTab = "login" }) {
             <CardContent>
               {!showReset ? (
                 <Tabs value={tab} onValueChange={(v) => setTab(v)} className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 rounded-xl bg-neutral-100/80">
+                  <TabsList className={`grid w-full rounded-xl bg-neutral-100/80 ${pendingEmail ? 'grid-cols-4' : 'grid-cols-3'}`}>
                     <TabsTrigger value="login">Đăng nhập</TabsTrigger>
                     <TabsTrigger value="register">Đăng ký</TabsTrigger>
+                    <TabsTrigger value="resend">Gửi lại OTP</TabsTrigger>
+                    {pendingEmail && <TabsTrigger value="otp">Xác thực OTP</TabsTrigger>}
                   </TabsList>
 
                   <TabsContent value="login" className="mt-5">
@@ -73,8 +80,41 @@ export default function AuthScreen({ defaultTab = "login" }) {
                   </TabsContent>
 
                   <TabsContent value="register" className="mt-5">
-                    <RegisterForm />
+                    <RegisterForm onRegisterSuccess={(email) => {
+                      setPendingEmail(email);
+                      setTab("otp");
+                    }} />
                   </TabsContent>
+
+                  <TabsContent value="resend" className="mt-5">
+                    <ResendOtpForm 
+                      onResendSuccess={(email) => {
+                        setPendingEmail(email);
+                        setTab("otp");
+                      }}
+                      onBackToLogin={() => setTab("login")}
+                    />
+                  </TabsContent>
+
+                  {pendingEmail && (
+                    <TabsContent value="otp" className="mt-5">
+                      <OtpForm 
+                        email={pendingEmail} 
+                        onVerifySuccess={() => {
+                          setPendingEmail("");
+                          setTab("login");
+                        }}
+                        onBack={() => {
+                          setPendingEmail("");
+                          setTab("register");
+                        }}
+                        onResend={() => {
+                          setPendingEmail("");
+                          setTab("resend");
+                        }}
+                      />
+                    </TabsContent>
+                  )}
                 </Tabs>
               ) : (
                 <div className="w-full">
@@ -137,12 +177,106 @@ export default function AuthScreen({ defaultTab = "login" }) {
   );
 }
 
-/* ------------------------ SUB COMPONENTS --------------------- */
+/* ------------------------ ALERT COMPONENTS --------------------- */
+
+function ErrorAlert({ message, onAction, actionText, onDismiss }) {
+  if (!message) return null;
+
+  const isUnverified = message.includes("chưa được xác thực") || message.includes("verify");
+  const isDisabled = message.includes("bị khóa") || message.includes("vô hiệu hóa");
+
+  return (
+    <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="h-5 w-5 text-red-600 mt-0.5 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-red-800 mb-2">
+            {isUnverified ? "Tài khoản chưa xác thực" : 
+             isDisabled ? "Tài khoản bị khóa" : 
+             "Đăng nhập thất bại"}
+          </p>
+          <p className="text-sm text-red-700 mb-3">{message}</p>
+          
+          {isUnverified && (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onAction}
+                className="text-xs bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1.5 rounded-md font-medium transition-colors"
+              >
+                {actionText || "Gửi lại OTP"}
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="text-red-400 hover:text-red-600 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SuccessAlert({ message, onDismiss }) {
+  if (!message) return null;
+
+  return (
+    <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-green-800">
+      <div className="flex items-start gap-3">
+        <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-green-700">{message}</p>
+        </div>
+        
+        {onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="text-green-400 hover:text-green-600 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InfoAlert({ message, onDismiss }) {
+  if (!message) return null;
+
+  return (
+    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-blue-800">
+      <div className="flex items-start gap-3">
+        <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm text-blue-700">{message}</p>
+        </div>
+        
+        {onDismiss && (
+          <button
+            onClick={onDismiss}
+            className="text-blue-400 hover:text-blue-600 transition-colors"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function LoginForm({ onForgot }) {
   const [show, setShow] = useState(false);
   const [caps, setCaps] = useState(false);
   const [acct, setAcct] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
   const { login, loading } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState("");
@@ -150,7 +284,7 @@ function LoginForm({ onForgot }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
-    const res = await login(form.email, form.password, remember);
+    const res = await login(acct, password);
     if (res.success) {
       navigate("/");
     } else {
@@ -195,6 +329,8 @@ function LoginForm({ onForgot }) {
           <Input
             type={show ? "text" : "password"}
             placeholder="••••••••"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             required
             onKeyUp={(e) =>
               setCaps(e.getModifierState && e.getModifierState("CapsLock"))
@@ -223,7 +359,10 @@ function LoginForm({ onForgot }) {
 
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 text-sm">
-          <Checkbox />
+          <Checkbox 
+            checked={remember}
+            onCheckedChange={setRemember}
+          />
           Ghi nhớ đăng nhập
         </label>
         <button
@@ -235,7 +374,14 @@ function LoginForm({ onForgot }) {
         </button>
       </div>
 
-{error && <p className="text-red-500 text-sm">{error}</p>}
+{error && (
+  <ErrorAlert 
+    message={error}
+    onAction={() => setTab("resend")}
+    actionText="Gửi lại OTP"
+    onDismiss={() => setError("")}
+  />
+)}
 
       <Button type="submit" className="w-full gap-2" disabled={loading}>
         {loading ? "Đang đăng nhập..." : "Đăng nhập" }
@@ -256,23 +402,77 @@ function LoginForm({ onForgot }) {
   );
 }
 
-function RegisterForm() {
+function RegisterForm({ onRegisterSuccess }) {
   const [show, setShow] = useState(false);
   const [show2, setShow2] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const { register, loading } = useAuth();
 
   const strength = useMemo(() => calcStrength(pw), [pw]);
   const mismatch = pw2 && pw2 !== pw;
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (mismatch) {
+      setError("Mật khẩu không khớp");
+      return;
+    }
+
+    const result = await register(fullName, email, pw);
+    
+    if (result.success) {
+      setSuccess(result.message);
+      // Gọi callback để chuyển sang OTP
+      if (onRegisterSuccess) {
+        onRegisterSuccess(email);
+      }
+    } else {
+      setError(result.message);
+    }
+  };
+
   return (
-    <form className="grid gap-4">
+    <form className="grid gap-4" onSubmit={handleSubmit}>
+      {error && (
+        <ErrorAlert 
+          message={error}
+          onDismiss={() => setError("")}
+        />
+      )}
+      {success && (
+        <SuccessAlert 
+          message={success}
+          onDismiss={() => setSuccess("")}
+        />
+      )}
+
       <Field label="Họ và tên" icon={<UserRound className="h-4 w-4" />}>
-        <Input placeholder="Nguyễn Văn A" required />
+        <Input
+          placeholder="Nguyễn Văn A"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          disabled={loading}
+          required
+        />
       </Field>
 
       <Field label="Email" icon={<Mail className="h-4 w-4" />}>
-        <Input type="email" placeholder="ban@domain.com" required />
+        <Input
+          type="email"
+          placeholder="ban@domain.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={loading}
+          required
+        />
       </Field>
 
       <Field label="Mật khẩu" icon={<LockKeyhole className="h-4 w-4" />}>
@@ -282,6 +482,7 @@ function RegisterForm() {
             placeholder="Tối thiểu 8 ký tự"
             value={pw}
             onChange={(e) => setPw(e.target.value)}
+            disabled={loading}
             required
           />
           <button
@@ -307,6 +508,7 @@ function RegisterForm() {
             placeholder="Trùng với mật khẩu"
             value={pw2}
             onChange={(e) => setPw2(e.target.value)}
+            disabled={loading}
             required
           />
           <button
@@ -328,12 +530,12 @@ function RegisterForm() {
       </Field>
 
       <label className="flex items-center gap-2 text-sm">
-        <Checkbox required />
+        <Checkbox required disabled={loading} />
         Tôi đồng ý với Điều khoản sử dụng
       </label>
 
-      <Button type="submit" className="w-full gap-2">
-        Tạo tài khoản
+      <Button type="submit" className="w-full gap-2" disabled={loading || mismatch}>
+        {loading ? "Đang đăng ký..." : "Tạo tài khoản"}
         <ArrowRight className="h-4 w-4" />
       </Button>
 
@@ -345,19 +547,217 @@ function RegisterForm() {
 }
 
 function ResetForm() {
+  const [step, setStep] = useState(1); // 1: nhập email, 2: nhập reset token, 3: nhập new password
+  const [email, setEmail] = useState("");
+  const [resetToken, setResetToken] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const { forgotPassword, resetPassword, loading } = useAuth();
+
+  const handleForgotSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!email) {
+      setError("Vui lòng nhập email");
+      return;
+    }
+
+    const result = await forgotPassword(email);
+    
+    if (result.success) {
+      setSuccess(result.message);
+      setStep(2);
+    } else {
+      setError(result.message);
+    }
+  };
+
+  const handleVerifyToken = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!resetToken || resetToken.length !== 6) {
+      setError("Vui lòng nhập mã reset 6 chữ số");
+      return;
+    }
+
+    // Chuyển sang bước nhập password (không verify riêng vì backend không có endpoint verify)
+    setStep(3);
+  };
+
+  const handleResetSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!newPassword || !confirmPassword) {
+      setError("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Mật khẩu xác nhận không khớp");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự");
+      return;
+    }
+
+    const result = await resetPassword(email, resetToken, newPassword);
+    
+    if (result.success) {
+      setSuccess(result.message);
+      // Có thể chuyển về login sau vài giây
+      setTimeout(() => {
+        window.location.reload(); // Hoặc navigate về login
+      }, 2000);
+    } else {
+      setError(result.message);
+    }
+  };
+
   return (
-    <form className="grid gap-4">
-      <Field label="Email khôi phục" icon={<Mail className="h-4 w-4" />}>
-        <Input type="email" placeholder="ban@domain.com" required />
-      </Field>
-      <div className="text-xs text-neutral-600">
-        Chúng tôi sẽ gửi đường link đặt lại mật khẩu vào email của bạn.
-      </div>
-      <Button type="submit" className="w-full gap-2">
-        Gửi yêu cầu
-        <ArrowRight className="h-4 w-4" />
-      </Button>
-    </form>
+    <div className="grid gap-4">
+      {error && (
+        <ErrorAlert 
+          message={error}
+          onDismiss={() => setError("")}
+        />
+      )}
+      {success && (
+        <SuccessAlert 
+          message={success}
+          onDismiss={() => setSuccess("")}
+        />
+      )}
+
+      {step === 1 ? (
+        <form className="grid gap-4" onSubmit={handleForgotSubmit}>
+          <Field label="Email khôi phục" icon={<Mail className="h-4 w-4" />}>
+            <Input 
+              type="email" 
+              placeholder="ban@domain.com" 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required 
+              disabled={loading}
+            />
+          </Field>
+          <div className="text-xs text-neutral-600">
+            Chúng tôi sẽ gửi mã reset password vào email của bạn.
+          </div>
+          <Button type="submit" className="w-full gap-2" disabled={loading}>
+            {loading ? "Đang gửi..." : "Gửi yêu cầu"}
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </form>
+      ) : step === 2 ? (
+        <form className="grid gap-4" onSubmit={handleVerifyToken}>
+          <Field label="Email" icon={<Mail className="h-4 w-4" />}>
+            <Input 
+              type="email" 
+              value={email}
+              disabled
+            />
+          </Field>
+          <Field label="Mã reset từ email" icon={<ShieldCheck className="h-4 w-4" />}>
+            <Input 
+              type="text" 
+              placeholder="123456"
+              value={resetToken}
+              onChange={(e) => setResetToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              disabled={loading}
+              maxLength={6}
+              className="text-center text-lg tracking-widest"
+              required
+            />
+          </Field>
+          <div className="text-xs text-neutral-600">
+            Nhập mã reset 6 chữ số từ email để tiếp tục.
+          </div>
+          <Button type="submit" className="w-full gap-2" disabled={loading || resetToken.length !== 6}>
+            {loading ? "Đang xác thực..." : "Tiếp tục"}
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+          <button
+            type="button"
+            className="text-xs text-emerald-700 hover:underline"
+            onClick={() => {
+              setStep(1);
+              setError("");
+              setSuccess("");
+              setResetToken("");
+            }}
+          >
+            Quay lại bước 1
+          </button>
+        </form>
+      ) : (
+        <form className="grid gap-4" onSubmit={handleResetSubmit}>
+          <Field label="Email" icon={<Mail className="h-4 w-4" />}>
+            <Input 
+              type="email" 
+              value={email}
+              disabled
+            />
+          </Field>
+          <Field label="Mã reset" icon={<ShieldCheck className="h-4 w-4" />}>
+            <Input 
+              type="text" 
+              value={resetToken}
+              disabled
+            />
+          </Field>
+          <Field label="Mật khẩu mới" icon={<LockKeyhole className="h-4 w-4" />}>
+            <Input 
+              type="password" 
+              placeholder="Ít nhất 6 ký tự"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              required 
+              disabled={loading}
+            />
+          </Field>
+          <Field label="Xác nhận mật khẩu" icon={<LockKeyhole className="h-4 w-4" />}>
+            <Input 
+              type="password" 
+              placeholder="Nhập lại mật khẩu"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required 
+              disabled={loading}
+            />
+          </Field>
+          <div className="text-xs text-neutral-600">
+            Đặt mật khẩu mới cho tài khoản của bạn.
+          </div>
+          <Button type="submit" className="w-full gap-2" disabled={loading}>
+            {loading ? "Đang đổi..." : "Đặt lại mật khẩu"}
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+          <button
+            type="button"
+            className="text-xs text-emerald-700 hover:underline"
+            onClick={() => {
+              setStep(2);
+              setError("");
+              setSuccess("");
+              setNewPassword("");
+              setConfirmPassword("");
+            }}
+          >
+            Quay lại bước 2
+          </button>
+        </form>
+      )}
+    </div>
   );
 }
 
@@ -450,4 +850,213 @@ function calcStrength(pw) {
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   if (pw.length >= 14 && score >= 3) score = 4;
   return { score: Math.min(score, 4) };
+}
+
+function ResendOtpForm({ onResendSuccess, onBackToLogin }) {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const { resendOtp, loading } = useAuth();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!email) {
+      setError("Vui lòng nhập email");
+      return;
+    }
+
+    const result = await resendOtp(email);
+    
+    if (result.success) {
+      setSuccess(result.message);
+      // Chuyển sang tab OTP để verify
+      if (onResendSuccess) {
+        onResendSuccess(email);
+      }
+    } else {
+      setError(result.message);
+    }
+  };
+
+  return (
+    <form className="grid gap-4" onSubmit={handleSubmit}>
+      {error && (
+        <ErrorAlert 
+          message={error}
+          onDismiss={() => setError("")}
+        />
+      )}
+      {success && (
+        <SuccessAlert 
+          message={success}
+          onDismiss={() => setSuccess("")}
+        />
+      )}
+
+      <div className="text-center">
+        <h3 className="text-lg font-semibold text-neutral-800">Gửi lại mã OTP</h3>
+        <p className="text-sm text-neutral-600 mt-1">
+          Nhập email đã đăng ký để nhận lại mã OTP xác thực tài khoản
+        </p>
+      </div>
+
+      <Field label="Email đã đăng ký" icon={<Mail className="h-4 w-4" />}>
+        <Input
+          type="email"
+          placeholder="ban@domain.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={loading}
+          required
+        />
+      </Field>
+
+      <div className="text-xs text-neutral-600">
+        Nếu tài khoản chưa được xác thực, chúng tôi sẽ gửi lại mã OTP.
+      </div>
+
+      <Button type="submit" className="w-full gap-2" disabled={loading}>
+        {loading ? "Đang gửi..." : "Gửi lại OTP"}
+        <ArrowRight className="h-4 w-4" />
+      </Button>
+
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={onBackToLogin}
+          className="text-sm text-emerald-700 hover:underline"
+        >
+          Quay lại đăng nhập
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function OtpForm({ email, onVerifySuccess, onBack, onResend }) {
+  const [otp, setOtp] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const { verifyOtp, resendOtp, loading } = useAuth();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (!otp || otp.length !== 6) {
+      setError("Vui lòng nhập mã OTP 6 chữ số");
+      return;
+    }
+
+    const result = await verifyOtp(email, otp);
+    
+    if (result.success) {
+      setSuccess(result.message);
+      setTimeout(() => {
+        if (onVerifySuccess) {
+          onVerifySuccess();
+        }
+      }, 1500);
+    } else {
+      setError(result.message);
+    }
+  };
+
+  const handleResend = async () => {
+    setError("");
+    setSuccess("");
+
+    const result = await resendOtp(email);
+    
+    if (result.success) {
+      setSuccess(result.message);
+    } else {
+      setError(result.message);
+    }
+  };
+
+  return (
+    <form className="grid gap-4" onSubmit={handleSubmit}>
+      {error && (
+        <ErrorAlert 
+          message={error}
+          onDismiss={() => setError("")}
+        />
+      )}
+      {success && (
+        <SuccessAlert 
+          message={success}
+          onDismiss={() => setSuccess("")}
+        />
+      )}
+
+      <div className="text-center">
+        <h3 className="text-lg font-semibold text-neutral-800">Xác thực tài khoản</h3>
+        <p className="text-sm text-neutral-600 mt-1">
+          Chúng tôi đã gửi mã OTP đến email: <strong>{email}</strong>
+        </p>
+      </div>
+
+      <Field label="Mã OTP" icon={<ShieldCheck className="h-4 w-4" />}>
+        <Input
+          type="text"
+          placeholder="123456"
+          value={otp}
+          onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          disabled={loading}
+          maxLength={6}
+          className="text-center text-lg tracking-widest"
+          required
+        />
+      </Field>
+
+      <div className="flex gap-2">
+        <Button 
+          type="button" 
+          variant="outline" 
+          className="flex-1"
+          onClick={onBack}
+          disabled={loading}
+        >
+          Quay lại
+        </Button>
+        <Button 
+          type="submit" 
+          className="flex-1 gap-2"
+          disabled={loading || otp.length !== 6}
+        >
+          {loading ? "Đang xác thực..." : "Xác thực"}
+          <ArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+      <div className="text-center">
+        <button
+          type="button"
+          onClick={handleResend}
+          className="text-sm text-emerald-700 hover:underline"
+          disabled={loading}
+        >
+          Gửi lại mã OTP
+        </button>
+        {onResend && (
+          <>
+            {" • "}
+            <button
+              type="button"
+              onClick={() => onResend()}
+              className="text-sm text-blue-700 hover:underline"
+              disabled={loading}
+            >
+              Hoặc nhập email khác
+            </button>
+          </>
+        )}
+      </div>
+    </form>
+  );
 }
