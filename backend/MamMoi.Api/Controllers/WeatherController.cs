@@ -3,6 +3,7 @@ using MamMoi.Application.DTOs;
 using MamMoi.Application.Interfaces;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace MamMoi.Api.Controllers;
 
@@ -91,5 +92,52 @@ public class WeatherController : ControllerBase
     {
         var id = await _weather.SaveWeatherHistoryAsync(treeId, dto, ct);
         return Ok(new { WeatherHistoryId = id });
+    }
+
+    [HttpGet("current/by-location")]
+    [ProducesResponseType(typeof(CurrentWeatherDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<CurrentWeatherDto>> GetCurrentByLocation(
+    [FromQuery, Required] string location,
+    CancellationToken ct = default)
+    {
+        var data = await _weather.GetCurrentByLocationAsync(location, ct);
+        return Ok(data);
+    }
+
+    [HttpGet("forecast/by-location")]
+    [ProducesResponseType(typeof(ForecastDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ForecastDto>> GetForecastByLocation(
+        [FromQuery, Required] string location,
+        [FromQuery] int range = 72,
+        CancellationToken ct = default)
+    {
+        var data = await _weather.GetForecastByLocationAsync(location, range, ct);
+        return Ok(data);
+    }
+
+    [HttpGet("alerts/by-location")]
+    [ProducesResponseType(typeof(IReadOnlyList<WeatherAlertDto>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<WeatherAlertDto>>> GetAlertsByLocation(
+        [FromQuery, Required] string location,
+        CancellationToken ct = default)
+    {
+        var data = await _weather.GetAlertsByLocationAsync(location, ct);
+        return Ok(data);
+    }
+
+    // ➕ tiện: theo vườn (lấy Garden.Location rồi gọi by-location)
+    [HttpGet("current/by-garden/{gardenId:int}")]
+    public async Task<ActionResult<CurrentWeatherDto>> GetCurrentByGarden(int gardenId, CancellationToken ct = default)
+    {
+        var garden = await HttpContext.RequestServices
+            .GetRequiredService<MamMoi.Infrastructure.Models.MamMoiDbContext>()
+            .Gardens.AsNoTracking()
+            .FirstOrDefaultAsync(g => g.GardenId == gardenId, ct);
+
+        if (garden is null || string.IsNullOrWhiteSpace(garden.Location))
+            return ValidationProblem("Garden không tồn tại hoặc chưa có Location.");
+
+        var data = await _weather.GetCurrentByLocationAsync(garden.Location, ct);
+        return Ok(data);
     }
 }

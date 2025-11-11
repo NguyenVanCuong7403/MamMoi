@@ -1,4 +1,5 @@
-﻿using MamMoi.Application.DTOs;
+﻿// Infrastructure/Services/TreeCommandService.cs
+using MamMoi.Application.DTOs;
 using MamMoi.Application.Interfaces;
 using MamMoi.Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
@@ -18,16 +19,17 @@ namespace MamMoi.Infrastructure.Services
             if (!await IsGardenOwner(userId, req.GardenId, ct))
                 throw new UnauthorizedAccessException("User is not garden owner.");
 
-            // Stage must belong to TreeType
+            // Stage phải thuộc TreeType
             bool okStage = await _db.TreeGrowthStages
                 .AnyAsync(s => s.StageId == req.StageId && s.TreeTypeId == req.TreeTypeId, ct);
             if (!okStage) throw new InvalidOperationException("Stage does not belong to TreeType.");
 
-            // GardenSoil checks
+            // GardenSoil (nếu truyền) phải thuộc đúng Garden và đúng SoilMaster của TreeType
             if (req.GardenSoilId.HasValue)
             {
                 var soil = await _db.GardenSoils.FirstOrDefaultAsync(gs => gs.GardenSoilId == req.GardenSoilId, ct);
-                var ttSoilId = await _db.TreeTypes.Where(t => t.TreeTypeId == req.TreeTypeId).Select(t => t.SoilMasterId).FirstAsync(ct);
+                var ttSoilId = await _db.TreeTypes.Where(t => t.TreeTypeId == req.TreeTypeId)
+                                  .Select(t => t.SoilMasterId).FirstAsync(ct);
                 if (soil == null || soil.GardenId != req.GardenId || soil.SoilMasterId != ttSoilId)
                     throw new InvalidOperationException("GardenSoil does not match Garden/TreeType.");
             }
@@ -41,10 +43,12 @@ namespace MamMoi.Infrastructure.Services
                 TreeCode = req.TreeCode,
                 TreeName = req.TreeName,
                 PlantDate = req.PlantDate,
+                GardenSoilId = req.GardenSoilId,
+                Location = req.Location,
+                Notes = req.Notes,
                 HealthStatus = "Healthy",
                 IsActive = true,
-                CreatedAt = DateTime.UtcNow,
-                GardenSoilId = req.GardenSoilId
+                CreatedAt = DateTime.UtcNow
             };
 
             _db.Trees.Add(tree);
@@ -80,7 +84,7 @@ namespace MamMoi.Infrastructure.Services
             if (req.GardenSoilId.HasValue && req.GardenSoilId.Value != tree.GardenSoilId)
             {
                 var ttSoilId = await _db.TreeTypes.Where(t => t.TreeTypeId == tree.TreeTypeId)
-                    .Select(t => t.SoilMasterId).FirstAsync(ct);
+                                  .Select(t => t.SoilMasterId).FirstAsync(ct);
                 var soil = await _db.GardenSoils.FirstOrDefaultAsync(gs => gs.GardenSoilId == req.GardenSoilId, ct);
                 if (soil == null || soil.GardenId != tree.GardenId || soil.SoilMasterId != ttSoilId)
                     throw new InvalidOperationException("GardenSoil does not match Garden/TreeType.");
@@ -88,12 +92,12 @@ namespace MamMoi.Infrastructure.Services
             }
 
             tree.TreeName = req.TreeName ?? tree.TreeName;
+            tree.TreeCode = req.TreeCode ?? tree.TreeCode;
             tree.PlantDate = req.PlantDate ?? tree.PlantDate;
-            tree.HeightMeters = req.HeightMeters ?? tree.HeightMeters;
-            tree.HealthScore = req.HealthScore ?? tree.HealthScore;
-            tree.HealthStatus = req.HealthStatus ?? tree.HealthStatus;
+            tree.Location = req.Location ?? tree.Location;
             tree.IsFruiting = req.IsFruiting ?? tree.IsFruiting;
             tree.IsActive = req.IsActive ?? tree.IsActive;
+            tree.ExpectedHarvestDate = req.ExpectedHarvestDate ?? tree.ExpectedHarvestDate;
             tree.Notes = req.Notes ?? tree.Notes;
             tree.UpdatedAt = DateTime.UtcNow;
 
@@ -119,12 +123,12 @@ namespace MamMoi.Infrastructure.Services
             if (!await IsGardenOwner(userId, tree.GardenId, ct)) throw new UnauthorizedAccessException();
 
             tree.HealthStatus = req.HealthStatus ?? tree.HealthStatus;
-            tree.HealthScore = req.HealthScore ?? tree.HealthScore;
             tree.IsActive = req.IsActive ?? tree.IsActive;
             tree.IsFruiting = req.IsFruiting ?? tree.IsFruiting;
             tree.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
+
             _db.ActivityLogs.Add(new ActivityLog
             {
                 UserId = userId,

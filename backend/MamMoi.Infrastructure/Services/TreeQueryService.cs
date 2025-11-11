@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿// Infrastructure/Services/TreeQueryService.cs
+using Microsoft.EntityFrameworkCore;
 using MamMoi.Application.DTOs;
 using MamMoi.Application.Interfaces;
 using MamMoi.Infrastructure.Models;
@@ -30,7 +31,7 @@ public class TreeQueryService : ITreeQueryService
             "name_asc" => q.OrderBy(t => t.TreeName),
             "name_desc" => q.OrderByDescending(t => t.TreeName),
             "createdat_asc" => q.OrderBy(t => t.CreatedAt),
-            _ => q.OrderByDescending(t => t.CreatedAt) // createdAt_desc
+            _ => q.OrderByDescending(t => t.CreatedAt)
         };
 
         var total = await q.CountAsync(ct);
@@ -44,18 +45,11 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeType.TreeTypeName,
                 t.Stage.StageName,
                 t.HealthStatus,
-                t.HealthScore,
                 t.CreatedAt
             ))
             .ToListAsync(ct);
 
-        return new PagedResult<TreeListItemDto>
-        {
-            Items = items,
-            Total = total,
-            Page = page,
-            PageSize = pageSize
-        };
+        return new PagedResult<TreeListItemDto> { Items = items, Total = total, Page = page, PageSize = pageSize };
     }
 
     public async Task<PagedResult<TreeListItemDto>> SearchAsync(
@@ -68,12 +62,11 @@ public class TreeQueryService : ITreeQueryService
             .Include(t => t.TreeType)
             .Include(t => t.Stage)
             .Where(t =>
-                (string.IsNullOrEmpty(query) ||
-                 (t.TreeName != null && t.TreeName.Contains(query)) ||
-                 (t.TreeCode != null && t.TreeCode.Contains(query)) ||
-                 (t.Garden.Name != null && t.Garden.Name.Contains(query)) ||
-                 (t.TreeType.TreeTypeName != null && t.TreeType.TreeTypeName.Contains(query)))
-            );
+                string.IsNullOrEmpty(query) ||
+                (t.TreeName != null && t.TreeName.Contains(query)) ||
+                (t.TreeCode != null && t.TreeCode.Contains(query)) ||
+                (t.Garden.Name != null && t.Garden.Name.Contains(query)) ||
+                (t.TreeType.TreeTypeName != null && t.TreeType.TreeTypeName.Contains(query)));
 
         if (gardenId is not null) q = q.Where(t => t.GardenId == gardenId);
         if (treeTypeId is not null) q = q.Where(t => t.TreeTypeId == treeTypeId);
@@ -90,57 +83,35 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeType.TreeTypeName,
                 t.Stage.StageName,
                 t.HealthStatus,
-                t.HealthScore,
                 t.CreatedAt
             ))
             .ToListAsync(ct);
 
-        return new PagedResult<TreeListItemDto>
-        {
-            Items = items,
-            Total = total,
-            Page = page,
-            PageSize = pageSize
-        };
-    } 
-
+        return new PagedResult<TreeListItemDto> { Items = items, Total = total, Page = page, PageSize = pageSize };
+    }
 
     public async Task<TreeDetailDto?> GetDetailAsync(int treeId, int? currentUserId, CancellationToken ct = default)
     {
-        var q = _db.Set<Tree>()
-            .AsNoTracking()
-            .Where(t => t.TreeId == treeId);
-
-        if (currentUserId is not null)
-            q = q.Where(t => t.UserId == currentUserId);
+        var q = _db.Set<Tree>().AsNoTracking().Where(t => t.TreeId == treeId);
+        if (currentUserId is not null) q = q.Where(t => t.UserId == currentUserId);
 
         return await q
             .Include(t => t.Garden)
             .Include(t => t.TreeType)
             .Include(t => t.Stage)
             .Select(t => new TreeDetailDto(
-                t.TreeId, t.GardenId, t.UserId, t.TreeTypeId, t.StageId,
-                t.TreeCode, t.TreeName, t.PlantDate, t.HeightMeters,
-                t.HealthStatus, t.HealthScore, t.Latitude, t.Longitude, t.Location,
+    t.TreeId, t.GardenId, t.UserId, t.TreeTypeId, t.StageId,
+    t.TreeCode, t.TreeName, t.PlantDate,
+    t.HealthStatus, t.Location,
+    t.GardenSoilId, t.IsActive, t.IsFruiting,
+    t.ExpectedHarvestDate, t.LastHarvestDate,
+    t.TotalHarvestedKg, t.AverageYieldPerYearKg,
+    t.Notes, t.QrcodeUrl, t.CreatedAt, t.UpdatedAt,
+    t.Garden.Name, t.TreeType.TreeTypeName, t.Stage.StageName,
 
-                // (bỏ AltitudeMeters/TimeZone/ClimateZone của Tree)
-
-                t.LastWateredAt, t.NextWateringAt, t.WateringFrequencyDays, t.LastWateringAmountLiters,
-                t.MinWateringIntervalDays, t.MaxWateringIntervalDays,
-                t.LastFertilizedAt, t.NextFertilizingAt, t.FertilizingFrequencyDays,
-                t.LastFertilizerType, t.LastFertilizerAmountGrams,
-
-                // (bỏ SunlightExposure/SoilPh/IsIndoor)
-
-                t.GardenSoilId, t.IsActive, t.IsFruiting, t.ExpectedHarvestDate,
-                t.LastHarvestDate, t.TotalHarvestedKg, t.AverageYieldPerYearKg,
-                t.Notes, t.QrcodeUrl, t.CreatedAt, t.UpdatedAt,
-                t.Garden.Name, t.TreeType.TreeTypeName, t.Stage.StageName,
-
-                // ⬇️ map từ Garden
-                t.Garden.TimeZone, t.Garden.ClimateZone
-            ))
+    // TRƯỚC: t.Garden.TimeZone, t.Garden.ClimateZone
+    (string?)null, (string?)null
+))
             .FirstOrDefaultAsync(ct);
     }
-
 }

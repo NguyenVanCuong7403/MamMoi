@@ -153,4 +153,113 @@ public sealed class OpenWeatherMapProvider : IWeatherProvider
         }
         return result;
     }
+
+    public async Task<CurrentWeatherDto> FetchCurrentByQueryAsync(string query, CancellationToken ct)
+    {
+        var url = $"https://api.openweathermap.org/data/2.5/weather?q={Uri.EscapeDataString(query)}&appid={_apiKey}&units={_units}&lang={_lang}";
+        using var resp = await _http.GetAsync(url, ct);
+        var json = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode) throw new Exception($"OpenWeather error: {(int)resp.StatusCode} - {json}");
+        var root = JsonDocument.Parse(json).RootElement;
+
+        var coord = root.GetProperty("coord");
+        var lat = coord.TryGetProperty("lat", out var la) ? la.GetDouble() : 0;
+        var lon = coord.TryGetProperty("lon", out var lo) ? lo.GetDouble() : 0;
+
+        // tái sử dụng logic đã có bằng cách build từ root
+        var main = root.GetProperty("main");
+        var wind = root.GetProperty("wind");
+        var weather = root.GetProperty("weather")[0];
+
+        int cloudiness = 0;
+        if (root.TryGetProperty("clouds", out var cloudsProp)
+            && cloudsProp.ValueKind == JsonValueKind.Object
+            && cloudsProp.TryGetProperty("all", out var allProp))
+            cloudiness = allProp.GetInt32();
+
+        long dtUnix = root.TryGetProperty("dt", out var dtProp)
+            ? dtProp.GetInt64() : DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        return new CurrentWeatherDto
+        {
+            Latitude = lat,
+            Longitude = lon,
+            LocationName = root.TryGetProperty("name", out var n) ? n.GetString() ?? "Unknown" : "Unknown",
+            Temperature = main.TryGetProperty("temp", out var t) ? t.GetDouble() : 0,
+            FeelsLike = main.TryGetProperty("feels_like", out var fl) ? fl.GetDouble() : 0,
+            Humidity = main.TryGetProperty("humidity", out var h) ? h.GetInt32() : 0,
+            WindSpeed = wind.TryGetProperty("speed", out var ws) ? ws.GetDouble() : 0,
+            Cloudiness = cloudiness,
+            WeatherMain = weather.TryGetProperty("main", out var wm) ? wm.GetString() ?? "" : "",
+            WeatherDescription = weather.TryGetProperty("description", out var wd) ? wd.GetString() ?? "" : "",
+            ObservedAt = DateTimeOffset.FromUnixTimeSeconds(dtUnix).UtcDateTime,
+            Source = "OpenWeatherMap"
+        };
+    }
+
+    public async Task<ForecastDto> FetchForecastByQueryAsync(string query, CancellationToken ct)
+    {
+        var url = $"https://api.openweathermap.org/data/2.5/forecast?q={Uri.EscapeDataString(query)}&appid={_apiKey}&units={_units}&lang={_lang}";
+        using var resp = await _http.GetAsync(url, ct);
+        var json = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode) throw new Exception($"OpenWeather forecast error: {(int)resp.StatusCode} - {json}");
+
+        var root = JsonDocument.Parse(json).RootElement;
+        var city = root.TryGetProperty("city", out var c) ? c : default;
+        double lat = 0, lon = 0;
+        if (city.ValueKind == JsonValueKind.Object && city.TryGetProperty("coord", out var cd))
+        {
+            if (cd.TryGetProperty("lat", out var la)) lat = la.GetDouble();
+            if (cd.TryGetProperty("lon", out var lo)) lon = lo.GetDouble();
+        }
+
+        var items = new List<ForecastItemDto>();
+        if (root.TryGetProperty("list", out var list) && list.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var it in list.EnumerateArray())
+            {
+                var main = it.GetProperty("main");
+                var wind = it.GetProperty("wind");
+                var weather = it.GetProperty("weather")[0];
+
+                double? rain = null;
+                if (it.TryGetProperty("rain", out var rainProp) && rainProp.TryGetProperty("3h", out var r3))
+                    rain = r3.GetDouble();
+
+                DateTime at = it.TryGetProperty("dt", out var dt)
+                    ? DateTimeOffset.FromUnixTimeSeconds(dt.GetInt64()).UtcDateTime
+                    : DateTime.UtcNow;
+
+                items.Add(new ForecastItemDto
+                {
+                    At = at,
+                    Temp = main.TryGetProperty("temp", out var t) ? t.GetDouble() : 0,
+                    TempMin = main.TryGetProperty("temp_min", out var tmin) ? tmin.GetDouble() : 0,
+                    TempMax = main.TryGetProperty("temp_max", out var tmax) ? tmax.GetDouble() : 0,
+                    Humidity = main.TryGetProperty("humidity", out var h) ? h.GetInt32() : 0,
+                    WindSpeed = wind.TryGetProperty("speed", out var ws) ? ws.GetDouble() : 0,
+                    Description = weather.TryGetProperty("description", out var wd) ? wd.GetString() ?? "" : "",
+                    RainMm = rain
+                });
+            }
+        }
+        return new ForecastDto { Latitude = lat, Longitude = lon, Items = items };
+    }
+
+    public async Task<(double lat, double lon)?> GeocodeAsync(string query, CancellationToken ct)
+    {
+        var url = $"https://api.openweathermap.org/geo/1.0/direct?q={Uri.EscapeDataString(query)}&limit=1&appid={_apiKey}";
+        using var resp = await _http.GetAsync(url, ct);
+        var json = await resp.Content.ReadAsStringAsync(ct);
+        if (!resp.IsSuccessStatusCode) return null;
+
+        var arr = JsonDocument.Parse(json).RootElement;
+        if (arr.ValueKind != JsonValueKind.Array || arr.GetArrayLength() == 0) return null;
+
+        var first = arr[0];
+        if (first.TryGetProperty("lat", out var la) && first.TryGetProperty("lon", out var lo))
+            return (la.GetDouble(), lo.GetDouble());
+
+        return null;
+    }
 }

@@ -179,8 +179,7 @@ public sealed class WeatherService : IWeatherService
         var tree = await _db.Trees.FirstOrDefaultAsync(x => x.TreeId == treeId, ct)
                    ?? throw new KeyNotFoundException("Tree not found");
 
-        tree.Latitude = (decimal)req.Latitude;
-        tree.Longitude = (decimal)req.Longitude;
+   
         tree.Location = req.LocationNote;
 
         await _db.SaveChangesAsync(ct);
@@ -203,4 +202,31 @@ public sealed class WeatherService : IWeatherService
         await _db.SaveChangesAsync(ct);
         return e.WeatherId;
     }
+
+    // MamMoi.Infrastructure/Services/WeatherService.cs  (bổ sung)
+    public Task<CurrentWeatherDto> GetCurrentByLocationAsync(string location, CancellationToken ct)
+        => _provider.FetchCurrentByQueryAsync(location, ct);
+
+    public Task<ForecastDto> GetForecastByLocationAsync(string location, int range, CancellationToken ct)
+        => _provider.FetchForecastByQueryAsync(location, ct);
+
+    // Alerts theo location: geocode trước, rồi dùng FetchAlertsAsync(lat,lon)
+    public async Task<IReadOnlyList<WeatherAlertDto>> GetAlertsByLocationAsync(string location, CancellationToken ct)
+    {
+        var pos = await _provider.GeocodeAsync(location, ct);
+        if (pos is null) return Array.Empty<WeatherAlertDto>();
+        var (lat, lon) = pos.Value;
+
+        // ưu tiên official; nếu rỗng thì fallback giống GetAlertsAsync
+        var official = await _provider.FetchAlertsAsync(lat, lon, ct);
+        if (official.Count > 0) return official;
+
+        var now = await _provider.FetchCurrentAsync(lat, lon, ct);
+        var fc = await _provider.FetchForecastAsync(lat, lon, 72, ct);
+        var local = new List<WeatherAlertDto>();
+        local.AddRange(GenerateFromCurrent(now, DateTime.UtcNow));
+        local.AddRange(GenerateFromForecast(fc));
+        return local.GroupBy(a => (a.Event, a.Start)).Select(g => g.First()).OrderBy(a => a.Start).ToList();
+    }
+
 }

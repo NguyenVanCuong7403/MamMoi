@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
+﻿// Application/DTOs/TreeIoDtos.cs
 namespace MamMoi.Application.DTOs
 {
     public record CreateTreeRequest(
@@ -13,63 +8,30 @@ namespace MamMoi.Application.DTOs
         string? TreeCode,
         string? TreeName,
         DateOnly? PlantDate,
-        int? GardenSoilId);
+        int? GardenSoilId,
+        string? Location = null,          // FE có ô “Vị trí”
+        string? Notes = null              // FE có “Ghi chú”
+    );
 
     public record UpdateTreeRequest(
         string? TreeName,
+        string? TreeCode,
         DateOnly? PlantDate,
-        decimal? HeightMeters,
-        decimal? HealthScore,
-        string? HealthStatus,
-        bool? IsFruiting,
-        bool? IsActive,
         int? StageId,
         int? GardenSoilId,
-        string? Notes);
+        string? Location,
+        bool? IsFruiting,
+        bool? IsActive,
+        DateOnly? ExpectedHarvestDate,
+        string? Notes
+    );
 
     public record UpdateTreeStatusRequest(
         string? HealthStatus,
-        decimal? HealthScore,
         bool? IsActive,
-        bool? IsFruiting);
+        bool? IsFruiting
+    );
 
-    public record UploadTreeImageRequest(
-        string ImageUrl,
-        string? ThumbnailUrl,
-        string? Description,
-        DateTime? CapturedAt,
-        string? Tags);
-
-    // ===== Outputs =====
     public record TreeCreatedDto(int TreeId);
     public record TreeSummaryDto(int TreeId, string? TreeName, string? TreeCode);
-
-    public record TreeImageDto(
-        int ImageId,
-        string ImageUrl,
-        string? ThumbnailUrl,
-        string? Description,
-        DateTime? UploadedAt,
-        DateTime? CapturedAt);
-
-    public record GrowthHistoryItemDto(
-        DateTime When,
-        string Source,    // Activity / CareSchedule / Weather / Image
-        string Title,
-        string? Detail);
-
-    public record GrowthChartPointDto(
-        DateTime When,
-        decimal? HeightMeters,
-        decimal? HealthScore,
-        decimal? TotalHarvestedKg);
-
-    public record GrowthStageDto(
-        int StageId,
-        string StageName,
-        int StageOrder,
-        string? Description);
 }
-
-
-

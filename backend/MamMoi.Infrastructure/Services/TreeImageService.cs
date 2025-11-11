@@ -25,6 +25,7 @@ namespace MamMoi.Infrastructure.Services
                 Tags = req.Tags,
                 UploadedAt = DateTime.UtcNow
             };
+
             _db.TreeImages.Add(img);
             await _db.SaveChangesAsync(ct);
 
@@ -38,13 +39,22 @@ namespace MamMoi.Infrastructure.Services
             });
             await _db.SaveChangesAsync(ct);
 
-            return new TreeImageDto(img.ImageId, img.ImageUrl ?? "", img.ThumbnailUrl, img.Description, img.UploadedAt, img.CapturedAt);
+            return new TreeImageDto(
+                img.ImageId,
+                img.ImageUrl ?? string.Empty,
+                img.ThumbnailUrl,
+                img.Description,
+                img.UploadedAt,
+                img.CapturedAt
+            );
         }
 
         public async Task<bool> DeleteImageAsync(int userId, int treeId, int imageId, CancellationToken ct)
         {
-            var img = await _db.TreeImages.FirstOrDefaultAsync(i => i.ImageId == imageId && i.TreeId == treeId, ct);
+            var img = await _db.TreeImages
+                .FirstOrDefaultAsync(i => i.ImageId == imageId && i.TreeId == treeId, ct);
             if (img == null) return false;
+
             _db.TreeImages.Remove(img);
             await _db.SaveChangesAsync(ct);
 
@@ -57,6 +67,7 @@ namespace MamMoi.Infrastructure.Services
                 CreatedAt = DateTime.UtcNow
             });
             await _db.SaveChangesAsync(ct);
+
             return true;
         }
 
@@ -65,7 +76,13 @@ namespace MamMoi.Infrastructure.Services
             return await _db.TreeImages.AsNoTracking()
                 .Where(i => i.TreeId == treeId)
                 .OrderByDescending(i => i.UploadedAt)
-                .Select(i => new TreeImageDto(i.ImageId, i.ImageUrl ?? "", i.ThumbnailUrl, i.Description, i.UploadedAt, i.CapturedAt))
+                .Select(i => new TreeImageDto(
+                    i.ImageId,
+                    i.ImageUrl ?? string.Empty,
+                    i.ThumbnailUrl,
+                    i.Description,
+                    i.UploadedAt,
+                    i.CapturedAt))
                 .ToListAsync(ct);
         }
 
@@ -73,41 +90,67 @@ namespace MamMoi.Infrastructure.Services
         {
             var acts = _db.ActivityLogs.AsNoTracking()
                 .Where(a => a.TreeId == treeId)
-                .Select(a => new GrowthHistoryItemDto(a.CreatedAt, "Activity", a.ActivityType, a.ActivityDescription));
+                .Select(a => new GrowthHistoryItemDto(
+                    a.CreatedAt, "Activity", a.ActivityType, a.ActivityDescription));
 
             var cares = _db.CareSchedules.AsNoTracking()
                 .Where(c => c.TreeId == treeId && c.CompletedAt != null)
-                .Select(c => new GrowthHistoryItemDto(c.CompletedAt!.Value, "CareSchedule", c.TaskName ?? c.TaskType ?? "Task", c.CompletionNotes ?? c.Description));
+                .Select(c => new GrowthHistoryItemDto(
+                    c.CompletedAt!.Value, "CareSchedule",
+                    c.TaskName ?? c.TaskType ?? "Task",
+                    c.CompletionNotes ?? c.Description));
 
             var weathers = _db.WeatherHistories.AsNoTracking()
-                .Where(w => w.TreeId == treeId && w.ApirespondedAt != null)
-                .Select(w => new GrowthHistoryItemDto(w.ApirespondedAt!.Value, "Weather", w.DataSource ?? "WeatherAPI", w.DataQuality));
+    .Where(w => w.TreeId == treeId && w.ApirespondedAt != null) // <-- r thường
+    .Select(w => new GrowthHistoryItemDto(
+        w.ApirespondedAt!.Value,                                  // <-- r thường
+        "Weather",
+        w.DataSource ?? "WeatherAPI",
+        w.DataQuality));
 
             var images = _db.TreeImages.AsNoTracking()
                 .Where(i => i.TreeId == treeId && i.UploadedAt != null)
-                .Select(i => new GrowthHistoryItemDto(i.UploadedAt!.Value, "Image", "Upload", i.Description));
+                .Select(i => new GrowthHistoryItemDto(
+                    i.UploadedAt!.Value, "Image", "Upload", i.Description));
 
-            return await acts.Concat(cares).Concat(weathers).Concat(images)
+            return await acts
+                .Concat(cares)
+                .Concat(weathers)
+                .Concat(images)
                 .OrderByDescending(x => x.When)
                 .ToListAsync(ct);
         }
 
-        public async Task<IReadOnlyList<GrowthChartPointDto>> GetGrowthChartAsync(int treeId, DateTime? from, DateTime? to, CancellationToken ct)
+        public async Task<IReadOnlyList<GrowthChartPointDto>> GetGrowthChartAsync(
+            int treeId, DateTime? from, DateTime? to, CancellationToken ct)
         {
-            var act = _db.ActivityLogs.AsNoTracking().Where(a => a.TreeId == treeId);
-            if (from.HasValue) act = act.Where(a => a.CreatedAt >= from.Value);
-            if (to.HasValue) act = act.Where(a => a.CreatedAt <= to.Value);
+            // Điểm từ ảnh (có HealthScore trong TreeImages)
+            var pointsFromImages = _db.TreeImages.AsNoTracking()
+                .Where(i => i.TreeId == treeId && i.UploadedAt != null);
 
-            var fromImages = _db.TreeImages.AsNoTracking()
-                .Where(i => i.TreeId == treeId && i.UploadedAt != null)
-                .Select(i => new GrowthChartPointDto(i.UploadedAt!.Value, null, i.HealthScore, null));
+            if (from.HasValue) pointsFromImages = pointsFromImages.Where(i => i.UploadedAt >= from.Value);
+            if (to.HasValue) pointsFromImages = pointsFromImages.Where(i => i.UploadedAt <= to.Value);
 
-            var nowPoint = _db.Trees.AsNoTracking()
+            var imagesProjected = pointsFromImages
+                .Select(i => new GrowthChartPointDto(
+                    i.UploadedAt!.Value,
+                    null,                  // Trees đã bỏ HeightMeters
+                    i.HealthScore,         // dùng HealthScore từ ảnh (nếu có)
+                    null
+                ));
+
+            // Điểm hiện tại: chỉ có TotalHarvestedKg ở Trees; Height/Health để null
+            var latestPoint = _db.Trees.AsNoTracking()
                 .Where(t => t.TreeId == treeId)
-                .Select(t => new GrowthChartPointDto(DateTime.UtcNow, t.HeightMeters, t.HealthScore, t.TotalHarvestedKg));
+                .Select(t => new GrowthChartPointDto(
+                    DateTime.UtcNow,
+                    null,                  // HeightMeters đã bỏ
+                    null,                  // HealthScore đã bỏ
+                    t.TotalHarvestedKg
+                ));
 
-            return await fromImages
-                .Concat(nowPoint)
+            return await imagesProjected
+                .Concat(latestPoint)
                 .OrderBy(p => p.When)
                 .ToListAsync(ct);
         }
@@ -122,7 +165,8 @@ namespace MamMoi.Infrastructure.Services
             return await _db.TreeGrowthStages.AsNoTracking()
                 .Where(s => s.TreeTypeId == ttId)
                 .OrderBy(s => s.StageOrder)
-                .Select(s => new GrowthStageDto(s.StageId, s.StageName, s.StageOrder, s.Description))
+                .Select(s => new GrowthStageDto(
+                    s.StageId, s.StageName, s.StageOrder, s.Description))
                 .ToListAsync(ct);
         }
     }

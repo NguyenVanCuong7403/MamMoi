@@ -527,50 +527,66 @@ public partial class MamMoiDbContext : DbContext
 
             entity.HasIndex(e => e.UserId, "IX_Trees_UserID");
 
-            entity.Property(e => e.TreeId).HasColumnName("TreeID");
-            entity.Property(e => e.AltitudeMeters).HasColumnType("decimal(7, 2)");
-            entity.Property(e => e.AutoAdjustWatering).HasDefaultValue(true);
-            entity.Property(e => e.AverageYieldPerYearKg).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.ClimateZone).HasMaxLength(50);
-            entity.Property(e => e.CreatedAt)
-                .HasPrecision(0)
-                .HasDefaultValueSql("(sysdatetime())");
-            entity.Property(e => e.FertilizingFrequencyDays).HasDefaultValue(30);
-            entity.Property(e => e.GardenId).HasColumnName("GardenID");
-            entity.Property(e => e.GardenSoilId).HasColumnName("GardenSoilID");
-            entity.Property(e => e.HealthScore).HasColumnType("decimal(4, 1)");
-            entity.Property(e => e.HealthStatus)
-                .HasMaxLength(50)
-                .HasDefaultValue("Healthy");
-            entity.Property(e => e.HeightMeters).HasColumnType("decimal(5, 2)");
-            entity.Property(e => e.LastFertilizedAt).HasPrecision(0);
-            entity.Property(e => e.LastFertilizerAmountGrams).HasColumnType("decimal(6, 2)");
-            entity.Property(e => e.LastFertilizerType).HasMaxLength(100);
-            entity.Property(e => e.LastWateredAt).HasPrecision(0);
-            entity.Property(e => e.LastWateringAmountLiters).HasColumnType("decimal(5, 2)");
-            entity.Property(e => e.Latitude).HasColumnType("decimal(10, 8)");
-            entity.Property(e => e.Location).HasMaxLength(255);
-            entity.Property(e => e.Longitude).HasColumnType("decimal(10, 8)");
-            entity.Property(e => e.MaxWateringIntervalDays).HasDefaultValue(21);
-            entity.Property(e => e.MinWateringIntervalDays).HasDefaultValue(3);
-            entity.Property(e => e.NextFertilizingAt).HasPrecision(0);
-            entity.Property(e => e.NextWateringAt).HasPrecision(0);
-            entity.Property(e => e.QrcodeUrl)
-                .HasMaxLength(500)
-                .HasColumnName("QRCodeUrl");
-            entity.Property(e => e.SoilPh)
-                .HasColumnType("decimal(3, 1)")
-                .HasColumnName("SoilPH");
-            entity.Property(e => e.StageId).HasColumnName("StageID");
-            entity.Property(e => e.SunlightExposure).HasMaxLength(50);
-            entity.Property(e => e.TimeZone).HasMaxLength(100);
-            entity.Property(e => e.TotalHarvestedKg).HasColumnType("decimal(10, 2)");
-            entity.Property(e => e.TreeCode).HasMaxLength(50);
-            entity.Property(e => e.TreeName).HasMaxLength(100);
-            entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
-            entity.Property(e => e.UpdatedAt).HasPrecision(0);
-            entity.Property(e => e.UserId).HasColumnName("UserID");
-            entity.Property(e => e.WateringFrequencyDays).HasDefaultValue(7);
+            modelBuilder.Entity<Tree>(entity =>
+            {
+                entity.ToTable("Trees");
+                entity.HasKey(e => e.TreeId);
+
+                // ====== PK + FK column names ======
+                entity.Property(e => e.TreeId).HasColumnName("TreeID");
+                entity.Property(e => e.GardenId).HasColumnName("GardenID");
+                entity.Property(e => e.UserId).HasColumnName("UserID");
+                entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
+                entity.Property(e => e.StageId).HasColumnName("StageID");
+                entity.Property(e => e.GardenSoilId).HasColumnName("GardenSoilID");
+
+                // ====== Basic fields still kept in table Trees ======
+                entity.Property(e => e.TreeCode).HasMaxLength(50);
+                entity.Property(e => e.TreeName).HasMaxLength(100);
+
+                // kiểu date cho các cột ngày
+                entity.Property(e => e.PlantDate).HasColumnType("date");
+                entity.Property(e => e.ExpectedHarvestDate).HasColumnType("date");
+                entity.Property(e => e.LastHarvestDate).HasColumnType("date");
+
+                entity.Property(e => e.HealthStatus)
+                      .HasMaxLength(50)
+                      .HasDefaultValue("Healthy");
+
+                entity.Property(e => e.Location).HasMaxLength(255);
+
+                entity.Property(e => e.TotalHarvestedKg)
+                      .HasColumnType("decimal(10, 2)");
+
+                entity.Property(e => e.AverageYieldPerYearKg)
+                      .HasColumnType("decimal(10, 2)");
+
+                entity.Property(e => e.QrcodeUrl)
+                      .HasMaxLength(500)
+                      .HasColumnName("QRCodeUrl");
+
+                // Timestamps
+                entity.Property(e => e.CreatedAt)
+                      .HasPrecision(0)
+                      .HasDefaultValueSql("(sysdatetime())");
+
+                entity.Property(e => e.UpdatedAt)
+                      .HasPrecision(0);
+
+                // Các cột bool (nullable) không cần cấu hình thêm:
+                // IsActive, IsFruiting
+
+                // ====== (Tuỳ bạn) Quan hệ FK nếu chưa cấu hình chỗ khác ======
+                // entity.HasOne(d => d.Garden).WithMany(p => p.Trees)
+                //       .HasForeignKey(d => d.GardenId);
+                // entity.HasOne(d => d.TreeType).WithMany(p => p.Trees)
+                //       .HasForeignKey(d => d.TreeTypeId);
+                // entity.HasOne(d => d.Stage).WithMany(p => p.Trees)
+                //       .HasForeignKey(d => d.StageId);
+                // entity.HasOne(d => d.GardenSoil).WithMany(p => p.Trees)
+                //       .HasForeignKey(d => d.GardenSoilId);
+            });
+
 
             entity.HasOne(d => d.Garden).WithMany(p => p.Trees)
                 .HasForeignKey(d => d.GardenId)
