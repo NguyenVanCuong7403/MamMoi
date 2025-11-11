@@ -34,7 +34,7 @@ import LivingBackground from "@/components/background/LivingBackground";
    Theme & helpers
 ========================================================= */
 const BG = "#1F302F";
-const CONTAINER = "mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-10 2xl:px-16";
+const CONTAINER = "mx-auto w-full max-w-[2160px] px-6 sm:px-8 lg:px-12 2xl:px-16";
 const LEFT_COL = "col-span-12 lg:col-span-8 xl:col-span-9";
 const RIGHT_COL = "col-span-12 lg:col-span-4 xl:col-span-3";
 
@@ -44,14 +44,11 @@ const LS_STAFFS = "mm_user_staffs_v3";
 const LS_TREES = "mm_user_trees_v1";
 const LS_DEMO_PW = "mm_demo_auth_pw";
 
-const INPUT_OK =
-  "h-11 w-full rounded-xl bg-white border border-neutral-300 placeholder:text-neutral-400 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500";
-const INPUT_ERR =
-  "h-11 w-full rounded-xl bg-white border border-rose-500 placeholder:text-neutral-400 focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500";
-const SELECT =
-  "h-11 w-full rounded-xl border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500";
+const INPUT_OK = "h-14 w-full rounded-xl bg-white border border-neutral-300 placeholder:text-neutral-400 text-base focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500";
+const INPUT_ERR = "h-14 w-full rounded-xl bg-white border border-rose-500 placeholder:text-neutral-400 text-base focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500";
+const SELECT = "h-14 w-full rounded-2xl border bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500";
 const BTN = {
-  base: "rounded-xl",
+  base: "rounded-2xl h-12 px-5 text-base",
   primary: "bg-emerald-600 hover:bg-emerald-700 text-white",
   outline:
     "bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100",
@@ -60,9 +57,8 @@ const BTN = {
 
 /* ===== (THÊM MỚI, đặt ngay dưới const BTN) ===== */
 const COMPACT = {
-  select:
-    "h-9 rounded-full border bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500",
-  btn: "h-9 rounded-full px-3",
+  select: "h-11 rounded-full border bg-white px-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500",
+  btn: "h-11 rounded-full px-5",
 };
 
 
@@ -409,7 +405,7 @@ function SearchInput({ value, onChange, placeholder = "Tìm kiếm..." }) {
         inputMode="search"
         autoComplete="off"
         spellCheck={false}
-        className="h-9 w-[260px] rounded-xl pl-9 pr-8"
+        className="h-12 w-[320px] rounded-2xl pl-9 pr-10 text-base"
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -422,7 +418,7 @@ function SearchInput({ value, onChange, placeholder = "Tìm kiếm..." }) {
           aria-label="Xoá tìm kiếm"
           title="Xoá tìm kiếm"
         >
-          <X className="h-4 w-4 text-neutral-500" />
+          <X className="h-5 w-5 text-neutral-500" />
         </button>
       ) : null}
     </div>
@@ -430,7 +426,7 @@ function SearchInput({ value, onChange, placeholder = "Tìm kiếm..." }) {
 }
 
 /* ===== Avatar Sync ===== */
-function AvatarSync({ src, size = 56, title = "" }) {
+function AvatarSync({ src, size = 80, title = "" }) {
   const hasImg = !!src;
   const color = hasImg ? "bg-emerald-500" : "bg-amber-500";
   const badgeTitle = hasImg
@@ -459,7 +455,7 @@ function AvatarSync({ src, size = 56, title = "" }) {
 }
 
 /* ===== NEW: Thumbnail vuông cho list vườn/nhân viên ===== */
-function SquareThumb({ src, size = 56, fallback = "garden", title = "" }) {
+function SquareThumb({ src, size = 72, fallback = "garden", title = "" }) {
   const FallbackIcon =
     fallback === "user" ? UserIcon : fallback === "garden" ? TreePine : Users;
   return (
@@ -758,7 +754,7 @@ function PasswordModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-5 text-white">
+        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-6 text-white">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg font-semibold">Bảo mật & mật khẩu</div>
@@ -795,7 +791,7 @@ function PasswordModal({
         </div>
 
         {/* Body */}
-        <div className="bg-white p-5">
+        <div className="bg-white p-6">
           {tab === "change" && (
             <form autoComplete="off" onSubmit={(e) => e.preventDefault()}>
               <input type="text" autoComplete="username" className="hidden" />
@@ -1197,7 +1193,7 @@ function OTPModal({ open, target, sendTo, onClose, onVerified }) {
         className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white p-5">
+        <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 text-white p-6">
           <div className="text-lg font-semibold">{title}</div>
           <div className="text-white/80 text-sm mt-1">
             {sent ? (
@@ -1208,7 +1204,7 @@ function OTPModal({ open, target, sendTo, onClose, onVerified }) {
           </div>
         </div>
 
-        <div className="bg-white p-5">
+        <div className="bg-white p-6">
           <div className="text-sm text-neutral-700">
             {sent ? "Nhập 6 số trong email để tiếp tục." : "Chưa gửi mã OTP."}
           </div>
@@ -1256,6 +1252,29 @@ function OTPModal({ open, target, sendTo, onClose, onVerified }) {
 }
 
 /* =========================================================
+   ErrorBoundary – chặn trắng màn nếu form gặp runtime error
+========================================================= */
+class ErrorBoundary extends React.Component {
+  constructor(props){ super(props); this.state = { hasError:false }; }
+  static getDerivedStateFromError(){ return { hasError:true }; }
+  componentDidCatch(err, info){ console.error("EditTree crashed:", err, info); }
+  render(){
+    if (this.state.hasError) {
+      return (
+        <div className="fixed inset-0 z-[1400] grid place-items-center">
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="relative max-w-md w-full rounded-2xl bg-white p-6 shadow-xl">
+            <div className="text-lg font-semibold text-rose-700 mb-2">Có lỗi khi hiển thị form sửa cây</div>
+            <div className="text-sm text-neutral-700">Đừng lo, dữ liệu của bạn vẫn an toàn. Đóng hộp thoại này và thử lại.</div>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+/* =========================================================
    Garden Detail Modal
 ========================================================= */
 function GardenDetailModal({
@@ -1266,6 +1285,7 @@ function GardenDetailModal({
   onClose,
   onRefresh,
   formatGardenLocation,
+  onEditTree,
 }) {
   if (!open || !garden) return null;
 
@@ -1281,7 +1301,7 @@ function GardenDetailModal({
     >
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-3xl rounded-2xl bg-white p-5 shadow-xl"
+        className="relative w-full max-w-3xl rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -1291,11 +1311,11 @@ function GardenDetailModal({
           </div>
           <div className="flex items-center gap-2">
             <Button
-              className={`${BTN.base} ${BTN.outline} h-8 px-3`}
+              className={`${BTN.base} ${BTN.outline} h-11 px-5`}
               onClick={onRefresh}
               title="Tải lại danh sách cây (đồng bộ với LocalStorage)"
             >
-              <RefreshCcw className="h-4 w-4 mr-1" />
+              <RefreshCcw className="h-5 w-5 mr-1" />
               Tải lại
             </Button>
             <button className="rounded p-1 hover:bg-neutral-100" onClick={onClose}>
@@ -1431,7 +1451,7 @@ function Toast({ open, title, desc, variant = "success", onClose }) {
   }, [onClose]);
 
   return (
-    <div className="fixed top-5 right-5 z-[1400]">
+    <div className="fixed top-6 right-5 z-[1400]">
       <div
         className={`flex items-start gap-3 rounded-2xl border p-3 shadow-xl ${color} w-[320px]`}
       >
@@ -1449,7 +1469,7 @@ function Toast({ open, title, desc, variant = "success", onClose }) {
           onClick={onClose}
           aria-label="Đóng"
         >
-          <X className="h-4 w-4" />
+          <X className="h-5 w-5" />
         </button>
       </div>
     </div>
@@ -1492,14 +1512,14 @@ function EditGardenModal({
   const errs = {
     name: !form.name.trim() ? "Tên vườn là bắt buộc" : "",
     province: !form.province.trim() ? "Nhập Tỉnh/Thành phố" : "",
-    district: !form.district.trim() ? "Nhập Quận/Huyện" : "",
+    
     ward: !form.ward.trim() ? "Nhập Phường/Xã" : "",
     address: !form.address.trim() ? "Nhập địa chỉ chi tiết" : "",
   };
   const canSave =
     !errs.name &&
     !errs.province &&
-    !errs.district &&
+    
     !errs.ward &&
     !errs.address;
 
@@ -1507,7 +1527,7 @@ function EditGardenModal({
     <div className="fixed inset-0 z-[1100] grid place-items-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 text-lg font-semibold">Sửa thông tin vườn</div>
@@ -1671,7 +1691,7 @@ function EditStaffModal({
     <div className="fixed inset-0 z-[1100] grid place-items-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 text-lg font-semibold">Sửa thông tin nhân viên</div>
@@ -1782,7 +1802,7 @@ function AssignStaffModal({ open, staff, gardens = [], onClose, onConfirm }) {
     <div className="fixed inset-0 z-[1205] grid place-items-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -1902,7 +1922,7 @@ function ResetStaffPwModal({ open, staff, onClose, onConfirmed }) {
     <div className="fixed inset-0 z-[1206] grid place-items-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -1924,7 +1944,7 @@ function ResetStaffPwModal({ open, staff, onClose, onConfirmed }) {
                   {donePw}
                 </code>
                 <Button className={`${BTN.base} ${BTN.outline}`} onClick={copyPw}>
-                  <Copy className="h-4 w-4 mr-1" /> Sao chép
+                  <Copy className="h-5 w-5 mr-1" /> Sao chép
                 </Button>
               </div>
               {copied ? <div className="mt-2 text-xs">Đã sao chép vào clipboard.</div> : null}
@@ -1989,7 +2009,7 @@ function StaffDetailModal({ open, staff, onClose, onEdit, onResetPw }) {
     <div className="fixed inset-0 z-[1255] grid place-items-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-2xl rounded-2xl bg-white p-5 shadow-xl"
+        className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 flex items-center justify-between">
@@ -2088,6 +2108,7 @@ export default function UserProfile() {
   const [gardens, setGardens] = useState(() => load(LS_GARDENS, defaultGardens));
   const [staffs, setStaffs] = useState(() => load(LS_STAFFS, defaultStaffs));
   const [trees, setTrees] = useState(() => load(LS_TREES, defaultTrees));
+const [editTree, setEditTree] = useState({ open:false, data:null });
 
   useEffect(() => save(LS_PROFILE, profile), [profile]);
   useEffect(() => save(LS_GARDENS, gardens), [gardens]);
@@ -2159,7 +2180,8 @@ export default function UserProfile() {
     editStaff.open ||
     assignModal.open ||
     resetPwModal.open ||
-    staffDetail.open;
+    staffDetail.open ||
+    editTree.open;
 
   const profileRef = useRef(null);
   const goEditFromMenu = () => {
@@ -2283,7 +2305,7 @@ export default function UserProfile() {
       const haystack = [
         g.name,
         g.province,
-        g.district,
+        
         g.ward,
         g.address,
         g.status,
@@ -2465,7 +2487,7 @@ export default function UserProfile() {
         inert={overlayOpen ? "" : undefined}
       >
         <Card className="rounded-3xl border border-white/20 bg-white/10 backdrop-blur text-white shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
-          <CardContent className="p-5">
+          <CardContent className="p-8">
             <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
               <div className="flex items-center gap-3">
                 <div className="grid h-12 w-12 place-items-center rounded-full bg-white/15 ring-1 ring-white/20">
@@ -2493,7 +2515,7 @@ export default function UserProfile() {
                   label: "Số vườn hoạt động",
                   value: gardens.filter((g) => g.status === "Đang hoạt động")
                     .length,
-                  icon: <MapPin className="h-4 w-4" />,
+                  icon: <MapPin className="h-5 w-5" />,
                 },
                 {
                   label: "Vườn dừng hoạt động",
@@ -2503,23 +2525,23 @@ export default function UserProfile() {
                 {
                   label: "Số nhân viên",
                   value: staffs.length,
-                  icon: <Users className="h-4 w-4" />,
+                  icon: <Users className="h-5 w-5" />,
                 },
                 {
                   label: "Tổng số cây đang chăm",
                   value: stats.totalTrees,
-                  icon: <TreePine className="h-4 w-4" />,
+                  icon: <TreePine className="h-5 w-5" />,
                 },
               ].map((s, i) => (
                 <div
                   key={i}
-                  className="rounded-2xl border border-white/20 bg-white/10 p-3"
+                  className="rounded-2xl border border-white/20 bg-white/10 p-4"
                 >
-                  <div className="flex items:center justify-between text-xs opacity-80">
+                  <div className="flex items-center justify-between text-xs opacity-80">
                     <span>{s.label}</span>
                     {s.icon}
                   </div>
-                  <div className="mt-1 text-2xl font-semibold">{s.value}</div>
+                  <div className="mt-1 text-4xl font-semibold">{s.value}</div>
                 </div>
               ))}
             </div>
@@ -2537,23 +2559,23 @@ export default function UserProfile() {
           <section ref={profileRef} className={`space-y-6 ${LEFT_COL}`}>
             {/* Profile */}
             <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
-              <CardContent className="p-5">
+              <CardContent className="p-8">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                   <div className="flex items-center gap-3">
                     <AvatarSync src={profile.avatarUrl} />
                     <div>
-                      <div className="text-lg font-semibold text-neutral-900">
-                        {profile.fullName}
-                      </div>
-                      <div className="mt-1 flex flex-wrap items-center gap-4 text-sm text-neutral-700">
+                      <div className="text-2xl md:text-3xl font-semibold text-neutral-900">
+  {profile.fullName}
+</div>
+<div className="mt-1 flex flex-wrap items-center gap-4 text-base md:text-[17px] text-neutral-700">
                         <span className="inline-flex items-center gap-1">
-                          <Mail className="h-4 w-4" /> {profile.email}
+                          <Mail className="h-5 w-5" /> {profile.email}
                         </span>
                         <span className="inline-flex items-center gap-1">
-                          <Phone className="h-4 w-4" /> {profile.phone}
+                          <Phone className="h-5 w-5" /> {profile.phone}
                         </span>
                         <span className="inline-flex items-center gap-1">
-                          <MapPin className="h-4 w-4" /> {profile.address}
+                          <MapPin className="h-5 w-5" /> {profile.address}
                         </span>
                       </div>
                     </div>
@@ -2563,24 +2585,24 @@ export default function UserProfile() {
                 <Separator className="my-4" />
 
                 {!editing ? (
-                  <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                    {[
-                      ["Họ & tên", profile.fullName],
-                      ["Email", profile.email],
-                      ["Điện thoại", profile.phone],
-                      ["Địa chỉ", profile.address],
-                    ].map(([k, v]) => (
-                      <div
-                        key={k}
-                        className="rounded-2xl border bg-neutral-50 px-3 py-2"
-                      >
-                        <div className="text-xs text-neutral-500">{k}</div>
-                        <div className="text-sm text-neutral-900">
-                          {v || "—"}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+  {[
+    ["Họ & tên", profile.fullName],
+    ["Email", profile.email],
+    ["Điện thoại", profile.phone],
+    ["Địa chỉ", profile.address],
+  ].map(([k, v]) => (
+    <div
+      key={k}
+      className="rounded-2xl border bg-neutral-50 px-4 py-3"
+    >
+      <div className="text-sm md:text-base text-neutral-500">{k}</div>
+      <div className="text-[17px] md:text-[18px] text-neutral-900">
+        {v || "—"}
+      </div>
+    </div>
+  ))}
+</div>
                 ) : (
                   <EditProfileForm
                     draft={draft}
@@ -2604,7 +2626,7 @@ export default function UserProfile() {
 
             {/* Gardens */}
             <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
-              <CardContent className="p-5">
+              <CardContent className="p-8">
               <div className="mb-3 flex items-center justify-between gap-3">
   <div className="text-base font-semibold">Quản lý vườn</div>
   {/* Mỗi thành phần dùng COMPACT.* để thu nhỏ và thêm flex-wrap để xuống hàng khi cần */}
@@ -2612,7 +2634,7 @@ export default function UserProfile() {
     <select
       value={gardenFilter}
       onChange={(e) => setGardenFilter(e.target.value)}
-      className={`${COMPACT.select} w-[170px] shrink-0`}
+      className={`${COMPACT.select} w-[220px] shrink-0`}
       title="Lọc trạng thái vườn"
     >
       <option value="all">Tất cả vườn</option>
@@ -2631,7 +2653,7 @@ export default function UserProfile() {
       onClick={openGardenModal}
       title="Thêm vườn mới"
     >
-      <Plus className="h-4 w-4" /> Thêm vườn
+      <Plus className="h-5 w-5" /> Thêm vườn
     </Button>
   </div>
 </div>
@@ -2646,7 +2668,7 @@ export default function UserProfile() {
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                           {/* LEFT: thumb + info */}
                           <div className="min-w-0 flex items-start gap-3">
-                            <SquareThumb src={g.coverUrl} size={56} fallback="garden" title={g.name} />
+                            <SquareThumb src={g.coverUrl} size={72} fallback="garden" title={g.name} />
                             <div className="min-w-0">
                               <div className="truncate font-medium text-neutral-900">{g.name}</div>
                               <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-neutral-600">
@@ -2661,7 +2683,7 @@ export default function UserProfile() {
                                   {g.status}
                                 </BadgeSoft>
                                 <span className="inline-flex items-center gap-1">
-                                  <Users className="h-4 w-4" />
+                                  <Users className="h-5 w-5" />
                                   Nhân viên quản lý:{" "}
                                   <b className="ml-1">{managers.length ? managers.join(", ") : "—"}</b>
                                 </span>
@@ -2672,13 +2694,13 @@ export default function UserProfile() {
                           {/* RIGHT: actions */}
                           <div className="flex items-center gap-2">
                             <Button
-                              className={`${BTN.base} ${BTN.outline} h-8 px-3`}
+                              className={`${BTN.base} ${BTN.outline} h-11 px-5`}
                               onClick={() => setGardenDetail({ open: true, garden: g })}
                             >
                               Chi tiết
                             </Button>
                             <Button
-                              className={`${BTN.base} ${BTN.outline} h-8 px-3`}
+                              className={`${BTN.base} ${BTN.outline} h-11 px-5`}
                               onClick={() =>
                                 setEditGarden({
                                   open: true,
@@ -2690,10 +2712,10 @@ export default function UserProfile() {
                               Sửa
                             </Button>
                             <Button
-                              className={`${BTN.base} ${BTN.outline} h-8 px-3 text-rose-600 hover:bg-rose-50`}
+                              className={`${BTN.base} ${BTN.outline} h-11 px-5 text-rose-600 hover:bg-rose-50`}
                               onClick={() => openConfirmDeleteGarden(g)}
                             >
-                              <Trash2 className="mr-1 h-4 w-4" /> Xóa
+                              <Trash2 className="mr-1 h-5 w-5" /> Xóa
                             </Button>
                           </div>
                         </div>
@@ -2706,14 +2728,14 @@ export default function UserProfile() {
 
             {/* Staffs */}
             <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
-              <CardContent className="p-5">
+              <CardContent className="p-8">
               <div className="mb-3 flex items-center justify-between gap-3">
   <div className="text-base font-semibold">Nhân viên & phân công</div>
   <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
     <select
       value={staffGardenFilter}
       onChange={(e) => setStaffGardenFilter(e.target.value)}
-      className={`${COMPACT.select} w-[200px] shrink-0`}
+      className={`${COMPACT.select} w-[240px] shrink-0`}
       title="Lọc theo vườn"
     >
       <option value="all">Tất cả vườn</option>
@@ -2728,7 +2750,7 @@ export default function UserProfile() {
     <select
       value={staffStatusFilter}
       onChange={(e) => setStaffStatusFilter(e.target.value)}
-      className={`${COMPACT.select} w-[190px] shrink-0`}
+      className={`${COMPACT.select} w-[220px] shrink-0`}
       title="Lọc theo trạng thái"
     >
       <option value="all">Tất cả trạng thái</option>
@@ -2747,7 +2769,7 @@ export default function UserProfile() {
       onClick={openStaffModal}
       title="Tạo tài khoản nhân viên"
     >
-      <Plus className="h-4 w-4" /> Thêm nhân viên
+      <Plus className="h-5 w-5" /> Thêm nhân viên
     </Button>
   </div>
 </div>
@@ -2757,7 +2779,7 @@ export default function UserProfile() {
                     <div key={idx} className="rounded-2xl border p-3">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0 flex items-start gap-3">
-                          <SquareThumb src={s.avatarUrl} size={56} fallback="user" title={s.name} />
+                          <SquareThumb src={s.avatarUrl} size={72} fallback="user" title={s.name} />
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <Users className="h-4 w-4 text-emerald-600" />
@@ -2780,7 +2802,7 @@ export default function UserProfile() {
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
-                            className={`${BTN.base} ${BTN.outline} h-8 px-3`}
+                            className={`${BTN.base} ${BTN.outline} h-11 px-5`}
                             onClick={() =>
                               setAssignModal({ open: true, index: idx, staff: s })
                             }
@@ -2788,7 +2810,7 @@ export default function UserProfile() {
                             Phân công
                           </Button>
                           <Button
-                            className={`${BTN.base} ${BTN.outline} h-8 px-3`}
+                            className={`${BTN.base} ${BTN.outline} h-11 px-5`}
                             onClick={() =>
                               setStaffDetail({ open: true, index: idx, staff: s })
                             }
@@ -2796,10 +2818,10 @@ export default function UserProfile() {
                             Chi tiết
                           </Button>
                           <Button
-                            className={`${BTN.base} ${BTN.outline} h-8 px-3 text-rose-600 hover:bg-rose-50`}
+                            className={`${BTN.base} ${BTN.outline} h-11 px-5 text-rose-600 hover:bg-rose-50`}
                             onClick={() => openConfirmDeleteStaff(s)}
                           >
-                            <Trash2 className="mr-1 h-4 w-4" /> Xóa
+                            <Trash2 className="mr-1 h-5 w-5" /> Xóa
                           </Button>
                         </div>
                       </div>
@@ -2815,51 +2837,79 @@ export default function UserProfile() {
             {/* Menu */}
             <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
               <CardContent className="p-4">
-                <div className="mb-2 text-base font-semibold">Menu</div>
-                <div className="space-y-2">
-                  {[
-                    "Chỉnh sửa hồ sơ",
-                    "Cài đặt thông báo",
-                    "Bảo mật & mật khẩu",
-                    "Quản lý gói & thanh toán",
-                    "Quản lý vườn",
-                    "Quản lý nhân viên",
-                  ].map((m) => (
-                    <button
-                      key={m}
-                      className="w-full rounded-xl border px-3 py-2 text-left text-sm hover:bg-neutral-50"
-                      onClick={() => {
-                        if (m.includes("mật khẩu")) setPwOpen(true);
-                        if (m.includes("Chỉnh sửa")) goEditFromMenu();
-                      }}
-                    >
-                      {m}
-                    </button>
-                  ))}
-                </div>
+                <div className="mb-3 text-xl font-semibold">Menu</div>
+<div className="space-y-2">
+  {[
+    "Chỉnh sửa hồ sơ",
+    "Cài đặt thông báo",
+    "Bảo mật & mật khẩu",
+    "Quản lý gói & thanh toán",
+    "Quản lý vườn",
+    "Quản lý nhân viên",
+  ].map((m) => (
+    <button
+      key={m}
+      className="w-full rounded-2xl border px-4 py-3 text-left text-base hover:bg-neutral-50"
+      onClick={() => {
+        if (m.includes("mật khẩu")) setPwOpen(true);
+        if (m.includes("Chỉnh sửa")) goEditFromMenu();
+      }}
+    >
+      {m}
+    </button>
+  ))}
+</div>
               </CardContent>
             </Card>
 
-            {/* Ghi chú phân quyền */}
-            <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
-              <CardContent className="p-4">
-                <div className="mb-2 text-base font-semibold">Ghi chú phân quyền</div>
-                <ul className="space-y-2 text-sm text-neutral-700">
-                  <li>
-                    <b>Farmer</b> (chủ): toàn quyền tài khoản, gói dịch vụ, quản
-                    trị vườn và nhân viên.
-                  </li>
-                  <li>
-                    <b>Staff</b>: thao tác trong <i>vườn được phân công</i> (cây,
-                    kế hoạch, việc cần làm).
-                  </li>
-                  <li>
-                    <b>Viewer</b>: chỉ xem trong vườn được phân công. (không tạo
-                    mới trong phiên bản này)
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
+            {/* Hướng dẫn trang tài khoản */}
+<Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
+  <CardContent className="p-4">
+    <div className="mb-3 text-xl font-semibold">Hướng dẫn trang tài khoản</div>
+
+    <div className="space-y-3 text-[15.5px] md:text-[16.5px] leading-relaxed text-neutral-800">
+      <p><b>Tổng quan:</b> Đây là nơi bạn cập nhật thông tin cá nhân, quản lý vườn và nhân viên. Các mục quan trọng nằm ở cột phải (Menu) và các khối lớn ở giữa trang.</p>
+
+      <ol className="list-decimal pl-5 space-y-2">
+        <li>
+          <b>Hồ sơ người dùng:</b> Xem/đổi <i>Email</i>, <i>SĐT</i>, <i>Địa chỉ</i>.
+          Bấm <i>“Chỉnh sửa hồ sơ”</i> (hoặc nút trong Menu) để bật chế độ sửa. Hoàn tất thì bấm <i>“Lưu thay đổi”</i>.
+        </li>
+        <li>
+          <b>Đổi Email / SĐT (OTP):</b> Vì an toàn, cần xác minh OTP. Bấm <i>“Đổi email”</i> hoặc <i>“Đổi SĐT”</i> → <i>Nhận mã</i> →
+          nhập đủ <b>6 số</b> để mở khoá ô nhập.
+        </li>
+        <li>
+          <b>Bảo mật & mật khẩu:</b> Vào Menu → <i>“Bảo mật & mật khẩu”</i>. 
+          Tab <i>“Đổi mật khẩu”</i> dùng khi nhớ mật khẩu cũ; tab <i>“Quên mật khẩu (OTP email)”</i> dùng khi quên mật khẩu.
+        </li>
+        <li>
+          <b>Quản lý vườn:</b> Bấm <i>“Thêm vườn”</i> → nhập <i>Tên vườn</i> và chọn <i>Địa chỉ</i> từ gợi ý (Tỉnh/Thành, Phường/Xã, Địa chỉ).
+          Trong danh sách vườn: <i>Chi tiết</i> (xem cây & nhân viên), <i>Sửa</i> hoặc <i>Xoá</i>.
+        </li>
+        <li>
+          <b>Nhân viên & phân công:</b> Bấm <i>“Thêm nhân viên”</i> → nhập <i>Họ tên</i> + (ít nhất) <i>Email</i> hoặc <i>SĐT</i>, 
+          mật khẩu tạm tối thiểu <b>8 ký tự</b>. Có thể phân công ngay hoặc bấm <i>“Phân công”</i> sau. 
+          Vào <i>“Chi tiết”</i> để <i>Sửa</i> thông tin hoặc <i>Đổi mật khẩu</i>.
+        </li>
+        <li>
+          <b>Tìm kiếm & lọc:</b> Ô kính lúp để tìm nhanh theo tên, email, SĐT, địa chỉ. 
+          Dùng các hộp <i>Lọc trạng thái</i>/<i>Lọc vườn</i> để thu gọn danh sách.
+        </li>
+        <li>
+          <b>Ảnh & liên kết:</b> Có thể tải ảnh trực tiếp hoặc dán link <i>Google Drive/Dropbox</i>. 
+          Hệ thống tự chuẩn hoá link để hiển thị ổn định.
+        </li>
+        
+      </ol>
+
+      <div className="rounded-xl border p-3 bg-emerald-50 border-emerald-200 text-emerald-800 text-[15px] md:text-[16px]">
+        <b>Mẹo đọc dễ hơn:</b> Bạn có thể phóng to trang bằng <kbd>Ctrl</kbd> + <kbd>+</kbd> (trên máy tính) hoặc 
+        dùng cử chỉ phóng to (trên điện thoại).
+      </div>
+    </div>
+  </CardContent>
+</Card>
           </aside>
         </div>
       </main>
@@ -2961,14 +3011,37 @@ export default function UserProfile() {
 
       {/* Chi tiết vườn */}
       <GardenDetailModal
-        open={gardenDetail.open}
-        garden={gardenDetail.garden}
-        staffs={staffs}
-        trees={trees}
-        onClose={() => setGardenDetail({ open: false, garden: null })}
-        onRefresh={reloadTreesFromLS}
-        formatGardenLocation={formatGardenLocation}
-      />
+  open={gardenDetail.open}
+  garden={gardenDetail.garden}
+  staffs={staffs}
+  trees={trees}
+  onClose={() => setGardenDetail({ open: false, garden: null })}
+  onRefresh={reloadTreesFromLS}
+  formatGardenLocation={formatGardenLocation}
+  onEditTree={(treeObj) => {
+    setEditTree({ open:true, data: treeObj });
+  }}
+/>
+<ErrorBoundary>
+  <EditTreeModal
+    open={editTree.open}
+    initial={editTree.data}
+    gardens={gardens}
+    INPUT_OK={INPUT_OK}
+    INPUT_ERR={INPUT_ERR}
+    SELECT={SELECT}
+    onClose={() => setEditTree({ open:false, data:null })}
+    onSubmit={(updated) => {
+      setTrees((ts) => ts.map((x) => x.code === (editTree.data?.code || "") ? { ...x, ...updated } : x));
+      setEditTree({ open:false, data:null });
+      // useEffect(save) đã lo lưu LS_TREES; nếu muốn chắc chắn:
+      try { localStorage.setItem(LS_TREES, JSON.stringify(
+        (trees || []).map((x) => x.code === (editTree.data?.code || "") ? { ...x, ...updated } : x)
+      )); } catch {}
+      showToast("Đã cập nhật cây", updated.code || "");
+    }}
+  />
+</ErrorBoundary>
 
       {/* Chi tiết nhân viên (gộp Sửa & Đổi MK) */}
       <StaffDetailModal
@@ -3058,7 +3131,7 @@ export default function UserProfile() {
               </div>
               <div className="mt-2">
                 <Button
-                  className={`${BTN.base} ${BTN.outline} h-9 px-3`}
+                  className={`${BTN.base} ${BTN.outline} h-11 px-5`}
                   onClick={() =>
                     copyCredentialsToClipboard(
                       preferredLoginAccount(confirm.payload),
@@ -3066,7 +3139,7 @@ export default function UserProfile() {
                     )
                   }
                 >
-                  <Copy className="h-4 w-4 mr-1" />
+                  <Copy className="h-5 w-5 mr-1" />
                   Sao chép TK + MK
                 </Button>
               </div>
@@ -3107,23 +3180,24 @@ export default function UserProfile() {
         )}
       </ConfirmModal>
 
-      {/* OTP Modal */}
       <OTPModal
-        open={otpState.open}
-        target={otpState.target}
-        sendTo={profile.email}
-        onClose={closeOtp}
-        onVerified={() => {
-          setAllowEditContact((s) => ({ ...s, [otpState.target]: true }));
-          showToast(
-            "Xác minh thành công",
-            otpState.target === "email"
-              ? "Bạn có thể đổi Email"
-              : "Bạn có thể đổi SĐT",
-            "success"
-          );
-        }}
-      />
+  open={otpState.open}
+  target={otpState.target}
+  sendTo={profile.email}
+  onClose={closeOtp}
+  onVerified={() => {
+    setAllowEditContact((s) => ({ ...s, [otpState.target]: true }));
+    showToast(
+      "Xác minh thành công",
+      otpState.target === "email" ? "Bạn có thể đổi Email" : "Bạn có thể đổi SĐT",
+      "success"
+    );
+  }}
+/>
+{/* EditTreeModal được định nghĩa ở dưới file (ngoài JSX) */}
+
+
+
 
       {/* Assign + Reset Password */}
       <AssignStaffModal
@@ -3165,6 +3239,228 @@ export default function UserProfile() {
     </div>
   );
 }
+function EditTreeModal({
+  open,
+  initial,
+  gardens = [],
+  onClose,
+  onSubmit,
+  INPUT_OK = "h-14 w-full rounded-xl bg-white border border-neutral-300 placeholder:text-neutral-400 text-base focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500",
+  INPUT_ERR = "h-14 w-full rounded-xl bg-white border border-rose-500 placeholder:text-neutral-400 text-base focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500",
+  SELECT = "h-14 w-full rounded-2xl border bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500",
+}) {
+  const blank = {
+    code: "",
+    speciesKey: "",
+    speciesLabel: "",
+    variety: "",
+    gardenName: "",
+    status: "",
+    soil: "",
+    plantDate: "",
+    preAge: 0,
+    region: "",
+    phase: "",
+    image: "",
+  };
+
+  const [form, setForm] = useState({ ...blank, ...(initial || {}) });
+  const [touched, setTouched] = useState({});
+
+  useEffect(() => {
+    if (!open) return;
+    setForm({ ...blank, ...(initial || {}) });
+    setTouched({});
+  }, [open, initial]);
+
+  if (!open) return null;
+
+  // Nếu thiếu initial -> hiện thông báo thay vì crash
+  if (!initial || typeof initial !== "object") {
+    return (
+      <div className="fixed inset-0 z-[1350] grid place-items-center" onClick={onClose}>
+        <div className="absolute inset-0 bg-black/60" />
+        <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e)=>e.stopPropagation()}>
+          <div className="text-lg font-semibold text-rose-700 mb-1">Không tìm thấy cây cần sửa</div>
+          <div className="text-sm text-neutral-700">Bản ghi có thể đã bị xoá hoặc mã cây không hợp lệ.</div>
+          <div className="mt-4 flex justify-end">
+            <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onClose}>Đóng</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Validate tối thiểu
+  const errs = {
+    code: !String(form.code || "").trim() ? "Mã cây là bắt buộc" : "",
+    gardenName: !String(form.gardenName || "").trim() ? "Chọn vườn" : "",
+  };
+  const canSave = !errs.code && !errs.gardenName;
+
+  return (
+    <div className="fixed inset-0 z-[1350] grid place-items-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/60" />
+      <div
+        className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-lg font-semibold">
+            Sửa thông tin cây — <span className="text-emerald-700">{initial.code}</span>
+          </div>
+          <button className="rounded p-1 hover:bg-neutral-100" onClick={onClose}>
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-3 text-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel required>Mã cây</FieldLabel>
+              <Input
+                className={!touched.code ? INPUT_OK : errs.code ? INPUT_ERR : INPUT_OK}
+                value={form.code}
+                onChange={(e)=>setForm({...form, code: e.target.value})}
+                onBlur={()=>setTouched(t=>({...t, code:true}))}
+                placeholder="VD: XC-01"
+              />
+              {touched.code && errs.code ? (
+                <p className="mt-1 text-xs text-rose-600">{errs.code}</p>
+              ) : null}
+            </div>
+
+            <div>
+              <FieldLabel required>Vườn</FieldLabel>
+              <select
+                className={SELECT}
+                value={form.gardenName}
+                onChange={(e)=>setForm({...form, gardenName: e.target.value})}
+                onBlur={()=>setTouched(t=>({...t, gardenName:true}))}
+              >
+                <option value="">(Chưa chọn)</option>
+                {gardens.map((g,i)=>(<option key={i} value={g.name}>{g.name}</option>))}
+              </select>
+              {touched.gardenName && errs.gardenName ? (
+                <p className="mt-1 text-xs text-rose-600">{errs.gardenName}</p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Loài</FieldLabel>
+              <Input
+                className={INPUT_OK}
+                value={form.speciesLabel}
+                onChange={(e)=>setForm({...form, speciesLabel: e.target.value})}
+                placeholder="VD: Bưởi / Sầu riêng…"
+              />
+            </div>
+            <div>
+              <FieldLabel>Giống</FieldLabel>
+              <Input
+                className={INPUT_OK}
+                value={form.variety}
+                onChange={(e)=>setForm({...form, variety: e.target.value})}
+                placeholder="VD: Da Xanh, Ri6…"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Tình trạng</FieldLabel>
+              <Input
+                className={INPUT_OK}
+                value={form.status}
+                onChange={(e)=>setForm({...form, status: e.target.value})}
+                placeholder="VD: tốt / ổn định / sâu bệnh…"
+              />
+            </div>
+            <div>
+              <FieldLabel>Giai đoạn sinh trưởng</FieldLabel>
+              <Input
+                className={INPUT_OK}
+                value={form.phase}
+                onChange={(e)=>setForm({...form, phase: e.target.value})}
+                placeholder="VD: Cây non / Thân lá / Ra hoa…"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Đất</FieldLabel>
+              <Input
+                className={INPUT_OK}
+                value={form.soil}
+                onChange={(e)=>setForm({...form, soil: e.target.value})}
+                placeholder="VD: Đất phù sa / Đất đỏ bazan…"
+              />
+            </div>
+            <div>
+              <FieldLabel>Vùng</FieldLabel>
+              <Input
+                className={INPUT_OK}
+                value={form.region}
+                onChange={(e)=>setForm({...form, region: e.target.value})}
+                placeholder="VD: Miền Bắc / Miền Tây…"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <FieldLabel>Ngày trồng</FieldLabel>
+              <Input
+                type="date"
+                className={INPUT_OK}
+                value={form.plantDate || ""}
+                onChange={(e)=>setForm({...form, plantDate: e.target.value})}
+              />
+            </div>
+            <div>
+              <FieldLabel>Tuổi trước khi nhập (tháng)</FieldLabel>
+              <Input
+                inputMode="numeric"
+                pattern="\d*"
+                className={INPUT_OK}
+                value={String(form.preAge ?? 0)}
+                onChange={(e)=>{
+                  const v = String(e.target.value).replace(/\D/g,"");
+                  setForm({...form, preAge: v ? Number(v) : 0});
+                }}
+              />
+            </div>
+          </div>
+
+          <div>
+            <FieldLabel>Ảnh cây</FieldLabel>
+            <ImagePicker value={form.image} onChange={(v)=>setForm({...form, image: v})} />
+          </div>
+
+          <div className="mt-2 flex justify-end gap-2">
+            <Button
+              className="rounded-xl bg-white border border-neutral-300 hover:bg-neutral-100 text-slate-900"
+              onClick={onClose}
+            >
+              Huỷ
+            </Button>
+            <Button
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={!canSave}
+              onClick={()=> canSave && onSubmit(form)}
+            >
+              Lưu thay đổi
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 /* ------- Small components extracted for brevity ------- */
 function EditProfileForm({
@@ -3346,7 +3642,7 @@ function GardenModal({
     <div className="fixed inset-0 z-[1100] grid place-items-center" onClick={closeGardenModal}>
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 text-lg font-semibold">Thêm vườn mới</div>
@@ -3489,7 +3785,7 @@ function StaffModal({
     <div className="fixed inset-0 z-[1100] grid place-items-center" onClick={closeStaffModal}>
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
+        className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-3 text-lg font-semibold">Thêm nhân viên</div>

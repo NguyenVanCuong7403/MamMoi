@@ -19,14 +19,37 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 /**
- * MamMoi — AddTreeNewScreen (balanced grid + always visible Flower/Fruit with phase-gated input)
- * - Thứ tự field (trái→phải rồi xuống): mã cây → loại cây → giống → tuổi trước khi trồng → ngày trồng → mô tả lá → mô tả cành → loại đất → giai đoạn → mô tả hoa → mô tả quả → vườn
+ * MamMoi — AddTreeNewScreen (balanced grid + always-visible Flower/Fruit with phase-gated input + default 125% zoom)
+ * - Thứ tự field (trái→phải rồi xuống):
+ *   mã cây → loại cây → giống → tuổi trước khi trồng → ngày trồng → mô tả lá → mô tả cành → loại đất → giai đoạn → mô tả hoa → mô tả quả → vườn
  * - Hoa/Quả luôn HIỆN; chỉ CHO NHẬP khi giai đoạn >= "Ra hoa đậu quả".
  * - Bỏ các note: "Tự ước tính (từ dữ liệu)...", "(có thể ghi đè)" và note dưới ImagePicker.
- * - Cân đối lưới: dùng grid-cols-12, mỗi field col-span-3 (xl).
- * - 4 giai đoạn: 1. Sinh trưởng & phát triển  2. Ra hoa đậu quả  3. Thu hoach  4. Sau thu.
- * - Progress: khi phase < "Ra hoa đậu quả" không tính Hoa/Quả vào mẫu số; khi phase ≥, thêm 2 field vào mẫu số.
+ * - Cân đối lưới 12 cột, mỗi field xl:col-span-3.
+ * - Progress động: khi phase < "Ra hoa đậu quả" không tính Hoa/Quả; khi phase ≥, thêm 2 field vào mẫu số.
+ * - Mặc định phóng to 125% bằng CSS zoom (Chrome/Edge) + fallback transform (Safari).
  */
+
+/* ===================== UI ZOOM (đổi nếu muốn) ===================== */
+const UI_ZOOM = 1.25;
+function useZoomStyle() {
+  const [style, setStyle] = useState({});
+  useEffect(() => {
+    const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+    const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|Edg|OPR/.test(ua);
+    if (isSafari) {
+      // Fallback cho Safari
+      setStyle({
+        transform: `scale(${UI_ZOOM})`,
+        transformOrigin: "top center",
+        width: `${100 / UI_ZOOM}%`,
+      });
+    } else {
+      // Chrome/Edge/Firefox mới
+      setStyle({ zoom: UI_ZOOM });
+    }
+  }, []);
+  return style;
+}
 
 /* ------------------------------ Species & Varieties ------------------------------ */
 const SPECIES_LIST = [
@@ -42,7 +65,7 @@ const VARIETIES = {
   durian: ["Ri6", "Monthong", "Musang King"],
 };
 
-/* --------------------------- Legacy Phase Dictionaries (giữ nguyên để tính toán) --------------------------- */
+/* --------------------------- Legacy Phase Dictionaries --------------------------- */
 const LEGACY_PHASES = [
   "Cây non",
   "Sinh trưởng thân lá",
@@ -373,6 +396,7 @@ function useHeaderOffset(selector = "[data-app-header],[data-header],header") {
 /* ------------------------------ Main Screen ------------------------------ */
 export default function AddTreeNewScreen() {
   useHeaderOffset(); // đẩy trang xuống theo chiều cao header
+  const zoomStyle = useZoomStyle(); // << phóng to 125%
 
   // States
   const [code, setCode] = useState("");
@@ -594,7 +618,7 @@ export default function AddTreeNewScreen() {
         paddingTop: "calc(var(--mm-header-h, 88px) + 12px)",
       }}
     >
-      {/* Background */}
+      {/* Background (không zoom để giữ hiệu ứng mượt) */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <LivingBackground
           theme="aurora"
@@ -607,425 +631,424 @@ export default function AddTreeNewScreen() {
         />
       </div>
 
-      {/* Header */}
-      <section className="relative">
-        <div className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 pb-3">
-          <div className="flex items-center gap-2 text-emerald-100/80 text-xs">
-            <span className="opacity-80">Mầm Mới</span>
-            <span className="opacity-40">/</span>
-            <span className="opacity-80">Trồng & Chăm</span>
-            <span className="opacity-40">/</span>
-            <span className="text-white font-medium">Thêm cây mới</span>
-          </div>
-
-          <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
-                Thêm cây mới
-              </h1>
-              <p className="text-emerald-100/80 text-sm mt-1">
-                Điền thông tin cơ bản, tải ảnh và bổ sung ghi chú cho AI.
-              </p>
+      {/* ====== ZOOM WRAPPER 125% ====== */}
+      <div style={zoomStyle}>
+        {/* Header */}
+        <section className="relative">
+          <div className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 pb-3">
+            <div className="flex items-center gap-2 text-emerald-100/80 text-xs">
+              
             </div>
 
-            {/* Progress mini-stepper */}
-            <div className="flex flex-col items-end gap-2">
-              <div className="flex items-center gap-5">
-                <StepDot label="Thông tin" active={!infoDone} done={infoDone} />
-                <StepDot label="Ảnh & Preview" active={infoDone && !previewDone} done={previewDone} />
-                <StepDot label="Ghi chú" active={true} done={noteDone} />
+            <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
+                  Thêm cây mới
+                </h1>
+                <p className="text-emerald-100/80 text-sm mt-1">
+                  Tạo cây với các thông tin chi tiết giúp AI đưa ra gợi ý chăm sóc tốt nhất cho bạn.
+                </p>
               </div>
-              <div className="w-[360px] h-2 rounded-full bg-white/10 overflow-hidden ring-1 ring-white/10">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-sky-400 transition-all duration-500"
-                  style={{ width: `${Math.max(8, progress)}%` }}
-                />
+
+              {/* Progress mini-stepper */}
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-5">
+                  <StepDot label="Thông tin" active={!infoDone} done={infoDone} />
+                  <StepDot label="Ảnh & Preview" active={infoDone && !previewDone} done={previewDone} />
+                  <StepDot label="Ghi chú" active={true} done={noteDone} />
+                </div>
+                <div className="w-[360px] h-2 rounded-full bg-white/10 overflow-hidden ring-1 ring-white/10">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-sky-400 transition-all duration-500"
+                    style={{ width: `${Math.max(8, progress)}%` }}
+                  />
+                </div>
+                <div className="text-emerald-100/80 text-xs">{progress}% hoàn thành</div>
               </div>
-              <div className="text-emerald-100/80 text-xs">{progress}% hoàn thành</div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Main */}
-      <main className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 py-6 space-y-6">
-        <div className="grid lg:grid-cols-12 gap-6 items-start">
-          {/* LEFT – form */}
-          <div className="lg:col-span-8 space-y-6">
-            <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2">
-                  <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700">
-                    <Sprout className="w-4 h-4" />
-                  </span>
-                  Thông tin cơ bản
-                </CardTitle>
-              </CardHeader>
-
-              {/* Balanced grid: 12 cols, mỗi field chiếm 3 cols ở xl */}
-              <CardContent className="grid grid-cols-12 gap-5 text-sm">
-                {/* 1. Mã cây */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label htmlFor="code" className="text-neutral-700">Mã cây</Label>
-                  <div className="relative">
-                    <Input
-                      id="code"
-                      value={code}
-                      placeholder="Mã cây duy nhất (VD: BD-03)."
-                      onChange={(e) => {
-                        setCode(e.target.value);
-                        setUserEditedCode(true);
-                        setErrors((x) => ({ ...x, code: undefined }));
-                      }}
-                      className={`rounded-xl h-11 w-full bg-white border-neutral-300 placeholder:text-neutral-400 pr-10
-                        focus:ring-emerald-500/40 focus:border-emerald-500
-                        ${errors.code ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : ""}`}
-                    />
-                    <span className="absolute right-3 top-2.5 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      Auto
+        {/* Main */}
+        <main className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 py-6 space-y-6">
+          <div className="grid lg:grid-cols-12 gap-6 items-start">
+            {/* LEFT – form */}
+            <div className="lg:col-span-8 space-y-6">
+              <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700">
+                      <Sprout className="w-4 h-4" />
                     </span>
-                  </div>
-                  {errors.code && <p className="text-xs text-red-500 mt-1">{errors.code}</p>}
-                </div>
+                    Thông tin cơ bản
+                  </CardTitle>
+                </CardHeader>
 
-                {/* 2. Loại cây */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label className="text-neutral-700">Loại cây</Label>
-                  <select
-                    value={speciesKey}
-                    onChange={(e) => {
-                      setSpeciesKey(e.target.value);
-                      setErrors((x) => ({ ...x, speciesKey: undefined }));
-                    }}
-                    className={`h-11 rounded-xl border bg-white px-3 text-sm appearance-none
-                      focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
-                      ${errors.speciesKey ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}`}
-                  >
-                    <option value="">— Chọn loại cây —</option>
-                    {SPECIES_LIST.map((s) => (
-                      <option key={s.key} value={s.key}>{s.label}</option>
-                    ))}
-                  </select>
-                  {errors.speciesKey && <p className="text-xs text-red-500 mt-1">{errors.speciesKey}</p>}
-                </div>
-
-                {/* 3. Giống */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label className="text-neutral-700">Giống</Label>
-                  <select
-                    value={variety}
-                    onChange={(e) => {
-                      setVariety(e.target.value);
-                      setErrors((x) => ({ ...x, variety: undefined }));
-                    }}
-                    disabled={!speciesKey}
-                    className={`h-11 rounded-xl border bg-white px-3 text-sm appearance-none
-                      focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
-                      ${errors.variety ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}
-                      ${!speciesKey ? "opacity-60 cursor-not-allowed" : ""}`}
-                  >
-                    <option value="">{speciesKey ? "— Chọn giống —" : "Chọn loại cây trước"}</option>
-                    {speciesKey && (VARIETIES[speciesKey] || []).map((v) => (
-                      <option key={v} value={v}>{v}</option>
-                    ))}
-                  </select>
-                  {errors.variety && <p className="text-xs text-red-500 mt-1">{errors.variety}</p>}
-                </div>
-
-                {/* 4. Tuổi trước khi trồng */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label className="text-neutral-700">Tuổi trước khi trồng (tháng)</Label>
-                  <div className="relative">
-                    <Input
-                      type="number"
-                      min={0}
-                      value={preAge}
-                      onChange={(e) => setPreAge(e.target.value)}
-                      className="rounded-xl h-11 pr-12 w-full bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
-                    />
-                    <span className="absolute right-3 top-2.5 text-sm text-neutral-600">tháng</span>
-                  </div>
-                </div>
-
-                {/* 5. Ngày trồng */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label className="text-neutral-700">Ngày trồng</Label>
-                  <div className="relative">
-                    <Input
-                      type="date"
-                      value={plantDate}
-                      onChange={(e) => {
-                        setPlantDate(e.target.value);
-                        setErrors((x) => ({ ...x, plantDate: undefined }));
-                      }}
-                      className={`rounded-xl h-11 bg-white
-                        ${errors.plantDate ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}
-                        focus:ring-emerald-500/40 focus:border-emerald-500`}
-                    />
-                    <CalIcon className="w-4 h-4 absolute right-3 top-3 text-neutral-500" />
-                  </div>
-                  {errors.plantDate && <p className="text-xs text-red-500 mt-1">{errors.plantDate}</p>}
-                </div>
-
-                {/* 6. Mô tả tình trạng lá */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label className="text-neutral-700">Mô tả tình trạng lá</Label>
-                  <Input
-                    value={leafInfo}
-                    onChange={(e) => setLeafInfo(e.target.value)}
-                    placeholder="VD: lá xanh tốt, vàng nhẹ, sâu…"
-                    className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500"
-                  />
-                </div>
-
-                {/* 7. Mô tả tình trạng cành */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label className="text-neutral-700">Mô tả tình trạng cành</Label>
-                  <Input
-                    value={branchInfo}
-                    onChange={(e) => setBranchInfo(e.target.value)}
-                    placeholder="Tình trạng cành, ..."
-                    className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500"
-                  />
-                </div>
-
-                {/* 8. Loại đất */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label className="text-neutral-700">Loại đất</Label>
-                  <select
-                    value={soil}
-                    onChange={(e) => {
-                      setSoil(e.target.value);
-                      setErrors((x) => ({ ...x, soil: undefined }));
-                    }}
-                    disabled={!speciesKey}
-                    className={`h-11 rounded-xl border bg-white px-3 text-sm appearance-none
-                      focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
-                      ${errors.soil ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}
-                      ${!speciesKey ? "opacity-60 cursor-not-allowed" : ""}`}
-                  >
-                    <option value="">{speciesKey ? "— Chọn loại đất —" : "Chọn loại cây trước"}</option>
-                    {speciesKey && (soilKB?.options || []).map((opt) => (
-                      <option key={opt} value={opt}>{opt}</option>
-                    ))}
-                  </select>
-                  {errors.soil && <p className="text-xs text-red-500 mt-1">{errors.soil}</p>}
-                </div>
-
-                {/* 9. Giai đoạn */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label className="text-neutral-700">Giai đoạn</Label>
-                  <select
-                    value={phaseOverride || defaultPhase4}
-                    onChange={(e) => setPhaseOverride(e.target.value)}
-                    className="h-11 rounded-xl border bg-white px-3 text-sm appearance-none border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
-                  >
-                    {PHASES4.map((p) => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 10. Mô tả tình trạng hoa (always visible, gated) */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label className="text-neutral-700">Mô tả tình trạng hoa</Label>
-                  <Input
-                    value={flowerInfo}
-                    onChange={(e) => setFlowerInfo(e.target.value)}
-                    disabled={!canEditFlowerFruit}
-                    placeholder="Mô tả tình trạng, tỉ lệ ra hoa, ..."
-                    className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500
-                      border-neutral-300 ${!canEditFlowerFruit ? "opacity-60 cursor-not-allowed" : ""}`}
-                  />
-                </div>
-
-                {/* 11. Mô tả tình trạng quả (always visible, gated) */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label className="text-neutral-700">Mô tả tình trạng quả</Label>
-                  <Input
-                    value={fruitInfo}
-                    onChange={(e) => setFruitInfo(e.target.value)}
-                    disabled={!canEditFlowerFruit}
-                    placeholder="Số lượng, kích thước, tình trạng, ..."
-                    className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500
-                      border-neutral-300 ${!canEditFlowerFruit ? "opacity-60 cursor-not-allowed" : ""}`}
-                  />
-                </div>
-
-                {/* 12. Vườn */}
-                <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                  <Label htmlFor="garden" className="text-neutral-700">Vườn</Label>
-                  <select
-                    id="garden"
-                    value={gardenId}
-                    onChange={(e) => {
-                      setGardenId(e.target.value);
-                      setErrors((x) => ({ ...x, gardenId: undefined }));
-                    }}
-                    className={`h-11 rounded-xl border bg-white px-3 text-sm appearance-none
-                      focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
-                      ${errors.gardenId ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}`}
-                  >
-                    <option value="">— Chọn vườn —</option>
-                    {(gardens || []).map((g) => (
-                      <option key={g.id} value={g.id}>{g.name}</option>
-                    ))}
-                  </select>
-                  {errors.gardenId && <p className="text-xs text-red-500 mt-1">{errors.gardenId}</p>}
-                  {regionTag && (
-                    <div className="text-xs text-neutral-500">
-                      Miền suy ra từ vườn: <b>{regionTag}</b>
+                {/* Balanced grid: 12 cols */}
+                <CardContent className="grid grid-cols-12 gap-5 text-sm">
+                  {/* 1. Mã cây */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label htmlFor="code" className="text-neutral-700">Mã cây</Label>
+                    <div className="relative">
+                      <Input
+                        id="code"
+                        value={code}
+                        placeholder="Mã cây duy nhất (VD: BD-03)."
+                        onChange={(e) => {
+                          setCode(e.target.value);
+                          setUserEditedCode(true);
+                          setErrors((x) => ({ ...x, code: undefined }));
+                        }}
+                        className={`rounded-xl h-11 w-full bg-white border-neutral-300 placeholder:text-neutral-400 pr-10
+                          focus:ring-emerald-500/40 focus:border-emerald-500
+                          ${errors.code ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : ""}`}
+                      />
+                      <span className="absolute right-3 top-2.5 text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Auto
+                      </span>
                     </div>
-                  )}
-                </div>
-
-                {/* NOTE cuối card */}
-                <div className="col-span-12">
-                  <div className="mt-1 pt-3 border-t text-xs text-neutral-600 italic">
-                    Các trường thông tin mô tả không điền sẽ mặc định là bình thường.
+                    {errors.code && <p className="text-xs text-red-500 mt-1">{errors.code}</p>}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
 
-            {/* Hướng dẫn */}
-            <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-              <CardHeader className="pb-3">
-                <CardTitle>Hướng dẫn điền & sử dụng</CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-neutral-700">
-                <ol className="list-decimal ml-5 space-y-1">
-                  <li><b>Mã cây</b> tự gợi ý sau khi chọn <b>Loại</b> & <b>Giống</b>; có thể chỉnh tay.</li>
-                  <li>Nhập <b>Tuổi trước khi trồng</b> (tháng) và <b>Ngày trồng</b> để ước tính tuổi tổng.</li>
-                  <li><b>Mô tả lá/cành</b> giúp AI hiểu cây; nếu bỏ trống, hệ thống hiểu là <i>bình thường</i>.</li>
-                  <li><b>Giai đoạn</b> quyết định khả năng nhập <b>Hoa</b>/<b>Quả</b>: khi giai đoạn <b>≥ Ra hoa đậu quả</b> mới cho nhập.</li>
-                  <li>Chọn <b>Vườn</b> để suy ra <b>miền khí hậu</b>; <b>Loại đất</b> nên chọn đúng thực tế.</li>
-                </ol>
-              </CardContent>
-            </Card>
+                  {/* 2. Loại cây */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Loại cây</Label>
+                    <select
+                      value={speciesKey}
+                      onChange={(e) => {
+                        setSpeciesKey(e.target.value);
+                        setErrors((x) => ({ ...x, speciesKey: undefined }));
+                      }}
+                      className={`h-11 rounded-xl border bg-white px-3 text-sm appearance-none
+                        focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
+                        ${errors.speciesKey ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}`}
+                    >
+                      <option value="">— Chọn loại cây —</option>
+                      {SPECIES_LIST.map((s) => (
+                        <option key={s.key} value={s.key}>{s.label}</option>
+                      ))}
+                    </select>
+                    {errors.speciesKey && <p className="text-xs text-red-500 mt-1">{errors.speciesKey}</p>}
+                  </div>
 
-            {/* Ghi chú bổ sung cho AI */}
-            <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-              <CardHeader className="pb-3">
-                <CardTitle>Ghi chú bổ sung cho AI</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <div className="grid gap-1">
-                  <Label className="text-neutral-700">Ghi chú bổ sung</Label>
-                  <Textarea
-                    value={userIntent}
-                    onChange={(e) => setUserIntent(e.target.value)}
-                    placeholder="Nguồn giống, lịch tưới/bón, mục tiêu, vấn đề đang gặp…"
-                    className="rounded-xl bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                  {/* 3. Giống */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Giống</Label>
+                    <select
+                      value={variety}
+                      onChange={(e) => {
+                        setVariety(e.target.value);
+                        setErrors((x) => ({ ...x, variety: undefined }));
+                      }}
+                      disabled={!speciesKey}
+                      className={`h-11 rounded-xl border bg-white px-3 text-sm appearance-none
+                        focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
+                        ${errors.variety ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}
+                        ${!speciesKey ? "opacity-60 cursor-not-allowed" : ""}`}
+                    >
+                      <option value="">{speciesKey ? "— Chọn giống —" : "Chọn loại cây trước"}</option>
+                      {speciesKey && (VARIETIES[speciesKey] || []).map((v) => (
+                        <option key={v} value={v}>{v}</option>
+                      ))}
+                    </select>
+                    {errors.variety && <p className="text-xs text-red-500 mt-1">{errors.variety}</p>}
+                  </div>
 
-            {/* Action bar dính */}
-            <div className="sticky bottom-4 z-30">
-              <div className="flex justify-end gap-3">
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
-                  onClick={handleCreate}
-                >
-                  <CheckCircle2 className="w-4 h-4 mr-1" />
-                  Tạo cây
-                </Button>
+                  {/* 4. Tuổi trước khi trồng */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Tuổi trước khi trồng (tháng)</Label>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        min={0}
+                        value={preAge}
+                        onChange={(e) => setPreAge(e.target.value)}
+                        className="rounded-xl h-11 pr-12 w-full bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
+                      />
+                      <span className="absolute right-3 top-2.5 text-sm text-neutral-600">tháng</span>
+                    </div>
+                  </div>
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={resetAll}
-                  className="rounded-xl bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100"
-                >
-                  Xóa nội dung
-                </Button>
-              </div>
-            </div>
-          </div>
+                  {/* 5. Ngày trồng */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Ngày trồng</Label>
+                    <div className="relative">
+                      <Input
+                        type="date"
+                        value={plantDate}
+                        onChange={(e) => {
+                          setPlantDate(e.target.value);
+                          setErrors((x) => ({ ...x, plantDate: undefined }));
+                        }}
+                        className={`rounded-xl h-11 bg-white
+                          ${errors.plantDate ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}
+                          focus:ring-emerald-500/40 focus:border-emerald-500`}
+                      />
+                      <CalIcon className="w-4 h-4 absolute right-3 top-3 text-neutral-500" />
+                    </div>
+                    {errors.plantDate && <p className="text-xs text-red-500 mt-1">{errors.plantDate}</p>}
+                  </div>
 
-          {/* RIGHT – preview */}
-          <div
-            className="lg:col-span-4 space-y-6 lg:sticky"
-            style={{ top: "calc(var(--mm-header-h, 88px) + 8px)" }}
-          >
-            <Card className="rounded-2xl overflow-hidden bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-              <CardHeader className="pb-3">
-                <CardTitle>Ảnh & Preview</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <ImagePicker code={code} value={image} onChange={setImage} />
-                <div className="rounded-xl border bg-white overflow-hidden ring-1 ring-black/5">
-                  <div className="h-52 w-full bg-neutral-100 grid place-items-center">
-                    {image && image.trim() ? (
-                      <SafeImage src={image} alt="tree" className="w-full h-52 object-cover" />
-                    ) : (
-                      <ImageIcon className="h-7 w-7 text-neutral-400" />
+                  {/* 6. Mô tả tình trạng lá */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Mô tả tình trạng lá</Label>
+                    <Input
+                      value={leafInfo}
+                      onChange={(e) => setLeafInfo(e.target.value)}
+                      placeholder="VD: lá xanh tốt, vàng nhẹ, sâu…"
+                      className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500"
+                    />
+                  </div>
+
+                  {/* 7. Mô tả tình trạng cành */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Mô tả tình trạng cành</Label>
+                    <Input
+                      value={branchInfo}
+                      onChange={(e) => setBranchInfo(e.target.value)}
+                      placeholder="Tình trạng cành, ..."
+                      className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500"
+                    />
+                  </div>
+
+                  {/* 8. Loại đất */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Loại đất</Label>
+                    <select
+                      value={soil}
+                      onChange={(e) => {
+                        setSoil(e.target.value);
+                        setErrors((x) => ({ ...x, soil: undefined }));
+                      }}
+                      disabled={!speciesKey}
+                      className={`h-11 rounded-xl border bg-white px-3 text-sm appearance-none
+                        focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
+                        ${errors.soil ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}
+                        ${!speciesKey ? "opacity-60 cursor-not-allowed" : ""}`}
+                    >
+                      <option value="">{speciesKey ? "— Chọn loại đất —" : "Chọn loại cây trước"}</option>
+                      {speciesKey && (soilKB?.options || []).map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                    {errors.soil && <p className="text-xs text-red-500 mt-1">{errors.soil}</p>}
+                  </div>
+
+                  {/* 9. Giai đoạn */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Giai đoạn</Label>
+                    <select
+                      value={phaseOverride || defaultPhase4}
+                      onChange={(e) => setPhaseOverride(e.target.value)}
+                      className="h-11 rounded-xl border bg-white px-3 text-sm appearance-none border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
+                    >
+                      {PHASES4.map((p) => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* 10. Mô tả tình trạng hoa (always visible, gated) */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Mô tả tình trạng hoa</Label>
+                    <Input
+                      value={flowerInfo}
+                      onChange={(e) => setFlowerInfo(e.target.value)}
+                      disabled={!canEditFlowerFruit}
+                      placeholder="Mô tả tình trạng, tỉ lệ ra hoa, ..."
+                      className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500
+                        border-neutral-300 ${!canEditFlowerFruit ? "opacity-60 cursor-not-allowed" : ""}`}
+                    />
+                  </div>
+
+                  {/* 11. Mô tả tình trạng quả (always visible, gated) */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Mô tả tình trạng quả</Label>
+                    <Input
+                      value={fruitInfo}
+                      onChange={(e) => setFruitInfo(e.target.value)}
+                      disabled={!canEditFlowerFruit}
+                      placeholder="Số lượng, kích thước, tình trạng, ..."
+                      className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500
+                        border-neutral-300 ${!canEditFlowerFruit ? "opacity-60 cursor-not-allowed" : ""}`}
+                    />
+                  </div>
+
+                  {/* 12. Vườn */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label htmlFor="garden" className="text-neutral-700">Vườn</Label>
+                    <select
+                      id="garden"
+                      value={gardenId}
+                      onChange={(e) => {
+                        setGardenId(e.target.value);
+                        setErrors((x) => ({ ...x, gardenId: undefined }));
+                      }}
+                      className={`h-11 rounded-xl border bg-white px-3 text-sm appearance-none
+                        focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
+                        ${errors.gardenId ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}`}
+                    >
+                      <option value="">— Chọn vườn —</option>
+                      {(gardens || []).map((g) => (
+                        <option key={g.id} value={g.id}>{g.name}</option>
+                      ))}
+                    </select>
+                    {errors.gardenId && <p className="text-xs text-red-500 mt-1">{errors.gardenId}</p>}
+                    {regionTag && (
+                      <div className="text-xs text-neutral-500">
+                        Miền suy ra từ vườn: <b>{regionTag}</b>
+                      </div>
                     )}
                   </div>
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="font-semibold">{speciesLabel || "Chưa đặt tên"}</div>
-                      <Badge className="rounded-full bg-emerald-600 text-white border-emerald-600 shadow">
-                        {effectivePhase4}
-                      </Badge>
-                    </div>
 
-                    {/* Chips */}
-                    <div className="flex flex-wrap gap-2 text-xs mt-1">
-                      <span className="inline-flex items-center rounded-full border px-2 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200">
-                        <span>Tổng tuổi:</span>
-                        <span className="ml-1 font-semibold">{totalAge}</span>
-                        <span className="ml-1">tháng</span>
-                      </span>
-                      <span className="inline-flex items-center rounded-full border px-2 py-0.5">
-                        <CalIcon className="w-3.5 h-3.5 mr-1" />
-                        <span>Sau trồng:&nbsp;{plantDate ? ageAfterPlant : 0}m</span>
-                      </span>
-                      {regionTag ? (
-                        <span className="inline-flex items-center rounded-full border px-2 py-0.5">
-                          <MapPin className="w-3.5 h-3.5 mr-1" />
-                          <span>{regionTag}</span>
-                        </span>
-                      ) : null}
-                    </div>
-
-                    <div className="text-xs text-neutral-600">#{code || "—"}</div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                      <Field label="Tuổi" value={`${totalAge} tháng`} />
-                      <Field label="Vườn" value={gardenObj?.name || "—"} />
-                      <Field label="Giống" value={variety || "—"} />
-                      {branchInfo ? <Field label="Cành" value={branchInfo} /> : null}
-                      {leafInfo ? <Field label="Lá" value={leafInfo} /> : null}
-                      {canEditFlowerFruit && flowerInfo ? <Field label="Hoa" value={flowerInfo} /> : null}
-                      {canEditFlowerFruit && fruitInfo ? <Field label="Quả" value={fruitInfo} /> : null}
+                  {/* NOTE cuối card */}
+                  <div className="col-span-12">
+                    <div className="mt-1 pt-3 border-t text-xs text-neutral-600 italic">
+                      Các trường thông tin mô tả không điền sẽ mặc định là bình thường.
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Lưu ý nhập liệu */}
-            <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2">
-                  <Info className="h-4 w-4" />
-                  Lưu ý khi nhập liệu
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="text-sm text-neutral-700">
-                <ul className="list-disc ml-5 space-y-1">
-                  <li><b>Mã cây</b> là duy nhất; tự gợi ý theo <b>Loại</b> + <b>Giống</b> nhưng vẫn có thể chỉnh tay.</li>
-                  <li>Dropdown <b>không cho gõ text</b> — hãy chọn trong danh sách.</li>
-                  <li>Trường bị mờ là do phụ thuộc: <b>Giống</b> & <b>Loại đất</b> chỉ mở sau khi chọn <b>Loại cây</b>.</li>
-                  <li><b>Ngày trồng</b> dùng để ước tính tuổi & giai đoạn.</li>
-                </ul>
-              </CardContent>
-            </Card>
+              {/* Hướng dẫn */}
+              <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
+                <CardHeader className="pb-3">
+                  <CardTitle>Hướng dẫn điền & sử dụng</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-neutral-700">
+                  <ol className="list-decimal ml-5 space-y-1">
+                    <li><b>Mã cây</b> tự gợi ý sau khi chọn <b>Loại</b> & <b>Giống</b>; có thể chỉnh tay.</li>
+                    <li>Nhập <b>Tuổi trước khi trồng</b> (tháng) và <b>Ngày trồng</b> để ước tính tuổi tổng.</li>
+                    <li><b>Mô tả lá/cành</b> giúp AI hiểu cây; nếu bỏ trống, hệ thống hiểu là <i>bình thường</i>.</li>
+                    <li><b>Giai đoạn</b> quyết định khả năng nhập <b>Hoa</b>/<b>Quả</b>: khi giai đoạn <b>≥ Ra hoa đậu quả</b> mới cho nhập.</li>
+                    <li>Chọn <b>Vườn</b> để suy ra <b>miền khí hậu</b>; <b>Loại đất</b> nên chọn đúng thực tế.</li>
+                  </ol>
+                </CardContent>
+              </Card>
+
+              {/* Ghi chú bổ sung cho AI */}
+              <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
+                <CardHeader className="pb-3">
+                  <CardTitle>Ghi chú bổ sung cho AI</CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                  <div className="grid gap-1">
+                    <Label className="text-neutral-700">Ghi chú bổ sung</Label>
+                    <Textarea
+                      value={userIntent}
+                      onChange={(e) => setUserIntent(e.target.value)}
+                      placeholder="Nguồn giống, lịch tưới/bón, mục tiêu, vấn đề đang gặp…"
+                      className="rounded-xl bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Action bar dính */}
+              <div className="sticky bottom-4 z-30">
+                <div className="flex justify-end gap-3">
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+                    onClick={handleCreate}
+                  >
+                    <CheckCircle2 className="w-4 h-4 mr-1" />
+                    Tạo cây
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={resetAll}
+                    className="rounded-xl bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100"
+                  >
+                    Xóa nội dung
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT – preview */}
+            <div
+              className="lg:col-span-4 space-y-6 lg:sticky"
+              style={{ top: "calc(var(--mm-header-h, 88px) + 8px)" }}
+            >
+              <Card className="rounded-2xl overflow-hidden bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
+                <CardHeader className="pb-3">
+                  <CardTitle>Ảnh & Preview</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <ImagePicker code={code} value={image} onChange={setImage} />
+                  <div className="rounded-xl border bg-white overflow-hidden ring-1 ring-black/5">
+                    <div className="h-52 w-full bg-neutral-100 grid place-items-center">
+                      {image && image.trim() ? (
+                        <SafeImage src={image} alt="tree" className="w-full h-52 object-cover" />
+                      ) : (
+                        <ImageIcon className="h-7 w-7 text-neutral-400" />
+                      )}
+                    </div>
+                    <div className="p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold">{speciesLabel || "Chưa đặt tên"}</div>
+                        <Badge className="rounded-full bg-emerald-600 text-white border-emerald-600 shadow">
+                          {effectivePhase4}
+                        </Badge>
+                      </div>
+
+                      {/* Chips */}
+                      <div className="flex flex-wrap gap-2 text-xs mt-1">
+                        <span className="inline-flex items-center rounded-full border px-2 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200">
+                          <span>Tổng tuổi:</span>
+                          <span className="ml-1 font-semibold">{totalAge}</span>
+                          <span className="ml-1">tháng</span>
+                        </span>
+                        <span className="inline-flex items-center rounded-full border px-2 py-0.5">
+                          <CalIcon className="w-3.5 h-3.5 mr-1" />
+                          <span>Sau trồng:&nbsp;{plantDate ? ageAfterPlant : 0}m</span>
+                        </span>
+                        {regionTag ? (
+                          <span className="inline-flex items-center rounded-full border px-2 py-0.5">
+                            <MapPin className="w-3.5 h-3.5 mr-1" />
+                            <span>{regionTag}</span>
+                          </span>
+                        ) : null}
+                      </div>
+
+                      <div className="text-xs text-neutral-600">#{code || "—"}</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                        <Field label="Tuổi" value={`${totalAge} tháng`} />
+                        <Field label="Vườn" value={gardenObj?.name || "—"} />
+                        <Field label="Giống" value={variety || "—"} />
+                        {branchInfo ? <Field label="Cành" value={branchInfo} /> : null}
+                        {leafInfo ? <Field label="Lá" value={leafInfo} /> : null}
+                        {canEditFlowerFruit && flowerInfo ? <Field label="Hoa" value={flowerInfo} /> : null}
+                        {canEditFlowerFruit && fruitInfo ? <Field label="Quả" value={fruitInfo} /> : null}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Lưu ý nhập liệu */}
+              <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2">
+                    <Info className="h-4 w-4" />
+                    Lưu ý khi nhập liệu
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-neutral-700">
+                  <ul className="list-disc ml-5 space-y-1">
+                    <li><b>Mã cây</b> là duy nhất; tự gợi ý theo <b>Loại</b> + <b>Giống</b> nhưng vẫn có thể chỉnh tay.</li>
+                    <li>Dropdown <b>không cho gõ text</b> — hãy chọn trong danh sách.</li>
+                    <li>Trường bị mờ là do phụ thuộc: <b>Giống</b> & <b>Loại đất</b> chỉ mở sau khi chọn <b>Loại cây</b>.</li>
+                    <li><b>Ngày trồng</b> dùng để ước tính tuổi & giai đoạn.</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </div>
 
       {/* Success Toast (góc phải) */}
       {showSuccess && (
