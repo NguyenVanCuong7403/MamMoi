@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@layer utilities {
+    .no-native-eye::-ms-reveal,
+    .no-native-eye::-ms-clear {
+      display: none !important;
+    }
+  
+    /* Phòng trường hợp WebKit/Edge Chromium tự chèn nút trong ô password */
+    .no-native-eye::-webkit-credentials-auto-fill-button { 
+      visibility: hidden; 
+      pointer-events: none; 
+    }
+    .no-native-eye::-webkit-textfield-decoration-container { 
+      display: none; 
+    }
+  }

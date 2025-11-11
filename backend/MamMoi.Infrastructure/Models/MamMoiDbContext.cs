@@ -223,11 +223,13 @@ public partial class MamMoiDbContext : DbContext
             entity.HasIndex(e => e.UserId, "IX_Gardens_UserID");
 
             entity.Property(e => e.GardenId).HasColumnName("GardenID");
+            entity.Property(e => e.ClimateZone).HasMaxLength(50);
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.Location).HasMaxLength(255);
             entity.Property(e => e.Name).HasMaxLength(100);
+            entity.Property(e => e.TimeZone).HasMaxLength(100);
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
             entity.HasOne(d => d.User).WithMany(p => p.Gardens)
@@ -244,10 +246,11 @@ public partial class MamMoiDbContext : DbContext
 
             entity.Property(e => e.MemberId).HasColumnName("MemberID");
             entity.Property(e => e.GardenId).HasColumnName("GardenID");
-            entity.Property(e => e.JoinedAt)
+            entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.RoleId).HasColumnName("RoleID");
+            entity.Property(e => e.Status).HasMaxLength(50);
             entity.Property(e => e.UserId).HasColumnName("UserID");
 
             entity.HasOne(d => d.Garden).WithMany(p => p.GardenMembers)
@@ -418,12 +421,6 @@ public partial class MamMoiDbContext : DbContext
                 .HasColumnName("EC_dS_m");
             entity.Property(e => e.Notes).HasMaxLength(255);
             entity.Property(e => e.OrganicMatterPct).HasColumnType("decimal(4, 1)");
-            entity.Property(e => e.Phmax)
-                .HasColumnType("decimal(3, 1)")
-                .HasColumnName("PHMax");
-            entity.Property(e => e.Phmin)
-                .HasColumnType("decimal(3, 1)")
-                .HasColumnName("PHMin");
             entity.Property(e => e.SoilName).HasMaxLength(100);
             entity.Property(e => e.Texture).HasMaxLength(20);
             entity.Property(e => e.UpdatedAt).HasPrecision(0);

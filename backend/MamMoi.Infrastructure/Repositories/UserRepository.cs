@@ -15,12 +15,16 @@ public class UserRepository : IUserRepository
 
     public async Task<dynamic?> GetByIdAsync(int userId)
     {
-        return await _context.Users.FindAsync(userId);
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.UserId == userId);
     }
 
     public async Task<dynamic?> GetByEmailAsync(string email)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Email == email);
     }
 
     public async Task<IEnumerable<dynamic>> GetAllAsync()

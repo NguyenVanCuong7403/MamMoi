@@ -3,8 +3,9 @@ using MamMoi.Application.Interfaces;
 using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Security;
+using UserEntity = MamMoi.Infrastructure.Models.User;
 
-namespace MamMoi.Infrastructure.Services;
+namespace MamMoi.Infrastructure.Services.Users;
 
 /// <summary>
 /// User service - xử lý business logic cho User
@@ -26,12 +27,12 @@ public class UserService : IUserService
         // Note: Adjust this if your UserId should be Guid
         var userId = int.Parse(id.ToString().Split('-')[0], System.Globalization.NumberStyles.HexNumber) % int.MaxValue;
         var user = await _userRepository.GetByIdAsync(userId);
-        
+
         if (user == null)
             return null;
 
         // Map to DTO để không expose entity trực tiếp
-        return MapToDto((User)user);
+        return MapToDto((UserEntity)user);
     }
 
     public async Task<object> CreateAsync(object dto)
@@ -60,8 +61,8 @@ public class UserService : IUserService
 
         // Save
         var createdUser = await _userRepository.AddAsync(user);
-        
-        return MapToDto((User)createdUser);
+
+        return MapToDto((UserEntity)createdUser);
     }
 
     public async Task<object?> UpdateAsync(Guid id, object dto)
@@ -74,19 +75,19 @@ public class UserService : IUserService
         if (user == null)
             return null;
 
-        var userEntity = (User)user;
+        var userEntity = (UserEntity)user;
 
         // Update fields
         if (!string.IsNullOrEmpty(updateDto.Email))
             userEntity.Email = updateDto.Email;
-        
+
         if (!string.IsNullOrEmpty(updateDto.FullName))
             userEntity.FullName = updateDto.FullName;
 
         userEntity.UpdatedAt = DateTime.UtcNow;
 
         await _userRepository.UpdateAsync(userEntity);
-        
+
         return MapToDto(userEntity);
     }
 
@@ -107,13 +108,13 @@ public class UserService : IUserService
         if (user == null)
             return null;
 
-        return MapToDto((User)user);
+        return MapToDto((UserEntity)user);
     }
 
     public async Task<IEnumerable<object>> GetAllAsync()
     {
         var users = await _userRepository.GetAllAsync();
-        return users.Select(u => MapToDto((User)u));
+        return users.Select(u => MapToDto((UserEntity)u));
     }
 
     // Helper methods
@@ -130,7 +131,7 @@ public class UserService : IUserService
 
     private byte[] HashPassword(string password)
     {
-        
+
         using var sha256 = System.Security.Cryptography.SHA256.Create();
         return sha256.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
     }

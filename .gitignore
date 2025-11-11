@@ -86,6 +86,8 @@ wwwroot/lib/
 wwwroot/dist/
 
 # Database
+*.db
+*.sqlite
 *.mdf
 *.ldf
 *.ndf

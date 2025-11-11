@@ -25,4 +25,8 @@
     <ProjectReference Include="..\MamMoi.Application\MamMoi.Application.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Services\User\" />
+  </ItemGroup>
+
 </Project>
