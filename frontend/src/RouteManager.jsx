@@ -12,6 +12,8 @@ import Demo from "./components/user/Demo";
 import PaymentHistory from "./components/user/PAYMENT_HISTORY";
 import LoginGuard from "./guards/LoginGuard";
 import RoleGuard from "./guards/RoleGuard";
+import GardenManagement from "./components/user/GardenManagement";
+
 
 export default function RouteManager({ authTab }) {
   return (
@@ -26,6 +28,7 @@ export default function RouteManager({ authTab }) {
       <Route path="/profile" element={<UserProfile />} />
       <Route path="/demo" element={<Demo />} />
       <Route path="/paymenthistory" element={<PaymentHistory />} />
+      <Route path="/garden" element={<GardenManagement />} />
 
 
       <Route path="/login-test" element={

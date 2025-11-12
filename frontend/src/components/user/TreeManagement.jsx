@@ -9,6 +9,7 @@ import {
   User,
   AlertTriangle,
   Check,
+  ZoomIn,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -166,6 +167,27 @@ function TodoRow({ text, due, priority }) {
 export default function TreeManagement() {
   const [trees] = useState(TREES);
 
+  // NEW: UI Zoom state (default 175%)
+  const [zoom, setZoom] = useState(1.45);
+  const [hasZoomProp, setHasZoomProp] = useState(false);
+  useEffect(() => {
+    // detect CSS zoom support (Chromium/Edge ✅)
+    try {
+      if (typeof document !== "undefined" && document.body && document.body.style) {
+        setHasZoomProp(Object.prototype.hasOwnProperty.call(document.body.style, "zoom"));
+      }
+    } catch (_) {}
+  }, []);
+
+  const zoomWrapperStyle = hasZoomProp
+    ? { zoom, margin: "0 auto" }
+    : {
+        transform: `scale(${zoom})`,
+        transformOrigin: "top center",
+        width: `${100 / zoom}%`,
+        margin: "0 auto",
+      };
+
   // Search + filters
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all"); // all | active | stopped
@@ -293,13 +315,13 @@ export default function TreeManagement() {
   }, [q, status, gardens, varieties, caretakers, phases, dateFrom, dateTo, onlyOverdue, dateOrder]);
 
   // Trang hiện tại
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const PAGE_COUNT = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const startIdx = (page - 1) * PAGE_SIZE;
   const endIdx = Math.min(filtered.length, page * PAGE_SIZE);
   const pageItems = useMemo(() => filtered.slice(startIdx, endIdx), [filtered, startIdx, endIdx]);
 
   return (
-    <div className="relative min-h-screen pt-[64px]">
+    <div className="relative min-h-screen pt-[64px]" style={{ background: PALETTE.bg }}>
       {/* keyframes cho glow cảnh báo */}
       <style>{`
         @keyframes mmOverduePulse {
@@ -309,440 +331,467 @@ export default function TreeManagement() {
         }
       `}</style>
 
-      {/* ===== Header nhỏ gọn (đã bỏ HERO lớn) ===== */}
-      <main className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-4 space-y-6">
-        <section
-          aria-label="Page header"
-          className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6"
-        >
-          <div className="max-w-[760px]">
-            <span
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium"
-              style={{ background: PALETTE.accent, color: PALETTE.bg }}
-            >
-              Bảng quản lý vườn
-            </span>
-            <h1 className="mt-2 text-white text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
-              Vườn cây ăn quả của tôi
-            </h1>
-            <p className="text-white/85 mt-1 text-sm md:text-base">
-              Theo dõi tuổi cây, giai đoạn sinh trưởng, công việc và tình trạng chăm sóc — tất cả trên một màn hình.
-            </p>
-          </div>
-
-          <div className="w-full md:w-auto flex items-stretch md:items-center gap-3 md:gap-4">
-            <Button
-              className="h-12 md:h-12 px-5 md:px-6 rounded-2xl text-base font-semibold
-                         shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5
-                         transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5"
-              style={{ background: "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)", color: "#1F302F" }}
-            >
-              <span className="inline-flex items-center gap-3">
-                <span className="grid place-items-center w-8 h-8 rounded-xl bg-white/70 backdrop-blur">
-                  <Plus className="w-5 h-5" />
-                </span>
-                Thêm cây ăn quả
-              </span>
+      {/* ===== Zoom controls (nằm ngoài vùng scale để luôn dễ bấm) ===== */}
+      <div className="fixed right-4 bottom-4 z-[60]">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="h-11 rounded-full shadow-lg" variant="secondary">
+              <ZoomIn className="w-5 h-5 mr-2" /> Phóng to {Math.round(zoom * 100)}%
             </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="rounded-xl border border-neutral-200 bg-white shadow-2xl">
+            <DropdownMenuLabel>Tỷ lệ</DropdownMenuLabel>
+            {[1, 1.25, 1.5, 1.75, 2].map((z) => (
+              <DropdownMenuItem
+                key={z}
+                onClick={() => setZoom(z)}
+                className="cursor-pointer"
+              >
+                {Math.round(z * 100)}% {zoom === z ? "✓" : ""}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setZoom(1)}>Đặt về 100%</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
 
-            {/* Thẻ thời tiết giữ nguyên nội dung, đổi sang dạng card độc lập */}
-            <div className="rounded-2xl p-4 w-64 md:w-72 backdrop-blur-md text-white border border-white/15 bg-white/10 shadow-2xl">
-              <div className="text-sm font-medium flex items-center gap-1">
-                <MapPin className="w-4 h-4 opacity-80" />
-                Hanoi, Vietnam
-              </div>
-              <div className="text-3xl md:text-4xl font-semibold mt-1">29°</div>
-              <div className="text-xs opacity-80">Nắng nhẹ · Gió 5km/h</div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className="px-2 py-1 rounded-full text-[11px] border border-white/20 bg-white/10">UV thấp</span>
-                <span className="px-2 py-1 rounded-full text-[11px] border border-white/20 bg-white/10">Độ ẩm 65%</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* search + filter */}
-        <section className="sticky top-[64px] z-[50] overflow-visible">
-          <div
-            className="flex flex-col xl:flex-row gap-3 rounded-2xl p-3"
-            style={{ background: "rgba(251,255,223,0.06)", border: "1px solid rgba(255,255,165,0.15)" }}
+      {/* ===== Toàn bộ nội dung được scale ===== */}
+      <div style={zoomWrapperStyle}>
+        <main className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-4 space-y-6">
+          <section
+            aria-label="Page header"
+            className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6"
           >
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Tìm tên/ID/vị trí..."
-                className="pl-9 bg-white/95 text-[#0f1f1e] placeholder:text-neutral-500 rounded-full h-11"
-              />
+            <div className="max-w-[760px]">
+              <span
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium"
+                style={{ background: PALETTE.accent, color: PALETTE.bg }}
+              >
+                Bảng quản lý vườn
+              </span>
+              <h1 className="mt-2 text-white text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
+                Vườn cây ăn quả của tôi
+              </h1>
+              <p className="text-white/85 mt-1 text-sm md:text-base">
+                Theo dõi tuổi cây, giai đoạn sinh trưởng, công việc và tình trạng chăm sóc — tất cả trên một màn hình.
+              </p>
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2 bg-white/95 h-11 rounded-full">
-                  <FilterIcon className="h-4 w-4" /> Bộ lọc
-                </Button>
-              </DropdownMenuTrigger>
-
-              <DropdownMenuPortal>
-                <DropdownMenuContent
-                  align="end"
-                  side="bottom"
-                  sideOffset={10}
-                  collisionPadding={24}
-                  className="z-[1000] min-w=[320px] rounded-xl border border-neutral-200 bg-white shadow-2xl overflow-visible"
-                >
-                  <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] text-neutral-500">
-                    Trạng thái
-                  </DropdownMenuLabel>
-
-                  {[
-                    { key: "all", label: "Tất cả", count: stats.total },
-                    { key: "active", label: "Đang hoạt động", count: stats.active },
-                    { key: "stopped", label: "Dừng hoạt động", count: stats.stopped },
-                  ].map((opt) => {
-                    const active = status === opt.key;
-                    return (
-                      <DropdownMenuItem
-                        key={opt.key}
-                        onClick={() => setStatus(opt.key)}
-                        className={
-                          "flex items-center justify-between gap-3 py-2 rounded-none cursor-pointer " +
-                          (active ? "bg-neutral-100" : "hover:bg-neutral-50")
-                        }
-                      >
-                        <span className="inline-flex items-center gap-2">
-                          {active ? <Check className="h-4 w-4" /> : <span className="h-4 w-4" />}
-                          {opt.label}
-                        </span>
-                        <span className="px-1.5 py-0.5 text-[11px] rounded-full bg-neutral-100 border border-neutral-200">
-                          {opt.count}
-                        </span>
-                      </DropdownMenuItem>
-                    );
-                  })}
-
-                  <DropdownMenuSeparator className="my-2" />
-
-                  {/* Theo khu vườn */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="gap-2">
-                      <MapPin className="h-4 w-4" /> Theo khu vườn
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-[240px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
-                      {gardenOpts.map((g) => (
-                        <DropdownMenuCheckboxItem
-                          key={g}
-                          checked={gardens.has(g)}
-                          onCheckedChange={() => toggleSet(gardens, setGardens, g)}
-                          className="cursor-pointer"
-                        >
-                          {g}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setGardens(new Set())} className="text-neutral-600">
-                        Xóa lựa chọn
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-
-                  {/* Theo giống */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="gap-2">
-                      <Sprout className="h-4 w-4" /> Theo giống
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-[220px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
-                      {varietyOpts.map((v) => (
-                        <DropdownMenuCheckboxItem
-                          key={v}
-                          checked={varieties.has(v)}
-                          onCheckedChange={() => toggleSet(varieties, setVarieties, v)}
-                          className="cursor-pointer"
-                        >
-                          {v}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setVarieties(new Set())} className="text-neutral-600">
-                        Xóa lựa chọn
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-
-                  {/* Theo nhân viên */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="gap-2">
-                      <User className="h-4 w-4" /> Theo nhân viên
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-[200px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
-                      {caretakerOpts.map((u) => (
-                        <DropdownMenuCheckboxItem
-                          key={u}
-                          checked={caretakers.has(u)}
-                          onCheckedChange={() => toggleSet(caretakers, setCaretakers, u)}
-                          className="cursor-pointer"
-                        >
-                          {u}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setCaretakers(new Set())} className="text-neutral-600">
-                        Xóa lựa chọn
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-
-                  {/* Theo giai đoạn */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="gap-2">
-                      <Sprout className="h-4 w-4" /> Theo giai đoạn
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-[240px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
-                      {phaseOpts.map((p) => (
-                        <DropdownMenuCheckboxItem
-                          key={p}
-                          checked={phases.has(p)}
-                          onCheckedChange={() => toggleSet(phases, setPhases, p)}
-                          className="cursor-pointer"
-                        >
-                          {p}
-                        </DropdownMenuCheckboxItem>
-                      ))}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => setPhases(new Set())} className="text-neutral-600">
-                        Xóa lựa chọn
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-
-                  {/* Theo ngày thêm */}
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="gap-2">
-                      <Calendar className="h-4 w-4" /> Theo ngày thêm
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-[280px] rounded-xl border border-neutral-200 bg-white shadow-2xl p-3">
-                      <div className="text-[12px] text-neutral-600 mb-1">Sắp xếp</div>
-                      <DropdownMenuRadioGroup value={dateOrder} onValueChange={setDateOrder}>
-                        <DropdownMenuRadioItem value="desc">Mới nhất → Cũ nhất</DropdownMenuRadioItem>
-                        <DropdownMenuRadioItem value="asc">Cũ nhất → Mới nhất</DropdownMenuRadioItem>
-                      </DropdownMenuRadioGroup>
-
-                      <DropdownMenuSeparator className="my-2" />
-                      <div className="grid gap-2 text-sm">
-                        <div className="grid gap-1">
-                          <div className="text-[12px] text-neutral-600">Từ ngày</div>
-                          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9" />
-                        </div>
-                        <div className="grid gap-1">
-                          <div className="text-[12px] text-neutral-600">Đến ngày</div>
-                          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9" />
-                        </div>
-                        <div className="flex justify-between pt-1">
-                          <Button size="sm" variant="ghost" className="h-8" onClick={() => { setDateFrom(""); setDateTo(""); }}>
-                            Xóa
-                          </Button>
-                          <Button size="sm" className="h-8">Áp dụng</Button>
-                        </div>
-                      </div>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-
-                  <DropdownMenuSeparator className="my-2" />
-
-                  {/* Chỉ hiển thị cây có việc quá hạn (chỉ áp cho active) */}
-                  <DropdownMenuCheckboxItem
-                    checked={onlyOverdue}
-                    onCheckedChange={() => setOnlyOverdue((v) => !v)}
-                    className="cursor-pointer"
-                  >
-                    Chỉ hiển thị cây có việc quá hạn
-                  </DropdownMenuCheckboxItem>
-
-                  <div className="px-3 py-3">
-                    <Button variant="outline" className="w-full" onClick={clearAllFilters}>
-                      Xóa tất cả bộ lọc
-                    </Button>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenuPortal>
-            </DropdownMenu>
-          </div>
-        </section>
-
-        {/* mini stats (4 ô) — glow đỏ cho “Việc quá hạn” khi >0 */}
-        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {[
-            { label: "Tổng cây", value: stats.total },
-            { label: "Đang hoạt động", value: stats.active },
-            { label: "Dừng hoạt động", value: stats.stopped },
-            { label: "Việc quá hạn", value: stats.overdue, icon: <AlertTriangle className="w-4 h-4" /> },
-          ].map((s, i) => {
-            const isOver = s.label === "Việc quá hạn" && Number(s.value) > 0;
-            return (
-              <div
-                key={i}
-                aria-live={isOver ? "polite" : undefined}
-                className={
-                  "relative rounded-xl px-4 py-3 flex items-center justify-between text-[13px] transition-all " +
-                  (isOver
-                    ? "border border-rose-300/50 bg-rose-400/5 animate-[mmOverduePulse_1.6s_ease-in-out_infinite]"
-                    : "")
-                }
-                style={{
-                  background: isOver ? undefined : "rgba(251,255,223,0.06)",
-                  border:     isOver ? undefined : "1px solid rgba(255,255,165,0.15)",
-                  color: PALETTE.ivory,
-                }}
+            <div className="w-full md:w-auto flex items-stretch md:items-center gap-3 md:gap-4">
+              <Button
+                className="h-12 md:h-12 px-5 md:px-6 rounded-2xl text-base font-semibold
+                           shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5
+                           transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5"
+                style={{ background: "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)", color: "#1F302F" }}
               >
-                <span className={"inline-flex items-center gap-2 " + (isOver ? "text-rose-200" : "opacity-80")}>
-                  {s.icon}
-                  {s.label}
+                <span className="inline-flex items-center gap-3">
+                  <span className="grid place-items-center w-8 h-8 rounded-xl bg-white/70 backdrop-blur">
+                    <Plus className="w-5 h-5" />
+                  </span>
+                  Thêm cây ăn quả
                 </span>
-                <span className={"font-semibold " + (isOver ? "text-rose-300" : "")}>{s.value}</span>
-                {isOver && (
-                  <span className="absolute -top-1.5 -right-1.5 h-3 w-3 rounded-full bg-rose-500 shadow-[0_0_0_6px_rgba(244,63,94,.32)]" />
-                )}
-              </div>
-            );
-          })}
-        </section>
+              </Button>
 
-        {/* Cards grid – 4 cột */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-7 items-stretch">
-          {pageItems.map((t) => {
-            const stopped = isStopped(t);
-            return (
-              <Card
-                key={t.id}
-                className={
-                  "group rounded-3xl overflow-hidden shadow-sm transition-all duration-200 h-full flex flex-col " +
-                  (stopped ? "opacity-90" : "hover:-translate-y-0.5 hover:shadow-md")
-                }
-                style={{ background: "#FFFFFFF2", borderColor: "rgba(255,255,165,0.25)" }}
-              >
-                <div className="relative">
-                  <img src={t.img} alt={t.commonName} className="h-48 w-full object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+              {/* Thẻ thời tiết giữ nguyên nội dung, đổi sang dạng card độc lập */}
+              <div className="rounded-2xl p-4 w-64 md:w-72 backdrop-blur-md text-white border border-white/15 bg-white/10 shadow-2xl">
+                <div className="text-sm font-medium flex items-center gap-1">
+                  <MapPin className="w-4 h-4 opacity-80" />
+                  Hanoi, Vietnam
                 </div>
-
-                <CardContent className="p-6 flex-1 flex flex-col">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="font-semibold text-[#0f1f1e]">{t.commonName}</div>
-                      <div className="text-xs text-neutral-500"># {t.id}</div>
-                    </div>
-                    <StatusPill status={t.status} />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm mt-5">
-                    <div>
-                      <div className="text-neutral-500">Giai đoạn sinh trưởng</div>
-                      <div className="mt-1">
-                        <PhasePill phase={t.phase} />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-neutral-500">Tuổi cây</div>
-                      <div className="mt-1 flex items-center gap-2 text-neutral-800">
-                        <Calendar className="h-4 w-4" /> {monthsBetween(t.plantedAt)} tháng
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm mt-4">
-                    <div>
-                      <div className="text-neutral-500">Nhân viên chăm sóc</div>
-                      <div className="mt-1 flex items-center gap-2 text-neutral-800">
-                        <User className="h-4 w-4" /> {t.caretaker}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-neutral-500">Trạng thái</div>
-                      <div className="mt-1 text-neutral-800">{t.stateNote || "—"}</div>
-                    </div>
-                  </div>
-
-                  {/* Việc cần làm */}
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="text-neutral-500 text-sm">Việc cần làm</div>
-                      {!stopped && (() => {
-                        const n = (t.todos || []).filter((x) =>
-                          String(x.due).toLowerCase().includes("quá hạn")
-                        ).length;
-                        return n > 0 ? (
-                          <span className="px-2 py-0.5 rounded-full text-xs border bg-rose-50 text-rose-700 border-rose-200">
-                            {n} Quá hạn
-                          </span>
-                        ) : null;
-                      })()}
-                    </div>
-
-                    {stopped ? (
-                      <div className="mt-2 text-xs px-3 py-2 rounded-lg bg-neutral-100 text-neutral-600 border border-neutral-200">
-                        Cây đã <span className="font-medium">dừng hoạt động</span> — ngừng mọi nhắc việc/gợi ý. Chỉ dùng để tra cứu lịch sử.
-                      </div>
-                    ) : (
-                      <ul className="mt-2 space-y-1">
-                        {(t.todos || []).map((x, i) => (
-                          <TodoRow key={i} text={x.text} due={x.due} priority={x.priority} />
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-
-                  {/* Footer ghim đáy */}
-                  <div className="mt-auto pt-4">
-                    <Separator />
-                    <div className="flex items-center justify-between text-xs text-neutral-500 mt-3">
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {t.location}
-                      </span>
-                    </div>
-                    <div className="text-xs text-neutral-500 mt-2">
-                      Cập nhật {new Date().toLocaleDateString("vi-VN")}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </section>
-
-        {/* Phân trang 4x3 */}
-        {pageCount > 1 && (
-          <section className="flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div className="text-sm text-white/80">
-              Hiển thị {startIdx + 1}–{endIdx} / {filtered.length}
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                className="h-9"
-                disabled={page === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Trang trước
-              </Button>
-              <div className="px-3 text-sm text-white/85">Trang {page}/{pageCount}</div>
-              <Button
-                variant="outline"
-                className="h-9"
-                disabled={page === pageCount}
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-              >
-                Trang sau
-              </Button>
+                <div className="text-3xl md:text-4xl font-semibold mt-1">29°</div>
+                <div className="text-xs opacity-80">Nắng nhẹ · Gió 5km/h</div>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="px-2 py-1 rounded-full text-[11px] border border-white/20 bg-white/10">UV thấp</span>
+                  <span className="px-2 py-1 rounded-full text-[11px] border border-white/20 bg-white/10">Độ ẩm 65%</span>
+                </div>
+              </div>
             </div>
           </section>
-        )}
 
-        {filtered.length === 0 && (
-          <div className="text-center text-white/70 py-10">Không có cây phù hợp</div>
-        )}
-      </main>
+          {/* search + filter */}
+          <section className="sticky top-[64px] z-[50] overflow-visible">
+            <div
+              className="flex flex-col xl:flex-row gap-3 rounded-2xl p-3"
+              style={{ background: "rgba(251,255,223,0.06)", border: "1px solid rgba(255,255,165,0.15)" }}
+            >
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Tìm tên/ID/vị trí..."
+                  className="pl-9 bg-white/95 text-[#0f1f1e] placeholder:text-neutral-500 rounded-full h-11"
+                />
+              </div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2 bg-white/95 h-11 rounded-full">
+                    <FilterIcon className="h-4 w-4" /> Bộ lọc
+                  </Button>
+                </DropdownMenuTrigger>
+
+                <DropdownMenuPortal>
+                  <DropdownMenuContent
+                    align="end"
+                    side="bottom"
+                    sideOffset={10}
+                    collisionPadding={24}
+                    className="z-[1000] min-w=[320px] rounded-xl border border-neutral-200 bg-white shadow-2xl overflow-visible"
+                  >
+                    <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] text-neutral-500">
+                      Trạng thái
+                    </DropdownMenuLabel>
+
+                    {[
+                      { key: "all", label: "Tất cả", count: stats.total },
+                      { key: "active", label: "Đang hoạt động", count: stats.active },
+                      { key: "stopped", label: "Dừng hoạt động", count: stats.stopped },
+                    ].map((opt) => {
+                      const active = status === opt.key;
+                      return (
+                        <DropdownMenuItem
+                          key={opt.key}
+                          onClick={() => setStatus(opt.key)}
+                          className={
+                            "flex items-center justify-between gap-3 py-2 rounded-none cursor-pointer " +
+                            (active ? "bg-neutral-100" : "hover:bg-neutral-50")
+                          }
+                        >
+                          <span className="inline-flex items-center gap-2">
+                            {active ? <Check className="h-4 w-4" /> : <span className="h-4 w-4" />}
+                            {opt.label}
+                          </span>
+                          <span className="px-1.5 py-0.5 text-[11px] rounded-full bg-neutral-100 border border-neutral-200">
+                            {opt.count}
+                          </span>
+                        </DropdownMenuItem>
+                      );
+                    })}
+
+                    <DropdownMenuSeparator className="my-2" />
+
+                    {/* Theo khu vườn */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="gap-2">
+                        <MapPin className="h-4 w-4" /> Theo khu vườn
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="min-w-[240px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
+                        {gardenOpts.map((g) => (
+                          <DropdownMenuCheckboxItem
+                            key={g}
+                            checked={gardens.has(g)}
+                            onCheckedChange={() => toggleSet(gardens, setGardens, g)}
+                            className="cursor-pointer"
+                          >
+                            {g}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setGardens(new Set())} className="text-neutral-600">
+                          Xóa lựa chọn
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    {/* Theo giống */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="gap-2">
+                        <Sprout className="h-4 w-4" /> Theo giống
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="min-w-[220px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
+                        {varietyOpts.map((v) => (
+                          <DropdownMenuCheckboxItem
+                            key={v}
+                            checked={varieties.has(v)}
+                            onCheckedChange={() => toggleSet(varieties, setVarieties, v)}
+                            className="cursor-pointer"
+                          >
+                            {v}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setVarieties(new Set())} className="text-neutral-600">
+                          Xóa lựa chọn
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    {/* Theo nhân viên */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="gap-2">
+                        <User className="h-4 w-4" /> Theo nhân viên
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="min-w-[200px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
+                        {caretakerOpts.map((u) => (
+                          <DropdownMenuCheckboxItem
+                            key={u}
+                            checked={caretakers.has(u)}
+                            onCheckedChange={() => toggleSet(caretakers, setCaretakers, u)}
+                            className="cursor-pointer"
+                          >
+                            {u}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setCaretakers(new Set())} className="text-neutral-600">
+                          Xóa lựa chọn
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    {/* Theo giai đoạn */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="gap-2">
+                        <Sprout className="h-4 w-4" /> Theo giai đoạn
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="min-w-[240px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
+                        {phaseOpts.map((p) => (
+                          <DropdownMenuCheckboxItem
+                            key={p}
+                            checked={phases.has(p)}
+                            onCheckedChange={() => toggleSet(phases, setPhases, p)}
+                            className="cursor-pointer"
+                          >
+                            {p}
+                          </DropdownMenuCheckboxItem>
+                        ))}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => setPhases(new Set())} className="text-neutral-600">
+                          Xóa lựa chọn
+                        </DropdownMenuItem>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    {/* Theo ngày thêm */}
+                    <DropdownMenuSub>
+                      <DropdownMenuSubTrigger className="gap-2">
+                        <Calendar className="h-4 w-4" /> Theo ngày thêm
+                      </DropdownMenuSubTrigger>
+                      <DropdownMenuSubContent className="min-w-[280px] rounded-xl border border-neutral-200 bg-white shadow-2xl p-3">
+                        <div className="text-[12px] text-neutral-600 mb-1">Sắp xếp</div>
+                        <DropdownMenuRadioGroup value={dateOrder} onValueChange={setDateOrder}>
+                          <DropdownMenuRadioItem value="desc">Mới nhất → Cũ nhất</DropdownMenuRadioItem>
+                          <DropdownMenuRadioItem value="asc">Cũ nhất → Mới nhất</DropdownMenuRadioItem>
+                        </DropdownMenuRadioGroup>
+
+                        <DropdownMenuSeparator className="my-2" />
+                        <div className="grid gap-2 text-sm">
+                          <div className="grid gap-1">
+                            <div className="text-[12px] text-neutral-600">Từ ngày</div>
+                            <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="h-9" />
+                          </div>
+                          <div className="grid gap-1">
+                            <div className="text-[12px] text-neutral-600">Đến ngày</div>
+                            <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="h-9" />
+                          </div>
+                          <div className="flex justify-between pt-1">
+                            <Button size="sm" variant="ghost" className="h-8" onClick={() => { setDateFrom(""); setDateTo(""); }}>
+                              Xóa
+                            </Button>
+                            <Button size="sm" className="h-8">Áp dụng</Button>
+                          </div>
+                        </div>
+                      </DropdownMenuSubContent>
+                    </DropdownMenuSub>
+
+                    <DropdownMenuSeparator className="my-2" />
+
+                    {/* Chỉ hiển thị cây có việc quá hạn (chỉ áp cho active) */}
+                    <DropdownMenuCheckboxItem
+                      checked={onlyOverdue}
+                      onCheckedChange={() => setOnlyOverdue((v) => !v)}
+                      className="cursor-pointer"
+                    >
+                      Chỉ hiển thị cây có việc quá hạn
+                    </DropdownMenuCheckboxItem>
+
+                    <div className="px-3 py-3">
+                      <Button variant="outline" className="w-full" onClick={clearAllFilters}>
+                        Xóa tất cả bộ lọc
+                      </Button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenuPortal>
+              </DropdownMenu>
+            </div>
+          </section>
+
+          {/* mini stats (4 ô) — glow đỏ cho “Việc quá hạn” khi >0 */}
+          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {[
+              { label: "Tổng cây", value: stats.total },
+              { label: "Đang hoạt động", value: stats.active },
+              { label: "Dừng hoạt động", value: stats.stopped },
+              { label: "Việc quá hạn", value: stats.overdue, icon: <AlertTriangle className="w-4 h-4" /> },
+            ].map((s, i) => {
+              const isOver = s.label === "Việc quá hạn" && Number(s.value) > 0;
+              return (
+                <div
+                  key={i}
+                  aria-live={isOver ? "polite" : undefined}
+                  className={
+                    "relative rounded-xl px-4 py-3 flex items-center justify-between text-[13px] transition-all " +
+                    (isOver
+                      ? "border border-rose-300/50 bg-rose-400/5 animate-[mmOverduePulse_1.6s_ease-in-out_infinite]"
+                      : "")
+                  }
+                  style={{
+                    background: isOver ? undefined : "rgba(251,255,223,0.06)",
+                    border:     isOver ? undefined : "1px solid rgba(255,255,165,0.15)",
+                    color: PALETTE.ivory,
+                  }}
+                >
+                  <span className={"inline-flex items-center gap-2 " + (isOver ? "text-rose-200" : "opacity-80")}>
+                    {s.icon}
+                    {s.label}
+                  </span>
+                  <span className={"font-semibold " + (isOver ? "text-rose-300" : "")}>{s.value}</span>
+                  {isOver && (
+                    <span className="absolute -top-1.5 -right-1.5 h-3 w-3 rounded-full bg-rose-500 shadow-[0_0_0_6px_rgba(244,63,94,.32)]" />
+                  )}
+                </div>
+              );
+            })}
+          </section>
+
+          {/* Cards grid – 4 cột */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-7 items-stretch">
+            {pageItems.map((t) => {
+              const stopped = isStopped(t);
+              return (
+                <Card
+                  key={t.id}
+                  className={
+                    "group rounded-3xl overflow-hidden shadow-sm transition-all duration-200 h-full flex flex-col " +
+                    (stopped ? "opacity-90" : "hover:-translate-y-0.5 hover:shadow-md")
+                  }
+                  style={{ background: "#FFFFFFF2", borderColor: "rgba(255,255,165,0.25)" }}
+                >
+                  <div className="relative">
+                    <img src={t.img} alt={t.commonName} className="h-48 w-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+                  </div>
+
+                  <CardContent className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="font-semibold text-[#0f1f1e]">{t.commonName}</div>
+                        <div className="text-xs text-neutral-500"># {t.id}</div>
+                      </div>
+                      <StatusPill status={t.status} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm mt-5">
+                      <div>
+                        <div className="text-neutral-500">Giai đoạn sinh trưởng</div>
+                        <div className="mt-1">
+                          <PhasePill phase={t.phase} />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-neutral-500">Tuổi cây</div>
+                        <div className="mt-1 flex items-center gap-2 text-neutral-800">
+                          <Calendar className="h-4 w-4" /> {monthsBetween(t.plantedAt)} tháng
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm mt-4">
+                      <div>
+                        <div className="text-neutral-500">Nhân viên chăm sóc</div>
+                        <div className="mt-1 flex items-center gap-2 text-neutral-800">
+                          <User className="h-4 w-4" /> {t.caretaker}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-neutral-500">Trạng thái</div>
+                        <div className="mt-1 text-neutral-800">{t.stateNote || "—"}</div>
+                      </div>
+                    </div>
+
+                    {/* Việc cần làm */}
+                    <div className="mt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="text-neutral-500 text-sm">Việc cần làm</div>
+                        {!stopped && (() => {
+                          const n = (t.todos || []).filter((x) =>
+                            String(x.due).toLowerCase().includes("quá hạn")
+                          ).length;
+                          return n > 0 ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs border bg-rose-50 text-rose-700 border-rose-200">
+                              {n} Quá hạn
+                            </span>
+                          ) : null;
+                        })()}
+                      </div>
+
+                      {stopped ? (
+                        <div className="mt-2 text-xs px-3 py-2 rounded-lg bg-neutral-100 text-neutral-600 border border-neutral-200">
+                          Cây đã <span className="font-medium">dừng hoạt động</span> — ngừng mọi nhắc việc/gợi ý. Chỉ dùng để tra cứu lịch sử.
+                        </div>
+                      ) : (
+                        <ul className="mt-2 space-y-1">
+                          {(t.todos || []).map((x, i) => (
+                            <TodoRow key={i} text={x.text} due={x.due} priority={x.priority} />
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    {/* Footer ghim đáy */}
+                    <div className="mt-auto pt-4">
+                      <Separator />
+                      <div className="flex items-center justify-between text-xs text-neutral-500 mt-3">
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {t.location}
+                        </span>
+                      </div>
+                      <div className="text-xs text-neutral-500 mt-2">
+                        Cập nhật {new Date().toLocaleDateString("vi-VN")}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </section>
+
+          {/* Phân trang 4x3 */}
+          {PAGE_COUNT > 1 && (
+            <section className="flex flex-col sm:flex-row items-center justify-between gap-3">
+              <div className="text-sm text-white/80">
+                Hiển thị {startIdx + 1}–{endIdx} / {filtered.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  className="h-9"
+                  disabled={page === 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Trang trước
+                </Button>
+                <div className="px-3 text-sm text-white/85">Trang {page}/{PAGE_COUNT}</div>
+                <Button
+                  variant="outline"
+                  className="h-9"
+                  disabled={page === PAGE_COUNT}
+                  onClick={() => setPage((p) => Math.min(PAGE_COUNT, p + 1))}
+                >
+                  Trang sau
+                </Button>
+              </div>
+            </section>
+          )}
+
+          {filtered.length === 0 && (
+            <div className="text-center text-white/70 py-10">Không có cây phù hợp</div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }

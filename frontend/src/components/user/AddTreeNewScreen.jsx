@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import LivingBackground from "@/components/background/LivingBackground";
+import { useLocation, useSearchParams } from "react-router-dom";
 
 import {
   Calendar as CalIcon,
@@ -17,16 +18,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+ import { computeInitialPhase, normalizePhaseBeforeSave } from "@/lib/treePhase";
+
 
 /**
- * MamMoi — AddTreeNewScreen (balanced grid + always-visible Flower/Fruit with phase-gated input + default 125% zoom)
- * - Thứ tự field (trái→phải rồi xuống):
- *   mã cây → loại cây → giống → tuổi trước khi trồng → ngày trồng → mô tả lá → mô tả cành → loại đất → giai đoạn → mô tả hoa → mô tả quả → vườn
- * - Hoa/Quả luôn HIỆN; chỉ CHO NHẬP khi giai đoạn >= "Ra hoa đậu quả".
- * - Bỏ các note: "Tự ước tính (từ dữ liệu)...", "(có thể ghi đè)" và note dưới ImagePicker.
- * - Cân đối lưới 12 cột, mỗi field xl:col-span-3.
- * - Progress động: khi phase < "Ra hoa đậu quả" không tính Hoa/Quả; khi phase ≥, thêm 2 field vào mẫu số.
- * - Mặc định phóng to 125% bằng CSS zoom (Chrome/Edge) + fallback transform (Safari).
+ * MamMoi — AddTreeNewScreen (updated phases & garden context)
+ * - Update phases: ["Sinh trưởng & Phát triển","Ra hoa","Ra quả","Trước thu hoạch","Sau thu hoạch"]
+ * - Remove garden selector: infer from navigation (location.state or URL params)
+ * - Keep Flower/Fruit always visible; gating:
+ *     - Flower editable when phase >= "Ra hoa"
+ *     - Fruit  editable when phase >= "Ra quả"
  */
 
 /* ===================== UI ZOOM (đổi nếu muốn) ===================== */
@@ -37,14 +38,12 @@ function useZoomStyle() {
     const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
     const isSafari = /Safari/.test(ua) && !/Chrome|CriOS|Edg|OPR/.test(ua);
     if (isSafari) {
-      // Fallback cho Safari
       setStyle({
         transform: `scale(${UI_ZOOM})`,
         transformOrigin: "top center",
         width: `${100 / UI_ZOOM}%`,
       });
     } else {
-      // Chrome/Edge/Firefox mới
       setStyle({ zoom: UI_ZOOM });
     }
   }, []);
@@ -112,22 +111,24 @@ const SPECIES_RULES = {
   ],
 };
 
-/* --------------------------- 4-Phase hiển thị --------------------------- */
-const PHASES4 = [
-  "Sinh trưởng & phát triển",
-  "Ra hoa đậu quả",
-  "Thu hoach",
-  "Sau thu",
+/* --------------------------- 5-Phase hiển thị --------------------------- */
+const PHASES5 = [
+  "Sinh trưởng & Phát triển",
+  "Ra hoa",
+  "Ra quả",
+  "Trước thu hoạch",
+  "Sau thu hoạch",
 ];
-const PHASE_ORDER = [...PHASES4];
+const PHASE_ORDER = [...PHASES5];
 
-function mapLegacyTo4(name = "") {
+function mapLegacyTo5(name = "") {
   const s = String(name).toLowerCase();
-  if (/cây non|sinh trưởng thân lá/.test(s)) return "Sinh trưởng & phát triển";
-  if (/ra hoa|đậu|nuôi quả/.test(s)) return "Ra hoa đậu quả";
-  if (/trước thu|cho thu|thu\b/.test(s)) return "Thu hoach";
-  if (/sau thu|phục hồi/.test(s)) return "Sau thu";
-  return "Sinh trưởng & phát triển";
+  if (/cây non|sinh trưởng thân lá/.test(s)) return "Sinh trưởng & Phát triển";
+  if (/ra hoa/.test(s)) return "Ra hoa";
+  if (/đậu|nuôi quả|quả/.test(s)) return "Ra quả";
+  if (/trước thu|cho thu|thu\b/.test(s)) return "Trước thu hoạch";
+  if (/sau thu|phục hồi/.test(s)) return "Sau thu hoạch";
+  return "Sinh trưởng & Phát triển";
 }
 
 /* --------------------------- Heuristics --------------------------- */
@@ -257,7 +258,9 @@ function normalizeImageUrl(raw = "") {
   m = u.match(/drive\.google\.com\/uc\?(?:export=[^&]+&)?id=([^&]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
   if (/dropbox\.com/.test(u)) {
-    u = u.replace("www.dropbox.com", "dl.dropboxusercontent.com").replace(/\?dl=0$/, "?dl=1");
+    u = u
+      .replace("www.dropbox.com", "dl.dropboxusercontent.com")
+      .replace(/\?dl=0$/, "?dl=1");
   }
   return u;
 }
@@ -395,42 +398,21 @@ function useHeaderOffset(selector = "[data-app-header],[data-header],header") {
 
 /* ------------------------------ Main Screen ------------------------------ */
 export default function AddTreeNewScreen() {
-  useHeaderOffset(); // đẩy trang xuống theo chiều cao header
-  const zoomStyle = useZoomStyle(); // << phóng to 125%
+  useHeaderOffset();
+  const zoomStyle = useZoomStyle();
+  const location = useLocation();
+  const [search] = useSearchParams();
 
-  // States
-  const [code, setCode] = useState("");
-  const [userEditedCode, setUserEditedCode] = useState(false);
-  const [speciesKey, setSpeciesKey] = useState("");
-  const [variety, setVariety] = useState("");
-  const [status, setStatus] = useState(""); // GIỮ để bảo toàn payload (không render form)
-  const [soil, setSoil] = useState("");
+  // Garden context from navigation (state or URL):
+  // - state.garden: { id, name, region }
+  // - or ?gardenId=&gardenName=&region=
+  const navGarden = location?.state?.garden || null;
+  const qpGardenId = search.get("gardenId");
+  const qpGardenName = search.get("gardenName");
+  const qpRegion = search.get("region");
+
+  // Fallback garden list (no backend)
   const [gardens, setGardens] = useState([]);
-  const [gardenId, setGardenId] = useState("");
-  const [plantDate, setPlantDate] = useState("");
-  const [preAge, setPreAge] = useState("");
-  const [image, setImage] = useState("");
-  const [careGoal, setCareGoal] = useState("");
-  const [note, setNote] = useState("");
-  const [userIntent, setUserIntent] = useState("");
-  const [errors, setErrors] = useState({});
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successOpen, setSuccessOpen] = useState(false);
-  const [lastCreatedCode, setLastCreatedCode] = useState("");
-  const [lastCreatedSpecies, setLastCreatedSpecies] = useState("");
-  const [lastCreatedVariety, setLastCreatedVariety] = useState("");
-
-  // Morphology fields
-  const [branchInfo, setBranchInfo] = useState(""); // Cành
-  const [leafInfo, setLeafInfo] = useState("");     // Lá
-  const [flowerInfo, setFlowerInfo] = useState(""); // Hoa
-  const [fruitInfo, setFruitInfo] = useState("");   // Quả
-
-  // Phase override
-  const [phaseOverride, setPhaseOverride] = useState("");
-
-  useEffect(() => { setVariety(""); setSoil(""); }, [speciesKey]);
-
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -439,11 +421,15 @@ export default function AddTreeNewScreen() {
         if (!mounted) return;
         if (res.ok) {
           const data = await res.json();
-          setGardens(Array.isArray(data) ? data : [
-            { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
-            { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
-            { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
-          ]);
+          setGardens(
+            Array.isArray(data)
+              ? data
+              : [
+                  { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
+                  { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
+                  { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
+                ]
+          );
         } else {
           setGardens([
             { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
@@ -462,34 +448,89 @@ export default function AddTreeNewScreen() {
     return () => { mounted = false; };
   }, []);
 
+  const currentGarden = useMemo(() => {
+    if (navGarden && navGarden.id) return navGarden;
+    if (qpGardenId) {
+      const g = (gardens || []).find((x) => String(x.id) === String(qpGardenId));
+      if (g) return g;
+      return { id: qpGardenId, name: qpGardenName || "", region: qpRegion || "" };
+    }
+    return null;
+  }, [navGarden, qpGardenId, qpGardenName, qpRegion, gardens]);
+
+  const regionTag = currentGarden?.region || "";
+
+  // States
+  const [code, setCode] = useState("");
+  const [userEditedCode, setUserEditedCode] = useState(false);
+  const [speciesKey, setSpeciesKey] = useState("");
+  const [variety, setVariety] = useState("");
+  const [status, setStatus] = useState("");
+  const [soil, setSoil] = useState("");
+  const [plantDate, setPlantDate] = useState("");
+  const [preAge, setPreAge] = useState("");
+  const [image, setImage] = useState("");
+  const [careGoal, setCareGoal] = useState("");
+  const [note, setNote] = useState("");
+  const [userIntent, setUserIntent] = useState("");
+  const [errors, setErrors] = useState({});
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [lastCreatedCode, setLastCreatedCode] = useState("");
+  const [lastCreatedSpecies, setLastCreatedSpecies] = useState("");
+  const [lastCreatedVariety, setLastCreatedVariety] = useState("");
+
+  // Morphology fields
+  const [branchInfo, setBranchInfo] = useState("");
+  const [leafInfo, setLeafInfo] = useState("");
+  const [flowerInfo, setFlowerInfo] = useState("");
+  const [fruitInfo, setFruitInfo] = useState("");
+
+  // Phase override (seed từ lib, chỉ dùng làm mặc định lúc mở form)
+  const [phaseOverride, setPhaseOverride] = useState(() =>
+   computeInitialPhase({}) // nếu muốn bám ngày trồng, có thể truyền { plantingDate: plantDate }
+  );
+
+  useEffect(() => { setVariety(""); setSoil(""); }, [speciesKey]);
+
+  // Nếu chưa override tay, khi có ngày trồng thì seed lại phase theo lib (1 lần)
+ useEffect(() => {
+   if (!phaseOverride && plantDate) {
+     const p = computeInitialPhase({ plantingDate: plantDate });
+     // Nếu lib đang trả tên phase 5-bước thì giữ nguyên; nếu bạn dùng legacy, có thể map qua:
+     // const p5 = mapLegacyTo5(p);
+     setPhaseOverride(p);
+   }
+ }, [plantDate]); // eslint-disable-line
+
   const ageAfterPlant = useMemo(() => monthsBetween(plantDate), [plantDate]);
   const preAgeNum = useMemo(() => parseInt(preAge || "0", 10) || 0, [preAge]);
   const totalAge = (plantDate ? ageAfterPlant : 0) + preAgeNum;
-  const gardenObj = useMemo(
-    () => (gardens || []).find((g) => String(g.id) === String(gardenId)),
-    [gardens, gardenId]
-  );
-  const regionTag = gardenObj?.region || "";
   const soilKB = useMemo(() => SOIL_KB[speciesKey], [speciesKey]);
   const speciesLabel = useMemo(
     () => SPECIES_LIST.find((s) => s.key === speciesKey)?.label || "",
     [speciesKey]
   );
 
-  // Legacy compute then map to 4-phase
+  // Legacy compute then map to 5-phase
   const legacyPhase = useMemo(
     () => computeLegacyPhase({ totalAge, regionTag, speciesName: speciesKey, soil, status }),
     [totalAge, regionTag, speciesKey, soil, status]
   );
-  const defaultPhase4 = useMemo(() => mapLegacyTo4(legacyPhase), [legacyPhase]);
-  const effectivePhase4 = phaseOverride || defaultPhase4;
+  const defaultPhase5 = useMemo(() => mapLegacyTo5(legacyPhase), [legacyPhase]);
+  const effectivePhase = phaseOverride || defaultPhase5;
 
-  // Can edit flower/fruit?
-  const canEditFlowerFruit = useMemo(() => {
-    const idx = PHASE_ORDER.indexOf(effectivePhase4);
-    const gate = PHASE_ORDER.indexOf("Ra hoa đậu quả");
-    return idx >= gate && gate !== -1;
-  }, [effectivePhase4]);
+  // Can edit flower / fruit separately
+  const canEditFlower = useMemo(() => {
+    const idx = PHASE_ORDER.indexOf(effectivePhase);
+    const gateFlower = PHASE_ORDER.indexOf("Ra hoa");
+    return idx >= gateFlower && gateFlower !== -1;
+  }, [effectivePhase]);
+  const canEditFruit = useMemo(() => {
+    const idx = PHASE_ORDER.indexOf(effectivePhase);
+    const gateFruit = PHASE_ORDER.indexOf("Ra quả");
+    return idx >= gateFruit && gateFruit !== -1;
+  }, [effectivePhase]);
 
   // Auto mã cây
   useEffect(() => {
@@ -509,23 +550,20 @@ export default function AddTreeNewScreen() {
           const data = await res.json();
           next = Number(data?.count || 0) + 1;
         }
-      } catch {
-        next = 1;
-      }
+      } catch { next = 1; }
       const suggested = `${prefix}${String(next).padStart(2, "0")}`;
       setCode(suggested);
       setErrors((x) => ({ ...x, code: undefined }));
     })();
   }, [speciesKey, variety, speciesLabel, userEditedCode]);
 
-  // Validate submit (GIỮ NGUYÊN: 6 trường bắt buộc)
+  // Validate submit (remove gardenId requirement)
   const REQUIRED_MSG = {
     code: "Vui lòng nhập mã cây (tự gợi ý sau khi chọn Loại + Giống).",
     speciesKey: "Chọn loại cây",
     variety: "Chọn giống",
     plantDate: "Chọn ngày trồng",
     soil: "Chọn loại đất",
-    gardenId: "Chọn vườn",
   };
   function validateBasic() {
     const e = {};
@@ -534,14 +572,13 @@ export default function AddTreeNewScreen() {
     if (!variety) e.variety = REQUIRED_MSG.variety;
     if (!plantDate) e.plantDate = REQUIRED_MSG.plantDate;
     if (!soil) e.soil = REQUIRED_MSG.soil;
-    if (!gardenId) e.gardenId = REQUIRED_MSG.gardenId;
     return e;
   }
 
   function resetAll() {
     setCode(""); setUserEditedCode(false);
     setSpeciesKey(""); setVariety(""); setStatus(""); setSoil("");
-    setGardenId(""); setPlantDate(""); setPreAge("");
+    setPlantDate(""); setPreAge("");
     setImage(""); setCareGoal(""); setNote(""); setUserIntent("");
     setErrors({});
     setBranchInfo(""); setLeafInfo(""); setFlowerInfo(""); setFruitInfo("");
@@ -552,19 +589,24 @@ export default function AddTreeNewScreen() {
     const e = validateBasic();
     if (Object.keys(e).length) { setErrors(e); return; }
 
-    const payload = {
+    const base = {
       code, speciesKey, speciesLabel, variety, status, soil,
-      gardenId, gardenName: gardenObj?.name || "",
-      plantDate, preAge: preAgeNum, region: regionTag || "",
-      legacyPhase, phase4Default: defaultPhase4, phase4Override: phaseOverride || null,
-      phase: effectivePhase4,
+      gardenId: currentGarden?.id || null,
+      gardenName: currentGarden?.name || "",
+      region: regionTag || "",
+      plantDate, preAge: preAgeNum,
+      legacyPhase, phase5Default: defaultPhase5, phaseOverride: phaseOverride || null,
+      phase: effectivePhase,
       image, careGoal, note, userIntent,
       ageMonths: totalAge,
       branchInfo, leafInfo,
-      flowerInfo: canEditFlowerFruit ? flowerInfo : "",
-      fruitInfo:  canEditFlowerFruit ? fruitInfo  : "",
+      flowerInfo: canEditFlower ? flowerInfo : "",
+      fruitInfo:  canEditFruit ? fruitInfo  : "",
     };
-    console.log("Create Tree Payload", payload);
+    // DÙNG CHUNG: chuẩn hóa trước khi lưu
+   const payload = normalizePhaseBeforeSave(base);
+   console.log("Create Tree Payload", payload);
+   // await api.trees.create(payload); // khi nối backend, gọi API ở đây
 
     setLastCreatedCode(code);
     setLastCreatedSpecies(speciesLabel);
@@ -577,7 +619,7 @@ export default function AddTreeNewScreen() {
 
   const successName = [lastCreatedSpecies, lastCreatedVariety].filter(Boolean).join(" ");
 
-  /* ---------------- Progress (động theo gate Hoa/Quả) ---------------- */
+  /* ---------------- Progress (động theo gate Hoa / Quả) ---------------- */
   const progressChecks = useMemo(() => {
     const base = {
       code: !!code.trim(),
@@ -588,17 +630,14 @@ export default function AddTreeNewScreen() {
       leafInfo: !!leafInfo.trim(),
       branchInfo: !!branchInfo.trim(),
       soil: !!soil,
-      phase: !!(phaseOverride || defaultPhase4),
-      gardenId: !!gardenId,
+      phase: !!(phaseOverride || defaultPhase5),
     };
-    if (canEditFlowerFruit) {
-      base.flowerInfo = !!flowerInfo.trim();
-      base.fruitInfo = !!fruitInfo.trim();
-    }
+    if (canEditFlower) base.flowerInfo = !!flowerInfo.trim();
+    if (canEditFruit) base.fruitInfo = !!fruitInfo.trim();
     return base;
   }, [
     code, speciesKey, variety, preAge, plantDate, leafInfo, branchInfo, soil,
-    phaseOverride, defaultPhase4, gardenId, canEditFlowerFruit, flowerInfo, fruitInfo
+    phaseOverride, defaultPhase5, canEditFlower, canEditFruit, flowerInfo, fruitInfo
   ]);
 
   const doneCount = Object.values(progressChecks).filter(Boolean).length;
@@ -613,12 +652,9 @@ export default function AddTreeNewScreen() {
   return (
     <div
       className="min-h-screen relative overflow-hidden"
-      style={{
-        backgroundColor: "#1F302F",
-        paddingTop: "calc(var(--mm-header-h, 88px) + 12px)",
-      }}
+      style={{ backgroundColor: "#1F302F", paddingTop: "calc(var(--mm-header-h, 88px) + 12px)" }}
     >
-      {/* Background (không zoom để giữ hiệu ứng mượt) */}
+      {/* Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <LivingBackground
           theme="aurora"
@@ -631,15 +667,11 @@ export default function AddTreeNewScreen() {
         />
       </div>
 
-      {/* ====== ZOOM WRAPPER 125% ====== */}
+      {/* ZOOM WRAPPER */}
       <div style={zoomStyle}>
         {/* Header */}
         <section className="relative">
           <div className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 pb-3">
-            <div className="flex items-center gap-2 text-emerald-100/80 text-xs">
-              
-            </div>
-
             <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
@@ -648,6 +680,18 @@ export default function AddTreeNewScreen() {
                 <p className="text-emerald-100/80 text-sm mt-1">
                   Tạo cây với các thông tin chi tiết giúp AI đưa ra gợi ý chăm sóc tốt nhất cho bạn.
                 </p>
+                {currentGarden ? (
+                  <div className="mt-2 inline-flex items-center gap-2 text-emerald-100/80 text-xs">
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>
+                      Trong vườn: <b>{currentGarden.name}</b>{regionTag ? ` — ${regionTag}` : ""}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-2 text-emerald-100/60 text-xs">
+                   
+                  </div>
+                )}
               </div>
 
               {/* Progress mini-stepper */}
@@ -838,11 +882,11 @@ export default function AddTreeNewScreen() {
                   <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
                     <Label className="text-neutral-700">Giai đoạn</Label>
                     <select
-                      value={phaseOverride || defaultPhase4}
+                      value={phaseOverride || defaultPhase5}
                       onChange={(e) => setPhaseOverride(e.target.value)}
                       className="h-11 rounded-xl border bg-white px-3 text-sm appearance-none border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500"
                     >
-                      {PHASES4.map((p) => (
+                      {PHASES5.map((p) => (
                         <option key={p} value={p}>{p}</option>
                       ))}
                     </select>
@@ -854,10 +898,10 @@ export default function AddTreeNewScreen() {
                     <Input
                       value={flowerInfo}
                       onChange={(e) => setFlowerInfo(e.target.value)}
-                      disabled={!canEditFlowerFruit}
+                      disabled={!canEditFlower}
                       placeholder="Mô tả tình trạng, tỉ lệ ra hoa, ..."
                       className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500
-                        border-neutral-300 ${!canEditFlowerFruit ? "opacity-60 cursor-not-allowed" : ""}`}
+                        border-neutral-300 ${!canEditFlower ? "opacity-60 cursor-not-allowed" : ""}`}
                     />
                   </div>
 
@@ -867,38 +911,11 @@ export default function AddTreeNewScreen() {
                     <Input
                       value={fruitInfo}
                       onChange={(e) => setFruitInfo(e.target.value)}
-                      disabled={!canEditFlowerFruit}
+                      disabled={!canEditFruit}
                       placeholder="Số lượng, kích thước, tình trạng, ..."
                       className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500
-                        border-neutral-300 ${!canEditFlowerFruit ? "opacity-60 cursor-not-allowed" : ""}`}
+                        border-neutral-300 ${!canEditFruit ? "opacity-60 cursor-not-allowed" : ""}`}
                     />
-                  </div>
-
-                  {/* 12. Vườn */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label htmlFor="garden" className="text-neutral-700">Vườn</Label>
-                    <select
-                      id="garden"
-                      value={gardenId}
-                      onChange={(e) => {
-                        setGardenId(e.target.value);
-                        setErrors((x) => ({ ...x, gardenId: undefined }));
-                      }}
-                      className={`h-11 rounded-xl border bg-white px-3 text-sm appearance-none
-                        focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500
-                        ${errors.gardenId ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : "border-neutral-300"}`}
-                    >
-                      <option value="">— Chọn vườn —</option>
-                      {(gardens || []).map((g) => (
-                        <option key={g.id} value={g.id}>{g.name}</option>
-                      ))}
-                    </select>
-                    {errors.gardenId && <p className="text-xs text-red-500 mt-1">{errors.gardenId}</p>}
-                    {regionTag && (
-                      <div className="text-xs text-neutral-500">
-                        Miền suy ra từ vườn: <b>{regionTag}</b>
-                      </div>
-                    )}
                   </div>
 
                   {/* NOTE cuối card */}
@@ -912,25 +929,21 @@ export default function AddTreeNewScreen() {
 
               {/* Hướng dẫn */}
               <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-                <CardHeader className="pb-3">
-                  <CardTitle>Hướng dẫn điền & sử dụng</CardTitle>
-                </CardHeader>
+                <CardHeader className="pb-3"><CardTitle>Hướng dẫn điền & sử dụng</CardTitle></CardHeader>
                 <CardContent className="text-sm text-neutral-700">
                   <ol className="list-decimal ml-5 space-y-1">
                     <li><b>Mã cây</b> tự gợi ý sau khi chọn <b>Loại</b> & <b>Giống</b>; có thể chỉnh tay.</li>
                     <li>Nhập <b>Tuổi trước khi trồng</b> (tháng) và <b>Ngày trồng</b> để ước tính tuổi tổng.</li>
                     <li><b>Mô tả lá/cành</b> giúp AI hiểu cây; nếu bỏ trống, hệ thống hiểu là <i>bình thường</i>.</li>
-                    <li><b>Giai đoạn</b> quyết định khả năng nhập <b>Hoa</b>/<b>Quả</b>: khi giai đoạn <b>≥ Ra hoa đậu quả</b> mới cho nhập.</li>
-                    <li>Chọn <b>Vườn</b> để suy ra <b>miền khí hậu</b>; <b>Loại đất</b> nên chọn đúng thực tế.</li>
+                    <li><b>Giai đoạn</b>: <b>Hoa</b> cho nhập từ <b>Ra hoa</b>; <b>Quả</b> cho nhập từ <b>Ra quả</b>.</li>
+                    <li>Nếu đi từ trang danh sách vườn → danh sách cây → tạo cây, màn này sẽ tự nhận <b>Vườn</b>.</li>
                   </ol>
                 </CardContent>
               </Card>
 
               {/* Ghi chú bổ sung cho AI */}
               <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-                <CardHeader className="pb-3">
-                  <CardTitle>Ghi chú bổ sung cho AI</CardTitle>
-                </CardHeader>
+                <CardHeader className="pb-3"><CardTitle>Ghi chú bổ sung cho AI</CardTitle></CardHeader>
                 <CardContent className="grid gap-4">
                   <div className="grid gap-1">
                     <Label className="text-neutral-700">Ghi chú bổ sung</Label>
@@ -954,7 +967,6 @@ export default function AddTreeNewScreen() {
                     <CheckCircle2 className="w-4 h-4 mr-1" />
                     Tạo cây
                   </Button>
-
                   <Button
                     type="button"
                     variant="outline"
@@ -973,9 +985,7 @@ export default function AddTreeNewScreen() {
               style={{ top: "calc(var(--mm-header-h, 88px) + 8px)" }}
             >
               <Card className="rounded-2xl overflow-hidden bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-                <CardHeader className="pb-3">
-                  <CardTitle>Ảnh & Preview</CardTitle>
-                </CardHeader>
+                <CardHeader className="pb-3"><CardTitle>Ảnh & Preview</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
                   <ImagePicker code={code} value={image} onChange={setImage} />
                   <div className="rounded-xl border bg-white overflow-hidden ring-1 ring-black/5">
@@ -990,7 +1000,7 @@ export default function AddTreeNewScreen() {
                       <div className="flex items-center justify-between">
                         <div className="font-semibold">{speciesLabel || "Chưa đặt tên"}</div>
                         <Badge className="rounded-full bg-emerald-600 text-white border-emerald-600 shadow">
-                          {effectivePhase4}
+                          {effectivePhase}
                         </Badge>
                       </div>
 
@@ -1016,12 +1026,12 @@ export default function AddTreeNewScreen() {
                       <div className="text-xs text-neutral-600">#{code || "—"}</div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
                         <Field label="Tuổi" value={`${totalAge} tháng`} />
-                        <Field label="Vườn" value={gardenObj?.name || "—"} />
+                        <Field label="Vườn" value={currentGarden?.name || "—"} />
                         <Field label="Giống" value={variety || "—"} />
                         {branchInfo ? <Field label="Cành" value={branchInfo} /> : null}
                         {leafInfo ? <Field label="Lá" value={leafInfo} /> : null}
-                        {canEditFlowerFruit && flowerInfo ? <Field label="Hoa" value={flowerInfo} /> : null}
-                        {canEditFlowerFruit && fruitInfo ? <Field label="Quả" value={fruitInfo} /> : null}
+                        {canEditFlower && flowerInfo ? <Field label="Hoa" value={flowerInfo} /> : null}
+                        {canEditFruit && fruitInfo ? <Field label="Quả" value={fruitInfo} /> : null}
                       </div>
                     </div>
                   </div>
@@ -1040,8 +1050,9 @@ export default function AddTreeNewScreen() {
                   <ul className="list-disc ml-5 space-y-1">
                     <li><b>Mã cây</b> là duy nhất; tự gợi ý theo <b>Loại</b> + <b>Giống</b> nhưng vẫn có thể chỉnh tay.</li>
                     <li>Dropdown <b>không cho gõ text</b> — hãy chọn trong danh sách.</li>
-                    <li>Trường bị mờ là do phụ thuộc: <b>Giống</b> & <b>Loại đất</b> chỉ mở sau khi chọn <b>Loại cây</b>.</li>
+                    <li><b>Giai đoạn</b> quyết định khả năng nhập <b>Hoa</b>/<b>Quả</b> (xem mô tả ở thẻ hướng dẫn).</li>
                     <li><b>Ngày trồng</b> dùng để ước tính tuổi & giai đoạn.</li>
+                    <li>Nếu chưa thấy tên vườn, hãy điều hướng từ màn danh sách vườn → cây → tạo cây.</li>
                   </ul>
                 </CardContent>
               </Card>
