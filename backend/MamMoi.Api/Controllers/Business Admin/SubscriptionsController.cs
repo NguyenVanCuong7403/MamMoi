@@ -8,7 +8,7 @@ namespace MamMoi.Api.Controllers
 {
     [ApiController]
     [Route("api/subscriptions")]
-    //[Authorize(Roles = "Business Admin")] 
+    [Authorize(Roles = "Business Admin")] 
     public class SubscriptionsController : ControllerBase
     {
         private readonly ISubscriptionService _subscriptionService;

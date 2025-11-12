@@ -9,7 +9,7 @@ namespace MamMoi.Api.Controllers
 {
     [ApiController]
     [Route("api/payments")]
-    //[Authorize(Roles = "Business Admin")] 
+    [Authorize(Roles = "Business Admin")] 
     public class PaymentsController : ControllerBase
     {
         private readonly IPaymentService _paymentService;
