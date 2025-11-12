@@ -1,0 +1,46 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.tmp
+*.temp
+
+# Build outputs
+bin/
+obj/
+out/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.mdf
+*.ldf
+
+# Environment
+.env
+.env.local
+appsettings.Development.json
+
+# Test results
+TestResults/
+*.trx
+
+# NuGet
+packages/
+*.nupkg
+
+# Excel files (temporary)
+*.xlsx
+*.csv
