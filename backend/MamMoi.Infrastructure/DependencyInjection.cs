@@ -45,6 +45,9 @@ public static class DependencyInjection
         services.AddScoped<IStaffService, StaffService>();
         services.AddScoped<IGardenService, GardenService>();
         services.AddScoped<ISupportTicketService, SupportTicketService>();
+        services.AddScoped<ISoilMasterService, SoilMasterService>();
+        services.AddScoped<ITreeTypeService, TreeTypeService>();
+        services.AddScoped<IGrowthStageService, GrowthStageService>();
         // Register infrastructure services
         services.AddScoped<TokenService>();
 

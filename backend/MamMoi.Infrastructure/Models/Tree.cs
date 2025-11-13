@@ -23,8 +23,6 @@ public partial class Tree
 
     public decimal? HeightMeters { get; set; }
 
-    public string HealthStatus { get; set; } = null!;
-
     public decimal? HealthScore { get; set; }
 
     public decimal? Latitude { get; set; }
@@ -77,12 +75,6 @@ public partial class Tree
 
     public DateOnly? ExpectedHarvestDate { get; set; }
 
-    public DateOnly? LastHarvestDate { get; set; }
-
-    public decimal? TotalHarvestedKg { get; set; }
-
-    public decimal? AverageYieldPerYearKg { get; set; }
-
     public string? Notes { get; set; }
 
     public string? QrcodeUrl { get; set; }
@@ -90,6 +82,14 @@ public partial class Tree
     public DateTime CreatedAt { get; set; }
 
     public DateTime? UpdatedAt { get; set; }
+
+    public string? LeafStatus { get; set; }
+
+    public string? BranchStatus { get; set; }
+
+    public string? FlowerStatus { get; set; }
+
+    public string? FruitStatus { get; set; }
 
     public virtual ICollection<ActivityLog> ActivityLogs { get; set; } = new List<ActivityLog>();
 

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MamMoi.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d6aab2fed68afd0bf829feaf3055444e547599fd")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b7e6ddf6ae1006be181d6ecd9dc62707a6d9bda4")]
 [assembly: System.Reflection.AssemblyProductAttribute("MamMoi.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MamMoi.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

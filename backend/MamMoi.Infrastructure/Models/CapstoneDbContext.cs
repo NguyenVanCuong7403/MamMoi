@@ -61,7 +61,9 @@ public partial class CapstoneDbContext : DbContext
 
     public virtual DbSet<WeatherHistory> WeatherHistories { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
+        => optionsBuilder.UseSqlServer(" Server=(local);database= CapstoneDB;uid=sa;pwd=sa; TrustServerCertificate=true ");
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -548,18 +550,23 @@ public partial class CapstoneDbContext : DbContext
             entity.Property(e => e.TreeId).HasColumnName("TreeID");
             entity.Property(e => e.AltitudeMeters).HasColumnType("decimal(7, 2)");
             entity.Property(e => e.AutoAdjustWatering).HasDefaultValue(true);
-            entity.Property(e => e.AverageYieldPerYearKg).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.BranchStatus)
+                .HasMaxLength(100)
+                .HasDefaultValue("Bình thường");
             entity.Property(e => e.ClimateZone).HasMaxLength(50);
             entity.Property(e => e.CreatedAt)
                 .HasPrecision(0)
                 .HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.FertilizingFrequencyDays).HasDefaultValue(30);
+            entity.Property(e => e.FlowerStatus)
+                .HasMaxLength(100)
+                .HasDefaultValue("Bình thường");
+            entity.Property(e => e.FruitStatus)
+                .HasMaxLength(100)
+                .HasDefaultValue("Bình thường");
             entity.Property(e => e.GardenId).HasColumnName("GardenID");
             entity.Property(e => e.GardenSoilId).HasColumnName("GardenSoilID");
             entity.Property(e => e.HealthScore).HasColumnType("decimal(4, 1)");
-            entity.Property(e => e.HealthStatus)
-                .HasMaxLength(50)
-                .HasDefaultValue("Healthy");
             entity.Property(e => e.HeightMeters).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.LastFertilizedAt).HasPrecision(0);
             entity.Property(e => e.LastFertilizerAmountGrams).HasColumnType("decimal(6, 2)");
@@ -567,6 +574,9 @@ public partial class CapstoneDbContext : DbContext
             entity.Property(e => e.LastWateredAt).HasPrecision(0);
             entity.Property(e => e.LastWateringAmountLiters).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.Latitude).HasColumnType("decimal(10, 8)");
+            entity.Property(e => e.LeafStatus)
+                .HasMaxLength(100)
+                .HasDefaultValue("Bình thường");
             entity.Property(e => e.Location).HasMaxLength(255);
             entity.Property(e => e.Longitude).HasColumnType("decimal(10, 8)");
             entity.Property(e => e.MaxWateringIntervalDays).HasDefaultValue(21);
@@ -582,7 +592,6 @@ public partial class CapstoneDbContext : DbContext
             entity.Property(e => e.StageId).HasColumnName("StageID");
             entity.Property(e => e.SunlightExposure).HasMaxLength(50);
             entity.Property(e => e.TimeZone).HasMaxLength(100);
-            entity.Property(e => e.TotalHarvestedKg).HasColumnType("decimal(10, 2)");
             entity.Property(e => e.TreeCode).HasMaxLength(50);
             entity.Property(e => e.TreeName).HasMaxLength(100);
             entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
@@ -647,6 +656,7 @@ public partial class CapstoneDbContext : DbContext
             entity.Property(e => e.FertilizerAmountGrams).HasColumnType("decimal(6, 2)");
             entity.Property(e => e.FertilizerType).HasMaxLength(50);
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
             entity.Property(e => e.StageName).HasMaxLength(100);
             entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
             entity.Property(e => e.VulnerabilityLevel).HasDefaultValue(5);
