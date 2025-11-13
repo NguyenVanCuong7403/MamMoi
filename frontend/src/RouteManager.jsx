@@ -14,10 +14,6 @@ import Payment_History from "./components/user/Payment_History";
 import LoginGuard from "./guards/LoginGuard";
 import RoleGuard from "./guards/RoleGuard";
 import GardenManagement from "./components/user/GardenManagement";
-<<<<<<< HEAD
-=======
-
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
 export default function RouteManager({ authTab }) {
   return (
@@ -28,18 +24,6 @@ export default function RouteManager({ authTab }) {
       <Route path="/preview" element={<CareFlowEditablePreview />} />
       <Route path="/edit" element={<EditTreeBasic />} />
       <Route path="/demo" element={<Demo />} />
-<<<<<<< HEAD
-=======
-      <Route path="/paymenthistory" element={<PaymentHistory />} />
-      <Route path="/garden" element={<GardenManagement />} />
-
-
-      <Route path="/login-test" element={
-          <LoginGuard>
-            <TreeDetail />
-          </LoginGuard>} 
-          />
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
       
       {/* Garden list/management */}
       <Route path="/garden" element={<GardenManagement />} />

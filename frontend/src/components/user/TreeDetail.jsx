@@ -4,7 +4,6 @@ import { LivingBackground } from "@/components/background";
 import { computeInitialPhase, normalizePhaseBeforeSave } from "@/lib/treePhase";
 import TreeInfoPanel from "@/components/tree/TreeInfoPanel";
 import Section from "@/components/Section";
-<<<<<<< HEAD
 import { getTreeById, TREES, TREES_ARRAY } from "@/data/demoTrees";
 // Đồng bộ lại dữ liệu cây vào demoTrees (TREES + TREES_ARRAY)
 // để các màn khác (TreeManagement) đọc được cùng 1 nguồn.
@@ -34,8 +33,6 @@ function syncTreePatch(codeKey, patch) {
 }
 
 import { useParams, useLocation } from "react-router-dom";
-=======
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
 import {
   Sprout,
@@ -597,151 +594,6 @@ function Field({ label, value, icon }) {
    Constants & Demo Data
    ========================================================================= */
 
-<<<<<<< HEAD
-=======
-
-
-const TYPE_THEME = {
-  water: {
-    name: "Tưới tiêu",
-    pill: "bg-emerald-50 text-emerald-800 border-emerald-300",
-    edge: "border-emerald-500",
-    activeBtn: "bg-emerald-600 text-white hover:bg-emerald-700",
-  },
-  fert: {
-    name: "Phân bón",
-    pill: "bg-amber-50 text-amber-800 border-amber-300",
-    edge: "border-amber-500",
-    activeBtn: "bg-amber-600 text-white hover:bg-amber-700",
-  },
-  pest: {
-    name: "Sâu bệnh",
-    pill: "bg-rose-50 text-rose-800 border-rose-300",
-    edge: "border-rose-500",
-    activeBtn: "bg-rose-600 text-white hover:bg-rose-700",
-  },
-  other: {
-    name: "Công việc khác",
-    pill: "bg-slate-50 text-slate-800 border-slate-300",
-    edge: "border-slate-500",
-    activeBtn: "bg-slate-700 text-white hover:bg-slate-800",
-  },
-};
-
-const STATUS_THEME = {
-  active: {
-    pill: "bg-emerald-50 text-emerald-800 border-emerald-300",
-    title: "Đang chăm sóc",
-    desc: "Cây tiếp tục nhận nhắc việc, gợi ý và tính quá hạn bình thường.",
-  },
-  stopped: {
-    pill: "bg-rose-50 text-rose-800 border-rose-300",
-    title: "Dừng hoạt động",
-    desc: "Ngừng mọi nhắc việc/gợi ý. Cây chỉ hiển thị để tra cứu lịch sử.",
-  },
-};
-
-const TREES = {
-  "T-001": {
-    id: "T-001",
-    name: "Xoài ",
-    variety: "Cát chu",
-    plantedAt: "2023-04-15",
-    preNurseryAgeMonths: 5,
-    phase: "Sinh trưởng thân lá",
-    status: "active",
-    location: LOCATION,
-    plot: "Vườn số 1 — FPT",
-    region: "Miền Nam",
-    soil: "Đất phù sa cao ráo",
-    gallery: [
-      "https://images.unsplash.com/photo-1591781862772-b0b6b1f88b68?q=80&w=1200&auto=format&fit=crop",
-    ],
-    caretaker: CARETAKER,
-    planned: [
-      {
-        id: 101,
-        type: "water",
-        title: "Tưới giữ ẩm 70–80%",
-        due: "2025-10-15",
-        details: ["10–12L/cây", "Kiểm tra ẩm 20–30cm"],
-      },
-      {
-        id: 102,
-        type: "fert",
-        title: "Bón gốc NPK 16-16-8",
-        due: "2025-10-18",
-        details: ["200–300g/cây", "Rải đều theo tán"],
-      },
-      {
-        id: 103,
-        type: "pest",
-        title: "Theo dõi rầy chổng cánh",
-        due: "2025-10-20",
-        details: ["Bẫy dính vàng", "Ghi ảnh mẫu"],
-      },
-    ],
-    phenology: {
-      stage: "Sinh trưởng thân lá",
-      status: "Lá xanh, tán thoáng; một vài lá vàng nhẹ",
-      prevCare: "Tưới 2 ngày/lần; bón hữu cơ 1 tháng/lần",
-      leafRootNote: "Lá bánh tẻ xanh; rễ trắng khoẻ; gốc sạch",
-      seasonNote: "Đầu mùa khô; nhiệt độ 32–34°C; gió nhẹ",
-      workLog: "10/10 tỉa chồi; 09/10 tưới 12L; 05/10 bón hữu cơ",
-      events: [
-        { d: "2025-10-10", note: "Quả chín (mốc sinh học)" },
-        { d: "2025-09-28", note: "Kết trái" },
-        { d: "2025-08-05", note: "Ra hoa" },
-      ],
-    },
-  },
-  "T-003": {
-    id: "T-003",
-    name: "Bưởi Da Xanh",
-    variety: "Da xanh",
-    plantedAt: "2020-08-20",
-    preNurseryAgeMonths: 8,
-    phase: "Nuôi quả — trước thu hoạch",
-    status: "active",
-    location: LOCATION,
-    plot: "Vườn số 3 — FPT",
-    region: "Miền Nam",
-    soil: "Đất thịt thoát nước tốt",
-    gallery: [
-      "https://images.unsplash.com/photo-1613758947306-0cb0d585b9d6?q=80&w=1200&auto=format&fit=crop",
-    ],
-    caretaker: CARETAKER,
-    planned: [
-      {
-        id: 201,
-        type: "water",
-        title: "Tưới giữ ẩm 70–80%",
-        due: "2025-10-16",
-        details: ["8–10L/cây"],
-      },
-      {
-        id: 202,
-        type: "pest",
-        title: "Theo dõi bệnh Greening",
-        due: "2025-10-17",
-        details: ["Khảo sát lá, ghi chép"],
-      },
-    ],
-    phenology: {
-      stage: "Nuôi quả",
-      status: "Quả cỡ 8–10 cm, lá bóng; sinh trưởng ổn",
-      prevCare: "Bao trái lứa 1; tưới định kỳ 2–3 ngày/lần",
-      leafRootNote: "Lá bánh tẻ, không cháy mép; rễ trắng khoẻ",
-      seasonNote: "Cuối mùa mưa; mưa rải rác",
-      workLog: "16/10 khảo sát Greening; 14/10 tưới 9L/cây",
-      events: [
-        { d: "2025-10-02", note: "Bao trái lứa 2" },
-        { d: "2025-09-05", note: "Tỉa quả nhỏ" },
-      ],
-    },
-  },
-};
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
 /* =========================================================================
    Helpers
@@ -1367,11 +1219,7 @@ function PlannedRow({ p, theme, disabled, openEditMain, openComplete, openEditNo
 
 
 
-<<<<<<< HEAD
 function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed,  loai, giong  }) {
-=======
-function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed }) {
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   const [editNote, setEditNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || "");
   useEffect(() => setNoteDraft(note || ""), [note]);
@@ -1537,7 +1385,6 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
 </CardHeader>
 
   <CardContent>
-<<<<<<< HEAD
   {/* Truyền portalId để widget biết gắn nút lên header */}
   <LifecycleWidget
     tree={tree}                     // ✅ dùng prop tree
@@ -1554,21 +1401,6 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
   />
 </CardContent>
 
-=======
-    {/* Truyền portalId để widget biết gắn nút lên header */}
-    <LifecycleWidget
-  tree={tree}
-  meta={meta}
-  portalId="lc-controls"   // <— quan trọng
-  value={currentPhaseId}
-  onChange={onPhaseChange}
-  cycleCount={cycleCount}
-  phase1Completed={phase1Completed}
-  disabled={meta.status === "stopped"}
-  treeId={codeKey}
-/>
-  </CardContent>
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 </Card>
 
 
@@ -1920,10 +1752,7 @@ function TopHeader({ codeKey, meta, phen, tree, image, setImage, readOnly, ageAf
     return () => { try { document.head.removeChild(style); } catch {} };
   }, []);
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 // === Helpers đọc Loại/Giống dùng chung toàn file ===
 function getLoai(src) {
   const s =
@@ -1963,7 +1792,6 @@ function getGiong(src) {
 const location = useLocation();
 const { id: paramId, treeId: paramTreeId } = useParams() || {};
 
-<<<<<<< HEAD
 // ?treeId= or ?id=
 const qs = new URLSearchParams(location.search);
 const qsTreeId = qs.get("treeId") || qs.get("id");
@@ -2003,74 +1831,6 @@ const baseTree = React.useMemo(() => {
       merged[key] = value;
     }
   });
-=======
-// ---- DB lifecycle (single source of truth) ----
-const lifecycleFromDB = tree.lifecycle || {}; // bạn có thể gắn từ fetch DB
-
-const initialPhaseId = normalizePhaseId(
-  lifecycleFromDB.currentPhaseId ||
-  tree?.phenology?.currentPhase ||
-  tree?.phenology?.stage ||
-  tree?.phase
-);
-
-const initialP1Completed = typeof lifecycleFromDB.phase1Completed === "boolean"
-  ? lifecycleFromDB.phase1Completed
-  : initialPhaseId !== "growth_development";
-
-const initialCycleCount = Number.isFinite(lifecycleFromDB.cycleCount)
-  ? Number(lifecycleFromDB.cycleCount)
-  : 0;
-
-const [currentPhaseId, setCurrentPhaseId] = useState(initialPhaseId);
-const [phase1Completed, setPhase1Completed] = useState(initialP1Completed);
-const [cycleCount, setCycleCount] = useState(initialCycleCount);
-// [ANCHOR: PHASE-GATING]
-const canEditFlower = useMemo(
-  () => ["flowering", "fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
-  [currentPhaseId]
-);
-const canEditFruit = useMemo(
-  () => ["fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
-  [currentPhaseId]
-);
-
-// Ở đầu component TreeDetail:
-const [isEditing, setIsEditing] = React.useState(false);
-
-// snapshot lúc bắt đầu edit để có thể rollback
-const [original, setOriginal] = React.useState(null);
-
-// bản nháp cho form - mọi input chỉ ghi vào đây, không đụng `tree`
-const [draft, setDraft] = React.useState(null);
-
- // ==== META (data thật) + DRAFT (để sửa, không làm bẩn state khi Hủy) ====
-const [meta, setMeta] = useState({
-  name: tree.name || "",
-  plantedAt: tree.plantedAt || today(),
-  variety: tree.variety || "",
-  preNurseryAgeMonths: Number(tree.preNurseryAgeMonths || 0),
-  soil: tree.soil || "",
-  status: tree.status || "active",
-});
-const [editingMeta, setEditingMeta] = useState(false);
-const [metaDraft, setMetaDraft] = useState(meta);
-const [metaErrors, setMetaErrors] = useState({});
-
-// ==== MÃ CÂY (cho phép đổi mã & migrate LocalStorage ảnh/ghi chú) ====
-const [codeKey, setCodeKey] = useState(tree.id); // trước đây bạn là const codeKey = tree.id;
-const [codeDraft, setCodeDraft] = useState(codeKey);
-// ưu tiên lấy từ tree -> meta -> info/form
-
-
-
-
-
-// "Xoài Cát" hoặc chỉ "Xoài" nếu không có giống
-const loai  = getLoai(meta) || getLoai(tree);
-const giong = getGiong(meta) || getGiong(tree);
-const tenCayHero = [loai, giong].filter(Boolean).join(" ");
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
   return merged;
 }, [stateTree, treeId]);
@@ -2248,7 +2008,6 @@ const tenCayHero = [loai, giong].filter(Boolean).join(" ");
  // States chính
 const [planned, setPlannedState] = useState(baseTree.planned || []);
 
-<<<<<<< HEAD
 // Wrapper: vừa set state, vừa sync về demoTrees
 function setPlanned(nextOrUpdater) {
   setPlannedState((prev) => {
@@ -2271,12 +2030,6 @@ useEffect(() => {
   getAISuggestions(baseTree, initialPhaseId)
 );
 
-=======
-  const [aiSuggestions, setAiSuggestions] = useState(() =>
-  getAISuggestions(baseTree, initialPhaseId)
-);
-
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 useEffect(() => {
   setAiSuggestions(getAISuggestions(baseTree, currentPhaseId));
 }, [currentPhaseId]);
@@ -2867,21 +2620,13 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
       <div className="grid md:grid-cols-3 gap-6">
         {/* LEFT: thông tin */}
         <div className="md:col-span-2 grid md:grid-cols-2 gap-x-6 gap-y-2">
-<<<<<<< HEAD
           <Field label="Cây" value={meta.name || baseTree.name} />
-=======
-          <Field label="Cây" value={meta.name} />
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
           <Field label="Mã cây" value={`#${codeKey}`} />
           
           <Field label="Giống" value={meta.variety} />
           <Field label="Ngày trồng" value={formatVN(meta.plantedAt)} />
           <Field label="Tuổi trước khi trồng" value={`${meta.preNurseryAgeMonths} tháng`} />
-<<<<<<< HEAD
           <Field label="Loại đất" value={meta.soil || baseTree.soil || "—"} />
-=======
-          <Field label="Loại đất" value={meta.soil || "—"} />
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
           
           
           <Field label="Tổng tuổi" value={`${totalAge} tháng`} />
@@ -3019,16 +2764,11 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
 
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setEditingMeta(false)}>Hủy</Button>
-<<<<<<< HEAD
            <Button
-=======
-            <Button
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   onClick={() => {
     // Chuẩn hóa draft
     const fixed = {
       ...metaDraft,
-<<<<<<< HEAD
       preNurseryAgeMonths: Math.max(
         0,
         parseInt(metaDraft.preNurseryAgeMonths || 0, 10) || 0
@@ -3053,39 +2793,16 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
 
     // Nếu đổi mã cây => migrate LocalStorage ảnh/ghi chú
     let targetKey = codeKey;         // <— dùng key này để sync demoTrees
-=======
-      preNurseryAgeMonths: Math.max(0, parseInt(metaDraft.preNurseryAgeMonths || 0, 10) || 0),
-    };
-
-// ✅ Validate: buộc phải chọn từ hệ thống
-   const typeList = DROPDOWN_OPTIONS.treeTypes;
-   const varList  = (DROPDOWN_OPTIONS.varietiesByType[fixed.name?.trim()] || []);
-   const soilList = DROPDOWN_OPTIONS.soils;
-
-   const errors = {};
-   if (!inList(fixed.name, typeList))    errors.name = "Chỉ được chọn loại có trong hệ thống.";
-   if (!inList(fixed.variety, varList))  errors.variety = "Chỉ được chọn giống hợp lệ theo loại.";
-   if (!inList(fixed.soil, soilList))    errors.soil = "Chỉ được chọn loại đất có trong hệ thống.";
-   setMetaErrors(errors);
-   if (Object.keys(errors).length) return; // ❌ dừng lưu nếu có lỗi
-
-    // Nếu đổi mã cây => migrate LocalStorage ảnh/ghi chú
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
     if (codeDraft && codeDraft !== codeKey) {
       const oldImg = imageRegistry.get(codeKey);
       const oldNote = noteRegistry.get(codeKey);
       if (oldImg) imageRegistry.set(codeDraft, oldImg);
       if (oldNote) noteRegistry.set(codeDraft, oldNote);
       imageRegistry.clear(codeKey);
-<<<<<<< HEAD
       noteRegistry.set(codeKey, "");
 
       setCodeKey(codeDraft);
       targetKey = codeDraft;        // <— key mới
-=======
-      noteRegistry.set(codeKey, ""); // xóa ghi chú cũ (tuỳ bạn muốn clear hay giữ)
-      setCodeKey(codeDraft);
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
       // (tuỳ chọn) cập nhật URL query ?treeId=...
       try {
@@ -3098,7 +2815,6 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
     // Ghi meta thật
     setMeta(fixed);
 
-<<<<<<< HEAD
     // ✅ Đồng bộ meta sang demoTrees (TreeManagement sẽ đọc được)
     syncTreePatch(targetKey, {
       id: targetKey,
@@ -3110,8 +2826,6 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
       status: fixed.status,
     });
 
-=======
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
     // đóng edit
     setEditingMeta(false);
   }}
@@ -3119,10 +2833,7 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
   Lưu
 </Button>
 
-<<<<<<< HEAD
 
-=======
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
           </div>
         </div>
 
@@ -3156,7 +2867,6 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
           <Button variant="outline" onClick={() => { setPhenDraft(phen); setEditingPhen(false); }}>
             Hủy
           </Button>
-<<<<<<< HEAD
           <Button
   onClick={() => {
     setPhen(phenDraft);
@@ -3200,11 +2910,6 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
 </Button>
 
 
-=======
-          <Button onClick={() => { setPhen(phenDraft); setEditingPhen(false); /* TODO: gọi API lưu DB */ }}>
-            Lưu
-          </Button>
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
         </>
       )}
     </div>
@@ -3504,11 +3209,7 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
                 setImage={setImage}
                 codeKey={codeKey}
                 phen={phen}
-<<<<<<< HEAD
                 tree={baseTree}
-=======
-                tree={tree}
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
                 meta={meta}
                 planned={planned}
                 openEditNote={openEditNote}
@@ -3519,7 +3220,6 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
                   currentPhaseId={currentPhaseId}
  cycleCount={cycleCount}
  phase1Completed={phase1Completed}
-<<<<<<< HEAD
   loai={loai}
   giong={giong}
  onPhaseChange={(payload) => {
@@ -3548,17 +3248,6 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
     // sau này thay bằng api.trees.updateLifecycle(...)
   }}
 />
-=======
- onPhaseChange={(payload) => {
-   // payload: { phaseId, cycleCount, phase1Completed }
-   setCurrentPhaseId(payload.phaseId);
-   setCycleCount(payload.cycleCount);
-   setPhase1Completed(payload.phase1Completed);
-  // TODO: gọi API để lưu DB, ví dụ:
-   // api.trees.updateLifecycle(codeKey, payload).catch(console.error);
- }}
-              />
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
               
             </div>
           </aside>
@@ -4005,18 +3694,11 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
 /* =========================================================================
    Small components & helpers
    ========================================================================= */
-<<<<<<< HEAD
 function safePhenText(v) {
   const s = String(v ?? "").trim();
   return s ? s : "Bình thường";
 }
 
-=======
-const safePhenText = (v) => {
-  const s = String(v ?? "").trim();
-  return s ? s : "Bình thường";
-};
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
 function TypeSwitch({ type, active, onClick, overdue = 0 }) {
   const theme = TYPE_THEME[type];
@@ -4213,7 +3895,6 @@ function LCTransientPath({ d, color, duration = 950, headSize = 10, headPad = 8,
 
 /* ===== Timeline ===== */
 function LifecycleTimeline({
-<<<<<<< HEAD
   activePhase,
   previewPhase,
   isPhase1Completed,
@@ -4232,12 +3913,6 @@ function LifecycleTimeline({
   postHideIdx,
 }) {
 
-=======
-  activePhase, previewPhase, isPhase1Completed, isSpinning,
-  treeData, transitionFlow, transitionKey, p1Transition, p1Key,
-  trailIndex, suppressId, isBackwardRun, postHideIdx,
-}) {
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   const phase1 = { id: "growth_development", name: "Sinh trưởng & Phát triển", icon: "🌱", color: "emerald" };
   const cyclePhases = [
     { id: "flowering",   name: "Ra Hoa",          icon: "🌸", color: "pink"  },
@@ -4393,14 +4068,10 @@ const canEditFruit = useMemo(
   </span>
 
   <span className="text-neutral-400 shrink-0">•</span>
-<<<<<<< HEAD
 <span className="text-neutral-500 shrink-0">
   #{treeId || treeData?.id || "—"}
 </span>
 
-=======
-  <span className="text-neutral-500 shrink-0">#{treeData?.id || "—"}</span>
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 </div>
 
           <div className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg mb-1.5 pointer-events-none
@@ -4443,7 +4114,6 @@ const canEditFruit = useMemo(
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <div className="bg-white/90 backdrop-blur rounded-full shadow-xl ring-1 ring-black/5 w-24 h-24 flex flex-col items-center justify-center p-2">
               <div className="text-[10px] text-gray-500 font-medium">Loại cây</div>
-<<<<<<< HEAD
 <div className="text-[13px] font-bold text-emerald-600">
   {treeType || "—"}
 </div>
@@ -4457,12 +4127,6 @@ const canEditFruit = useMemo(
   ID: {treeId || treeData?.id || "—"}
 </div>
 
-=======
-              <div className="text-[13px] font-bold text-emerald-600">{treeData?.type || "—"}</div>
-              <div className="text-[10px] text-gray-500 font-medium mt-0.5">Giống</div>
-              <div className="text-[10px] text-gray-700 font-semibold">{treeData?.variety || "—"}</div>
-              <div className="text-[9px] text-gray-400 mt-0.5">ID: {treeData?.id || "—"}</div>
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
             </div>
           </div>
 
@@ -4648,7 +4312,6 @@ function LifecycleWidget({
   tree, meta, portalId, value, onChange,
   cycleCount: cycleCountProp, phase1Completed: phase1CompletedProp,
   disabled = false,
-<<<<<<< HEAD
   treeId,
   treeType,
   treeVariety,
@@ -4665,10 +4328,6 @@ const displayVariety =
   treeVariety ||
   getGiong(meta) ||
   getGiong(tree);
-=======
-  treeId, // ⬅️ nhận id được truyền từ AsideCards (codeKey)
-}) {
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
   // Ưu tiên phase từ props.value (DB) -> fallback text trong tree
 const initPhase = normalizePhaseId(
@@ -4677,7 +4336,6 @@ const initPhase = normalizePhaseId(
   mapPhaseIdFromText(tree?.phenology?.currentPhase || tree?.phenology?.stage || tree?.phase || "")
 );
 
-<<<<<<< HEAD
 // Thứ tự các phase trên vòng tròn
 
 
@@ -4694,8 +4352,6 @@ const initialTrailIndex = initialPhase1Completed
   : -1;
 
 
-=======
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 // Phase controlled
 const [activePhase, setActivePhase] = useState(initPhase);
 useEffect(() => {
@@ -4703,16 +4359,8 @@ useEffect(() => {
 }, [value]);
 
 // Phase1Completed & cycleCount controlled
-<<<<<<< HEAD
 const [isPhase1Completed, setIsPhase1Completed] =
    useState(initialPhase1Completed);
-=======
-const [isPhase1Completed, setIsPhase1Completed] = useState(
-  typeof phase1CompletedProp === "boolean"
-    ? phase1CompletedProp
-    : initPhase !== "growth_development"
-);
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 useEffect(() => {
   if (typeof phase1CompletedProp === "boolean") {
     setIsPhase1Completed(phase1CompletedProp);
@@ -4743,7 +4391,6 @@ const [isSpinning, setIsSpinning] = useState(false);
   const [postHideIdx, setPostHideIdx] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
 
-<<<<<<< HEAD
 
   const runSpinReset = () => { setIsSpinning(true); setTimeout(() => setIsSpinning(false), 1000); };
 
@@ -4775,12 +4422,6 @@ const [isSpinning, setIsSpinning] = useState(false);
 }, [value, phase1CompletedProp]);
 
 
-=======
-  const cyclePhases = ["flowering", "fruiting", "pre_harvest", "post_harvest"];
-  const isCyclePhase = (p) => cyclePhases.includes(p);
-  const runSpinReset = () => { setIsSpinning(true); setTimeout(() => setIsSpinning(false), 1000); };
-
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   // Modal xác nhận (nhỏ)
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingPhase, setPendingPhase] = useState(null);
@@ -4990,12 +4631,9 @@ setIsRunning(false);
           isPhase1Completed={isPhase1Completed}
           isSpinning={isSpinning}
           treeData={treeData}
-<<<<<<< HEAD
           treeId={treeId}                 // 👈 mã cây chuẩn
   treeType={displayType}          // 👈 loại chuẩn
   treeVariety={displayVariety}
-=======
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
           transitionFlow={transitionFlow}
           transitionKey={transitionKey}
           p1Transition={p1Transition}

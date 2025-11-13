@@ -316,7 +316,6 @@ export default function TreeManagement() {
   const location = useLocation();
   const { gardenName: headerGardenName } = useGardenHeader();
 
-<<<<<<< HEAD
   // Garden truyền từ GardenManagement (nếu có)
   const incomingGarden = location.state?.garden || null;
 
@@ -466,38 +465,17 @@ export default function TreeManagement() {
   const [zoom, setZoom] = useState(1.25);
   const [hasZoomProp, setHasZoomProp] = useState(false);
   useEffect(() => {
-=======
-  // NEW: UI Zoom state (default 175%)
-  const [zoom, setZoom] = useState(1.45);
-  const [hasZoomProp, setHasZoomProp] = useState(false);
-  useEffect(() => {
-    // detect CSS zoom support (Chromium/Edge ✅)
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
     try {
       if (typeof document !== "undefined" && document.body && document.body.style) {
         setHasZoomProp(Object.prototype.hasOwnProperty.call(document.body.style, "zoom"));
       }
     } catch (_) {}
   }, []);
-<<<<<<< HEAD
   const zoomWrapperStyle = hasZoomProp
     ? { zoom, margin: "0 auto" }
     : { transform: `scale(${zoom})`, transformOrigin: "top center", width: `${100 / zoom}%`, margin: "0 auto" };
 
   /* ================== Search + Filters ================== */
-=======
-
-  const zoomWrapperStyle = hasZoomProp
-    ? { zoom, margin: "0 auto" }
-    : {
-        transform: `scale(${zoom})`,
-        transformOrigin: "top center",
-        width: `${100 / zoom}%`,
-        margin: "0 auto",
-      };
-
-  // Search + filters
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all"); // all | active | stopped
   const [gardens, setGardens] = useState(new Set());
@@ -616,10 +594,6 @@ export default function TreeManagement() {
     setPage(1);
   }, [q, status, gardens, varieties, caretakers, phases, dateFrom, dateTo, onlyOverdue, dateOrder]);
 
-<<<<<<< HEAD
-=======
-  // Trang hiện tại
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   const PAGE_COUNT = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const startIdx = (page - 1) * PAGE_SIZE;
   const endIdx = Math.min(filtered.length, page * PAGE_SIZE);
@@ -627,7 +601,6 @@ export default function TreeManagement() {
 
   /* ================== Render ================== */
   return (
-<<<<<<< HEAD
     <div className="relative min-h-screen overflow-hidden pt-[64px]">
       <LivingBackground
         theme="aurora"
@@ -639,10 +612,6 @@ export default function TreeManagement() {
         speed={1.15}
       />
 
-=======
-    <div className="relative min-h-screen pt-[64px]" style={{ background: PALETTE.bg }}>
-      {/* keyframes cho glow cảnh báo */}
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
       <style>{`
         @keyframes mmOverduePulse {
           0%   { box-shadow: 0 0 0 0 rgba(244,63,94,.00); }
@@ -651,11 +620,7 @@ export default function TreeManagement() {
         }
       `}</style>
 
-<<<<<<< HEAD
       {/* Zoom control */}
-=======
-      {/* ===== Zoom controls (nằm ngoài vùng scale để luôn dễ bấm) ===== */}
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
       <div className="fixed right-4 bottom-4 z-[60]">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -666,15 +631,7 @@ export default function TreeManagement() {
           <DropdownMenuContent align="end" className="rounded-xl border border-neutral-200 bg-white shadow-2xl">
             <DropdownMenuLabel>Tỷ lệ</DropdownMenuLabel>
             {[1, 1.25, 1.5, 1.75, 2].map((z) => (
-<<<<<<< HEAD
               <DropdownMenuItem key={z} onClick={() => setZoom(z)} className="cursor-pointer">
-=======
-              <DropdownMenuItem
-                key={z}
-                onClick={() => setZoom(z)}
-                className="cursor-pointer"
-              >
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
                 {Math.round(z * 100)}% {zoom === z ? "✓" : ""}
               </DropdownMenuItem>
             ))}
@@ -684,25 +641,14 @@ export default function TreeManagement() {
         </DropdownMenu>
       </div>
 
-<<<<<<< HEAD
       <div style={zoomWrapperStyle}>
         <main className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-4 space-y-6">
           {/* Header */}
           <section className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
-=======
-      {/* ===== Toàn bộ nội dung được scale ===== */}
-      <div style={zoomWrapperStyle}>
-        <main className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-4 space-y-6">
-          <section
-            aria-label="Page header"
-            className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6"
-          >
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
             <div className="max-w-[760px]">
               <span
                 className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium"
                 style={{ background: PALETTE.accent, color: PALETTE.bg }}
-<<<<<<< HEAD
               >
                 Danh sách cây
               </span>
@@ -729,26 +675,6 @@ export default function TreeManagement() {
                 style={{ background: "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)", color: "#1F302F" }}
                 onClick={() => navigate("/new", { state: { garden } })}
               >
-=======
-              >
-                Bảng quản lý vườn
-              </span>
-              <h1 className="mt-2 text-white text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
-                Vườn cây ăn quả của tôi
-              </h1>
-              <p className="text-white/85 mt-1 text-sm md:text-base">
-                Theo dõi tuổi cây, giai đoạn sinh trưởng, công việc và tình trạng chăm sóc — tất cả trên một màn hình.
-              </p>
-            </div>
-
-            <div className="w-full md:w-auto flex items-stretch md:items-center gap-3 md:gap-4">
-              <Button
-                className="h-12 md:h-12 px-5 md:px-6 rounded-2xl text-base font-semibold
-                           shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5
-                           transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5"
-                style={{ background: "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)", color: "#1F302F" }}
-              >
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
                 <span className="inline-flex items-center gap-3">
                   <span className="grid place-items-center w-8 h-8 rounded-xl bg-white/70 backdrop-blur">
                     <Plus className="w-5 h-5" />
@@ -757,10 +683,6 @@ export default function TreeManagement() {
                 </span>
               </Button>
 
-<<<<<<< HEAD
-=======
-              {/* Thẻ thời tiết giữ nguyên nội dung, đổi sang dạng card độc lập */}
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
               <div className="rounded-2xl p-4 w-64 md:w-72 backdrop-blur-md text-white border border-white/15 bg-white/10 shadow-2xl">
                 <div className="text-sm font-medium flex items-center gap-1">
                   <MapPin className="w-4 h-4 opacity-80" />
@@ -776,11 +698,7 @@ export default function TreeManagement() {
             </div>
           </section>
 
-<<<<<<< HEAD
           {/* Search + filter */}
-=======
-          {/* search + filter */}
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
           <section className="sticky top-[64px] z-[50] overflow-visible">
             <div
               className="flex flex-col xl:flex-row gap-3 rounded-2xl p-3"
@@ -809,26 +727,16 @@ export default function TreeManagement() {
                     side="bottom"
                     sideOffset={10}
                     collisionPadding={24}
-<<<<<<< HEAD
                     className="z-[1000] min-w-[320px] rounded-xl border border-neutral-200 bg-white shadow-2xl overflow-visible"
-=======
-                    className="z-[1000] min-w=[320px] rounded-xl border border-neutral-200 bg-white shadow-2xl overflow-visible"
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
                   >
                     <DropdownMenuLabel className="px-3 pt-2 pb-1 text-[11px] text-neutral-500">
                       Trạng thái
                     </DropdownMenuLabel>
 
                     {[
-<<<<<<< HEAD
                       { key: "all",     label: "Tất cả",         count: stats.total },
                       { key: "active",  label: "Đang hoạt động",  count: stats.active },
                       { key: "stopped", label: "Dừng hoạt động",  count: stats.stopped },
-=======
-                      { key: "all", label: "Tất cả", count: stats.total },
-                      { key: "active", label: "Đang hoạt động", count: stats.active },
-                      { key: "stopped", label: "Dừng hoạt động", count: stats.stopped },
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
                     ].map((opt) => {
                       const active = status === opt.key;
                       return (
@@ -928,7 +836,6 @@ export default function TreeManagement() {
                         <Sprout className="h-4 w-4" /> Theo giai đoạn
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="min-w-[240px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
-<<<<<<< HEAD
                         {phaseOpts.map((opt) => (
                           <DropdownMenuCheckboxItem
                             key={opt.id}
@@ -940,16 +847,6 @@ export default function TreeManagement() {
                               <span className="text-sm leading-none">{opt.icon}</span>
                               {opt.name}
                             </span>
-=======
-                        {phaseOpts.map((p) => (
-                          <DropdownMenuCheckboxItem
-                            key={p}
-                            checked={phases.has(p)}
-                            onCheckedChange={() => toggleSet(phases, setPhases, p)}
-                            className="cursor-pointer"
-                          >
-                            {p}
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
                           </DropdownMenuCheckboxItem>
                         ))}
                         <DropdownMenuSeparator />
@@ -993,11 +890,7 @@ export default function TreeManagement() {
 
                     <DropdownMenuSeparator className="my-2" />
 
-<<<<<<< HEAD
                     {/* Chỉ hiển thị cây có việc quá hạn */}
-=======
-                    {/* Chỉ hiển thị cây có việc quá hạn (chỉ áp cho active) */}
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
                     <DropdownMenuCheckboxItem
                       checked={onlyOverdue}
                       onCheckedChange={() => setOnlyOverdue((v) => !v)}
@@ -1017,7 +910,6 @@ export default function TreeManagement() {
             </div>
           </section>
 
-<<<<<<< HEAD
           {/* Mini stats */}
           <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {[
@@ -1025,15 +917,6 @@ export default function TreeManagement() {
               { label: "Đang hoạt động",   value: stats.active },
               { label: "Dừng hoạt động",   value: stats.stopped },
               { label: "Việc quá hạn",     value: stats.overdue, icon: <AlertTriangle className="w-4 h-4" /> },
-=======
-          {/* mini stats (4 ô) — glow đỏ cho “Việc quá hạn” khi >0 */}
-          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[
-              { label: "Tổng cây", value: stats.total },
-              { label: "Đang hoạt động", value: stats.active },
-              { label: "Dừng hoạt động", value: stats.stopped },
-              { label: "Việc quá hạn", value: stats.overdue, icon: <AlertTriangle className="w-4 h-4" /> },
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
             ].map((s, i) => {
               const isOver = s.label === "Việc quá hạn" && Number(s.value) > 0;
               return (
@@ -1065,7 +948,6 @@ export default function TreeManagement() {
             })}
           </section>
 
-<<<<<<< HEAD
           {/* Cards grid */}
           {loading ? (
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-7">
@@ -1232,113 +1114,6 @@ export default function TreeManagement() {
 
           {/* Pagination */}
           {!loading && PAGE_COUNT > 1 && (
-=======
-          {/* Cards grid – 4 cột */}
-          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-7 items-stretch">
-            {pageItems.map((t) => {
-              const stopped = isStopped(t);
-              return (
-                <Card
-                  key={t.id}
-                  className={
-                    "group rounded-3xl overflow-hidden shadow-sm transition-all duration-200 h-full flex flex-col " +
-                    (stopped ? "opacity-90" : "hover:-translate-y-0.5 hover:shadow-md")
-                  }
-                  style={{ background: "#FFFFFFF2", borderColor: "rgba(255,255,165,0.25)" }}
-                >
-                  <div className="relative">
-                    <img src={t.img} alt={t.commonName} className="h-48 w-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
-                  </div>
-
-                  <CardContent className="p-6 flex-1 flex flex-col">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="font-semibold text-[#0f1f1e]">{t.commonName}</div>
-                        <div className="text-xs text-neutral-500"># {t.id}</div>
-                      </div>
-                      <StatusPill status={t.status} />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 text-sm mt-5">
-                      <div>
-                        <div className="text-neutral-500">Giai đoạn sinh trưởng</div>
-                        <div className="mt-1">
-                          <PhasePill phase={t.phase} />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-neutral-500">Tuổi cây</div>
-                        <div className="mt-1 flex items-center gap-2 text-neutral-800">
-                          <Calendar className="h-4 w-4" /> {monthsBetween(t.plantedAt)} tháng
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4 text-sm mt-4">
-                      <div>
-                        <div className="text-neutral-500">Nhân viên chăm sóc</div>
-                        <div className="mt-1 flex items-center gap-2 text-neutral-800">
-                          <User className="h-4 w-4" /> {t.caretaker}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-neutral-500">Trạng thái</div>
-                        <div className="mt-1 text-neutral-800">{t.stateNote || "—"}</div>
-                      </div>
-                    </div>
-
-                    {/* Việc cần làm */}
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between">
-                        <div className="text-neutral-500 text-sm">Việc cần làm</div>
-                        {!stopped && (() => {
-                          const n = (t.todos || []).filter((x) =>
-                            String(x.due).toLowerCase().includes("quá hạn")
-                          ).length;
-                          return n > 0 ? (
-                            <span className="px-2 py-0.5 rounded-full text-xs border bg-rose-50 text-rose-700 border-rose-200">
-                              {n} Quá hạn
-                            </span>
-                          ) : null;
-                        })()}
-                      </div>
-
-                      {stopped ? (
-                        <div className="mt-2 text-xs px-3 py-2 rounded-lg bg-neutral-100 text-neutral-600 border border-neutral-200">
-                          Cây đã <span className="font-medium">dừng hoạt động</span> — ngừng mọi nhắc việc/gợi ý. Chỉ dùng để tra cứu lịch sử.
-                        </div>
-                      ) : (
-                        <ul className="mt-2 space-y-1">
-                          {(t.todos || []).map((x, i) => (
-                            <TodoRow key={i} text={x.text} due={x.due} priority={x.priority} />
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-
-                    {/* Footer ghim đáy */}
-                    <div className="mt-auto pt-4">
-                      <Separator />
-                      <div className="flex items-center justify-between text-xs text-neutral-500 mt-3">
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5" />
-                          {t.location}
-                        </span>
-                      </div>
-                      <div className="text-xs text-neutral-500 mt-2">
-                        Cập nhật {new Date().toLocaleDateString("vi-VN")}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </section>
-
-          {/* Phân trang 4x3 */}
-          {PAGE_COUNT > 1 && (
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
             <section className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <div className="text-sm text-white/80">
                 Hiển thị {startIdx + 1}–{endIdx} / {filtered.length}
@@ -1365,11 +1140,7 @@ export default function TreeManagement() {
             </section>
           )}
 
-<<<<<<< HEAD
           {!loading && filtered.length === 0 && (
-=======
-          {filtered.length === 0 && (
->>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
             <div className="text-center text-white/70 py-10">Không có cây phù hợp</div>
           )}
         </main>
