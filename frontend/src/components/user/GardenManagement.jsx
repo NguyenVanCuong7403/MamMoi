@@ -14,6 +14,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+<<<<<<< HEAD
+import { useNavigate } from "react-router-dom";
+=======
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
 // ✅ Dùng default import (đúng với file của bạn: src/lib/useVnAdmin.js)
 import useVnAdmin from "@/lib/useVnAdmin";
@@ -53,6 +57,28 @@ const defaultGardens = [
 ];
 
 /* ===== LocalStorage helpers ===== */
+<<<<<<< HEAD
+/* ===== Selected garden key ===== */
+const LS_SELECTED_GARDEN = "mm_selected_garden_v1";
+
+/* Tạo id ngắn */
+function makeId() {
+  return "g_" + Math.random().toString(36).slice(2, 10);
+}
+
+/* Đảm bảo mọi vườn đều có id */
+function ensureIds(list) {
+  let changed = false;
+  const next = list.map(g => {
+    if (!g.id) { changed = true; return { ...g, id: makeId() }; }
+    return g;
+  });
+  if (changed) save(LS_GARDENS, next);
+  return next;
+}
+
+=======
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 function load(k, d) {
   try {
     const raw = localStorage.getItem(k);
@@ -272,6 +298,12 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
     return p ? (provinceWardsMap[p.code] || []) : [];
   }, [provinces, provinceWardsMap, form.province]);
 
+<<<<<<< HEAD
+
+
+
+=======
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   // 👉 early-return đặt SAU TẤT CẢ hook để không đổi thứ tự hook giữa các render
   if (!open) return null;
 
@@ -367,7 +399,30 @@ function formatGardenLocation(g) {
    MAIN: GardenManagement
 ================================ */
 export default function GardenManagement() {
+<<<<<<< HEAD
+  const navigate = useNavigate();
+
+function openTrees(g) {
+  // Lưu lựa chọn để TreeManagement đọc lại (reload vẫn biết)
+  localStorage.setItem(
+    LS_SELECTED_GARDEN,
+    JSON.stringify({ id: g.id, name: g.name })
+  );
+
+  // Phát event (để nếu TreeManagement đang mở tab khác, tiêu đề nhảy ngay)
+  window.dispatchEvent(
+    new CustomEvent("mm:garden:selected", { detail: { id: g.id, name: g.name } })
+  );
+
+  // Điều hướng (tùy đường dẫn app bạn)
+  navigate(`/tree?gardenId=${encodeURIComponent(g.id)}&gardenName=${encodeURIComponent(g.name)}`);
+}
+
+ const [gardens, setGardens] = useState(() => ensureIds(load(LS_GARDENS, defaultGardens)));
+
+=======
   const [gardens, setGardens] = useState(() => load(LS_GARDENS, defaultGardens));
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   useEffect(() => save(LS_GARDENS, gardens), [gardens]);
 
   // Search + filters
@@ -418,6 +473,42 @@ export default function GardenManagement() {
     setOpenForm(true);
   }
   function handleSubmit(form) {
+<<<<<<< HEAD
+  if (editingIdx >= 0) {
+    setGardens((gs) => {
+      const prev = gs[editingIdx];
+      const next = [...gs];
+      next[editingIdx] = { ...prev, ...form };
+      
+      // Nếu tên đổi → phát event
+      if (prev.name !== form.name) {
+        window.dispatchEvent(
+          new CustomEvent("mm:garden:renamed", {
+            detail: { id: next[editingIdx].id, name: form.name },
+          })
+        );
+
+        // Nếu vườn này đang được chọn, cập nhật luôn LS_SELECTED_GARDEN
+        try {
+          const sel = JSON.parse(localStorage.getItem(LS_SELECTED_GARDEN) || "null");
+          if (sel && sel.id === next[editingIdx].id) {
+            localStorage.setItem(
+              LS_SELECTED_GARDEN,
+              JSON.stringify({ id: sel.id, name: form.name })
+            );
+          }
+        } catch {}
+      }
+      return next;
+    });
+  } else {
+    setGardens((gs) => [{ ...form, id: makeId() }, ...gs]);
+  }
+  setOpenForm(false);
+  setEditingIdx(-1);
+}
+
+=======
     if (editingIdx >= 0) {
       setGardens((gs) => {
         const next = [...gs];
@@ -430,14 +521,34 @@ export default function GardenManagement() {
     setOpenForm(false);
     setEditingIdx(-1);
   }
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
   function askDelete(i) {
     setConfirm({ open: true, targetIdx: i });
   }
   function doDelete() {
+<<<<<<< HEAD
+  const idx = confirm.targetIdx;
+  const victim = gardens[idx];
+
+  setGardens((gs) => gs.filter((_, i) => i !== idx));
+  setConfirm({ open: false, targetIdx: -1 });
+
+  // Nếu đang chọn vườn này, clear lựa chọn
+  try {
+    const sel = JSON.parse(localStorage.getItem(LS_SELECTED_GARDEN) || "null");
+    if (sel && victim && sel.id === victim.id) {
+      localStorage.removeItem(LS_SELECTED_GARDEN);
+      window.dispatchEvent(new CustomEvent("mm:garden:deleted", { detail: { id: victim.id } }));
+    }
+  } catch {}
+}
+
+=======
     setGardens((gs) => gs.filter((_, i) => i !== confirm.targetIdx));
     setConfirm({ open: false, targetIdx: -1 });
   }
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
   return (
     <div className="relative min-h-screen pt-[64px]" style={{ background: PALETTE.bg }}>
@@ -556,11 +667,24 @@ export default function GardenManagement() {
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 items-stretch">
           {filtered.map((g, i) => (
             <Card
+<<<<<<< HEAD
+   key={i}
+   className="group rounded-3xl overflow-hidden shadow-sm transition-all duration-200 h-full flex flex-col hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
+   style={{ background: "#FFFFFFF2", borderColor: "rgba(255,255,165,0.25)" }}
+   role="button"
+   tabIndex={0}
+   onClick={() => openTrees(g)}
+  onKeyDown={(e) => e.key === "Enter" && openTrees(g)}
+ >
+              {/* Header ảnh: luôn giữ h-40 để không lệch */}
+              
+=======
               key={i}
               className="group rounded-3xl overflow-hidden shadow-sm transition-all duration-200 h-full flex flex-col hover:-translate-y-0.5 hover:shadow-md"
               style={{ background: "#FFFFFFF2", borderColor: "rgba(255,255,165,0.25)" }}
             >
               {/* Header ảnh: luôn giữ h-40 để không lệch */}
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
               <div className="relative h-40 w-full bg-neutral-100">
                 {/* Fallback (icon) */}
                 <div className="absolute inset-0 grid place-items-center text-neutral-400">
@@ -595,12 +719,32 @@ export default function GardenManagement() {
                 <div className="mt-auto pt-4">
                   <Separator />
                   <div className="flex items-center justify-end gap-2 mt-3">
+<<<<<<< HEAD
+                    <Button
+  variant="outline"
+  className="h-9 rounded-xl"
+  onClick={(e) => { e.stopPropagation(); openEdit(i); }}
+>
+  <Edit3 className="h-4 w-4 mr-1" /> Sửa
+</Button>
+
+<Button
+  variant="outline"
+  className="h-9 rounded-xl"
+  onClick={(e) => { e.stopPropagation(); askDelete(i); }}
+>
+  <Trash2 className="h-4 w-4 mr-1" /> Xoá
+</Button>
+
+
+=======
                     <Button variant="outline" className="h-9 rounded-xl" onClick={() => openEdit(i)}>
                       <Edit3 className="h-4 w-4 mr-1" /> Sửa
                     </Button>
                     <Button variant="outline" className="h-9 rounded-xl" onClick={() => askDelete(i)}>
                       <Trash2 className="h-4 w-4 mr-1" /> Xoá
                     </Button>
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
                   </div>
                 </div>
               </CardContent>

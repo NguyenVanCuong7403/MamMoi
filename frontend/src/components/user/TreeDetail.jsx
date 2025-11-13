@@ -4,6 +4,38 @@ import { LivingBackground } from "@/components/background";
 import { computeInitialPhase, normalizePhaseBeforeSave } from "@/lib/treePhase";
 import TreeInfoPanel from "@/components/tree/TreeInfoPanel";
 import Section from "@/components/Section";
+<<<<<<< HEAD
+import { getTreeById, TREES, TREES_ARRAY } from "@/data/demoTrees";
+// Đồng bộ lại dữ liệu cây vào demoTrees (TREES + TREES_ARRAY)
+// để các màn khác (TreeManagement) đọc được cùng 1 nguồn.
+function syncTreePatch(codeKey, patch) {
+  if (!codeKey || !patch) return;
+
+  // Cập nhật TREES dạng map
+  if (TREES && TREES[codeKey]) {
+    TREES[codeKey] = {
+      ...TREES[codeKey],
+      ...patch,
+    };
+  }
+
+  // Cập nhật trong TREES_ARRAY
+  if (Array.isArray(TREES_ARRAY)) {
+    const idx = TREES_ARRAY.findIndex(
+      (t) => String(t.id) === String(codeKey)
+    );
+    if (idx !== -1) {
+      TREES_ARRAY[idx] = {
+        ...TREES_ARRAY[idx],
+        ...patch,
+      };
+    }
+  }
+}
+
+import { useParams, useLocation } from "react-router-dom";
+=======
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
 import {
   Sprout,
@@ -24,6 +56,46 @@ import {
    ArrowDown,
    Activity,
 } from "lucide-react";
+
+const TYPE_THEME = {
+  water: {
+    name: "Tưới tiêu",
+    pill: "border-emerald-300 bg-emerald-50 text-emerald-800",
+    activeBtn: "bg-emerald-600 text-white border-emerald-600",
+    edge: "border-emerald-500"
+  },
+  fert: {
+    name: "Phân bón",
+    pill: "border-lime-300 bg-lime-50 text-lime-800",
+    activeBtn: "bg-lime-600 text-white border-lime-600",
+    edge: "border-lime-500"
+  },
+  pest: {
+    name: "Sâu bệnh",
+    pill: "border-rose-300 bg-rose-50 text-rose-800",
+    activeBtn: "bg-rose-600 text-white border-rose-600",
+    edge: "border-rose-500"
+  },
+  other: {
+    name: "Khác",
+    pill: "border-neutral-300 bg-neutral-50 text-neutral-800",
+    activeBtn: "bg-neutral-800 text-white border-neutral-800",
+    edge: "border-neutral-500"
+  }
+};
+
+const STATUS_THEME = {
+  active: {
+    title: "Đang chăm sóc",
+    pill: "border-emerald-300 bg-emerald-50 text-emerald-800",
+    desc: "Các tính năng chỉnh sửa đều mở."
+  },
+  stopped: {
+    title: "Dừng hoạt động",
+    pill: "border-gray-300 bg-gray-50 text-gray-700",
+    desc: "Chỉ xem, khoá các hành động tạo/sửa/xoá."
+  }
+};
 
 /* ===== Ambient Decor (Top + Sides) & Scroll Progress ===================== */
 
@@ -524,9 +596,9 @@ function Field({ label, value, icon }) {
 /* =========================================================================
    Constants & Demo Data
    ========================================================================= */
-const LOCATION = "fpt";
-const CARETAKER = "Quân";
 
+<<<<<<< HEAD
+=======
 
 
 const TYPE_THEME = {
@@ -669,6 +741,7 @@ const TREES = {
     },
   },
 };
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
 /* =========================================================================
    Helpers
@@ -1294,7 +1367,11 @@ function PlannedRow({ p, theme, disabled, openEditMain, openComplete, openEditNo
 
 
 
+<<<<<<< HEAD
+function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed,  loai, giong  }) {
+=======
 function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed }) {
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   const [editNote, setEditNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || "");
   useEffect(() => setNoteDraft(note || ""), [note]);
@@ -1460,6 +1537,24 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
 </CardHeader>
 
   <CardContent>
+<<<<<<< HEAD
+  {/* Truyền portalId để widget biết gắn nút lên header */}
+  <LifecycleWidget
+    tree={tree}                     // ✅ dùng prop tree
+    meta={meta}
+    portalId="lc-controls"
+    value={currentPhaseId}
+    onChange={onPhaseChange}
+    cycleCount={cycleCount}
+    phase1Completed={phase1Completed}
+    disabled={meta.status === "stopped"}
+    treeId={codeKey}
+    treeType={loai}         // 👈 thêm
+  treeVariety={giong}
+  />
+</CardContent>
+
+=======
     {/* Truyền portalId để widget biết gắn nút lên header */}
     <LifecycleWidget
   tree={tree}
@@ -1473,6 +1568,7 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
   treeId={codeKey}
 />
   </CardContent>
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 </Card>
 
 
@@ -1824,6 +1920,10 @@ function TopHeader({ codeKey, meta, phen, tree, image, setImage, readOnly, ageAf
     return () => { try { document.head.removeChild(style); } catch {} };
   }, []);
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 // === Helpers đọc Loại/Giống dùng chung toàn file ===
 function getLoai(src) {
   const s =
@@ -1859,14 +1959,51 @@ function getGiong(src) {
     return () => clearInterval(id);
   }, []);
 
-  // Chọn cây theo query
-  const q = new URLSearchParams(
-    typeof window !== "undefined" ? window.location.search : ""
-  );
-  const treeId = q.get("treeId") || "T-001";
-  const baseTree = TREES[treeId] || TREES["T-001"];
-  const tree = baseTree;
+// ---- Source of tree id / data (URL params, querystring, or navigation state)
+const location = useLocation();
+const { id: paramId, treeId: paramTreeId } = useParams() || {};
 
+<<<<<<< HEAD
+// ?treeId= or ?id=
+const qs = new URLSearchParams(location.search);
+const qsTreeId = qs.get("treeId") || qs.get("id");
+
+
+// When navigating with: navigate('/trees/xxx', { state: { tree } })
+const stateTree = location.state?.tree || location.state?.treeData || null;
+
+// Final id used everywhere
+const treeId = (
+  paramTreeId ||
+  qsTreeId ||
+  stateTree?.id ||
+  stateTree?._id ||
+  ""
+).toString();
+
+  // Chọn cây theo query
+  // Chọn cây theo id + merge với stateTree nếu có
+const baseTree = React.useMemo(() => {
+  // lấy từ demoTrees theo id
+  const fromDemo =
+    getTreeById(treeId) ||
+    TREES?.[treeId] ||
+    (Array.isArray(TREES_ARRAY)
+      ? TREES_ARRAY.find((t) => String(t?.id) === String(treeId))
+      : null) ||
+    {};
+
+  // dữ liệu truyền qua navigate(..., { state: { tree } })
+  const fromState = stateTree || {};
+
+  // merge: chỉ ghi đè nếu giá trị từ stateTree KHÔNG rỗng
+  const merged = { ...fromDemo };
+  Object.entries(fromState).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      merged[key] = value;
+    }
+  });
+=======
 // ---- DB lifecycle (single source of truth) ----
 const lifecycleFromDB = tree.lifecycle || {}; // bạn có thể gắn từ fetch DB
 
@@ -1933,6 +2070,120 @@ const [codeDraft, setCodeDraft] = useState(codeKey);
 const loai  = getLoai(meta) || getLoai(tree);
 const giong = getGiong(meta) || getGiong(tree);
 const tenCayHero = [loai, giong].filter(Boolean).join(" ");
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
+
+  return merged;
+}, [stateTree, treeId]);
+
+
+// ⛑️ GUARD: thiếu/không tìm thấy cây → render trạng thái an toàn, tránh crash
+const isEmptyBaseTree = !baseTree || Object.keys(baseTree).length === 0;
+
+if (!treeId || isEmptyBaseTree) {
+  return (
+    <div className="min-h-screen bg-[#1F302F] grid place-items-center p-6">
+      <div className="max-w-lg w-full">
+        <div className="rounded-2xl border bg-white shadow-xl p-5">
+          <div className="text-lg font-semibold mb-1">
+            { !treeId ? "Thiếu tham số cây (treeId)" : "Không tìm thấy dữ liệu cây" }
+          </div>
+          <div className="text-sm text-neutral-700">
+            { !treeId
+              ? "URL chưa có treeId hoặc state không mang theo tree."
+              : "ID không khớp trong dữ liệu demo. Hãy kiểm tra lại đường dẫn hoặc danh sách cây."
+            }
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              className="h-9 px-3 rounded-xl border bg-white hover:bg-neutral-50"
+              onClick={() => (window.history.length > 1 ? window.history.back() : window.location.assign("/"))}
+            >
+              ← Quay lại
+            </button>
+            <button
+              className="h-9 px-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={() => window.location.reload()}
+            >
+              Tải lại trang
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// ---- DB lifecycle (single source of truth) ----
+const lifecycleFromDB = baseTree.lifecycle || {};
+
+const initialPhaseId = normalizePhaseId(
+  lifecycleFromDB.currentPhaseId ||
+  baseTree?.phenology?.currentPhase ||
+  baseTree?.phenology?.stage ||
+  baseTree?.phase
+);
+
+
+const initialP1Completed = typeof lifecycleFromDB.phase1Completed === "boolean"
+  ? lifecycleFromDB.phase1Completed
+  : initialPhaseId !== "growth_development";
+
+const initialCycleCount = Number.isFinite(lifecycleFromDB.cycleCount)
+  ? Number(lifecycleFromDB.cycleCount)
+  : 0;
+
+const [currentPhaseId, setCurrentPhaseId] = useState(initialPhaseId);
+const [phase1Completed, setPhase1Completed] = useState(initialP1Completed);
+const [cycleCount, setCycleCount] = useState(initialCycleCount);
+// [ANCHOR: PHASE-GATING]
+const canEditFlower = useMemo(
+  () => ["flowering", "fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
+  [currentPhaseId]
+);
+const canEditFruit = useMemo(
+  () => ["fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
+  [currentPhaseId]
+);
+
+// Ở đầu component TreeDetail:
+const [isEditing, setIsEditing] = React.useState(false);
+
+// snapshot lúc bắt đầu edit để có thể rollback
+const [original, setOriginal] = React.useState(null);
+
+// bản nháp cho form - mọi input chỉ ghi vào đây, không đụng `tree`
+const [draft, setDraft] = React.useState(null);
+
+ // ==== META (data thật) + DRAFT (để sửa, không làm bẩn state khi Hủy) ====
+const [meta, setMeta] = useState({
+  name: baseTree.name || "",
+  plantedAt: baseTree.plantedAt || today(),
+  variety: baseTree.variety || "",
+  preNurseryAgeMonths: Number(baseTree.preNurseryAgeMonths || 0),
+  soil: baseTree.soil || "",
+  status: baseTree.status || "active",
+});
+
+
+
+const [editingMeta, setEditingMeta] = useState(false);
+const [metaDraft, setMetaDraft] = useState(meta);
+const [metaErrors, setMetaErrors] = useState({});
+
+// ==== MÃ CÂY (cho phép đổi mã & migrate LocalStorage ảnh/ghi chú) ====
+const [codeKey, setCodeKey] = useState(baseTree.id || treeId); // trước đây bạn là const codeKey = tree.id;
+const [codeDraft, setCodeDraft] = useState(codeKey);
+// ưu tiên lấy từ tree -> meta -> info/form
+
+
+
+
+
+// "Xoài Cát" hoặc chỉ "Xoài" nếu không có giống
+const loai  = getLoai(meta) || getLoai(baseTree);
+const giong = getGiong(meta) || getGiong(baseTree);
+const tenCayHero = [loai, giong].filter(Boolean).join(" ");
 
   // status flags + ref cho toast hàng ngày
   const isActive = meta.status === "active";
@@ -1994,15 +2245,38 @@ const tenCayHero = [loai, giong].filter(Boolean).join(" ");
   };
 
   // States chính
-  const [planned, setPlanned] = useState(baseTree.planned || []);
-  useEffect(() => {
-    plannedRef.current = planned;
-  }, [planned]);
+ // States chính
+const [planned, setPlannedState] = useState(baseTree.planned || []);
+
+<<<<<<< HEAD
+// Wrapper: vừa set state, vừa sync về demoTrees
+function setPlanned(nextOrUpdater) {
+  setPlannedState((prev) => {
+    const next =
+      typeof nextOrUpdater === "function" ? nextOrUpdater(prev) : nextOrUpdater;
+
+    // đồng bộ planned về TREES + TREES_ARRAY
+    syncTreePatch(codeKey, { planned: next });
+
+    return next;
+  });
+}
+
+useEffect(() => {
+  plannedRef.current = planned;
+}, [planned]);
+
 
   const [aiSuggestions, setAiSuggestions] = useState(() =>
   getAISuggestions(baseTree, initialPhaseId)
 );
 
+=======
+  const [aiSuggestions, setAiSuggestions] = useState(() =>
+  getAISuggestions(baseTree, initialPhaseId)
+);
+
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 useEffect(() => {
   setAiSuggestions(getAISuggestions(baseTree, currentPhaseId));
 }, [currentPhaseId]);
@@ -2593,13 +2867,21 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
       <div className="grid md:grid-cols-3 gap-6">
         {/* LEFT: thông tin */}
         <div className="md:col-span-2 grid md:grid-cols-2 gap-x-6 gap-y-2">
+<<<<<<< HEAD
+          <Field label="Cây" value={meta.name || baseTree.name} />
+=======
           <Field label="Cây" value={meta.name} />
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
           <Field label="Mã cây" value={`#${codeKey}`} />
           
           <Field label="Giống" value={meta.variety} />
           <Field label="Ngày trồng" value={formatVN(meta.plantedAt)} />
           <Field label="Tuổi trước khi trồng" value={`${meta.preNurseryAgeMonths} tháng`} />
+<<<<<<< HEAD
+          <Field label="Loại đất" value={meta.soil || baseTree.soil || "—"} />
+=======
           <Field label="Loại đất" value={meta.soil || "—"} />
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
           
           
           <Field label="Tổng tuổi" value={`${totalAge} tháng`} />
@@ -2737,11 +3019,41 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
 
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setEditingMeta(false)}>Hủy</Button>
+<<<<<<< HEAD
+           <Button
+=======
             <Button
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   onClick={() => {
     // Chuẩn hóa draft
     const fixed = {
       ...metaDraft,
+<<<<<<< HEAD
+      preNurseryAgeMonths: Math.max(
+        0,
+        parseInt(metaDraft.preNurseryAgeMonths || 0, 10) || 0
+      ),
+    };
+
+    // ✅ Validate: buộc phải chọn từ hệ thống
+    const typeList = DROPDOWN_OPTIONS.treeTypes;
+    const varList =
+      DROPDOWN_OPTIONS.varietiesByType[fixed.name?.trim()] || [];
+    const soilList = DROPDOWN_OPTIONS.soils;
+
+    const errors = {};
+    if (!inList(fixed.name, typeList))
+      errors.name = "Chỉ được chọn loại có trong hệ thống.";
+    if (!inList(fixed.variety, varList))
+      errors.variety = "Chỉ được chọn giống hợp lệ theo loại.";
+    if (!inList(fixed.soil, soilList))
+      errors.soil = "Chỉ được chọn loại đất có trong hệ thống.";
+    setMetaErrors(errors);
+    if (Object.keys(errors).length) return; // ❌ dừng lưu nếu có lỗi
+
+    // Nếu đổi mã cây => migrate LocalStorage ảnh/ghi chú
+    let targetKey = codeKey;         // <— dùng key này để sync demoTrees
+=======
       preNurseryAgeMonths: Math.max(0, parseInt(metaDraft.preNurseryAgeMonths || 0, 10) || 0),
     };
 
@@ -2758,14 +3070,22 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
    if (Object.keys(errors).length) return; // ❌ dừng lưu nếu có lỗi
 
     // Nếu đổi mã cây => migrate LocalStorage ảnh/ghi chú
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
     if (codeDraft && codeDraft !== codeKey) {
       const oldImg = imageRegistry.get(codeKey);
       const oldNote = noteRegistry.get(codeKey);
       if (oldImg) imageRegistry.set(codeDraft, oldImg);
       if (oldNote) noteRegistry.set(codeDraft, oldNote);
       imageRegistry.clear(codeKey);
+<<<<<<< HEAD
+      noteRegistry.set(codeKey, "");
+
+      setCodeKey(codeDraft);
+      targetKey = codeDraft;        // <— key mới
+=======
       noteRegistry.set(codeKey, ""); // xóa ghi chú cũ (tuỳ bạn muốn clear hay giữ)
       setCodeKey(codeDraft);
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
       // (tuỳ chọn) cập nhật URL query ?treeId=...
       try {
@@ -2778,6 +3098,20 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
     // Ghi meta thật
     setMeta(fixed);
 
+<<<<<<< HEAD
+    // ✅ Đồng bộ meta sang demoTrees (TreeManagement sẽ đọc được)
+    syncTreePatch(targetKey, {
+      id: targetKey,
+      name: fixed.name,
+      variety: fixed.variety,
+      plantedAt: fixed.plantedAt,
+      preNurseryAgeMonths: fixed.preNurseryAgeMonths,
+      soil: fixed.soil,
+      status: fixed.status,
+    });
+
+=======
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
     // đóng edit
     setEditingMeta(false);
   }}
@@ -2785,6 +3119,10 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
   Lưu
 </Button>
 
+<<<<<<< HEAD
+
+=======
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
           </div>
         </div>
 
@@ -2818,9 +3156,55 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
           <Button variant="outline" onClick={() => { setPhenDraft(phen); setEditingPhen(false); }}>
             Hủy
           </Button>
+<<<<<<< HEAD
+          <Button
+  onClick={() => {
+    setPhen(phenDraft);
+    setEditingPhen(false);
+
+    // Gom phenology mới
+    const nextPhen = {
+      ...(baseTree.phenology || {}),
+      leafStatus:   phenDraft.leaf,
+      branchStatus: phenDraft.branch,
+      flowerStatus: phenDraft.flower,
+      fruitStatus:  phenDraft.fruit,
+      stage:        currentPhaseId,
+      currentPhase: currentPhaseId,
+    };
+
+    // Gom state mới (để các màn legacy đọc state.* vẫn đúng)
+    const nextState = {
+      ...(baseTree.state || {}),
+      leaf:   phenDraft.leaf,
+      branch: phenDraft.branch,
+      flower: phenDraft.flower,
+      fruit:  phenDraft.fruit,
+    };
+
+    // ✅ Sync đồng thời phenology + state + *State + stateNote
+    syncTreePatch(codeKey, {
+      phenology: nextPhen,
+      state:     nextState,
+
+      // fallback cho chỗ nào đang dùng stateNote / leafState / ...
+      stateNote:    phenDraft.leaf,
+      leafState:    phenDraft.leaf,
+      branchState:  phenDraft.branch,
+      flowerState:  phenDraft.flower,
+      fruitState:   phenDraft.fruit,
+    });
+  }}
+>
+  Lưu
+</Button>
+
+
+=======
           <Button onClick={() => { setPhen(phenDraft); setEditingPhen(false); /* TODO: gọi API lưu DB */ }}>
             Lưu
           </Button>
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
         </>
       )}
     </div>
@@ -3120,7 +3504,11 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
                 setImage={setImage}
                 codeKey={codeKey}
                 phen={phen}
+<<<<<<< HEAD
+                tree={baseTree}
+=======
                 tree={tree}
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
                 meta={meta}
                 planned={planned}
                 openEditNote={openEditNote}
@@ -3131,6 +3519,36 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
                   currentPhaseId={currentPhaseId}
  cycleCount={cycleCount}
  phase1Completed={phase1Completed}
+<<<<<<< HEAD
+  loai={loai}
+  giong={giong}
+ onPhaseChange={(payload) => {
+    // payload: { phaseId, cycleCount, phase1Completed }
+    setCurrentPhaseId(payload.phaseId);
+    setCycleCount(payload.cycleCount);
+    setPhase1Completed(payload.phase1Completed);
+
+    // ✅ đồng bộ lifecycle + phase vào demoTrees
+    syncTreePatch(codeKey, {
+      lifecycle: {
+        ...(lifecycleFromDB || {}),
+        currentPhaseId: payload.phaseId,
+        phase1Completed: payload.phase1Completed,
+        cycleCount: payload.cycleCount,
+      },
+      // nếu bạn có field phase / phenology.stage ở TreeManagement thì cho nó trùng luôn:
+      phase: payload.phaseId,
+      phenology: {
+        ...(baseTree.phenology || {}),
+        stage: payload.phaseId,
+        currentPhase: payload.phaseId,
+      },
+    });
+
+    // sau này thay bằng api.trees.updateLifecycle(...)
+  }}
+/>
+=======
  onPhaseChange={(payload) => {
    // payload: { phaseId, cycleCount, phase1Completed }
    setCurrentPhaseId(payload.phaseId);
@@ -3140,6 +3558,7 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
    // api.trees.updateLifecycle(codeKey, payload).catch(console.error);
  }}
               />
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
               
             </div>
           </aside>
@@ -3586,10 +4005,18 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
 /* =========================================================================
    Small components & helpers
    ========================================================================= */
+<<<<<<< HEAD
+function safePhenText(v) {
+  const s = String(v ?? "").trim();
+  return s ? s : "Bình thường";
+}
+
+=======
 const safePhenText = (v) => {
   const s = String(v ?? "").trim();
   return s ? s : "Bình thường";
 };
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
 function TypeSwitch({ type, active, onClick, overdue = 0 }) {
   const theme = TYPE_THEME[type];
@@ -3786,10 +4213,31 @@ function LCTransientPath({ d, color, duration = 950, headSize = 10, headPad = 8,
 
 /* ===== Timeline ===== */
 function LifecycleTimeline({
+<<<<<<< HEAD
+  activePhase,
+  previewPhase,
+  isPhase1Completed,
+  isSpinning,
+  treeData,
+  treeId,
+  treeType,
+  treeVariety,
+  transitionFlow,
+  transitionKey,
+  p1Transition,
+  p1Key,
+  trailIndex,
+  suppressId,
+  isBackwardRun,
+  postHideIdx,
+}) {
+
+=======
   activePhase, previewPhase, isPhase1Completed, isSpinning,
   treeData, transitionFlow, transitionKey, p1Transition, p1Key,
   trailIndex, suppressId, isBackwardRun, postHideIdx,
 }) {
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   const phase1 = { id: "growth_development", name: "Sinh trưởng & Phát triển", icon: "🌱", color: "emerald" };
   const cyclePhases = [
     { id: "flowering",   name: "Ra Hoa",          icon: "🌸", color: "pink"  },
@@ -3945,7 +4393,14 @@ const canEditFruit = useMemo(
   </span>
 
   <span className="text-neutral-400 shrink-0">•</span>
+<<<<<<< HEAD
+<span className="text-neutral-500 shrink-0">
+  #{treeId || treeData?.id || "—"}
+</span>
+
+=======
   <span className="text-neutral-500 shrink-0">#{treeData?.id || "—"}</span>
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 </div>
 
           <div className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg mb-1.5 pointer-events-none
@@ -3988,10 +4443,26 @@ const canEditFruit = useMemo(
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <div className="bg-white/90 backdrop-blur rounded-full shadow-xl ring-1 ring-black/5 w-24 h-24 flex flex-col items-center justify-center p-2">
               <div className="text-[10px] text-gray-500 font-medium">Loại cây</div>
+<<<<<<< HEAD
+<div className="text-[13px] font-bold text-emerald-600">
+  {treeType || "—"}
+</div>
+
+<div className="text-[10px] text-gray-500 font-medium mt-0.5">Giống</div>
+<div className="text-[10px] text-gray-700 font-semibold">
+  {treeVariety || "—"}
+</div>
+
+<div className="text-[9px] text-gray-400 mt-0.5">
+  ID: {treeId || treeData?.id || "—"}
+</div>
+
+=======
               <div className="text-[13px] font-bold text-emerald-600">{treeData?.type || "—"}</div>
               <div className="text-[10px] text-gray-500 font-medium mt-0.5">Giống</div>
               <div className="text-[10px] text-gray-700 font-semibold">{treeData?.variety || "—"}</div>
               <div className="text-[9px] text-gray-400 mt-0.5">ID: {treeData?.id || "—"}</div>
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
             </div>
           </div>
 
@@ -4177,8 +4648,27 @@ function LifecycleWidget({
   tree, meta, portalId, value, onChange,
   cycleCount: cycleCountProp, phase1Completed: phase1CompletedProp,
   disabled = false,
+<<<<<<< HEAD
+  treeId,
+  treeType,
+  treeVariety,
+}) {
+  const cyclePhases = ["flowering", "fruiting", "pre_harvest", "post_harvest"];
+  const isCyclePhase = (p) => cyclePhases.includes(p);
+
+  const displayType =
+  treeType ||
+  getLoai(meta) ||
+  getLoai(tree);
+
+const displayVariety =
+  treeVariety ||
+  getGiong(meta) ||
+  getGiong(tree);
+=======
   treeId, // ⬅️ nhận id được truyền từ AsideCards (codeKey)
 }) {
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 
   // Ưu tiên phase từ props.value (DB) -> fallback text trong tree
 const initPhase = normalizePhaseId(
@@ -4187,6 +4677,25 @@ const initPhase = normalizePhaseId(
   mapPhaseIdFromText(tree?.phenology?.currentPhase || tree?.phenology?.stage || tree?.phase || "")
 );
 
+<<<<<<< HEAD
+// Thứ tự các phase trên vòng tròn
+
+
+// Tính trạng thái ban đầu từ prop / tree
+const initialPhase1Completed =
+  typeof phase1CompletedProp === "boolean"
+    ? phase1CompletedProp
+    : initPhase !== "growth_development";
+
+// Nếu đã qua giai đoạn 1 thì trailIndex = index của phase hiện tại
+// (VD: pre_harvest -> 2; fruiting -> 1; flowering -> 0)
+const initialTrailIndex = initialPhase1Completed
+  ? Math.max(0, cyclePhases.indexOf(initPhase))
+  : -1;
+
+
+=======
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 // Phase controlled
 const [activePhase, setActivePhase] = useState(initPhase);
 useEffect(() => {
@@ -4194,11 +4703,16 @@ useEffect(() => {
 }, [value]);
 
 // Phase1Completed & cycleCount controlled
+<<<<<<< HEAD
+const [isPhase1Completed, setIsPhase1Completed] =
+   useState(initialPhase1Completed);
+=======
 const [isPhase1Completed, setIsPhase1Completed] = useState(
   typeof phase1CompletedProp === "boolean"
     ? phase1CompletedProp
     : initPhase !== "growth_development"
 );
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
 useEffect(() => {
   if (typeof phase1CompletedProp === "boolean") {
     setIsPhase1Completed(phase1CompletedProp);
@@ -4229,10 +4743,44 @@ const [isSpinning, setIsSpinning] = useState(false);
   const [postHideIdx, setPostHideIdx] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
 
+<<<<<<< HEAD
+
+  const runSpinReset = () => { setIsSpinning(true); setTimeout(() => setIsSpinning(false), 1000); };
+
+  useEffect(() => {
+  // Nếu parent đẩy phase/phase1Completed mới từ DB thì đồng bộ lại
+  const externalPhase = normalizePhaseId(
+    value ??
+      tree?.lifecycle?.currentPhaseId ??
+      mapPhaseIdFromText(
+        tree?.phenology?.currentPhase ||
+          tree?.phenology?.stage ||
+          tree?.phase ||
+          ""
+      )
+  );
+
+  const externalP1Done =
+    typeof phase1CompletedProp === "boolean"
+      ? phase1CompletedProp
+      : externalPhase !== "growth_development";
+
+  if (!externalP1Done) {
+    setTrailIndex(-1);
+    return;
+  }
+
+  const idx = cyclePhases.indexOf(externalPhase);
+  if (idx >= 0) setTrailIndex(idx);
+}, [value, phase1CompletedProp]);
+
+
+=======
   const cyclePhases = ["flowering", "fruiting", "pre_harvest", "post_harvest"];
   const isCyclePhase = (p) => cyclePhases.includes(p);
   const runSpinReset = () => { setIsSpinning(true); setTimeout(() => setIsSpinning(false), 1000); };
 
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
   // Modal xác nhận (nhỏ)
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingPhase, setPendingPhase] = useState(null);
@@ -4442,6 +4990,12 @@ setIsRunning(false);
           isPhase1Completed={isPhase1Completed}
           isSpinning={isSpinning}
           treeData={treeData}
+<<<<<<< HEAD
+          treeId={treeId}                 // 👈 mã cây chuẩn
+  treeType={displayType}          // 👈 loại chuẩn
+  treeVariety={displayVariety}
+=======
+>>>>>>> 32cbfc6c5698917b8ab0caef6b3d10821d58ed2d
           transitionFlow={transitionFlow}
           transitionKey={transitionKey}
           p1Transition={p1Transition}
