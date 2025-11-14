@@ -51,18 +51,35 @@ export default function MMHeader({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
+    useEffect(() => {
     const onKey = (e) => {
       const tag = (document.activeElement?.tagName || "").toLowerCase();
       const typing =
-        ["input", "textarea"].includes(tag) ||
+        ["input", "textarea", "select"].includes(tag) ||
         document.activeElement?.getAttribute?.("contenteditable") === "true";
-      if (e.key === "Enter" && !typing && !searchOpen) setSearchOpen(true);
-      if (e.key === "Escape") closeMenu();
+
+      // Nếu đang mở khung chọn ngày (DateInput) thì bỏ qua Enter,
+      // không bật search của header
+      const dateOpen = document.querySelector('[data-mm-date-open="1"]');
+
+      if (e.key === "Enter") {
+        if (dateOpen) return; // khung lịch đang mở → không làm gì
+
+        if (!typing && !searchOpen) {
+          setSearchOpen(true);
+        }
+      }
+
+      if (e.key === "Escape") {
+        closeMenu();
+      }
     };
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [searchOpen]);
+
+
 
   useEffect(() => {
     if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 60);

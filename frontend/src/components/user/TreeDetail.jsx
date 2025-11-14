@@ -5,6 +5,12 @@ import { computeInitialPhase, normalizePhaseBeforeSave } from "@/lib/treePhase";
 import TreeInfoPanel from "@/components/tree/TreeInfoPanel";
 import Section from "@/components/Section";
 import { getTreeById, TREES, TREES_ARRAY } from "@/data/demoTrees";
+
+import { normalize as vnNormalize } from "@/lib/useVnAdmin";
+import { Calendar as CalIcon } from "lucide-react";
+
+import { Label } from "@/components/ui/label"; // nếu bạn dùng Label trong edit modal
+
 // Đồng bộ lại dữ liệu cây vào demoTrees (TREES + TREES_ARRAY)
 // để các màn khác (TreeManagement) đọc được cùng 1 nguồn.
 function syncTreePatch(codeKey, patch) {
@@ -32,6 +38,46 @@ function syncTreePatch(codeKey, patch) {
   }
 }
 
+// Cấu hình 4 loại tình trạng hiện tại
+const HEALTH_FIELDS = [
+  {
+    key: "leaf",
+    label: "Lá",
+    icon: "🍃",
+    badgeClass: "bg-emerald-50 text-emerald-600",
+    defaultText: "Chưa có ghi chú",
+  },
+  {
+    key: "branch",
+    label: "Cành",
+    icon: "🌿",
+    badgeClass: "bg-lime-50 text-lime-600",
+    defaultText: "Bình thường",
+  },
+  {
+    key: "flower",
+    label: "Hoa",
+    icon: "🌸",
+    badgeClass: "bg-pink-50 text-pink-600",
+    defaultText: "Chưa đến giai đoạn",
+  },
+  {
+    key: "fruit",
+    label: "Quả",
+    icon: "🍎",
+    badgeClass: "bg-orange-50 text-orange-600",
+    defaultText: "Chưa đến giai đoạn",
+  },
+];
+
+// Helper cắt text còn 60 ký tự khi hiển thị trong ô
+function truncateText(str, maxChars = 60) {
+  if (!str) return "";
+  if (str.length <= maxChars) return str;
+  return str.slice(0, maxChars) + "…";
+}
+
+
 import { useParams, useLocation } from "react-router-dom";
 
 import {
@@ -52,6 +98,7 @@ import {
   ChevronDown,
    ArrowDown,
    Activity,
+    Edit3,
 } from "lucide-react";
 
 const TYPE_THEME = {
@@ -325,6 +372,7 @@ const Select = ({ className = "", children, ...props }) => (
   </select>
 );
 /* === ComboBox (typeahead dropdown, bo tròn, đẹp) ======================= */
+/* === ComboBox (typeahead dropdown, bo tròn, đẹp) ======================= */
 function ComboBox({
   value = "",
   onChange,
@@ -345,6 +393,7 @@ function ComboBox({
   const baseFocusRing = invalidFlash ? "focus:ring-rose-500" : "focus:ring-emerald-500/70";
   const [showAll, setShowAll] = React.useState(false);
 
+  
   const norm = (s) =>
     String(s || "")
       .toLowerCase()
@@ -358,7 +407,7 @@ function ComboBox({
     return options.filter((o) => norm(o).includes(q));
   }, [options, query]);
 
- const visible = showAll ? options : filtered;
+  const visible = showAll ? options : filtered;
 
   React.useEffect(() => setQuery(value || ""), [value]);
 
@@ -374,7 +423,8 @@ function ComboBox({
 
   function commit(val) {
     if (disabled) return;
-isCommittingRef.current = true;        
+    isCommittingRef.current = true;        
+
     // chỉ nhận option khi không cho tạo mới
     if (!allowCreate) {
       const match = options.find((o) => norm(o) === norm(val));
@@ -397,9 +447,6 @@ isCommittingRef.current = true;
       // nhả cờ sau 1 tick để onBlur không chạy reset
       setTimeout(() => { isCommittingRef.current = false; }, 0);
     });
-    setTimeout(() => {                       // ★ tắt guard sau khi render ổn định
-    isCommittingRef.current = false;
-  }, 0);
   }
 
   function onKeyDown(e) {
@@ -415,11 +462,11 @@ isCommittingRef.current = true;
     } else if (e.key === "Enter") {
       e.preventDefault();
       const pick =
-        visible.length > 0                                   // ★
+        visible.length > 0
           ? visible[Math.max(0, Math.min(active, visible.length - 1))]
           : null;
       if (pick) {
-        commit(pick);     // ★ Enter cũng blur sau commit
+        commit(pick);
       } else {
         if (!allowCreate) {
           setInvalidFlash(true);
@@ -453,15 +500,19 @@ isCommittingRef.current = true;
   return (
     <div ref={boxRef} className={"relative " + className}>
       <input
-        ref={inputRef}                           // ★ gắn ref
+        ref={inputRef}
         value={query}
         onChange={(e) => {
-    if (isCommittingRef.current) return;   // ★ đừng mở lại ngay sau commit
-    setQuery(e.target.value);
-    setOpen(true);
-    setShowAll(false);
-  }}
-  onFocus={() => { if (!isCommittingRef.current) setOpen(true); }}
+          if (isCommittingRef.current) return;   // ★ đừng mở lại ngay sau commit
+          setQuery(e.target.value);
+          setOpen(true);
+          setShowAll(false);
+        }}
+        onFocus={() => {
+          if (!isCommittingRef.current) setOpen(true);
+          setShowAll(true); // ← mở FULL danh sách khi vừa focus
+          setActive(0);
+        }}
         onKeyDown={onKeyDown}
         onBlur={onBlur}
         placeholder={placeholder}
@@ -479,11 +530,11 @@ isCommittingRef.current = true;
         type="button"
         onMouseDown={(e) => { e.preventDefault(); }}  // giữ focus khi mở/đóng
         onClick={() => {
-      if (disabled) return;
-      setShowAll(true);     // ★ luôn hiển thị toàn bộ khi mở bằng chevron
-      setOpen((v) => !v);
-      setActive(0);         // ★ trỏ về dòng đầu
-    }}
+          if (disabled) return;
+          setShowAll(true);     // ★ luôn hiển thị toàn bộ khi mở bằng chevron
+          setOpen((v) => !v);
+          setActive(0);         // ★ trỏ về dòng đầu
+        }}
         className={
           "absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 grid place-items-center rounded-xl " +
           (disabled ? "text-neutral-400" : "hover:bg-neutral-100")
@@ -500,10 +551,10 @@ isCommittingRef.current = true;
           role="listbox"
         >
           <div className="max-h-60 overflow-auto py-1">
-            {visible.length === 0 ? (   
+            {visible.length === 0 ? (
               <div className="px-3 py-2 text-sm text-neutral-500">{emptyText}</div>
             ) : (
-              visible.map((opt, idx) => { 
+              visible.map((opt, idx) => {
                 const isActive = idx === active;
                 const isSelected = norm(opt) === norm(value);
                 return (
@@ -511,7 +562,7 @@ isCommittingRef.current = true;
                     key={opt + idx}
                     type="button"
                     onMouseEnter={() => setActive(idx)}
-                    onPointerDown={(e) => { e.preventDefault(); commit(opt); }} // click = commit + blur
+                    onPointerDown={(e) => { e.preventDefault(); commit(opt); }}
                     className={
                       "w-full text-left px-3 py-2 text-[15px] flex items-center justify-between " +
                       (isActive ? "bg-emerald-50" : "bg-white hover:bg-neutral-50")
@@ -533,6 +584,418 @@ isCommittingRef.current = true;
     </div>
   );
 }
+
+
+
+function DateInput({ value, onChange, error }) {
+  const [parts, setParts] = React.useState(() => parseIsoToParts(value));
+  const [open, setOpen] = React.useState(false);
+  const wrapRef = React.useRef(null);
+  const dayRef = React.useRef(null);
+  const monthRef = React.useRef(null);
+  const yearRef = React.useRef(null);
+
+  // Hôm nay (để đánh dấu trên lịch khi chưa chọn gì)
+  const today = new Date();
+
+  // Đồng bộ khi value bên ngoài thay đổi
+  React.useEffect(() => {
+    setParts(parseIsoToParts(value));
+  }, [value]);
+
+  // Đóng & commit khi click ra ngoài
+  React.useEffect(() => {
+    const handleClick = (e) => {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target)) {
+        commitParts();
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [parts]);
+
+  function parseIsoToParts(iso) {
+    if (!iso) return { d: "", m: "", y: "" };
+    const [y, m, d] = iso.split("-");
+    return { d: d || "", m: m || "", y: y || "" };
+  }
+
+  function getDaysInMonthSafe(yearStr, monthStr) {
+    const monthNum = Number(monthStr);
+    if (!monthNum || monthNum < 1 || monthNum > 12) return 31;
+
+    const yearNum = Number(yearStr);
+    // Năm chưa đủ 4 số: chỉ phân biệt tháng 30/31,
+    // tháng 2 cho phép tối đa 29, còn chính xác 28/29 sẽ xử lý khi có đủ năm thật
+    if (!yearStr || String(yearStr).length < 4 || !yearNum) {
+      if ([1, 3, 5, 7, 8, 10, 12].includes(monthNum)) return 31;
+      if ([4, 6, 9, 11].includes(monthNum)) return 30;
+      if (monthNum === 2) return 29;
+    }
+
+    // Khi đã có năm đầy đủ: dùng Date để tính chính xác 28/29/30/31
+    return new Date(yearNum, monthNum, 0).getDate();
+  }
+
+  function buildIsoFromParts({ d, m, y }) {
+    if (!d || !m || !y) return "";
+    if (y.length !== 4) return "";
+
+    const dayNum = Number(d);
+    const monthNum = Number(m);
+    const yearNum = Number(y);
+    if (!dayNum || !monthNum || !yearNum) return "";
+
+    const dt = new Date(yearNum, monthNum - 1, dayNum);
+    if (
+      dt.getFullYear() !== yearNum ||
+      dt.getMonth() !== monthNum - 1 ||
+      dt.getDate() !== dayNum
+    ) {
+      // Ngày không tồn tại (ví dụ 31/4, 29/2 năm không nhuận) => coi như sai
+      return "";
+    }
+
+    return `${String(yearNum).padStart(4, "0")}-${String(monthNum).padStart(
+      2,
+      "0"
+    )}-${String(dayNum).padStart(2, "0")}`;
+  }
+
+  function commitParts() {
+    const iso = buildIsoFromParts(parts);
+    // Nếu chưa điền đủ / sai => reset như yêu cầu
+    if (!iso) {
+      onChange("");
+      setParts({ d: "", m: "", y: "" });
+    } else {
+      onChange(iso);
+      setParts(parseIsoToParts(iso));
+    }
+  }
+
+    function getDaysInMonth(y, m) {
+    const yearNum = Number(y);
+    const monthNum = Number(m);
+    if (!yearNum || !monthNum) return 31; // chưa đủ thông tin thì tạm cho 31
+    // new Date(year, month, 0) => ngày cuối cùng của tháng đó
+    return new Date(yearNum, monthNum, 0).getDate();
+  }
+
+
+  function handleSegmentChange(segment, raw) {
+    const onlyDigits = raw.replace(/\D/g, "");
+    const maxLen = segment === "y" ? 4 : 2;
+    let v = onlyDigits.slice(0, maxLen);
+
+    setParts((prev) => {
+      const next = { ...prev };
+
+      if (segment === "d") {
+        if (!v) {
+          next.d = "";
+          return next;
+        }
+        // 1 chữ số: cho giữ nguyên (1, 2, 3...)
+        if (v.length === 1) {
+          next.d = v;
+          return next;
+        }
+        // 2 chữ số: clamp theo tháng/năm
+        v = v.slice(0, 2);
+        let num = Number(v) || 0;
+        if (num === 0) num = 1;
+        const limit = getDaysInMonthSafe(prev.y || "", prev.m || "");
+        if (num > limit) num = limit;
+
+        if (v[0] === "0" && num < 10) {
+          next.d = "0" + String(num);
+        } else {
+          next.d = String(num);
+        }
+      } else if (segment === "m") {
+        if (!v) {
+          next.m = "";
+          return next;
+        }
+        if (v.length === 1) {
+          next.m = v;
+          return next;
+        }
+        v = v.slice(0, 2);
+        let num = Number(v) || 0;
+        if (num === 0) num = 1;
+        if (num > 12) num = 12;
+
+        if (v[0] === "0" && num < 10) {
+          next.m = "0" + String(num);
+        } else {
+          next.m = String(num);
+        }
+
+        // Khi đổi tháng, nếu ngày đang > số ngày tối đa thì hạ xuống
+        if (next.d && next.d.length === 2) {
+          const limit = getDaysInMonthSafe(prev.y || "", next.m);
+          const dayNum = Number(next.d) || 0;
+          if (dayNum > limit) {
+            let adjusted = limit;
+            if (adjusted < 10) next.d = "0" + String(adjusted);
+            else next.d = String(adjusted);
+          }
+        }
+      } else if (segment === "y") {
+        next.y = v;
+
+        // Khi đã nhập đủ 4 số năm, nếu ngày đang > max của tháng đó => hạ xuống
+        if (v.length === 4 && next.d && next.m && next.d.length === 2) {
+          const limit = getDaysInMonthSafe(v, next.m);
+          const dayNum = Number(next.d) || 0;
+          if (dayNum > limit) {
+            let adjusted = limit;
+            if (adjusted < 10) next.d = "0" + String(adjusted);
+            else next.d = String(adjusted);
+          }
+        }
+      }
+
+      return next;
+    });
+  }
+
+  function handleKeyDown(e, current) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      // Quan trọng: chặn bubble để header không bắt phím Enter mở ô search
+      e.stopPropagation();
+
+      if (current === "d" && monthRef.current) {
+        monthRef.current.focus();
+      } else if (current === "m" && yearRef.current) {
+        yearRef.current.focus();
+      } else if (current === "y") {
+        // Năm → commit + đóng popup
+        commitParts();
+        setOpen(false);
+        yearRef.current?.blur();
+      }
+    }
+  }
+
+  // Lịch popup
+  const selected = value ? new Date(value + "T00:00:00") : null;
+  const [month, setMonth] = React.useState(
+    selected ? selected.getMonth() : today.getMonth()
+  );
+  const [year, setYear] = React.useState(
+    selected ? selected.getFullYear() : today.getFullYear()
+  );
+
+  React.useEffect(() => {
+    if (selected) {
+      setMonth(selected.getMonth());
+      setYear(selected.getFullYear());
+    }
+  }, [value]);
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay(); // 0: CN
+  const blanks = Array.from({ length: firstDay }).map((_, i) => i);
+  const days = Array.from({ length: daysInMonth }).map((_, i) => i + 1);
+
+  const monthNames = [
+    "Th1",
+    "Th2",
+    "Th3",
+    "Th4",
+    "Th5",
+    "Th6",
+    "Th7",
+    "Th8",
+    "Th9",
+    "Th10",
+    "Th11",
+    "Th12",
+  ];
+
+  function pickDay(day) {
+    const iso = buildIsoFromParts({
+      d: String(day),
+      m: String(month + 1),
+      y: String(year),
+    });
+    if (!iso) return;
+    onChange(iso);
+    setParts(parseIsoToParts(iso));
+    setOpen(false);
+  }
+
+  return (
+    <div
+      className="relative"
+      ref={wrapRef}
+      data-mm-date-open={open ? "1" : undefined}
+    >
+      <div
+        className={
+          "flex items-center justify-between rounded-xl border bg-white h-11 px-3 " +
+          (error
+            ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/40"
+            : "border-neutral-300 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/40")
+        }
+        onClick={() => setOpen(true)}
+      >
+        <div className="flex items-center gap-1 flex-1">
+          <input
+            ref={dayRef}
+            value={parts.d}
+            onChange={(e) => handleSegmentChange("d", e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, "d")}
+            onFocus={() => setOpen(true)}
+            placeholder="Ngày"
+            inputMode="numeric"
+            className="w-10 bg-transparent border-none outline-none text-sm text-center placeholder:text-neutral-400"
+          />
+          <span className="text-neutral-300 text-sm">/</span>
+          <input
+            ref={monthRef}
+            value={parts.m}
+            onChange={(e) => handleSegmentChange("m", e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, "m")}
+            onFocus={() => setOpen(true)}
+            placeholder="Tháng"
+            inputMode="numeric"
+            className="w-10 bg-transparent border-none outline-none text-sm text-center placeholder:text-neutral-400"
+          />
+          <span className="text-neutral-300 text-sm">/</span>
+          <input
+            ref={yearRef}
+            value={parts.y}
+            onChange={(e) => handleSegmentChange("y", e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, "y")}
+            onFocus={() => setOpen(true)}
+            placeholder="Năm"
+            inputMode="numeric"
+            className="w-14 bg-transparent border-none outline-none text-sm text-center placeholder:text-neutral-400"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen((v) => !v);
+          }}
+          className="ml-2 inline-flex items-center justify-center"
+        >
+          <CalIcon className="w-4 h-4 text-neutral-500" />
+        </button>
+      </div>
+
+      {open && (
+        <div
+          className="absolute left-0 mt-1 w-72 rounded-xl border bg-white shadow-xl z-[1600] p-3"
+          // Chặn Enter trong popup lịch không cho bubble lên window
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.stopPropagation();
+            }
+          }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <button
+              type="button"
+              className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
+              onClick={() => {
+                if (month === 0) {
+                  setMonth(11);
+                  setYear((y) => y - 1);
+                } else setMonth((m) => m - 1);
+              }}
+            >
+              ←
+            </button>
+            <div className="text-sm font-medium">
+              {monthNames[month]} {year}
+            </div>
+            <button
+              type="button"
+              className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
+              onClick={() => {
+                if (month === 11) {
+                  setMonth(0);
+                  setYear((y) => y + 1);
+                } else setMonth((m) => m + 1);
+              }}
+            >
+              →
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-[11px] text-center text-neutral-500 mb-1">
+            {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((d) => (
+              <div key={d}>{d}</div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-sm">
+            {blanks.map((b) => (
+              <div key={`b-${b}`} />
+            ))}
+            {days.map((d) => {
+              const isSelected =
+                selected &&
+                d === selected.getDate() &&
+                month === selected.getMonth() &&
+                year === selected.getFullYear();
+
+              // Khi CHƯA có value (chưa chọn ngày trồng) thì đánh dấu ngày hôm nay
+              const isToday =
+                !selected &&
+                d === today.getDate() &&
+                month === today.getMonth() &&
+                year === today.getFullYear();
+
+              let extraClass = "";
+              if (isSelected) {
+                extraClass = "bg-emerald-500 text-white";
+              } else if (isToday) {
+                // Đánh dấu hôm nay bằng viền + chữ đậm
+                extraClass =
+                  "border border-emerald-500 text-emerald-700 font-semibold";
+              } else {
+                extraClass = "hover:bg-emerald-50 text-neutral-800";
+              }
+
+              return (
+                <button
+                  type="button"
+                  key={d}
+                  onClick={() => pickDay(d)}
+                  className={
+                    "h-7 w-7 rounded-full flex items-center justify-center text-xs " +
+                    extraClass
+                  }
+                >
+                  {d}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-1 text-xs text-red-500">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+
+
 
 
 
@@ -573,26 +1036,83 @@ const DROPDOWN_OPTIONS = {
 };
 
 // === Field (label + value) phóng to & khoảng cách to hơn
-function Field({ label, value, icon }) {
+// === Field (label + value) phóng to & khoảng cách to hơn + inline edit từng trường
+// === Field (label + value) phóng to & khoảng cách to hơn + inline edit từng trường
+function Field({
+  label,
+  value,
+  editable,
+  isEditing,
+  onEdit,
+  editor,
+  disabled,
+  inlineBadge,
+}) {
+  const clickable = editable && !disabled && typeof onEdit === "function";
+
+  const baseLeft =
+    "flex items-start gap-2 text-base font-bold text-neutral-900 dark:text-neutral-100";
+
+  const leftCls =
+    (clickable ? "group cursor-pointer select-none " : "") + baseLeft;
+
+  const labelCls =
+    "flex items-baseline gap-1 transition-transform " +
+    (isEditing
+      ? "text-rose-600 scale-[1.02]"
+      : "group-hover:text-rose-600 group-hover:scale-[1.02]");
+
+  const iconWrapperCls =
+    "flex justify-center pt-0.5 transform transition-transform transition-colors " +
+    (isEditing
+      ? "p-1 rounded-full border border-rose-500 bg-rose-50 text-rose-600 scale-110"
+      : "p-1 rounded-full border border-transparent text-neutral-500 " +
+        "group-hover:border-rose-400 group-hover:bg-rose-50 " +
+        "group-hover:text-rose-600 group-hover:scale-110");
+
+  const LeftTag = clickable ? "button" : "div";
+
   return (
-    <div className="grid grid-cols-[168px,1fr] items-baseline gap-x-3 gap-y-1">
-      {icon ? <div className="col-span-2 -mb-1">{icon}</div> : null}
+    <div className="grid grid-cols-[168px,1fr] gap-3 py-2">
+      {/* Cột label bên trái: cả icon + tiêu đề đều là vùng bấm */}
+      <LeftTag
+        type={clickable ? "button" : undefined}
+        onClick={clickable ? onEdit : undefined}
+        disabled={clickable ? disabled : undefined}
+        className={
+          leftCls +
+          (clickable
+            ? " bg-transparent border-0 p-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/70 rounded-xl"
+            : "")
+        }
+      >
+        {/* Icon bút */}
+        <div className="w-5">
+          {editable && (
+            <div className={iconWrapperCls}>
+              <Edit3 className="w-3.5 h-3.5" />
+            </div>
+          )}
+        </div>
 
-      {/* Nhãn: to & đậm hơn */}
-      <div className="text-[16px] md:text-[17px] font-bold text-neutral-900 leading-snug">
-        {label}
-      </div>
+        {/* Text label */}
+        <div className="flex flex-col leading-tight">
+          <div className={labelCls}>
+            {typeof label === "string" ? <span>{label}</span> : label}
+            {inlineBadge}
+          </div>
+        </div>
+      </LeftTag>
 
-      {/* Giá trị: nhỏ hơn nhãn 1 nấc, vẫn đậm */}
-      <div className="text-[15px] md:text-[16px] font-semibold text-neutral-900 leading-snug">
-        {value || "—"}
+      {/* Cột value bên phải */}
+     <div
+        className="flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words"
+      >
+        {isEditing ? editor : value}
       </div>
     </div>
   );
 }
-/* =========================================================================
-   Constants & Demo Data
-   ========================================================================= */
 
 
 /* =========================================================================
@@ -1226,6 +1746,23 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
   useEffect(() => {
     if (readOnly && editNote) setEditNote(false);
   }, [readOnly, editNote]);
+ const noteCardRef = useRef(null);
+
+  useEffect(() => {
+    if (!editNote || readOnly) return;
+
+    function handleClickOutside(e) {
+      if (!noteCardRef.current) return;
+      // click ngoài card => tự lưu & đóng
+      if (!noteCardRef.current.contains(e.target)) {
+        onSaveNote(noteDraft);
+        setEditNote(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [editNote, readOnly, noteDraft, onSaveNote]);
 
   // ===== LỊCH SỬ CÔNG VIỆC ĐÃ HOÀN THÀNH (chỉ planned) =====
   const DONE_PAGE_SIZE = 5;
@@ -1323,58 +1860,74 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
   return (
     <>
       {/* Ghi chú */}
-      <Card>
-        <CardHeader className="flex items-center justify-between">
-          <CardTitle>Ghi chú</CardTitle>
-          {!editNote ? (
-            <Button
-              variant="outline"
-              onClick={() => setEditNote(true)}
-              disabled={readOnly}
-              title={readOnly ? "Cây đang Dừng hoạt động — chỉ xem" : undefined}
-            >
-              Sửa
-            </Button>
-          ) : null}
-        </CardHeader>
-        <CardContent>
-          {!editNote ? (
-            <div className="text-sm whitespace-pre-wrap min-h-20">
-              {note?.trim() ? note : (
-                <span className="text-neutral-500">Chưa có ghi chú.</span>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <Textarea
-                rows={6}
-                value={noteDraft}
-                onChange={(e) => setNoteDraft(e.target.value)}
-                placeholder="Nhập ghi chú cho cây này (lưu theo mã cây)"
-              />
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setNoteDraft(note || "");
-                    setEditNote(false);
-                  }}
-                >
-                  Hủy
-                </Button>
-                <Button
-                  onClick={() => {
-                    onSaveNote(noteDraft);
-                    setEditNote(false);
-                  }}
-                >
-                  Lưu
-                </Button>
+            {/* Ghi chú (click để sửa, auto-save khi click ra ngoài) */}
+      <div ref={noteCardRef}>
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>Ghi chú</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!editNote ? (
+              <button
+                type="button"
+                disabled={readOnly}
+                onClick={() => {
+                  if (readOnly) return;
+                  setEditNote(true);
+                  setNoteDraft(note || "");
+                }}
+                className={
+                  "w-full text-left text-sm whitespace-pre-wrap min-h-20 rounded-2xl border px-3 py-2 " +
+                  (readOnly
+                    ? "border-neutral-200 bg-neutral-50 text-neutral-700 cursor-default"
+                    : "border-neutral-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/40 cursor-text transition-colors")
+                }
+              >
+                {note?.trim() ? (
+                  note
+                ) : (
+                  <span className="text-neutral-500 italic">
+                    Bấm vào đây để thêm ghi chú cho cây này.
+                  </span>
+                )}
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <Textarea
+                  rows={6}
+                  value={noteDraft}
+                  onChange={(e) => setNoteDraft(e.target.value)}
+                  placeholder="Nhập ghi chú cho cây này (lưu theo mã cây)"
+                  autoFocus
+                />
+                <div className="flex justify-end gap-2">
+                  {/* HỦY: không lưu, đóng editor */}
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setNoteDraft(note || "");
+                      setEditNote(false);
+                    }}
+                  >
+                    Hủy
+                  </Button>
+                  {/* LƯU: xanh lá, lưu & đóng */}
+                  <Button
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                    onClick={() => {
+                      onSaveNote(noteDraft);
+                      setEditNote(false);
+                    }}
+                  >
+                    Lưu
+                  </Button>
+                </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
 
             {/* Chu kỳ sinh trưởng (timeline) — đặt ngay dưới Ghi chú */}
       <Card>
@@ -1604,7 +2157,7 @@ function HeaderPhotoBar({ codeKey, image, setImage, readOnly }) {
   }
 
   return (
-    <div className="mt-3">
+    <div className="mt-3 flex items-center justify-center">
       <div className="relative rounded-2xl overflow-hidden border bg-neutral-100 aspect-[16/5]">
         <button
           type="button"
@@ -1731,6 +2284,178 @@ function TopHeader({ codeKey, meta, phen, tree, image, setImage, readOnly, ageAf
         </Card>
       </div>
     </section>
+  );
+}
+
+function SearchableSelect({
+  value,
+  onChange,
+  options,
+  placeholder = "",
+  disabled = false,
+  error,
+  inputPlaceholder,
+}) {
+  const [open, setOpen] = React.useState(false);
+  const [text, setText] = React.useState("");
+  const [hasTyped, setHasTyped] = React.useState(false); // đã gõ trong lần mở này chưa
+  const [justPicked, setJustPicked] = React.useState(false); // blur ngay sau khi chọn
+  const wrapRef = React.useRef(null);
+  const inputRef = React.useRef(null);
+
+  const norm = (s) => vnNormalize(String(s || "")).toLowerCase().trim();
+
+  // Đồng bộ text khi value hoặc options đổi
+  React.useEffect(() => {
+    const current = options.find((o) => o.value === value) || null;
+    setText(current ? current.label : "");
+  }, [value, options]);
+
+  // Đóng dropdown khi click ra ngoài
+  React.useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target)) {
+        setOpen(false);
+        setHasTyped(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Lọc: nếu vừa mở (chưa gõ) → show full list
+  const filtered = React.useMemo(() => {
+    if (!open) return [];
+    if (!hasTyped || !text.trim()) return options;
+    const k = norm(text);
+    return options.filter((o) => norm(o.label).includes(k));
+  }, [options, open, hasTyped, text]);
+
+  function pickOption(opt) {
+    if (!opt) return;
+    onChange?.(opt.value);      // cập nhật value ra ngoài
+    setText(opt.label);         // hiển thị label
+    setOpen(false);
+    setHasTyped(false);
+    setJustPicked(true);        // đánh dấu là blur ngay sau khi chọn
+    if (inputRef.current) inputRef.current.blur(); // tắt viền xanh sau khi chọn
+  }
+
+  // Dùng khi nhấn Enter: "buoi" -> chọn gợi ý "Bưởi"
+  function commitFromText() {
+    const trimmed = text.trim();
+    if (!trimmed) {
+      // Nếu người dùng xoá hết rồi Enter: clear luôn value
+      if (value) onChange?.("");
+      setText("");
+      return;
+    }
+
+    const k = norm(trimmed);
+    const foundExact = options.find((o) => norm(o.label) === k);
+    const foundPartial =
+      foundExact || options.find((o) => norm(o.label).includes(k));
+
+    if (foundPartial) {
+      // buoi -> Bưởi: đẩy gợi ý chuẩn lên
+      if (foundPartial.value !== value) onChange?.(foundPartial.value);
+      setText(foundPartial.label);
+    } else {
+      // Không khớp gì: revert về option đang chọn
+      const current = options.find((o) => o.value === value) || null;
+      setText(current ? current.label : "");
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation(); // chặn lên header
+      commitFromText();
+      setOpen(false);
+      setHasTyped(false);
+      if (inputRef.current) inputRef.current.blur();
+    }
+  }
+
+  return (
+    <div className="relative" ref={wrapRef}>
+      <Input
+        ref={inputRef}
+        value={text}
+        disabled={disabled}
+        onChange={(e) => {
+          if (disabled) return;
+          setText(e.target.value);
+          setHasTyped(true);   // đang gõ => bắt đầu lọc
+          setOpen(true);
+        }}
+        onFocus={() => {
+          if (disabled) return;
+          setOpen(true);
+          setHasTyped(false);  // mở lại → mặc định show full list
+        }}
+        onBlur={() => {
+          setOpen(false);
+          setHasTyped(false);
+          if (disabled) return;
+
+          // Nếu blur ngay sau khi chọn từ dropdown → KHÔNG đụng vào text
+          if (justPicked) {
+            setJustPicked(false);
+            return;
+          }
+
+          // Blur bình thường: sync text về option đang chọn
+          const current = options.find((o) => o.value === value) || null;
+          setText(current ? current.label : "");
+        }}
+        onKeyDown={handleKeyDown}
+        placeholder={inputPlaceholder || placeholder}
+        autoComplete="off"
+        spellCheck={false}
+        className={
+          "h-11 w-full rounded-xl bg-white placeholder:text-neutral-400 " +
+          (disabled ? "opacity-60 cursor-not-allowed " : "") +
+          (error
+            ? "border border-red-500 focus-visible:ring-2 focus-visible:ring-rose-500/40 focus-visible:border-red-500"
+            : "border border-neutral-300 focus-visible:ring-2 focus-visible:ring-emerald-500/40 focus-visible:border-emerald-500")
+        }
+      />
+
+      {/* Dropdown gợi ý */}
+      {open && !disabled && (
+        <div className="absolute z-[1600] left-0 right-0 mt-1 max-h-64 overflow-auto rounded-xl border bg-white p-1 shadow-xl">
+          {filtered.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-neutral-500">
+              Không tìm thấy kết quả
+            </div>
+          ) : (
+            filtered.map((opt) => (
+              <button
+                type="button"
+                key={String(opt.value)}
+                className={
+                  "w-full text-left rounded-lg px-3 py-2 text-sm hover:bg-neutral-50 " +
+                  (opt.value === value
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "text-neutral-800")
+                }
+                onMouseDown={(e) => e.preventDefault()} // tránh blur trước khi pick
+                onClick={() => pickOption(opt)}
+              >
+                {opt.label}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+
+      {error && typeof error === "string" && (
+        <p className="mt-1 text-xs text-red-500">{error}</p>
+      )}
+    </div>
   );
 }
 
@@ -1896,6 +2621,11 @@ const initialCycleCount = Number.isFinite(lifecycleFromDB.cycleCount)
 const [currentPhaseId, setCurrentPhaseId] = useState(initialPhaseId);
 const [phase1Completed, setPhase1Completed] = useState(initialP1Completed);
 const [cycleCount, setCycleCount] = useState(initialCycleCount);
+const [editingHealthKey, setEditingHealthKey] = useState(null);    // 'leaf' | 'branch' | 'flower' | 'fruit'
+const [editingHealthDraft, setEditingHealthDraft] = useState("");  // nội dung đang sửa
+
+
+
 // [ANCHOR: PHASE-GATING]
 const canEditFlower = useMemo(
   () => ["flowering", "fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
@@ -1948,6 +2678,185 @@ const tenCayHero = [loai, giong].filter(Boolean).join(" ");
   // status flags + ref cho toast hàng ngày
   const isActive = meta.status === "active";
   const isStopped = meta.status === "stopped";
+    // ==== Inline edit từng trường trong "Thông tin cây" ====
+  const [editingField, setEditingField] = useState(null);   // "code" | "variety" | "plantedAt" | "preNurseryAgeMonths" | "soil" | null
+  const [fieldDraft, setFieldDraft] = useState("");
+  const [fieldError, setFieldError] = useState("");
+
+  // options giống theo loại cây đang có
+  const allVarieties = useMemo(
+    () => Object.values(DROPDOWN_OPTIONS.varietiesByType).flat(),
+    []
+  );
+
+  const varietyOptions = useMemo(() => {
+    const typeKey = (loai || "").trim();
+    const byType = DROPDOWN_OPTIONS.varietiesByType[typeKey];
+    return byType && byType.length ? byType : allVarieties;
+  }, [loai, allVarieties]);
+
+  function startFieldEdit(fieldKey, initialValue) {
+  if (isStopped) return; // nếu cây đã dừng hoạt động thì không cho sửa
+
+  setFieldError("");
+
+  // Nếu đang edit chính field đó → click lại lần nữa thì đóng
+  if (editingField === fieldKey) {
+    setEditingField(null);
+    setFieldDraft("");
+    return;
+  }
+
+  // Bình thường: bật edit field mới
+  setEditingField(fieldKey);
+  setFieldDraft(initialValue ?? "");
+}
+
+
+  function cancelFieldEdit() {
+    setEditingField(null);
+    setFieldDraft("");
+    setFieldError("");
+  }
+
+  function saveField() {
+    if (!editingField || isStopped) return;
+
+    // === 1. Đổi MÃ CÂY (codeKey) ===
+    if (editingField === "code") {
+      const nextCode = (fieldDraft || "").trim();
+      if (!nextCode) {
+        setFieldError("Mã cây không được để trống.");
+        return;
+      }
+      if (nextCode === codeKey) {
+        cancelFieldEdit();
+        return;
+      }
+
+      // migrate ảnh + ghi chú localStorage
+      const oldImg = imageRegistry.get(codeKey);
+      const oldNote = noteRegistry.get(codeKey);
+      if (oldImg) imageRegistry.set(nextCode, oldImg);
+      if (oldNote) noteRegistry.set(nextCode, oldNote);
+      imageRegistry.clear(codeKey);
+      noteRegistry.set(codeKey, "");
+
+      setCodeKey(nextCode);
+
+      // cập nhật URL ?treeId=...
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("treeId", nextCode);
+        window.history.replaceState({}, "", url.toString());
+      } catch {}
+
+      const nextMeta = {
+        ...meta,
+        preNurseryAgeMonths: Math.max(
+          0,
+          parseInt(meta.preNurseryAgeMonths || 0, 10) || 0
+        ),
+      };
+      setMeta(nextMeta);
+
+      
+      
+      // đồng bộ sang demoTrees để TreeManagement thấy đúng
+      syncTreePatch(codeKey, {
+      id: codeKey,
+      name: nextMeta.name,
+      variety: nextMeta.variety,
+      plantedAt: nextMeta.plantedAt,
+      preNurseryAgeMonths: nextMeta.preNurseryAgeMonths,
+      soil: nextMeta.soil,
+      status: nextMeta.status,
+    });
+
+    cancelFieldEdit();
+    return;
+  }
+
+  // === 2. Ngày trồng ===
+  if (editingField === "plantedAt") {
+    const next = fieldDraft || "";
+    if (!next) {
+      setFieldError("Vui lòng chọn ngày trồng hợp lệ.");
+      return;
+    }
+    const nextMeta = { ...meta, plantedAt: next };
+    setMeta(nextMeta);
+    syncTreePatch(codeKey, {
+      id: codeKey,
+      name: nextMeta.name,
+      variety: nextMeta.variety,
+      plantedAt: nextMeta.plantedAt,
+      preNurseryAgeMonths: nextMeta.preNurseryAgeMonths,
+      soil: nextMeta.soil,
+      status: nextMeta.status,
+    });
+    cancelFieldEdit();
+    return;
+  }
+    // === 3. Tuổi trước khi trồng ===
+    if (editingField === "preNurseryAgeMonths") {
+      let n = parseInt(fieldDraft || "0", 10);
+      if (!Number.isFinite(n) || n < 0) {
+        setFieldError("Vui lòng nhập số tháng hợp lệ (>= 0).");
+        return;
+      }
+      const nextMeta = { ...meta, preNurseryAgeMonths: n };
+      setMeta(nextMeta);
+      syncTreePatch(codeKey, {
+        id: codeKey,
+        name: nextMeta.name,
+        variety: nextMeta.variety,
+        plantedAt: nextMeta.plantedAt,
+        preNurseryAgeMonths: nextMeta.preNurseryAgeMonths,
+        soil: nextMeta.soil,
+        status: nextMeta.status,
+      });
+      cancelFieldEdit();
+      return;
+    }
+
+    // === 4. Giống ===
+      
+  if (editingField === "variety") {
+    const nextMeta = { ...meta, variety: fieldDraft };
+    setMeta(nextMeta);
+    syncTreePatch(codeKey, {
+      id: codeKey,
+      name: nextMeta.name,
+      variety: nextMeta.variety,
+      plantedAt: nextMeta.plantedAt,
+      preNurseryAgeMonths: nextMeta.preNurseryAgeMonths,
+      soil: nextMeta.soil,
+      status: nextMeta.status,
+    });
+    cancelFieldEdit();
+    return;
+  }
+
+
+    // === 5. Loại đất ===
+    if (editingField === "soil") {
+      const nextMeta = { ...meta, soil: fieldDraft };
+      setMeta(nextMeta);
+      syncTreePatch(codeKey, {
+        id: codeKey,
+        name: nextMeta.name,
+        variety: nextMeta.variety,
+        plantedAt: nextMeta.plantedAt,
+        preNurseryAgeMonths: nextMeta.preNurseryAgeMonths,
+        soil: nextMeta.soil,
+        status: nextMeta.status,
+      });
+      cancelFieldEdit();
+      return;
+    }
+  }
+
   const statusRef = useRef(meta.status);
   useEffect(() => {
     statusRef.current = meta.status;
@@ -2091,15 +3000,161 @@ useEffect(() => {
   });
 
   // [ANCHOR: PHEN-STATE] 4 trường chi tiết theo yêu cầu
+// [ANCHOR: PHEN-STATE] 4 trường chi tiết theo yêu cầu
+// [ANCHOR: PHEN-STATE] 4 trường chi tiết theo yêu cầu
 const [phen, setPhen] = useState({
-  leaf:   baseTree.phenology?.leafStatus   || baseTree.phenology?.leafRootNote || "", // map tạm từ dữ liệu cũ
+  leaf:   baseTree.phenology?.leafStatus   || baseTree.phenology?.leafRootNote || "",
   branch: baseTree.phenology?.branchStatus || "",
   flower: baseTree.phenology?.flowerStatus || "",
   fruit:  baseTree.phenology?.fruitStatus  || "",
 });
-const [editingPhen, setEditingPhen] = useState(false);
-const [phenDraft, setPhenDraft] = useState(phen);
-useEffect(() => setPhenDraft(phen), [phen]);
+
+// Field đang sửa trong "Tình trạng hiện tại": "leaf" | "branch" | "flower" | "fruit" | null
+const [editingPhenField, setEditingPhenField] = useState(null);
+const [phenFieldDraft, setPhenFieldDraft] = useState("");
+const statusDefs = [
+  { key: "leaf", label: "Lá" },
+  { key: "branch", label: "Cành" },
+  { key: "flower", label: "Hoa" },
+  { key: "fruit", label: "Quả" },
+];
+
+// helper cắt 60 ký tự và thêm "…" nếu dài hơn (chỉ hiển thị, muốn xem đầy đủ phải edit)
+function formatStatus(text, max = 60) {
+  if (!text || !text.trim()) return "";
+  const trimmed = text.trim();
+  if (trimmed.length <= max) return trimmed;
+  // Chỉ hiển thị 60 ký tự đầu + "…"
+  return trimmed.slice(0, max) + "…";
+}
+
+function handleEditStatus(fieldKey) {
+  // currentStatus tùy bạn đặt tên, sửa cho đúng với model của bạn
+  const current = tree.currentStatus?.[fieldKey] || "";
+  setEditingStatusField(fieldKey);
+  setEditingStatusValue(current);
+}
+
+function handleCancelEditStatus() {
+  setEditingStatusField(null);
+  setEditingStatusValue("");
+}
+
+function handleSaveStatus() {
+  if (!editingStatusField) return;
+
+  const patchedStatus = {
+    ...(tree.currentStatus || {}),
+    [editingStatusField]: editingStatusValue.trim(),
+  };
+
+  // chỗ này giữ nguyên với cách bạn đang patch tree
+  syncTreePatch(tree.codeKey, {
+    currentStatus: patchedStatus,
+  });
+
+  setEditingStatusField(null);
+  setEditingStatusValue("");
+}
+// Khi phen đổi (load cây khác) thì reset editor
+useEffect(() => {
+  setEditingPhenField(null);
+  setPhenFieldDraft("");
+}, [phen]);
+
+  // Ref cho card "Tình trạng hiện tại" để xử lý click outside
+  const statusCardRef = useRef(null);
+  const statusTextareaRef = useRef(null);
+
+  // Xử lý click outside để lưu khi đang edit
+  useEffect(() => {
+    if (!editingPhenField) return;
+
+    function handleClickOutside(e) {
+      // Nếu click vào textarea thì không làm gì
+      if (statusTextareaRef.current && statusTextareaRef.current.contains(e.target)) {
+        return;
+      }
+      // Nếu click vào nút Lưu/Hủy thì không làm gì (nút đó sẽ tự xử lý)
+      if (e.target.closest('button')) {
+        return;
+      }
+      // Click bất kỳ đâu khác (trong hoặc ngoài card, trừ textarea và nút) thì lưu
+      savePhenField();
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [editingPhenField, phenFieldDraft]);
+
+  // ==== Inline edit từng trường trong "Tình trạng hiện tại" ====
+  function startPhenFieldEdit(fieldKey, initialValue) {
+    if (isStopped) return;
+
+    // Không cho sửa Hoa/Quả nếu chưa tới giai đoạn
+    if (fieldKey === "flower" && !canEditFlower) return;
+    if (fieldKey === "fruit" && !canEditFruit) return;
+
+    // Bấm lại vào icon bút/tiêu đề -> đóng editor
+    if (editingPhenField === fieldKey) {
+      setEditingPhenField(null);
+      setPhenFieldDraft("");
+      return;
+    }
+
+    setEditingPhenField(fieldKey);
+    setPhenFieldDraft(initialValue ?? "");
+  }
+
+  function cancelPhenFieldEdit() {
+    setEditingPhenField(null);
+    setPhenFieldDraft("");
+  }
+
+  function savePhenField() {
+    if (!editingPhenField || isStopped) return;
+
+    const nextPhen = {
+      ...phen,
+      [editingPhenField]: phenFieldDraft,
+    };
+
+    setPhen(nextPhen);
+    setEditingPhenField(null);
+    setPhenFieldDraft("");
+
+    // Gom phenology mới
+    const nextPhenology = {
+      ...(baseTree.phenology || {}),
+      leafStatus:   nextPhen.leaf,
+      branchStatus: nextPhen.branch,
+      flowerStatus: nextPhen.flower,
+      fruitStatus:  nextPhen.fruit,
+      stage:        currentPhaseId,
+      currentPhase: currentPhaseId,
+    };
+
+    // Gom state legacy để các màn cũ vẫn đọc được
+    const nextState = {
+      ...(baseTree.state || {}),
+      leaf:   nextPhen.leaf,
+      branch: nextPhen.branch,
+      flower: nextPhen.flower,
+      fruit:  nextPhen.fruit,
+    };
+
+    // ✅ Sync toàn bộ sang demoTrees
+    syncTreePatch(codeKey, {
+      phenology: nextPhenology,
+      state:     nextState,
+      stateNote:   nextPhen.leaf,
+      leafState:   nextPhen.leaf,
+      branchState: nextPhen.branch,
+      flowerState: nextPhen.flower,
+      fruitState:  nextPhen.fruit,
+    });
+  }
+
 
 // Quy tắc “không nhập = Bình thường” sẽ áp dụng khi hiển thị (UI), không ép vào dữ liệu.
 
@@ -2545,6 +3600,95 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
     );
   }
 
+// Lấy text hiện tại của 1 field từ treeData
+function getHealthText(tree, key) {
+  if (!tree) return "";
+
+  // TODO: map đúng với cấu trúc dữ liệu của bạn
+  // Ví dụ: nếu tree.currentStatus = { leaf: '...', branch: '...' } thì:
+  if (tree.currentStatus && key in tree.currentStatus) {
+    return tree.currentStatus[key] || "";
+  }
+
+  // Hoặc nếu bạn đang lưu kiểu khác, ví dụ:
+  // if (key === "leaf") return tree.leafStatus || "";
+  // if (key === "branch") return tree.branchStatus || "";
+  // ...
+
+  return "";
+}
+
+// Mở popup edit cho 1 loại (lá / cành / hoa / quả)
+function openHealthEditor(key) {
+  const currentText = getHealthText(treeData, key);   // treeData là state cây đang xem trong TreeDetail
+  setEditingHealthKey(key);
+  setEditingHealthDraft(currentText || "");
+}
+
+// Lưu text từ popup vào state + syncTreePatch
+function saveHealthEditor() {
+  if (!editingHealthKey) return;
+
+  const key = editingHealthKey;
+  const newText = editingHealthDraft.trim();
+
+  setTreeData((prev) => {
+    if (!prev) return prev;
+
+    // ----- CHỖ NÀY map lại đúng cấu trúc tree của bạn -----
+    // Ví dụ: dùng object currentStatus chứa 4 field:
+    const nextCurrentStatus = {
+      ...(prev.currentStatus || {}),
+      [key]: newText,
+    };
+
+    const nextTree = {
+      ...prev,
+      currentStatus: nextCurrentStatus,
+    };
+
+    // Nếu tree bạn đang có field khác (leafStatus, branchStatus, ...) thì chỉnh lại:
+    // let nextTree = { ...prev };
+    // if (key === "leaf")   nextTree.leafStatus   = newText;
+    // if (key === "branch") nextTree.branchStatus = newText;
+    // if (key === "flower") nextTree.flowerStatus = newText;
+    // if (key === "fruit")  nextTree.fruitStatus  = newText;
+
+    // Sync ra demoTrees để màn khác đọc được
+    if (prev.codeKey) {
+      syncTreePatch(prev.codeKey, {
+        currentStatus: nextCurrentStatus,
+        // hoặc patch từng field nếu bạn không dùng currentStatus
+        // leafStatus: nextTree.leafStatus,
+        // branchStatus: nextTree.branchStatus,
+        // ...
+      });
+    }
+
+    return nextTree;
+  });
+
+  setEditingHealthKey(null);
+  setEditingHealthDraft("");
+}
+
+// Khi bấm phím trong textarea
+function handleHealthEditorKeyDown(e) {
+  // Ctrl+Enter hoặc Cmd+Enter để lưu nhanh
+  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    saveHealthEditor();
+  }
+
+  // ESC để thoát không lưu
+  if (e.key === "Escape") {
+    e.preventDefault();
+    setEditingHealthKey(null);
+    setEditingHealthDraft("");
+  }
+}
+
+
   return (
     <div className="min-h-screen bg-transparent isolate overflow-x-hidden">
       
@@ -2578,386 +3722,394 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
           <div className="col-span-12 xl:col-span-9 space-y-6">
             {/* Thông tin chung */}
             {/* Thông tin cây (gộp ảnh vào cùng card) */}
+{/* Thông tin cây (gộp ảnh vào cùng card, inline edit từng trường) */}
 <Card>
   <CardHeader className="flex items-center justify-between">
-  <CardTitle className="text-2xl md:text-3xl">Thông tin cây</CardTitle>
-  <div className="flex items-center gap-2">
-    {(() => {
-      const th = STATUS_THEME[meta.status] || STATUS_THEME.active;
-      return <Badge className={"border " + th.pill}>{labelStatus(meta.status)}</Badge>;
-    })()}
-    {!editingMeta ? (
-      <Button
-        variant="outline"
-        onClick={() => {
-          // mở edit: copy dữ liệu thật sang draft
-          setMetaDraft(meta);
-          setCodeDraft(codeKey);
-          setEditingMeta(true);
-        }}
+    {/* BÊN TRÁI: Tiêu đề + pill trạng thái */}
+    <div className="flex items-center gap-3">
+      <CardTitle className="text-2xl md:text-3xl">Thông tin cây</CardTitle>
+
+      <Badge
+        className={
+          "rounded-full px-3 py-1 text-xs font-semibold " +
+          (meta.status === "active"
+            ? "border border-emerald-300 bg-emerald-50 text-emerald-700"
+            : "border border-rose-300 bg-rose-50 text-rose-700")
+        }
       >
-        Cập nhật
-      </Button>
-    ) : (
-      <Button
-        variant="outline"
-        onClick={() => {
-          // HỦY: khôi phục draft về dữ liệu thật + đóng edit
-          setMetaDraft(meta);
-          setCodeDraft(codeKey);
-          setEditingMeta(false);
-        }}
-      >
-        Hủy
-      </Button>
-    )}
-  </div>
-</CardHeader>
-
-  {/* Bố cục 3 cột: trái 2 cột cho fields; phải 1 cột cho ảnh */}
-  {!editingMeta ? (
-    <CardContent>
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* LEFT: thông tin */}
-        <div className="md:col-span-2 grid md:grid-cols-2 gap-x-6 gap-y-2">
-          <Field label="Cây" value={meta.name || baseTree.name} />
-          <Field label="Mã cây" value={`#${codeKey}`} />
-          
-          <Field label="Giống" value={meta.variety} />
-          <Field label="Ngày trồng" value={formatVN(meta.plantedAt)} />
-          <Field label="Tuổi trước khi trồng" value={`${meta.preNurseryAgeMonths} tháng`} />
-          <Field label="Loại đất" value={meta.soil || baseTree.soil || "—"} />
-          
-          
-          <Field label="Tổng tuổi" value={`${totalAge} tháng`} />
-        
-          {/* Hai trường kéo từ Sinh trưởng */}
-          <div className="md:col-span-2 grid md:grid-cols-2 gap-4">
-           
-
-          </div>
-        </div>
-
-        {/* RIGHT: Ảnh & Preview (nằm cùng card) */}
-        <div className="md:col-span-1">
-          <div className="rounded-2xl border bg-white p-3">
-            <div className="text-base font-semibold mb-2">Ảnh cây</div>
-            <ImagePicker
-              code={codeKey}
-              value={image}
-              onChange={setImage}
-              disabled={isStopped}
-            />
-          </div>
-        </div>
-      </div>
-    </CardContent>
-  ) : (
-    <CardContent>
-      <div className="grid md:grid-cols-3 gap-6">
-        {/* LEFT: form edit */}
-        <div className="md:col-span-2 grid md:grid-cols-2 gap-4 text-base">
-          <div className="grid gap-1">
-  <label className="text-[13px] text-neutral-600">Mã cây</label>
-  <Input
-    value={codeDraft}
-    onChange={(e) => setCodeDraft(e.target.value.trim())}
-    disabled={isStopped} // vẫn cho sửa nếu muốn, hoặc bạn bỏ disabled
-  />
-</div>
-          <div className="grid gap-1">
-  <label className="text-[13px] text-neutral-600">Loại cây</label>
-  <ComboBox
-  value={metaDraft.name}
-
- onChange={(v) => setMetaDraft((s) => ({ ...s, name: v, variety: "" }))} // đổi loại thì xoá giống
-  options={DROPDOWN_OPTIONS.treeTypes}
-  placeholder="Chọn loại cây"
-  disabled={isStopped}
- allowCreate={false}
-/>
-
-{metaErrors?.name && <div className="text-xs text-rose-600 mt-1">{metaErrors.name}</div>}
-</div>
-
-
-
-          <div className="grid gap-1">
-            <label className="text-[13px] text-neutral-600">Ngày trồng</label>
-            <Input type="date" value={metaDraft.plantedAt} max="9999-12-31"
-              onChange={(e) => setMetaDraft((s) => ({ ...s, plantedAt: e.target.value }))} disabled={isStopped} />
-          </div>
-
-          {(() => {
-  const typeKey = (metaDraft.name || "").trim();
-  const allVar = Object.values(DROPDOWN_OPTIONS.varietiesByType).flat();
-  const varietyOptions =
-    DROPDOWN_OPTIONS.varietiesByType[typeKey] && DROPDOWN_OPTIONS.varietiesByType[typeKey].length
-      ? DROPDOWN_OPTIONS.varietiesByType[typeKey]
-      : allVar;
-
-  return (
-    <div className="grid gap-1">
-      <label className="text-[13px] text-neutral-600">Giống</label>
-      <ComboBox
-  value={metaDraft.variety}
-  onChange={(v) => { setMetaDraft((s) => ({ ...s, variety: v })); setMetaErrors((e)=>({...e, variety: undefined})); }}
-  options={varietyOptions} // như bạn đang tính ở chỗ này
-  placeholder="Chọn giống cây"
-  disabled={isStopped}
-  allowCreate={false}
-/>
-{metaErrors?.variety && <div className="text-xs text-rose-600 mt-1">{metaErrors.variety}</div>}
+        {meta.status === "active"
+          ? "Cây đang được chăm sóc"
+          : "Cây đã dừng chăm sóc"}
+      </Badge>
     </div>
-    
-    
-  );
-})()}
 
-
-          <div className="grid gap-1">
-            <label className="text-[13px] text-neutral-600">Tuổi trước khi trồng (tháng)</label>
-            <Input type="number" min={0} step={1} value={metaDraft.preNurseryAgeMonths}
-              onChange={(e) => {
-                const v = parseInt(e.target.value || "0", 10);
-                setMetaDraft((s) => ({ ...s, preNurseryAgeMonths: isNaN(v) ? 0 : Math.max(0, v) }));
-              }}
-              disabled={isStopped}
-            />
-            {metaErrors?.soil && <div className="text-xs text-rose-600 mt-1">{metaErrors.soil}</div>}
-
-          </div>
-              
-
-          <div className="grid gap-1">
-  <label className="text-[13px] text-neutral-600">Loại đất</label>
-  <ComboBox
-  value={metaDraft.soil}
-  onChange={(v) => { setMetaDraft((s) => ({ ...s, soil: v })); setMetaErrors((e)=>({...e, soil: undefined})); }}
-  options={DROPDOWN_OPTIONS.soils}
-  placeholder="Chọn loại đất bạn dùng"
-  disabled={isStopped}
-  allowCreate={false}
-/>
-</div>
-
-
-
-          <div className="grid gap-1">
-            <label className="text-[13px] text-neutral-600">Trạng thái</label>
-            <Select
-              value={meta.status}
-              onChange={(e) => {
-                const next = e.target.value;
-                if (next === meta.status) return;
-                setStatusModal({ open: true, next });
-              }}
-              className="appearance-none pr-8"
-            >
-              <option value="active">Đang chăm sóc</option>
-              <option value="stopped">Dừng hoạt động</option>
-            </Select>
-            
-          </div>
-
-          
-
-          <div className="md:col-span-2 flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setEditingMeta(false)}>Hủy</Button>
-           <Button
-  onClick={() => {
-    // Chuẩn hóa draft
-    const fixed = {
-      ...metaDraft,
-      preNurseryAgeMonths: Math.max(
-        0,
-        parseInt(metaDraft.preNurseryAgeMonths || 0, 10) || 0
-      ),
-    };
-
-    // ✅ Validate: buộc phải chọn từ hệ thống
-    const typeList = DROPDOWN_OPTIONS.treeTypes;
-    const varList =
-      DROPDOWN_OPTIONS.varietiesByType[fixed.name?.trim()] || [];
-    const soilList = DROPDOWN_OPTIONS.soils;
-
-    const errors = {};
-    if (!inList(fixed.name, typeList))
-      errors.name = "Chỉ được chọn loại có trong hệ thống.";
-    if (!inList(fixed.variety, varList))
-      errors.variety = "Chỉ được chọn giống hợp lệ theo loại.";
-    if (!inList(fixed.soil, soilList))
-      errors.soil = "Chỉ được chọn loại đất có trong hệ thống.";
-    setMetaErrors(errors);
-    if (Object.keys(errors).length) return; // ❌ dừng lưu nếu có lỗi
-
-    // Nếu đổi mã cây => migrate LocalStorage ảnh/ghi chú
-    let targetKey = codeKey;         // <— dùng key này để sync demoTrees
-    if (codeDraft && codeDraft !== codeKey) {
-      const oldImg = imageRegistry.get(codeKey);
-      const oldNote = noteRegistry.get(codeKey);
-      if (oldImg) imageRegistry.set(codeDraft, oldImg);
-      if (oldNote) noteRegistry.set(codeDraft, oldNote);
-      imageRegistry.clear(codeKey);
-      noteRegistry.set(codeKey, "");
-
-      setCodeKey(codeDraft);
-      targetKey = codeDraft;        // <— key mới
-
-      // (tuỳ chọn) cập nhật URL query ?treeId=...
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set("treeId", codeDraft);
-        window.history.replaceState({}, "", url.toString());
-      } catch {}
-    }
-
-    // Ghi meta thật
-    setMeta(fixed);
-
-    // ✅ Đồng bộ meta sang demoTrees (TreeManagement sẽ đọc được)
-    syncTreePatch(targetKey, {
-      id: targetKey,
-      name: fixed.name,
-      variety: fixed.variety,
-      plantedAt: fixed.plantedAt,
-      preNurseryAgeMonths: fixed.preNurseryAgeMonths,
-      soil: fixed.soil,
-      status: fixed.status,
-    });
-
-    // đóng edit
-    setEditingMeta(false);
-  }}
->
-  Lưu
-</Button>
-
-
-          </div>
-        </div>
-
-        {/* RIGHT: Ảnh ngay trong card */}
-        <div className="md:col-span-1">
-          <div className="rounded-2xl border bg-white p-3">
-            <div className="text-base font-semibold mb-2">Ảnh cây</div>
-            <ImagePicker
-              code={codeKey}
-              value={image}
-              onChange={setImage}
-              disabled={isStopped}
-            />
-          </div>
-        </div>
-      </div>
-    </CardContent>
-  )}
-</Card>
-
-<Card>
-  <CardHeader className="flex items-center justify-between">
-    <CardTitle>Tình trạng hiện tại</CardTitle>
-    <div className="flex items-center gap-2">
-      {!editingPhen ? (
-        <Button variant="outline" onClick={() => setEditingPhen(true)} disabled={isStopped}>
-          Cập nhật
-        </Button>
-      ) : (
-        <>
-          <Button variant="outline" onClick={() => { setPhenDraft(phen); setEditingPhen(false); }}>
-            Hủy
-          </Button>
-          <Button
-  onClick={() => {
-    setPhen(phenDraft);
-    setEditingPhen(false);
-
-    // Gom phenology mới
-    const nextPhen = {
-      ...(baseTree.phenology || {}),
-      leafStatus:   phenDraft.leaf,
-      branchStatus: phenDraft.branch,
-      flowerStatus: phenDraft.flower,
-      fruitStatus:  phenDraft.fruit,
-      stage:        currentPhaseId,
-      currentPhase: currentPhaseId,
-    };
-
-    // Gom state mới (để các màn legacy đọc state.* vẫn đúng)
-    const nextState = {
-      ...(baseTree.state || {}),
-      leaf:   phenDraft.leaf,
-      branch: phenDraft.branch,
-      flower: phenDraft.flower,
-      fruit:  phenDraft.fruit,
-    };
-
-    // ✅ Sync đồng thời phenology + state + *State + stateNote
-    syncTreePatch(codeKey, {
-      phenology: nextPhen,
-      state:     nextState,
-
-      // fallback cho chỗ nào đang dùng stateNote / leafState / ...
-      stateNote:    phenDraft.leaf,
-      leafState:    phenDraft.leaf,
-      branchState:  phenDraft.branch,
-      flowerState:  phenDraft.flower,
-      fruitState:   phenDraft.fruit,
-    });
-  }}
->
-  Lưu
-</Button>
-
-
-        </>
-      )}
-    </div>
+    {/* BÊN PHẢI: chỉ còn nút bật/tắt hoạt động cây */}
+    <Button
+      type="button"
+      onClick={() => {
+        const next = meta.status === "active" ? "stopped" : "active";
+        setStatusModal({ open: true, next });
+      }}
+      className={
+        "inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold shadow-sm " +
+        "rounded-xl transition-all " +
+        (meta.status === "active"
+          ? "bg-rose-600 text-white hover:bg-rose-700"
+          : "bg-emerald-600 text-white hover:bg-emerald-700")
+      }
+    >
+      <Activity className="w-4 h-4" />
+      <span>
+        {meta.status === "active" ? "Dừng hoạt động cây" : "Khởi động cây"}
+      </span>
+    </Button>
   </CardHeader>
 
   <CardContent>
-    {!editingPhen ? (
-      <div className="grid md:grid-cols-2 gap-4">
-  <Field label="Lá"   value={safePhenText(phen.leaf)} />
-  <Field label="Cành" value={safePhenText(phen.branch)} />
-  <Field
-    label="Hoa"
-    value={canEditFlower ? safePhenText(phen.flower) : "Chưa đến giai đoạn"}
-  />
-  <Field
-    label="Quả"
-    value={canEditFruit ? safePhenText(phen.fruit) : "Chưa đến giai đoạn"}
-  />
-</div>
+    <div className="grid md:grid-cols-3 gap-6">
+      {/* LEFT: thông tin fields */}
+      <div className="md:col-span-2 grid md:grid-cols-2 gap-x-6 gap-y-3">
+        {/* 1. Cây (LOẠI CÂY) — KHÔNG cho sửa */}
+        <Field
+          label="Cây"
+          value={meta.name || baseTree.name}
+          editable={false}
+        />
 
-    ) : (
-      <div className="grid md:grid-cols-2 gap-4">
-        <div className="grid gap-1">
-          <label className="text-[13px] text-neutral-600">Mô tả tình trạng lá</label>
-          <Textarea rows={3} value={phenDraft.leaf}
-            onChange={(e)=>setPhenDraft(s=>({...s, leaf:e.target.value}))} disabled={isStopped}/>
-        </div>
-        <div className="grid gap-1">
-          <label className="text-[13px] text-neutral-600">Mô tả tình trạng cành</label>
-          <Textarea rows={3} value={phenDraft.branch}
-            onChange={(e)=>setPhenDraft(s=>({...s, branch:e.target.value}))} disabled={isStopped}/>
-        </div>
-        <div className="grid gap-1">
-          <label className="text-[13px] text-neutral-600">Mô tả tình trạng hoa</label>
-          <Textarea rows={3} value={phenDraft.flower}
-            onChange={(e)=>setPhenDraft(s=>({...s, flower:e.target.value}))}
-            disabled={isStopped || !canEditFlower}/>
-        </div>
-        <div className="grid gap-1">
-          <label className="text-[13px] text-neutral-600">Mô tả tình trạng quả</label>
-          <Textarea rows={3} value={phenDraft.fruit}
-            onChange={(e)=>setPhenDraft(s=>({...s, fruit:e.target.value}))}
-            disabled={isStopped || !canEditFruit}/>
+        {/* 2. MÃ CÂY — cho sửa bằng bút */}
+        <Field
+          label="Mã cây"
+          value={`#${codeKey}`}
+          editable
+          disabled={isStopped}
+          isEditing={editingField === "code"}
+          onEdit={() => startFieldEdit("code", codeKey)}
+          editor={
+            <div className="space-y-2">
+              <Input
+                value={fieldDraft}
+                onChange={(e) => setFieldDraft(e.target.value)}
+                disabled={isStopped}
+              />
+              {fieldError && (
+                <div className="text-xs text-rose-600">{fieldError}</div>
+              )}
+              <div className="flex gap-2 mt-1">
+                <Button
+                  variant="outline"
+                  onClick={cancelFieldEdit}
+                  className="h-8 px-3 text-xs"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={saveField}
+                  className="h-8 px-3 text-xs"
+                  disabled={isStopped}
+                >
+                  Lưu
+                </Button>
+              </div>
+            </div>
+          }
+        />
+
+        {/* 3. GIỐNG — cho sửa, ComboBox theo loại cây */}
+                {/* 3. GIỐNG — cho sửa, ComboBox theo loại cây */}
+        <Field
+  label="Giống"
+  value={meta.variety || baseTree.variety || "—"}
+  editable={false}
+/>
+
+
+
+        {/* 4. NGÀY TRỒNG — edit bằng input date */}
+        <Field
+          label="Ngày trồng"
+          value={formatVN(meta.plantedAt)}
+          editable
+          disabled={isStopped}
+          isEditing={editingField === "plantedAt"}
+          onEdit={() =>
+             startFieldEdit("plantedAt", meta.plantedAt || "")
+          }
+          editor={
+            <div className="space-y-2">
+               <DateInput
+      value={fieldDraft}
+      onChange={(val) => {
+        setFieldDraft(val);     // val là chuỗi ISO: "YYYY-MM-DD" hoặc ""
+        setFieldError("");
+      }}
+      error={fieldError}
+    />
+    {fieldError && (
+      <div className="text-xs text-rose-600">{fieldError}</div>
+    )}
+    <div className="flex gap-2 mt-1">
+      <Button
+        variant="outline"
+        onClick={cancelFieldEdit}
+        className="h-8 px-3 text-xs"
+      >
+        Hủy
+      </Button>
+      <Button
+        onClick={saveField}
+        className="h-8 px-3 text-xs"
+        disabled={isStopped}
+      >
+        Lưu
+      </Button>
+    </div>
+  </div>
+}
+        />
+
+        {/* 5. TUỔI TRƯỚC KHI TRỒNG */}
+        <Field
+  label={
+    <span className="flex flex-col leading-tight">
+      <span>Tuổi</span>
+      <span className="text-[13px] font-normal text-neutral-500">
+        (Trước khi trồng)
+      </span>
+    </span>
+  }
+  value={`${meta.preNurseryAgeMonths} tháng`}
+  editable
+  disabled={isStopped}
+  isEditing={editingField === "preNurseryAgeMonths"}
+  onEdit={() =>
+    startFieldEdit(
+      "preNurseryAgeMonths",
+      String(meta.preNurseryAgeMonths ?? 0)
+    )
+  }
+          editor={
+            <div className="space-y-2">
+              <Input
+                type="number"
+                min={0}
+                step={1}
+                value={fieldDraft}
+                onChange={(e) => {
+                  setFieldDraft(e.target.value);
+                  setFieldError("");
+                }}
+                disabled={isStopped}
+              />
+              {fieldError && (
+                <div className="text-xs text-rose-600">{fieldError}</div>
+              )}
+              <div className="flex gap-2 mt-1">
+                <Button
+                  variant="outline"
+                  onClick={cancelFieldEdit}
+                  className="h-8 px-3 text-xs"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={saveField}
+                  className="h-8 px-3 text-xs"
+                  disabled={isStopped}
+                >
+                  Lưu
+                </Button>
+              </div>
+            </div>
+          }
+        />
+
+        {/* 6. LOẠI ĐẤT */}
+        <Field
+          label="Loại đất"
+          value={meta.soil || baseTree.soil || "—"}
+          editable
+          disabled={isStopped}
+          isEditing={editingField === "soil"}
+          onEdit={() => startFieldEdit("soil", meta.soil || "")}
+          editor={
+            <div className="space-y-2">
+              <ComboBox
+                value={fieldDraft}
+                onChange={(v) => {
+                  setFieldDraft(v);
+                  setFieldError("");
+                }}
+                options={DROPDOWN_OPTIONS.soils}
+                placeholder="Chọn loại đất bạn dùng"
+                disabled={isStopped}
+                allowCreate={false}
+              />
+              {fieldError && (
+                <div className="text-xs text-rose-600">{fieldError}</div>
+              )}
+              <div className="flex gap-2 mt-1">
+                <Button
+                  variant="outline"
+                  onClick={cancelFieldEdit}
+                  className="h-8 px-3 text-xs"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={saveField}
+                  className="h-8 px-3 text-xs"
+                  disabled={isStopped}
+                >
+                  Lưu
+                </Button>
+              </div>
+            </div>
+          }
+        />
+
+        {/* 7. TỔNG TUỔI — CHỈ HIỂN THỊ, KHÔNG CÓ BÚT */}
+        <Field
+          label="Tổng tuổi"
+          value={`${totalAge} tháng`}
+          editable={false}
+        />
+      </div>
+
+      {/* RIGHT: Ảnh & Preview (nằm cùng card) */}
+      <div className="md:col-span-1">
+        <div className="rounded-2xl border bg-white p-3">
+          <div className="text-base font-semibold mb-2">Ảnh cây</div>
+          <ImagePicker
+            code={codeKey}
+            value={image}
+            onChange={setImage}
+            disabled={isStopped}
+          />
         </div>
       </div>
-    )}
+    </div>
   </CardContent>
 </Card>
+
+
+<Card>
+  <CardHeader>
+    <CardTitle>Tình trạng hiện tại</CardTitle>
+  </CardHeader>
+
+  <CardContent>
+    <div ref={statusCardRef} className="relative">
+      {editingPhenField ? (
+        /* Khung edit lớn phủ toàn bộ card khi đang edit */
+        <div className="bg-white border-2 border-rose-500 rounded-xl shadow-xl p-6">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg font-bold text-rose-600">
+              {statusDefs.find(d => d.key === editingPhenField)?.label || editingPhenField}
+            </span>
+          </div>
+          <div ref={statusTextareaRef}>
+            <Textarea
+              rows={10}
+              value={phenFieldDraft}
+              onChange={(e) => setPhenFieldDraft(e.target.value)}
+              disabled={
+                isStopped ||
+                (editingPhenField === "flower" && !canEditFlower) ||
+                (editingPhenField === "fruit" && !canEditFruit)
+              }
+              className="w-full min-h-[250px] resize-none"
+              placeholder={`Nhập tình trạng ${statusDefs.find(d => d.key === editingPhenField)?.label.toLowerCase() || ""}...`}
+            />
+          </div>
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant="outline"
+              onClick={cancelPhenFieldEdit}
+              className="h-9 px-4 text-sm"
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={savePhenField}
+              className="h-9 px-4 text-sm bg-emerald-600 hover:bg-emerald-700 text-white"
+              disabled={
+                isStopped ||
+                (editingPhenField === "flower" && !canEditFlower) ||
+                (editingPhenField === "fruit" && !canEditFruit)
+              }
+            >
+              Lưu
+            </Button>
+          </div>
+        </div>
+      ) : (
+        /* Grid 4 khu bằng nhau khi không edit */
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* LÁ */}
+          <Field
+            label="Lá"
+            value={
+              phen.leaf && phen.leaf.trim()
+                ? formatStatus(phen.leaf.trim())
+                : "Bình thường"
+            }
+            editable
+            disabled={isStopped}
+            isEditing={false}
+            onEdit={() => startPhenFieldEdit("leaf", phen.leaf)}
+            editor={null}
+          />
+
+          {/* CÀNH */}
+          <Field
+            label="Cành"
+            value={
+              phen.branch && phen.branch.trim()
+                ? formatStatus(phen.branch.trim())
+                : "Bình thường"
+            }
+            editable
+            disabled={isStopped}
+            isEditing={false}
+            onEdit={() => startPhenFieldEdit("branch", phen.branch)}
+            editor={null}
+          />
+
+          {/* HOA */}
+          <Field
+            label="Hoa"
+            value={
+              canEditFlower && phen.flower && phen.flower.trim()
+                ? formatStatus(phen.flower.trim())
+                : "Chưa đến giai đoạn"
+            }
+            editable={canEditFlower}
+            disabled={isStopped || !canEditFlower}
+            isEditing={false}
+            onEdit={() => startPhenFieldEdit("flower", phen.flower)}
+            editor={null}
+          />
+
+          {/* QUẢ */}
+          <Field
+            label="Quả"
+            value={
+              canEditFruit && phen.fruit && phen.fruit.trim()
+                ? formatStatus(phen.fruit.trim())
+                : "Chưa đến giai đoạn"
+            }
+            editable={canEditFruit}
+            disabled={isStopped || !canEditFruit}
+            isEditing={false}
+            onEdit={() => startPhenFieldEdit("fruit", phen.fruit)}
+            editor={null}
+          />
+        </div>
+      )}
+    </div>
+  </CardContent>
+</Card>
+
 
             
 
@@ -3121,16 +4273,20 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
                     <div className="grid gap-1">
                       <label className="text-xs text-neutral-600">Tiêu đề</label>
                       <Textarea
-                        rows={2}
-                        value={newTask.title}
-                        onChange={(e) => {
-                          setNewTask({ ...newTask, title: e.target.value });
-                          setErrorsTask((x) => ({ ...x, title: undefined }));
-                        }}
-                        placeholder="Ví dụ: Tưới 10L/cây lúc sáng / Quét dọn cỏ..."
-                        className={errorsTask.title ? "border-red-500" : undefined}
-                        disabled={isStopped}
-                      />
+  rows={2}
+  value={newTask.title}
+  onChange={(e) => {
+    setNewTask({ ...newTask, title: e.target.value });
+    setErrorsTask((x) => ({ ...x, title: undefined }));
+  }}
+  placeholder="Ví dụ: Tưới 10L/cây lúc sáng / Quét dọn cỏ..."
+  className={
+    "border-2 " +
+    (errorsTask.title ? "border-red-500" : "border-neutral-300")
+  }
+  disabled={isStopped}
+/>
+
                       {errorsTask.title && (
                         <div className="text-xs text-red-500">
                           {errorsTask.title}
@@ -3141,16 +4297,20 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
                     <div className="grid gap-1">
                       <label className="text-xs text-neutral-600">Hạn</label>
                       <Input
-                        type="date"
-                        min={today()}
-                        value={newTask.due}
-                        onChange={(e) => {
-                          setNewTask({ ...newTask, due: e.target.value });
-                          setErrorsTask((x) => ({ ...x, due: undefined }));
-                        }}
-                        className={errorsTask.due ? "border-red-500" : ""}
-                        disabled={isStopped}
-                      />
+  type="date"
+  min={today()}
+  value={newTask.due}
+  onChange={(e) => {
+    setNewTask({ ...newTask, due: e.target.value });
+    setErrorsTask((x) => ({ ...x, due: undefined }));
+  }}
+  className={
+    "border-2 " +
+    (errorsTask.due ? "border-red-500" : "border-neutral-300")
+  }
+  disabled={isStopped}
+/>
+
                       {errorsTask.due && (
                         <div className="text-xs text-red-500">
                           {errorsTask.due}
@@ -3163,19 +4323,21 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
                         Hướng dẫn chi tiết
                       </label>
                       <Textarea
-                        rows={3}
-                        value={newTask.details}
-                        onKeyDown={(e) =>
-                          handleNumberedKeyDown(e, (v) =>
-                            setNewTask((s) => ({ ...s, details: v }))
-                          )
-                        }
-                        onChange={(e) =>
-                          setNewTask({ ...newTask, details: e.target.value })
-                        }
-                        placeholder="Mỗi dòng 1 ý: liều lượng, cách làm, ghi chú..."
-                        disabled={isStopped}
-                      />
+  rows={3}
+  value={newTask.details}
+  onKeyDown={(e) =>
+    handleNumberedKeyDown(e, (v) =>
+      setNewTask((s) => ({ ...s, details: v }))
+    )
+  }
+  onChange={(e) =>
+    setNewTask({ ...newTask, details: e.target.value })
+  }
+  placeholder="Mỗi dòng 1 ý: liều lượng, cách làm, ghi chú..."
+  disabled={isStopped}
+  className="border-2 border-neutral-300"
+/>
+
                     </div>
 
                     <div className="md:col-span-3">
@@ -3301,13 +4463,24 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
                       Huỷ
                     </Button>
                     <Button
-                      onClick={() => {
-                        setMeta((s) => ({ ...s, status: statusModal.next }));
-                        setStatusModal({ open: false, next: meta.status });
-                      }}
-                    >
-                      Xác nhận
-                    </Button>
+  onClick={() => {
+    const nextStatus = statusModal.next || "active";
+
+    // Cập nhật meta chính
+    setMeta((s) => ({ ...s, status: nextStatus }));
+
+    // Sync về demoTrees để màn khác thấy đúng trạng thái
+    syncTreePatch(codeKey, { status: nextStatus });
+
+    setStatusModal({ open: false, next: nextStatus });
+  }}
+>
+  Xác nhận
+</Button>
+
+
+
+
                   </div>
                 </div>
               );
@@ -3911,6 +5084,7 @@ function LifecycleTimeline({
   suppressId,
   isBackwardRun,
   postHideIdx,
+   onPhaseGateChange,
 }) {
 
   const phase1 = { id: "growth_development", name: "Sinh trưởng & Phát triển", icon: "🌱", color: "emerald" };
@@ -4037,15 +5211,46 @@ function LifecycleTimeline({
   const currentLabel = phaseName(currentPhaseId);
   const isBackwardStep = !!(transitionFlow && transientConfig && transientConfig.retract);
   const removingArcIdx = isBackwardStep ? transientConfig?.toIdx : -1;
-  // [ANCHOR: PHASE-GATING]
-const canEditFlower = useMemo(
-  () => ["flowering", "fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
-  [currentPhaseId]
-);
-const canEditFruit = useMemo(
-  () => ["fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
-  [currentPhaseId]
-);
+    // [ANCHOR: PHASE-GATING]
+  const canEditFlower = useMemo(
+    () => ["flowering", "fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
+    [currentPhaseId]
+  );
+
+  const canEditFruit = useMemo(
+    () => ["fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
+    [currentPhaseId]
+  );
+
+  // Mỗi lần phase hiện tại đổi → báo cho TreeDetail biết
+  useEffect(() => {
+    if (typeof onPhaseGateChange === "function") {
+      onPhaseGateChange({
+        currentPhaseId,
+        canEditFlower,
+        canEditFruit,
+      });
+    }
+  }, [onPhaseGateChange, currentPhaseId, canEditFlower, canEditFruit]);
+
+  const typeLabel = treeType || "—";
+  const varietyLabel = treeVariety || "—";
+
+  const getSizeForCenterText = (text, baseCls) => {
+    const len = (text || "").length;
+
+    if (len <= 10) {
+      // ngắn → to
+      return baseCls + " text-[13px]";
+    }
+    if (len <= 18) {
+      // trung bình
+      return baseCls + " text-[11px]";
+    }
+    // rất dài → nhỏ lại
+    return baseCls + " text-[9px]";
+  };
+
 
   return (
     <div className="w-full">
@@ -4055,7 +5260,7 @@ const canEditFruit = useMemo(
         {/* Header nhỏ hiển thị giai đoạn hiện tại */}
         <div className="flex flex-col items-center select-none">
           <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm md:text-base mb-2 w-full">
-  <span className="text-neutral-700 shrink-0">Giai đoạn hiện tại:</span>
+  <span className="text-neutral-700 shrink-0">Giai đoạn hiện tại của cây:</span>
 
   {/* pill cho phép wrap + giới hạn rộng để không đè icon */}
   <span
@@ -4110,25 +5315,42 @@ const canEditFruit = useMemo(
 
         {/* Vòng tròn */}
         <div className="relative" style={{ width: RING_SIZE, height: RING_SIZE }}>
-          {/* center info */}
+                    {/* center info */}
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
-            <div className="bg-white/90 backdrop-blur rounded-full shadow-xl ring-1 ring-black/5 w-24 h-24 flex flex-col items-center justify-center p-2">
-              <div className="text-[10px] text-gray-500 font-medium">Loại cây</div>
-<div className="text-[13px] font-bold text-emerald-600">
-  {treeType || "—"}
-</div>
+            <div className="bg-white/90 backdrop-blur rounded-full shadow-xl ring-1 ring-black/5
+                            w-24 h-24 flex flex-col items-center justify-center p-2 text-center">
+              <div className="text-[9px] text-gray-500 font-medium leading-tight">
+                Loại cây
+              </div>
 
-<div className="text-[10px] text-gray-500 font-medium mt-0.5">Giống</div>
-<div className="text-[10px] text-gray-700 font-semibold">
-  {treeVariety || "—"}
-</div>
+              <div
+                className={getSizeForCenterText(
+                  typeLabel,
+                  "font-bold text-emerald-600 leading-tight max-w-[72px] break-words"
+                )}
+              >
+                {typeLabel}
+              </div>
 
-<div className="text-[9px] text-gray-400 mt-0.5">
-  ID: {treeId || treeData?.id || "—"}
-</div>
+              <div className="text-[9px] text-gray-500 font-medium mt-0.5 leading-tight">
+                Giống
+              </div>
 
+              <div
+                className={getSizeForCenterText(
+                  varietyLabel,
+                  "text-gray-700 font-semibold leading-tight max-w-[72px] break-words"
+                )}
+              >
+                {varietyLabel}
+              </div>
+
+              <div className="text-[8px] text-gray-400 mt-0.5 leading-tight">
+                ID: {treeId || treeData?.id || "—"}
+              </div>
             </div>
           </div>
+
 
           <div className={`absolute inset-0 ${isSpinning ? "animate-spin-once" : ""}`} style={{ transformOrigin:"50% 50%" }}>
             <svg className="absolute inset-0 w-full h-full z-10" viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`} shapeRendering="geometricPrecision">
@@ -4231,7 +5453,7 @@ const canEditFruit = useMemo(
 
         {!isPhase1Completed && (
           <div className="text-center mt-1 text-[11px] text-gray-500">
-            ⚠️ Hoàn thành giai đoạn 1 để mở khóa chu kỳ (nút “Cập nhật giai đoạn”).
+          
           </div>
         )}
       </div>

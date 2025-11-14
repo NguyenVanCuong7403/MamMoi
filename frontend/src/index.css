@@ -14,5 +14,11 @@
     }
     .no-native-eye::-webkit-textfield-decoration-container { 
       display: none; 
+      .mm-plain-input:-webkit-autofill,
+.mm-plain-input:-webkit-autofill:hover,
+.mm-plain-input:-webkit-autofill:focus {
+  box-shadow: 0 0 0 1000px #ffffff inset;
+  -webkit-text-fill-color: #0f172a;
+}
     }
   }
