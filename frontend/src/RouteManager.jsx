@@ -9,10 +9,13 @@ import TreeDetail from "./components/user/TreeDetail";
 import Home from "./components/user/Home";
 import UserProfile from "./components/user/UserProfile";
 import Demo from "./components/user/Demo";
-import PaymentHistory from "./components/user/PAYMENT_HISTORY";
+import PaymentHistory from "./components/user/PaymentHistory";
 import LoginGuard from "./guards/LoginGuard";
 import RoleGuard from "./guards/RoleGuard";
 import GardenManagement from "./components/user/GardenManagement";
+import MamMoiQrCheckout from "./components/user/checkout";
+import InvoiceSuccess from "./components/user/InvoiceSuccess";
+import PricingPage from "./components/user/PricingPage";
 
 
 export default function RouteManager({ authTab }) {
@@ -27,6 +30,9 @@ export default function RouteManager({ authTab }) {
       <Route path="/treedetail" element={<TreeDetail />} />
       <Route path="/profile" element={<UserProfile />} />
       <Route path="/demo" element={<Demo />} />
+      <Route path="/price" element={<PricingPage />} />
+      <Route path="/checkout" element={<MamMoiQrCheckout />} />
+      <Route path="/invoice" element={<InvoiceSuccess />} />
       <Route path="/paymenthistory" element={<PaymentHistory />} />
       <Route path="/garden" element={<GardenManagement />} />
 
