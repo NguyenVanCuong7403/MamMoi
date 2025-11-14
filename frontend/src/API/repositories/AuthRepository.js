@@ -2,8 +2,7 @@ import ApiClient from "../ApiClient";
 
 export default class AuthRepository {
   static async login(email, password) {
-    const res = await ApiClient.post("/api/auth/login", { email, password });
-    return res.data;
+    return ApiClient.post("/api/auth/login", { email, password });
   }
 
   static async register(data) {
@@ -16,6 +15,14 @@ export default class AuthRepository {
 
   static async resendOtp(data) {
     return ApiClient.post("/api/auth/resend-otp", data);
+  }
+
+  static async forgotPassword(email) {
+    return ApiClient.post("/api/auth/forgot-password", { email });
+  }
+
+  static async resetPassword(data) {
+    return ApiClient.post("/api/auth/reset-password", data);
   }
 
   static async refreshToken(refreshToken) {

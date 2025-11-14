@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.REACT_APP_API_BASE || "http://localhost:5241";
+const API_BASE = import.meta.env.VITE_API_BASE || "https://localhost:7237";
 
 export default class ApiClient {
   static async get(path) {
@@ -45,8 +45,15 @@ export default class ApiClient {
 
   static async handleResponse(res) {
     if (!res.ok) {
-      const err = await res.text();
-      throw new Error(err || res.statusText);
+      let errorMessage = res.statusText;
+      try {
+        const errorData = await res.json();
+        errorMessage = errorData.message || errorData.Message || errorMessage;
+      } catch {
+        // If not JSON, use text
+        errorMessage = await res.text() || errorMessage;
+      }
+      throw new Error(errorMessage);
     }
     if (res.status === 204) return null;
     return await res.json();

@@ -465,7 +465,7 @@ export default function AddTreeNewScreen() {
   const [userEditedCode, setUserEditedCode] = useState(false);
   const [speciesKey, setSpeciesKey] = useState("");
   const [variety, setVariety] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState(""); // GIỮ để bảo toàn payload (không render form)
   const [soil, setSoil] = useState("");
   const [plantDate, setPlantDate] = useState("");
   const [preAge, setPreAge] = useState("");

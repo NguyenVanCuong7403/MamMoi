@@ -50,4 +50,7 @@ public class AuthResponseDto
     /// Message thông báo cho user
     /// </summary>
     public string Message { get; set; } = string.Empty;
+
+
+    public string? ProfileImageUrl { get; set; }
 }

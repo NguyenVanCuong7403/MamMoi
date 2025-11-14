@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Search, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/API/context/AuthContext"
+
 
 const DEFAULT_MENU = [
   { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
@@ -8,6 +10,9 @@ const DEFAULT_MENU = [
   { id: "dang-ky", label: "Đăng ký dịch vụ", href: "#register" },
   { id: "lien-he", label: "Liên hệ", href: "#contact" },
 ];
+
+const DEFAULT_AVATAR =
+  "https://ui-avatars.com/api/?name=User&background=D1DFB6&color=1F302F";
 
 export default function MMHeader({
   menuItems = DEFAULT_MENU,
@@ -18,6 +23,10 @@ export default function MMHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuAnimOpen, setMenuAnimOpen] = useState(false);
+  const { user, logout } = useAuth();
+  const [avatarMenu, setAvatarMenu] = useState(false);
+
+
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -43,6 +52,14 @@ export default function MMHeader({
     () => ({ bg: "#1F302F", leaf: "#D1DFB6", ivory: "#FBFFDF", accent: "#FFFFA5" }),
     []
   );
+
+  useEffect(() => {
+  const close = (e) => {
+    if (!e.target.closest(".avatar-menu-area")) setAvatarMenu(false);
+  };
+  document.addEventListener("click", close);
+  return () => document.removeEventListener("click", close);
+}, []);
 
   useEffect(() => {
     const onScroll = () => setIsTop(window.scrollY < 60);
@@ -240,26 +257,73 @@ export default function MMHeader({
               <Search className="w-[22px] h-[22px]" />
             </button>
 
-            {/* Auth (desktop) */}
-            <div
-              className="hidden md:flex items-stretch rounded-xl overflow-hidden shadow border"
-              style={{ borderColor: palette.ivory }}
-            >
-              <button
-                onClick={handleLoginClick}
-                className="px-5 py-2.5 text-base bg-white/0 text-white hover:bg-white/10 focus:outline-none"
-              >
-                Đăng nhập
-              </button>
-              <div className="w-px bg-white/20" />
-              <button
-                onClick={handleRegisterClick}
-                className="px-5 py-2.5 text-base font-medium focus:outline-none"
-                style={{ background: palette.accent, color: "#1F302F" }}
-              >
-                Đăng ký
-              </button>
-            </div>
+            {/* If logged in → avatar dropdown. If not → login/register */}
+{user ? (
+  <div className="hidden md:block relative  avatar-menu-area">
+    <button
+      onClick={() => setAvatarMenu((prev) => !prev)}
+      className="w-11 h-11 rounded-full overflow-hidden border border-white/40 shadow focus:outline-none"
+    >
+      <img
+        src={user.ProfileImageUrl || DEFAULT_AVATAR}
+        alt="avatar"
+        className="w-full h-full object-cover"
+      />
+    </button>
+
+    {/* Dropdown */}
+    {avatarMenu && (
+      <div className="absolute right-0 mt-3 w-40 bg-white text-[#1F302F] rounded-xl shadow-lg py-2 z-[999]">
+        <button
+          className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+          onClick={() => {
+            navigate("/garden");
+            setAvatarMenu((prev) => !prev)
+          }}
+        >
+          Vườn của tôi
+        </button>
+
+        <button
+          className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+          onClick={() => {
+            navigate("/profile");
+            setAvatarMenu((prev) => !prev)
+          }}
+        >
+          Hồ sơ
+        </button>
+
+        <button
+          className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
+          onClick={logout}
+        >
+          Đăng xuất
+        </button>
+      </div>
+    )}
+  </div>
+) : (
+  <div
+    className="hidden md:flex items-stretch rounded-xl overflow-hidden shadow border"
+    style={{ borderColor: palette.ivory }}
+  >
+    <button
+      onClick={handleLoginClick}
+      className="px-5 py-2.5 text-base bg-white/0 text-white hover:bg-white/10 focus:outline-none"
+    >
+      Đăng nhập
+    </button>
+    <div className="w-px bg-white/20" />
+    <button
+      onClick={handleRegisterClick}
+      className="px-5 py-2.5 text-base font-medium focus:outline-none"
+      style={{ background: palette.accent, color: "#1F302F" }}
+    >
+      Đăng ký
+    </button>
+  </div>
+)}
 
             {/* Menu button */}
             <button
@@ -342,38 +406,32 @@ export default function MMHeader({
 
             {/* Bottom Auth — không viền, không ring xanh */}
             <div className="sticky bottom-0 left-0 right-0 p-6 bg-[#1A3433]/90 backdrop-blur-sm">
-              <div className="flex gap-3">
-              <button
-  onClick={handleLoginClick}
-  className="
-    flex-1 h-11 rounded-full px-5
-    text-[15px] font-medium text-[#EAF5C8]
-    bg-white/[0.04] hover:bg-white/[0.08]
-    border border-white/[0.18] hover:border-white/[0.26]
-    shadow-[0_1px_0_rgba(0,0,0,.25),inset_0_0_0_1px_rgba(255,255,255,.05)]
-    transition
-    focus:outline-none focus:ring-0
-  "
->
-  Đăng nhập
-</button>
-                <button
-                  onClick={handleRegisterClick}
-                  className="
-                    flex-1 h-11 rounded-full
-                    text-[15px] font-semibold
-                    shadow hover:shadow-md transition
-                    focus:outline-none focus:ring-0
-                    border-0
-                  "
-                  style={{
-                    background: `linear-gradient(180deg, ${palette.accent}, #F4F39A)`,
-                    color: "#1F302F",
-                  }}
-                >
-                  Đăng ký
-                </button>
-              </div>
+              {user ? (
+    <div className="flex flex-col gap-3">
+      <button
+        onClick={logout}
+        className="h-11 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30"
+      >
+        Đăng xuất
+      </button>
+    </div>
+  ) : (
+    <div className="flex gap-3">
+      <button
+        onClick={handleLoginClick}
+        className="flex-1 h-11 rounded-full text-[#EAF5C8] bg-white/5 border border-white/20"
+      >
+        Đăng nhập
+      </button>
+      <button
+        onClick={handleRegisterClick}
+        className="flex-1 h-11 rounded-full font-semibold"
+        style={{ background: `linear-gradient(180deg, ${palette.accent}, #F4F39A)`, color: "#1F302F" }}
+      >
+        Đăng ký
+      </button>
+    </div>
+  )}
             </div>
           </aside>
         </div>
