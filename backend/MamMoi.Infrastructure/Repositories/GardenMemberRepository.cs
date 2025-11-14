@@ -9,9 +9,9 @@ namespace MamMoi.Infrastructure.Repositories;
 /// </summary>
 public class GardenMemberRepository : IGardenMemberRepository
 {
-    private readonly CapstoneDb01Context _context;
+    private readonly MamMoiDbContext _context;
 
-    public GardenMemberRepository(CapstoneDb01Context context)
+    public GardenMemberRepository(MamMoiDbContext context)
     {
         _context = context;
     }

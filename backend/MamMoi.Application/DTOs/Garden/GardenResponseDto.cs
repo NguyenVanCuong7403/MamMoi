@@ -1,4 +1,4 @@
-namespace MamMoi.Application.DTOs.Garden;
+﻿namespace MamMoi.Application.DTOs.Garden;
 
 /// <summary>
 /// DTO for Garden detail response.
@@ -14,6 +14,8 @@ public class GardenResponseDto
     public string? TimeZone { get; set; }
     public string? ClimateZone { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string Status { get; set; } = "Đang hoạt động";
+    public string? CoverUrl { get; set; } = null;
 
     /// <summary>
     /// Statistics for the garden

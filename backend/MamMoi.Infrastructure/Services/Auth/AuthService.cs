@@ -20,14 +20,14 @@ public class AuthService : IAuthService
     private readonly IEmailService _emailService;
     private readonly TokenService _tokenService;
     private readonly IMemoryCache _cache;
-    private readonly CapstoneDb01Context _context;
+    private readonly MamMoiDbContext _context;
 
     public AuthService(
         IUserRepository userRepository,
         IEmailService emailService,
         TokenService tokenService,
         IMemoryCache cache,
-        CapstoneDb01Context context)
+        MamMoiDbContext context)
     {
         _userRepository = userRepository;
         _emailService = emailService;

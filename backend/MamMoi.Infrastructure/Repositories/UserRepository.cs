@@ -6,9 +6,9 @@ namespace MamMoi.Infrastructure.Repositories;
 
 public class UserRepository : IUserRepository
 {
-    private readonly CapstoneDb01Context _context;
+    private readonly MamMoiDbContext _context;
 
-    public UserRepository(CapstoneDb01Context context)
+    public UserRepository(MamMoiDbContext context)
     {
         _context = context;
     }

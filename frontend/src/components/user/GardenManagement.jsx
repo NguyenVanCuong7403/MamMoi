@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
+import GardenRepository from "../../API/repositories/GardenRepository";
 
 // ✅ Dùng default import (đúng với file của bạn: src/lib/useVnAdmin.js)
 import useVnAdmin from "@/lib/useVnAdmin";
@@ -27,30 +28,6 @@ const LS_GARDENS = "mm_user_gardens_v3";
 
 /* ===== Default gardens (demo) ===== */
 const defaultGardens = [
-  {
-    name: "Vườn số 1 FPT",
-    province: "Hà Nội",
-    ward: "Thạch Hoà",
-    address: "Khu A",
-    status: "Đang hoạt động",
-    coverUrl: "",
-  },
-  {
-    name: "Vườn số 2 FPT",
-    province: "Hà Nội",
-    ward: "Phú Cát",
-    address: "Khu B",
-    status: "Đang hoạt động",
-    coverUrl: "",
-  },
-  {
-    name: "Vườn số 3 FPT",
-    province: "Hòa Bình",
-    ward: "Dân Hạ",
-    address: "Thửa 03",
-    status: "Đang hoạt động",
-    coverUrl: "",
-  },
 ];
 
 /* ===== LocalStorage helpers ===== */
@@ -69,7 +46,7 @@ function ensureIds(list) {
     if (!g.id) { changed = true; return { ...g, id: makeId() }; }
     return g;
   });
-  if (changed) save(LS_GARDENS, next);
+  //if (changed) save(LS_GARDENS, next);
   return next;
 }
 
@@ -408,9 +385,52 @@ function openTrees(g) {
   navigate(`/tree?gardenId=${encodeURIComponent(g.id)}&gardenName=${encodeURIComponent(g.name)}`);
 }
 
- const [gardens, setGardens] = useState(() => ensureIds(load(LS_GARDENS, defaultGardens)));
+ const [gardens, setGardens] = useState(() => ensureIds(defaultGardens));
 
-  useEffect(() => save(LS_GARDENS, gardens), [gardens]);
+ useEffect(() => {
+    async function fetchGardens() {
+      try {
+        const res = await GardenRepository.getGardens(1, 10);
+        if (res.success && res.data?.gardens) {
+          const apiGardens = res.data.gardens.map((g) => {
+            let ward = "";
+            let address = "";
+            let province = "";
+
+            if (g.location) {
+              const parts = g.location.split(",");
+              if (parts.length >= 2) {
+                ward = parts[0].trim();
+                province = parts.slice(1).join(",").trim();
+                if(parts.length > 2) {
+                  address = parts[0].trim();
+                }
+              } else {
+                ward = g.location;
+              }
+            }
+
+            return {
+              name: g.name,
+              province: g.location?.includes(",") ? g.location.split(",").pop().trim() : g.location || "",
+              ward,
+              address,
+              province,
+              status: g.status || "Đang hoạt động",
+              coverUrl: g.coverUrl || "",
+            };
+          });
+
+          setGardens(apiGardens);
+        }
+      } catch (error) {
+        console.error("Failed to fetch gardens:", error);
+      }
+    }
+
+    fetchGardens();
+  }, []);
+
 
   // Search + filters
   const [q, setQ] = useState("");

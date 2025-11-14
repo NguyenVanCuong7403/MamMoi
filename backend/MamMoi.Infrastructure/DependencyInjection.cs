@@ -7,7 +7,8 @@ using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Repositories;
 using MamMoi.Infrastructure.Security;
-using MamMoi.Infrastructure.Services.Auth;
+using MamMoi.Infrastructure.Services;
+using MamMoi.Infrastructure.External.Weather;
 
 namespace MamMoi.Infrastructure;
 
@@ -21,7 +22,7 @@ public static class DependencyInjection
         IConfiguration configuration)
     {
         // Add DbContext
-        services.AddDbContext<CapstoneDb01Context>(options =>
+        services.AddDbContext<MamMoiDbContext>(options =>
             options.UseSqlServer(
                 configuration.GetConnectionString("DefaultConnection")));
 
@@ -44,9 +45,17 @@ public static class DependencyInjection
         
         // Register infrastructure services
         services.AddScoped<TokenService>();
-        
-        // Add MemoryCache for OTP storage
-        services.AddMemoryCache();
+        services.AddScoped<ITreeTypeService, TreeTypeService>();
+        services.AddScoped<ITreeQueryService, TreeQueryService>();
+        services.AddScoped<ITreeCommandService, TreeCommandService>();
+        services.AddScoped<ITreeImageService, TreeImageService>();
+
+        services.AddHttpClient<IWeatherProvider, OpenWeatherMapProvider>();
+        services.AddScoped<IWeatherService, WeatherService>();
+        services.Configure<AlertThresholds>(configuration.GetSection("WeatherAlerts"));
+        services.AddHttpClient<IWeatherProvider, OpenWeatherMapProvider>();
+        services.AddScoped<IWeatherService, WeatherService>();
+        services.Configure<AlertThresholds>(configuration.GetSection("AlertThresholds"));
 
         return services;
     }
