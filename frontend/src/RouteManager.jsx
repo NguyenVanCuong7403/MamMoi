@@ -9,11 +9,13 @@ import TreeDetail from "./components/user/TreeDetail";
 import Home from "./components/user/Home";
 import UserProfile from "./components/user/UserProfile";
 import Demo from "./components/user/Demo";
-// Đảm bảo tên file khớp chữ hoa-thường
-import Payment_History from "./components/user/Payment_History";
+import PaymentHistory from "./components/user/PaymentHistory";
 import LoginGuard from "./guards/LoginGuard";
 import RoleGuard from "./guards/RoleGuard";
 import GardenManagement from "./components/user/GardenManagement";
+import MamMoiQrCheckout from "./components/user/checkout";
+import InvoiceSuccess from "./components/user/InvoiceSuccess";
+import PricingPage from "./components/user/PricingPage";
 
 export default function RouteManager({ authTab }) {
   return (
@@ -24,6 +26,12 @@ export default function RouteManager({ authTab }) {
       <Route path="/preview" element={<CareFlowEditablePreview />} />
       <Route path="/edit" element={<EditTreeBasic />} />
       <Route path="/demo" element={<Demo />} />
+      <Route path="/price" element={<PricingPage />} />
+      <Route path="/checkout" element={<MamMoiQrCheckout />} />
+      <Route path="/invoice" element={<InvoiceSuccess />} />
+      <Route path="/paymenthistory" element={<PaymentHistory />} />
+
+
       
       {/* Garden list/management */}
       <Route path="/garden" element={<GardenManagement />} />
@@ -59,7 +67,6 @@ export default function RouteManager({ authTab }) {
       />
 
       <Route path="/profile" element={<UserProfile />} />
-      <Route path="/paymenthistory" element={<Payment_History />} />
 
       {/* 404 */}
       <Route path="*" element={<h2>404 - Page Not Found</h2>} />

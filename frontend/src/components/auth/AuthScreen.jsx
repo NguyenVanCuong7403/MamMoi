@@ -1,9 +1,4 @@
-import React, {
-  useMemo,
-  useState,
-  useEffect,
-  useRef,
-} from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Card,
@@ -29,14 +24,14 @@ import {
   X as XIcon,
   Clock,
 } from "lucide-react";
+import { useAuth } from "../../API/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 import { LivingBackground } from "@/components/background";
-import { useAuth } from "@/API/context/AuthContext";
-import { useNavigate } from "react-router-dom";
 
 // input rõ hơn, font to hơn, placeholder đậm hơn
 const baseInputClass =
-   "mm-plain-input h-11 w-full border-none bg-transparent p-0 text-[15px] text-slate-900 placeholder:text-slate-600 focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0";
+  "mm-plain-input h-11 w-full border-none bg-transparent p-0 text-[15px] text-slate-900 placeholder:text-slate-600 focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function AuthScreen({ defaultTab = "login" }) {
@@ -45,8 +40,6 @@ export default function AuthScreen({ defaultTab = "login" }) {
   const [loginResetToken, setLoginResetToken] = useState(0);
   const [dialogId, setDialogId] = useState(0);
 
-    const formsContainerRef = useRef(null);
-  const [formsMinHeight, setFormsMinHeight] = useState(null);
   // OTP (giữ lại cho đăng ký + quên mật khẩu)
   const [otpOpen, setOtpOpen] = useState(false);
   const [otpTarget, setOtpTarget] = useState(null); // { channel, value }
@@ -64,34 +57,24 @@ export default function AuthScreen({ defaultTab = "login" }) {
   const [authDialog, setAuthDialog] = useState(null); // { title, message, tone }
 
   // màn đặt lại mật khẩu mới (sau OTP quên mật khẩu)
-  const [resetPwContext, setResetPwContext] = useState(null); // { contact, mode }
+  const [resetPwContext, setResetPwContext] = useState(null); // { contact, mode, otpCode }
 
   // overlay animation sau khi đăng nhập thành công
-  const [loginSuccessOverlay, setLoginSuccessOverlay] =
-    useState(false);
+  const [loginSuccessOverlay, setLoginSuccessOverlay] = useState(false);
 
-  const { login } = useAuth();
+  const {
+    login,
+    register,
+    forgotPassword,
+    resetPassword,
+    resendOtp,
+    verifyOtp,
+  } = useAuth();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!formsContainerRef.current) return;
-    const h = formsContainerRef.current.offsetHeight;
-
-    // luôn lấy chiều cao lớn nhất từng đo được (thường là form Đăng ký)
-    setFormsMinHeight((prev) =>
-      prev == null ? h : Math.max(prev, h)
-    );
-  }, [tab]);
-
 
   useEffect(() => {
     setTab(defaultTab);
   }, [defaultTab]);
-
-  // TODO: thay bằng API check tài khoản thật cho quên mật khẩu / đăng ký nếu cần
-  async function fakeCheckAccountExists(_acct) {
-    return { exists: true };
-  }
 
   const openOtpFor = (type, payload) => {
     const channel = payload.mode || (payload.email ? "email" : "phone");
@@ -109,10 +92,10 @@ export default function AuthScreen({ defaultTab = "login" }) {
     setOtpSuccessMessage("");
     setOtpOpen(true);
     setOtpSession((s) => s + 1);
-    // TODO: gọi API gửi OTP thực tế ở đây
+    // TODO: gọi API gửi OTP thực tế ở đây (đã move xuống handleRegisterCredentials / handleForgotSubmit)
   };
 
-  // ====== LOGIN MỚI: KHÔNG CẦN OTP ======
+  // ====== LOGIN: dùng tài khoản + mật khẩu ======
   const handleLoginCredentials = async (data) => {
     try {
       const res = await login(
@@ -148,24 +131,67 @@ export default function AuthScreen({ defaultTab = "login" }) {
     }
   };
 
+  // ====== ĐĂNG KÝ: tạo tài khoản + gửi OTP ======
   const handleRegisterCredentials = async (data) => {
-    // TODO: kiểm tra trùng tài khoản nếu cần
-    openOtpFor("register", data);
-  };
+    try {
+      if (register) {
+        // Gọi API đăng ký thật – backend sẽ gửi OTP về email/SĐT
+        // chỉnh lại tham số cho khớp backend của bạn nếu cần:
+        const res = await register(
+          data.name,
+          data.email || data.phone,
+          data.password
+        );
 
-  const handleForgotSubmit = async ({ acct, mode }) => {
-    const check = await fakeCheckAccountExists(acct);
-    if (!check.exists) {
+        if (!res || res.success === false) {
+          setAuthDialog({
+            title: "Đăng ký không thành công",
+            message:
+              res?.message ||
+              "Không thể tạo tài khoản. Vui lòng kiểm tra lại thông tin hoặc thử lại sau.",
+            tone: "error",
+          });
+          return;
+        }
+      }
+
+      // Mở popup OTP sau khi backend đã gửi mã
+      openOtpFor("register", data);
+    } catch (err) {
       setAuthDialog({
-        title: "Không tìm thấy tài khoản",
-        message:
-          "Số điện thoại hoặc email bạn nhập không tồn tại trong hệ thống. Vui lòng kiểm tra lại.",
+        title: "Đăng ký không thành công",
+        message: "Có lỗi xảy ra khi tạo tài khoản. Vui lòng thử lại.",
         tone: "error",
       });
-      return;
     }
-    openOtpFor("reset", { contact: acct, mode });
-    setForgotContext(null);
+  };
+
+  // ====== QUÊN MẬT KHẨU: gửi OTP reset ======
+  const handleForgotSubmit = async ({ acct, mode }) => {
+    try {
+      if (forgotPassword) {
+        const res = await forgotPassword(acct);
+        if (!res || res.success === false) {
+          setAuthDialog({
+            title: "Không gửi được mã OTP",
+            message:
+              res?.message ||
+              "Không thể gửi mã OTP khôi phục mật khẩu. Vui lòng kiểm tra lại tài khoản hoặc thử lại sau.",
+            tone: "error",
+          });
+          return;
+        }
+      }
+
+      openOtpFor("reset", { contact: acct, mode });
+      setForgotContext(null);
+    } catch (err) {
+      setAuthDialog({
+        title: "Lỗi hệ thống",
+        message: "Có lỗi xảy ra khi gửi mã OTP. Vui lòng thử lại.",
+        tone: "error",
+      });
+    }
   };
 
   const handleOtpClose = () => {
@@ -177,7 +203,24 @@ export default function AuthScreen({ defaultTab = "login" }) {
 
   const handleOtpResend = async () => {
     if (!otpTarget || !pendingAction) return;
-    // TODO: API resend OTP
+
+    try {
+      if (resendOtp) {
+        const res = await resendOtp(otpTarget.value);
+        if (!res || res.success === false) {
+          setOtpError(
+            res?.message ||
+              "Không thể gửi lại mã OTP. Vui lòng thử lại sau."
+          );
+          return;
+        }
+      }
+      setOtpError("");
+      setOtpSuccess(false);
+      setOtpSuccessMessage("Đã gửi lại mã OTP, vui lòng kiểm tra.");
+    } catch (err) {
+      setOtpError("Có lỗi xảy ra khi gửi lại mã OTP. Vui lòng thử lại.");
+    }
   };
 
   const handleVerifyOtp = async (code) => {
@@ -187,8 +230,7 @@ export default function AuthScreen({ defaultTab = "login" }) {
 
     try {
       if (pendingAction.type === "login") {
-        // Nhánh login bằng OTP giờ không còn dùng nữa,
-        // nhưng để nguyên nếu sau này cần bật lại 2FA:
+        // Nhánh login bằng OTP giờ không dùng tới
         const { acct, password, remember } =
           pendingAction.payload || {};
         const res = await login(acct, password, remember, code);
@@ -221,7 +263,25 @@ export default function AuthScreen({ defaultTab = "login" }) {
         });
         navigate("/");
       } else if (pendingAction.type === "register") {
-        // TODO: verify OTP + tạo tài khoản thật
+        // Xác thực OTP cho đăng ký tài khoản
+        const payload = pendingAction.payload || {};
+        const contact =
+          payload.contact ||
+          payload.email ||
+          payload.phone ||
+          (otpTarget && otpTarget.value) ||
+          "";
+
+        if (verifyOtp && contact) {
+          const res = await verifyOtp(contact, code);
+          if (!res || res.success === false) {
+            setOtpError(
+              res?.message || "Mã OTP không chính xác hoặc đã hết hạn."
+            );
+            return;
+          }
+        }
+
         setOtpOpen(false);
         setPendingAction(null);
         setRegisterSuccess(true);
@@ -233,21 +293,24 @@ export default function AuthScreen({ defaultTab = "login" }) {
         setAuthDialog({
           title: "Tạo tài khoản thành công",
           message:
-            "Bạn đã đăng ký thành công. Hệ thống sẽ tự chuyển về màn hình đăng nhập để bạn đăng nhập lại.",
+            "Bạn đã đăng ký và xác thực tài khoản thành công. Hãy đăng nhập để bắt đầu sử dụng Mầm Mới.",
           tone: "success",
           autoCloseSeconds: 3,
         });
       } else if (pendingAction.type === "reset") {
-        // TODO: verify OTP thực tế cho quên mật khẩu
+        // Lưu OTP + contact lại, chuyển sang bước đặt mật khẩu mới
+        const payload = pendingAction.payload || {};
         const context = {
           contact:
-            pendingAction.payload.contact ||
-            pendingAction.payload.acct ||
+            payload.contact ||
+            payload.acct ||
+            (otpTarget && otpTarget.value) ||
             "",
           mode:
-            pendingAction.payload.mode ||
+            payload.mode ||
             (otpTarget && otpTarget.channel) ||
             "unknown",
+          otpCode: code,
         };
 
         // Hiển thị thông báo thành công ngay tại popup OTP, delay 1.2s rồi chuyển
@@ -278,19 +341,44 @@ export default function AuthScreen({ defaultTab = "login" }) {
     });
   };
 
-  const handleNewPasswordSubmit = async ({ newPassword }) => {
-    console.log("new password:", newPassword);
-    setResetPwContext(null);
-    setTab("login");
+  const handleNewPasswordSubmit = async ({ newPassword, otpCode }) => {
+    try {
+      if (resetPassword && resetPwContext?.contact && otpCode) {
+        const res = await resetPassword(
+          resetPwContext.contact,
+          otpCode,
+          newPassword
+        );
+        if (!res || res.success === false) {
+          setAuthDialog({
+            title: "Đổi mật khẩu không thành công",
+            message:
+              res?.message ||
+              "Không thể đặt lại mật khẩu. Vui lòng kiểm tra lại mã OTP hoặc thử lại.",
+            tone: "error",
+          });
+          return;
+        }
+      }
 
-    // ép popup mount mới
-    setDialogId((id) => id + 1);
-    setAuthDialog({
-      title: "Đổi mật khẩu thành công",
-      message: "Mật khẩu của bạn đã được cập nhật.",
-      tone: "success",
-      autoCloseSeconds: 3,
-    });
+      setResetPwContext(null);
+      setTab("login");
+
+      // ép popup mount mới
+      setDialogId((id) => id + 1);
+      setAuthDialog({
+        title: "Đổi mật khẩu thành công",
+        message: "Mật khẩu của bạn đã được cập nhật. Hãy đăng nhập lại.",
+        tone: "success",
+        autoCloseSeconds: 3,
+      });
+    } catch (err) {
+      setAuthDialog({
+        title: "Đổi mật khẩu không thành công",
+        message: "Có lỗi xảy ra khi cập nhật mật khẩu. Vui lòng thử lại.",
+        tone: "error",
+      });
+    }
   };
 
   const handleNewPasswordCancel = () => {
@@ -375,158 +463,158 @@ export default function AuthScreen({ defaultTab = "login" }) {
                 </div>
               )}
 
- <Tabs
-  value={tab}
-  onValueChange={(v) => {
-    setTab(v);
-    setRegisterSuccess(false);
-  }}
-  className="w-full"
->
-  <TabsList
-    className="
-      mb-5 grid w-full grid-cols-2 rounded-full
-      border border-slate-200 bg-slate-100/90 p-1 text-sm shadow-inner
-    "
-  >
-    <TabsTrigger
-      value="login"
-      className="
-        rounded-full border text-sm font-semibold
-        transition-all
-        data-[state=active]:border-emerald-500
-        data-[state=active]:bg-white
-        data-[state=active]:text-emerald-700
-        data-[state=active]:shadow-md
-        data-[state=inactive]:border-transparent
-        data-[state=inactive]:text-slate-500
-        data-[state=inactive]:opacity-80
-        hover:bg-white/80
-      "
-    >
-      Đăng nhập
-    </TabsTrigger>
+              <Tabs
+                value={tab}
+                onValueChange={(v) => {
+                  setTab(v);
+                  setRegisterSuccess(false);
+                }}
+                className="w-full"
+              >
+                <TabsList
+                  className="
+                    mb-5 grid w-full grid-cols-2 rounded-full
+                    border border-slate-200 bg-slate-100/90 p-1 text-sm shadow-inner
+                  "
+                >
+                  <TabsTrigger
+                    value="login"
+                    className="
+                      rounded-full border text-sm font-semibold
+                      transition-all
+                      data-[state=active]:border-emerald-500
+                      data-[state=active]:bg-white
+                      data-[state=active]:text-emerald-700
+                      data-[state=active]:shadow-md
+                      data-[state=inactive]:border-transparent
+                      data-[state=inactive]:text-slate-500
+                      data-[state=inactive]:opacity-80
+                      hover:bg-white/80
+                    "
+                  >
+                    Đăng nhập
+                  </TabsTrigger>
 
-    <TabsTrigger
-      value="register"
-      className="
-        rounded-full border text-sm font-semibold
-        transition-all
-        data-[state=active]:border-emerald-500
-        data-[state=active]:bg-white
-        data-[state=active]:text-emerald-700
-        data-[state=active]:shadow-md
-        data-[state=inactive]:border-transparent
-        data-[state=inactive]:text-slate-500
-        data-[state=inactive]:opacity-80
-        hover:bg-white/80
-      "
-    >
-      Đăng ký
-    </TabsTrigger>
-  </TabsList>
+                  <TabsTrigger
+                    value="register"
+                    className="
+                      rounded-full border text-sm font-semibold
+                      transition-all
+                      data-[state=active]:border-emerald-500
+                      data-[state=active]:bg-white
+                      data-[state=active]:text-emerald-700
+                      data-[state=active]:shadow-md
+                      data-[state=inactive]:border-transparent
+                      data-[state=inactive]:text-slate-500
+                      data-[state=inactive]:opacity-80
+                      hover:bg-white/80
+                    "
+                  >
+                    Đăng ký
+                  </TabsTrigger>
+                </TabsList>
 
-  {/* KHUNG CỐ ĐỊNH CHO CẢ 2 FORM */}
-  <div className="mt-1 min-h-[560px]">
-    <AnimatePresence mode="wait">
-      {tab === "login" ? (
-        <motion.div
-          key="login"
-          initial={{ opacity: 0, x: -16, scale: 0.98 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: 16, scale: 0.98 }}
-          transition={{ duration: 0.22, ease: "easeOut" }}
-        >
-          <LoginForm
-            resetToken={loginResetToken}
-            onForgot={handleForgot}
-            onSubmitLogin={handleLoginCredentials}
-          />
-        </motion.div>
-      ) : (
-        <motion.div
-          key="register"
-          initial={{ opacity: 0, x: 16, scale: 0.98 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={{ opacity: 0, x: -16, scale: 0.98 }}
-          transition={{ duration: 0.22, ease: "easeOut" }}
-        >
-          <RegisterForm
-            onSubmitRegister={handleRegisterCredentials}
-          />
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
-</Tabs>
-
+                {/* KHUNG CỐ ĐỊNH CHO CẢ 2 FORM */}
+                <div className="mt-1 min-h-[560px]">
+                  <AnimatePresence mode="wait">
+                    {tab === "login" ? (
+                      <motion.div
+                        key="login"
+                        initial={{ opacity: 0, x: -16, scale: 0.98 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: 16, scale: 0.98 }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                      >
+                        <LoginForm
+                          resetToken={loginResetToken}
+                          onForgot={handleForgot}
+                          onSubmitLogin={handleLoginCredentials}
+                        />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="register"
+                        initial={{ opacity: 0, x: 16, scale: 0.98 }}
+                        animate={{ opacity: 1, x: 0, scale: 1 }}
+                        exit={{ opacity: 0, x: -16, scale: 0.98 }}
+                        transition={{ duration: 0.22, ease: "easeOut" }}
+                      >
+                        <RegisterForm
+                          onSubmitRegister={handleRegisterCredentials}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </Tabs>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Quên mật khẩu */}
-        <ForgotDialog
-          open={!!forgotContext}
-          initialAcct={forgotContext?.acct}
-          initialMode={forgotContext?.mode}
-          onClose={() => setForgotContext(null)}
-          onSubmit={handleForgotSubmit}
-        />
+          {/* Quên mật khẩu */}
+          <ForgotDialog
+            open={!!forgotContext}
+            initialAcct={forgotContext?.acct}
+            initialMode={forgotContext?.mode}
+            onClose={() => setForgotContext(null)}
+            onSubmit={handleForgotSubmit}
+          />
 
-        {/* OTP (cho đăng ký + quên mật khẩu) */}
-        <OtpDialog
-          key={otpSession}
-          open={otpOpen}
-          onClose={handleOtpClose}
-          onSubmit={handleVerifyOtp}
-          onResend={handleOtpResend}
-          loading={otpLoading}
-          error={otpError}
-          channel={otpTarget?.channel}
-          contact={otpTarget?.value}
-          actionType={pendingAction?.type}
-          success={otpSuccess}
-          successMessage={otpSuccessMessage}
-        />
+          {/* OTP (cho đăng ký + quên mật khẩu) */}
+          <OtpDialog
+            key={otpSession}
+            open={otpOpen}
+            onClose={handleOtpClose}
+            onSubmit={handleVerifyOtp}
+            onResend={handleOtpResend}
+            loading={otpLoading}
+            error={otpError}
+            channel={otpTarget?.channel}
+            contact={otpTarget?.value}
+            actionType={pendingAction?.type}
+            success={otpSuccess}
+            successMessage={otpSuccessMessage}
+          />
 
-        {/* Mật khẩu mới (sau OTP quên mật khẩu) */}
-        <ResetPasswordDialog
-          open={!!resetPwContext}
-          mode={resetPwContext?.mode}
-          contact={resetPwContext?.contact}
-          onClose={handleNewPasswordCancel}
-          onSubmit={handleNewPasswordSubmit}
-        />
+          {/* Mật khẩu mới (sau OTP quên mật khẩu) */}
+          <ResetPasswordDialog
+            open={!!resetPwContext}
+            mode={resetPwContext?.mode}
+            contact={resetPwContext?.contact}
+            otpCode={resetPwContext?.otpCode}
+            onClose={handleNewPasswordCancel}
+            onSubmit={handleNewPasswordSubmit}
+          />
 
-        {/* Popup thông báo chung */}
-        <AuthMessageDialog
-          key={dialogId}
-          open={!!authDialog}
-          title={authDialog?.title}
-          message={authDialog?.message}
-          tone={authDialog?.tone}
-          onClose={() => setAuthDialog(null)}
-          autoCloseSeconds={authDialog?.autoCloseSeconds}
-        />
+          {/* Popup thông báo chung */}
+          <AuthMessageDialog
+            key={dialogId}
+            open={!!authDialog}
+            title={authDialog?.title}
+            message={authDialog?.message}
+            tone={authDialog?.tone}
+            onClose={() => setAuthDialog(null)}
+            autoCloseSeconds={authDialog?.autoCloseSeconds}
+          />
 
-        {/* Overlay animation sau khi đăng nhập thành công */}
-        {loginSuccessOverlay && (
-          <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
-            <div className="pointer-events-auto flex items-center gap-3 rounded-3xl border border-emerald-200 bg-white/95 px-6 py-4 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
-                <ShieldCheck className="h-5 w-5 text-emerald-600" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-emerald-800">
-                  Bạn đã đăng nhập thành công
-                </p>
-                <p className="mt-0.5 text-xs text-emerald-600">
-                  Đang chuyển vào hệ thống Mầm Mới...
-                </p>
+          {/* Overlay animation sau khi đăng nhập thành công */}
+          {loginSuccessOverlay && (
+            <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm">
+              <div className="pointer-events-auto flex items-center gap-3 rounded-3xl border border-emerald-200 bg-white/95 px-6 py-4 shadow-2xl animate-in fade-in-0 zoom-in-95 duration-200">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100">
+                  <ShieldCheck className="h-5 w-5 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">
+                    Bạn đã đăng nhập thành công
+                  </p>
+                  <p className="mt-0.5 text-xs text-emerald-600">
+                    Đang chuyển vào hệ thống Mầm Mới...
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </section>
     </div>
   );
@@ -660,10 +748,10 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
 
   return (
     <form
-  className="grid gap-5"
-  onSubmit={handleSubmit}
-  autoComplete="on"
->
+      className="grid gap-5"
+      onSubmit={handleSubmit}
+      autoComplete="on"
+    >
       <Field
         label="Email hoặc SĐT"
         icon={
@@ -774,36 +862,36 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
       )}
 
       <Button
-  type="submit"
-  className="
-    mt-2 w-full gap-2 rounded-2xl
-    h-11 sm:h-12            /* 👈 cao hơn */
-    bg-emerald-600 text-white text-[15px] font-semibold
-    transition
-    hover:bg-emerald-700 hover:-translate-y-[1px] hover:shadow-md
-    disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none
-  "
-  disabled={submitting}
->
-  {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
-  <ArrowRight className="h-4 w-4" />
-</Button>
-
+        type="submit"
+        className="
+          mt-2 w-full gap-2 rounded-2xl
+          h-11 sm:h-12
+          bg-emerald-600 text-white text-[15px] font-semibold
+          transition
+          hover:bg-emerald-700 hover:-translate-y-[1px] hover:shadow-md
+          disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none
+        "
+        disabled={submitting}
+      >
+        {submitting ? "Đang đăng nhập..." : "Đăng nhập"}
+        <ArrowRight className="h-4 w-4" />
+      </Button>
 
       <Divider text="hoặc" />
 
       <Button
-  type="button"
-  variant="outline"
-  className="
-    mt-2 w-full gap-2 rounded-2xl
-    h-11 sm:h-12            /* 👈 cùng chiều cao */
-    bg-white/90 text-[15px] font-medium
-    transition
-    hover:-translate-y-[1px] hover:bg-white hover:shadow-md
-  "
->
+        type="button"
+        variant="outline"
+        className="
+          mt-2 w-full gap-2 rounded-2xl
+          h-11 sm:h-12
+          bg-white/90 text-[15px] font-medium
+          transition
+          hover:-translate-y-[1px] hover:bg-white hover:shadow-md
+        "
+      >
         <span className="text-lg">
+          {/* Google icon SVG */}
           <svg
             xmlns="http://www.w3.org/2000/svg"
             x="0px"
@@ -843,6 +931,7 @@ function RegisterForm({ onSubmitRegister }) {
   const [show2, setShow2] = useState(false);
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phoneValue, setPhoneValue] = useState("");
@@ -850,8 +939,7 @@ function RegisterForm({ onSubmitRegister }) {
   const [nameError, setNameError] = useState("");
   const [emailError, setEmailError] = useState("");
   const [phoneError, setPhoneError] = useState("");
-  const [contactRequiredError, setContactRequiredError] =
-    useState("");
+  const [contactRequiredError, setContactRequiredError] = useState("");
   const [pwError, setPwError] = useState("");
   const [pw2Error, setPw2Error] = useState("");
   const [formError, setFormError] = useState("");
@@ -1209,23 +1297,20 @@ function RegisterForm({ onSubmitRegister }) {
         <p className="text-xs text-red-500">{formError}</p>
       )}
 
-     <Button
-  type="submit"
-  className="
+      <Button
+        type="submit"
+        className="
           mt-2 h-12 w-full gap-2 rounded-2xl
           bg-emerald-600 text-white text-[15px] font-semibold
           transition
           hover:bg-emerald-700 hover:-translate-y-[1px] hover:shadow-md
           disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-none
         "
-  disabled={submitting}
->
-  {submitting ? "Đang gửi mã OTP..." : "Tạo tài khoản"}
-  <ArrowRight className="h-4 w-4" />
-</Button>
-
-
-      
+        disabled={submitting}
+      >
+        {submitting ? "Đang gửi mã OTP..." : "Tạo tài khoản"}
+        <ArrowRight className="h-4 w-4" />
+      </Button>
     </form>
   );
 }
@@ -1393,14 +1478,7 @@ function OtpDialog({
   success,
   successMessage,
 }) {
-  const [digits, setDigits] = useState([
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-  ]);
+  const [digits, setDigits] = useState(["", "", "", "", "", ""]);
   const [secondsLeft, setSecondsLeft] = useState(40);
   const [localError, setLocalError] = useState("");
   const inputsRef = useRef([]);
@@ -1646,6 +1724,7 @@ function ResetPasswordDialog({
   open,
   mode,
   contact,
+  otpCode,
   onClose,
   onSubmit,
 }) {
@@ -1708,7 +1787,7 @@ function ResetPasswordDialog({
     if (!ok1 || !ok2) return;
     setSubmitting(true);
     try {
-      await onSubmit && onSubmit({ newPassword: pw });
+      await onSubmit && onSubmit({ newPassword: pw, otpCode });
     } finally {
       setSubmitting(false);
     }
@@ -1880,21 +1959,20 @@ function Field({ label, icon, error, isErrorBorder, children }) {
       </Label>
 
       <div
-  className={`
-    relative flex items-center rounded-[999px] sm:rounded-2xl border-2 px-3.5 py-3
-    transition-all
-    focus-within:border-emerald-600
-    focus-within:ring-2 focus-within:ring-emerald-200/70
-    focus-within:bg-white
-    focus-within:shadow-md
-    ${
-      hasBorderError
-        ? "border-rose-500 bg-rose-50 shadow-sm"
-        : "border-slate-300 bg-slate-50 shadow-sm"
-    }
-  `}
->
-
+        className={`
+          relative flex items-center rounded-[999px] sm:rounded-2xl border-2 px-3.5 py-3
+          transition-all
+          focus-within:border-emerald-600
+          focus-within:ring-2 focus-within:ring-emerald-200/70
+          focus-within:bg-white
+          focus-within:shadow-md
+          ${
+            hasBorderError
+              ? "border-rose-500 bg-rose-50 shadow-sm"
+              : "border-slate-300 bg-slate-50 shadow-sm"
+          }
+        `}
+      >
         {icon && (
           <div className="mr-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/70 text-neutral-500">
             {icon}

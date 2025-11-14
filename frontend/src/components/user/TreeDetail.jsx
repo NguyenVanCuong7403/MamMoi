@@ -1106,9 +1106,9 @@ function Field({
 
       {/* Cột value bên phải */}
      <div
-        className="flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words"
+        className="flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words overflow-hidden min-w-0"
       >
-        {isEditing ? editor : value}
+        {isEditing ? editor : <span className="block truncate">{value}</span>}
       </div>
     </div>
   );
@@ -1529,36 +1529,49 @@ function DoneRow({ it }) {
         </div>
       </li>
 
-      <HoverCard anchorRef={rowRef} open={hover} side="right" width={360}>
-        <div className="fx-pop">
-          <div className="text-sm font-semibold mb-1">
-            {`đã ${lowerFirst(it.title)}`}
-          </div>
+    <HoverCard anchorRef={rowRef} open={hover} side="right" width={360}>
+  <div className="fx-pop">
+    <div className="text-sm font-semibold mb-1 break-words">
+      {`đã ${lowerFirst(it.title)}`}
+    </div>
 
-          <div className="text-xs text-neutral-700 mb-2">
-            <div>
-              Hoàn thành: <b>{formatVN(it.completedAt)}</b>
-            </div>
-            {it.due ? <div>Hạn: <b>{formatVN(it.due)}</b></div> : null}
-          </div>
-
-          {Array.isArray(it.details) && it.details.length > 0 ? (
-            <div>
-              <div className="font-medium mb-1">Chi tiết thao tác</div>
-              <ol className="ml-5 list-decimal space-y-1 text-sm">
-                {it.details.map((d, i) => <li key={i}>{d}</li>)}
-              </ol>
-            </div>
-          ) : null}
-
-          {it.note ? (
-            <div className="mt-2 rounded-lg border bg-neutral-50 p-2 text-xs text-neutral-700">
-              <div className="font-medium mb-1">Mô tả hoàn thành</div>
-              <div className="whitespace-pre-wrap">{it.note}</div>
-            </div>
-          ) : null}
+    <div className="text-xs text-neutral-700 mb-2">
+      <div>
+        Hoàn thành: <b>{formatVN(it.completedAt)}</b>
+      </div>
+      {it.due ? (
+        <div>
+          Hạn: <b>{formatVN(it.due)}</b>
         </div>
-      </HoverCard>
+      ) : null}
+    </div>
+
+    {Array.isArray(it.details) && it.details.length > 0 ? (
+      <div>
+        <div className="font-medium mb-1">Chi tiết thao tác</div>
+        <ol className="ml-5 list-decimal space-y-1 text-sm">
+          {it.details.map((d, i) => (
+            <li key={i} className="break-words">
+              {d}
+            </li>
+          ))}
+        </ol>
+      </div>
+    ) : null}
+
+    {it.note ? (
+      <div className="mt-2 rounded-lg border bg-neutral-50 p-2 text-xs text-neutral-700">
+        <div className="font-medium mb-1">Mô tả hoàn thành</div>
+        <div className="whitespace-pre-wrap break-words">
+          {it.note}
+        </div>
+      </div>
+    ) : null}
+  </div>
+</HoverCard>
+
+
+
     </>
   );
 }
@@ -1706,42 +1719,63 @@ function PlannedRow({ p, theme, disabled, openEditMain, openComplete, openEditNo
 
       {/* Popover chi tiết */}
       <HoverCard anchorRef={rowRef} open={open} side="right" width={380} offset={16}>
-        <div className="fx-pop">
-          <div className="text-sm font-semibold mb-1">{p.title}</div>
-          <div className="text-xs text-neutral-600 mb-2 flex items-center gap-1">
-            <Calendar className="h-3.5 w-3.5" /> Hạn: {formatVN(p.due)}
-            {p.completed && <span className="ml-2">• Hoàn thành: {formatVN(p.completedAt)}</span>}
-          </div>
+  <div className="fx-pop">
+    <div className="text-sm font-semibold mb-1 break-words">
+      {p.title}
+    </div>
+    <div className="text-xs text-neutral-600 mb-2 flex items-center gap-1">
+      <Calendar className="h-3.5 w-3.5" /> Hạn: {formatVN(p.due)}
+      {p.completed && (
+        <span className="ml-2">
+          • Hoàn thành: {formatVN(p.completedAt)}
+        </span>
+      )}
+    </div>
 
-          {Array.isArray(p.details) && p.details.length > 0 ? (
-            <ol className="ml-5 list-decimal space-y-1 text-sm">
-              {p.details.map((d, idx) => (
-                <li key={idx}>{d}</li>
-              ))}
-            </ol>
-          ) : (
-            <div className="text-xs text-neutral-500">Không có hướng dẫn chi tiết.</div>
-          )}
+    {Array.isArray(p.details) && p.details.length > 0 ? (
+      <ol className="ml-5 list-decimal space-y-1 text-sm">
+        {p.details.map((d, idx) => (
+          <li key={idx} className="break-words">
+            {d}
+          </li>
+        ))}
+      </ol>
+    ) : (
+      <div className="text-xs text-neutral-500">
+        Không có hướng dẫn chi tiết.
+      </div>
+    )}
 
-          {p.completed && (
-            <div className="mt-2 rounded-lg border bg-neutral-50 p-2 text-sm text-neutral-800">
-              <div className="font-semibold mb-1">Ghi chú hoàn thành</div>
-              <div className="whitespace-pre-wrap break-words">
-                {p.completedNote?.trim() ? p.completedNote : "—"}
-              </div>
-            </div>
-          )}
+    {p.completed && (
+      <div className="mt-2 rounded-lg border bg-neutral-50 p-2 text-sm text-neutral-800">
+        <div className="font-semibold mb-1">Ghi chú hoàn thành</div>
+        <div className="whitespace-pre-wrap break-words">
+          {p.completedNote?.trim() ? p.completedNote : "—"}
         </div>
-      </HoverCard>
+      </div>
+    )}
+  </div>
+</HoverCard>
+
     </>
   );
 }
 
+// Số ký tự tối đa hiển thị trong khung "Ghi chú" ở chế độ chỉ xem
+// Bạn có thể tự chỉnh con số này (ví dụ 100, 150, 230, ...)
+const NOTE_PREVIEW_MAX = 230;
 
 
 function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed,  loai, giong  }) {
   const [editNote, setEditNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || "");
+  // Chuẩn bị text hiển thị cho khung "Ghi chú" (chỉ xem)
+const rawNote = (note || "").trim();
+const displayNote =
+  rawNote.length > NOTE_PREVIEW_MAX
+    ? rawNote.slice(0, NOTE_PREVIEW_MAX) + "…"
+    : rawNote;
+
   useEffect(() => setNoteDraft(note || ""), [note]);
   useEffect(() => {
     if (readOnly && editNote) setEditNote(false);
@@ -1862,70 +1896,73 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
       {/* Ghi chú */}
             {/* Ghi chú (click để sửa, auto-save khi click ra ngoài) */}
       <div ref={noteCardRef}>
-        <Card>
-          <CardHeader className="flex items-center justify-between">
-            <CardTitle>Ghi chú</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {!editNote ? (
-              <button
-                type="button"
-                disabled={readOnly}
-                onClick={() => {
-                  if (readOnly) return;
-                  setEditNote(true);
-                  setNoteDraft(note || "");
-                }}
-                className={
-                  "w-full text-left text-sm whitespace-pre-wrap min-h-20 rounded-2xl border px-3 py-2 " +
-                  (readOnly
-                    ? "border-neutral-200 bg-neutral-50 text-neutral-700 cursor-default"
-                    : "border-neutral-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/40 cursor-text transition-colors")
-                }
-              >
-                {note?.trim() ? (
-                  note
-                ) : (
-                  <span className="text-neutral-500 italic">
-                    Bấm vào đây để thêm ghi chú cho cây này.
-                  </span>
-                )}
-              </button>
-            ) : (
-              <div className="space-y-3">
-                <Textarea
-                  rows={6}
-                  value={noteDraft}
-                  onChange={(e) => setNoteDraft(e.target.value)}
-                  placeholder="Nhập ghi chú cho cây này (lưu theo mã cây)"
-                  autoFocus
-                />
-                <div className="flex justify-end gap-2">
-                  {/* HỦY: không lưu, đóng editor */}
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setNoteDraft(note || "");
-                      setEditNote(false);
-                    }}
-                  >
-                    Hủy
-                  </Button>
-                  {/* LƯU: xanh lá, lưu & đóng */}
-                  <Button
-                    className="bg-emerald-600 hover:bg-emerald-700"
-                    onClick={() => {
-                      onSaveNote(noteDraft);
-                      setEditNote(false);
-                    }}
-                  >
-                    Lưu
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <Card ref={noteCardRef}>
+  <CardHeader className="pb-2">
+    <CardTitle>Ghi chú</CardTitle>
+  </CardHeader>
+  <CardContent>
+    {!editNote ? (
+      <button
+        type="button"
+        disabled={readOnly}
+        onClick={() => {
+          if (readOnly) return;
+          // MỞ CHẾ ĐỘ EDIT  ✅
+          setEditNote(true);
+          setNoteDraft(note || "");
+        }}
+        className={
+          "w-full text-left text-sm whitespace-pre-wrap break-words min-h-20 rounded-2xl border px-3 py-2 " +
+          (readOnly
+            ? "border-neutral-200 bg-neutral-50 text-neutral-700 cursor-default"
+            : "border-neutral-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/40 cursor-text transition-colors")
+        }
+      >
+        {rawNote ? (
+          // hiển thị tối đa NOTE_PREVIEW_MAX ký tự
+          displayNote
+        ) : (
+          <span className="text-neutral-500 italic">
+            Bấm vào đây để thêm ghi chú cho cây này.
+          </span>
+        )}
+      </button>
+    ) : (
+      <div className="space-y-3">
+        <Textarea
+          rows={6}
+          value={noteDraft}
+          onChange={(e) => setNoteDraft(e.target.value)}
+          placeholder="Nhập ghi chú cho cây này (lưu theo mã cây)"
+          autoFocus
+        />
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              // Hủy: đóng editor, không lưu
+              setEditNote(false);
+              setNoteDraft(note || "");
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            type="button"
+            onClick={() => {
+              // Lưu: gọi onSaveNote + đóng editor
+              onSaveNote(noteDraft.trim());
+              setEditNote(false);
+            }}
+          >
+            Lưu
+          </Button>
+        </div>
+      </div>
+    )}
+  </CardContent>
+</Card>
       </div>
 
 
@@ -3019,13 +3056,13 @@ const statusDefs = [
   { key: "fruit", label: "Quả" },
 ];
 
-// helper cắt 60 ký tự và thêm "…" nếu dài hơn (chỉ hiển thị, muốn xem đầy đủ phải edit)
+// helper cắt 60 ký tự và xuống dòng
 function formatStatus(text, max = 60) {
   if (!text || !text.trim()) return "";
   const trimmed = text.trim();
   if (trimmed.length <= max) return trimmed;
-  // Chỉ hiển thị 60 ký tự đầu + "…"
-  return trimmed.slice(0, max) + "…";
+ // Chỉ hiển thị 60 ký tự đầu + "…"
+ return trimmed.slice(0, max) + "…";
 }
 
 function handleEditStatus(fieldKey) {
@@ -4097,11 +4134,13 @@ function handleHealthEditorKeyDown(e) {
               canEditFruit && phen.fruit && phen.fruit.trim()
                 ? formatStatus(phen.fruit.trim())
                 : "Chưa đến giai đoạn"
+                
             }
             editable={canEditFruit}
             disabled={isStopped || !canEditFruit}
             isEditing={false}
             onEdit={() => startPhenFieldEdit("fruit", phen.fruit)}
+            
             editor={null}
           />
         </div>
@@ -4272,20 +4311,23 @@ function handleHealthEditorKeyDown(e) {
 
                     <div className="grid gap-1">
                       <label className="text-xs text-neutral-600">Tiêu đề</label>
-                      <Textarea
+                    <Textarea
   rows={2}
+  maxLength={100} // Giới hạn người dùng nhập tối đa 60 ký tự
   value={newTask.title}
   onChange={(e) => {
     setNewTask({ ...newTask, title: e.target.value });
     setErrorsTask((x) => ({ ...x, title: undefined }));
   }}
-  placeholder="Ví dụ: Tưới 10L/cây lúc sáng / Quét dọn cỏ..."
+  placeholder="Ví dụ: Tưới 10L/cây lúc sáng / Quét dọn cỏ."
   className={
     "border-2 " +
-    (errorsTask.title ? "border-red-500" : "border-neutral-300")
+    (errorsTask.title
+      ? "border-rose-400 focus:ring-rose-300"
+      : "border-neutral-300 focus:ring-neutral-200")
   }
-  disabled={isStopped}
 />
+
 
                       {errorsTask.title && (
                         <div className="text-xs text-red-500">
@@ -4515,26 +4557,34 @@ function handleHealthEditorKeyDown(e) {
               return (
                 <div className="p-6 space-y-3 text-sm">
                   <div className="rounded-xl border p-3">
-                    <div className="font-medium mb-2">Thông tin sẽ thêm</div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Badge className={"border " + TYPE_THEME[snap.type].pill}>
-                        {TYPE_THEME[snap.type].name}
-                      </Badge>
-                      <span>• Hạn: {formatVN(snap.due)}</span>
-                    </div>
-                    <div className="mt-2 font-semibold">{snap.title}</div>
-                    {Array.isArray(snap.details) && snap.details.length > 0 ? (
-                      <ol className="ml-5 list-decimal mt-1 space-y-1">
-                        {snap.details.map((d, i) => (
-                          <li key={i}>{d}</li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <div className="text-xs text-neutral-500 mt-1">
-                        Không có hướng dẫn chi tiết.
-                      </div>
-                    )}
-                  </div>
+  <div className="font-medium mb-2">Thông tin sẽ thêm</div>
+  <div className="flex flex-wrap items-center gap-2">
+    <Badge className={"border " + TYPE_THEME[snap.type].pill}>
+      {TYPE_THEME[snap.type].name}
+    </Badge>
+    <span>• Hạn: {formatVN(snap.due)}</span>
+  </div>
+
+  {/* Tiêu đề công việc – cho phép bẻ từ */}
+  <div className="mt-2 font-semibold break-words">
+    {snap.title}
+  </div>
+
+  {Array.isArray(snap.details) && snap.details.length > 0 ? (
+    <ol className="ml-5 list-decimal mt-1 space-y-1">
+      {snap.details.map((d, i) => (
+        <li key={i} className="break-words">
+          {d}
+        </li>
+      ))}
+    </ol>
+  ) : (
+    <div className="text-xs text-neutral-500 mt-1">
+      Không có hướng dẫn chi tiết.
+    </div>
+  )}
+</div>
+
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="outline"
