@@ -4,6 +4,35 @@ import { LivingBackground } from "@/components/background";
 import { computeInitialPhase, normalizePhaseBeforeSave } from "@/lib/treePhase";
 import TreeInfoPanel from "@/components/tree/TreeInfoPanel";
 import Section from "@/components/Section";
+import { getTreeById, TREES, TREES_ARRAY } from "@/data/demoTrees";
+// Đồng bộ lại dữ liệu cây vào demoTrees (TREES + TREES_ARRAY)
+// để các màn khác (TreeManagement) đọc được cùng 1 nguồn.
+function syncTreePatch(codeKey, patch) {
+  if (!codeKey || !patch) return;
+
+  // Cập nhật TREES dạng map
+  if (TREES && TREES[codeKey]) {
+    TREES[codeKey] = {
+      ...TREES[codeKey],
+      ...patch,
+    };
+  }
+
+  // Cập nhật trong TREES_ARRAY
+  if (Array.isArray(TREES_ARRAY)) {
+    const idx = TREES_ARRAY.findIndex(
+      (t) => String(t.id) === String(codeKey)
+    );
+    if (idx !== -1) {
+      TREES_ARRAY[idx] = {
+        ...TREES_ARRAY[idx],
+        ...patch,
+      };
+    }
+  }
+}
+
+import { useParams, useLocation } from "react-router-dom";
 
 import {
   Sprout,
@@ -24,6 +53,46 @@ import {
    ArrowDown,
    Activity,
 } from "lucide-react";
+
+const TYPE_THEME = {
+  water: {
+    name: "Tưới tiêu",
+    pill: "border-emerald-300 bg-emerald-50 text-emerald-800",
+    activeBtn: "bg-emerald-600 text-white border-emerald-600",
+    edge: "border-emerald-500"
+  },
+  fert: {
+    name: "Phân bón",
+    pill: "border-lime-300 bg-lime-50 text-lime-800",
+    activeBtn: "bg-lime-600 text-white border-lime-600",
+    edge: "border-lime-500"
+  },
+  pest: {
+    name: "Sâu bệnh",
+    pill: "border-rose-300 bg-rose-50 text-rose-800",
+    activeBtn: "bg-rose-600 text-white border-rose-600",
+    edge: "border-rose-500"
+  },
+  other: {
+    name: "Khác",
+    pill: "border-neutral-300 bg-neutral-50 text-neutral-800",
+    activeBtn: "bg-neutral-800 text-white border-neutral-800",
+    edge: "border-neutral-500"
+  }
+};
+
+const STATUS_THEME = {
+  active: {
+    title: "Đang chăm sóc",
+    pill: "border-emerald-300 bg-emerald-50 text-emerald-800",
+    desc: "Các tính năng chỉnh sửa đều mở."
+  },
+  stopped: {
+    title: "Dừng hoạt động",
+    pill: "border-gray-300 bg-gray-50 text-gray-700",
+    desc: "Chỉ xem, khoá các hành động tạo/sửa/xoá."
+  }
+};
 
 /* ===== Ambient Decor (Top + Sides) & Scroll Progress ===================== */
 
@@ -524,151 +593,7 @@ function Field({ label, value, icon }) {
 /* =========================================================================
    Constants & Demo Data
    ========================================================================= */
-const LOCATION = "fpt";
-const CARETAKER = "Quân";
 
-
-
-const TYPE_THEME = {
-  water: {
-    name: "Tưới tiêu",
-    pill: "bg-emerald-50 text-emerald-800 border-emerald-300",
-    edge: "border-emerald-500",
-    activeBtn: "bg-emerald-600 text-white hover:bg-emerald-700",
-  },
-  fert: {
-    name: "Phân bón",
-    pill: "bg-amber-50 text-amber-800 border-amber-300",
-    edge: "border-amber-500",
-    activeBtn: "bg-amber-600 text-white hover:bg-amber-700",
-  },
-  pest: {
-    name: "Sâu bệnh",
-    pill: "bg-rose-50 text-rose-800 border-rose-300",
-    edge: "border-rose-500",
-    activeBtn: "bg-rose-600 text-white hover:bg-rose-700",
-  },
-  other: {
-    name: "Công việc khác",
-    pill: "bg-slate-50 text-slate-800 border-slate-300",
-    edge: "border-slate-500",
-    activeBtn: "bg-slate-700 text-white hover:bg-slate-800",
-  },
-};
-
-const STATUS_THEME = {
-  active: {
-    pill: "bg-emerald-50 text-emerald-800 border-emerald-300",
-    title: "Đang chăm sóc",
-    desc: "Cây tiếp tục nhận nhắc việc, gợi ý và tính quá hạn bình thường.",
-  },
-  stopped: {
-    pill: "bg-rose-50 text-rose-800 border-rose-300",
-    title: "Dừng hoạt động",
-    desc: "Ngừng mọi nhắc việc/gợi ý. Cây chỉ hiển thị để tra cứu lịch sử.",
-  },
-};
-
-const TREES = {
-  "T-001": {
-    id: "T-001",
-    name: "Xoài ",
-    variety: "Cát chu",
-    plantedAt: "2023-04-15",
-    preNurseryAgeMonths: 5,
-    phase: "Sinh trưởng thân lá",
-    status: "active",
-    location: LOCATION,
-    plot: "Vườn số 1 — FPT",
-    region: "Miền Nam",
-    soil: "Đất phù sa cao ráo",
-    gallery: [
-      "https://images.unsplash.com/photo-1591781862772-b0b6b1f88b68?q=80&w=1200&auto=format&fit=crop",
-    ],
-    caretaker: CARETAKER,
-    planned: [
-      {
-        id: 101,
-        type: "water",
-        title: "Tưới giữ ẩm 70–80%",
-        due: "2025-10-15",
-        details: ["10–12L/cây", "Kiểm tra ẩm 20–30cm"],
-      },
-      {
-        id: 102,
-        type: "fert",
-        title: "Bón gốc NPK 16-16-8",
-        due: "2025-10-18",
-        details: ["200–300g/cây", "Rải đều theo tán"],
-      },
-      {
-        id: 103,
-        type: "pest",
-        title: "Theo dõi rầy chổng cánh",
-        due: "2025-10-20",
-        details: ["Bẫy dính vàng", "Ghi ảnh mẫu"],
-      },
-    ],
-    phenology: {
-      stage: "Sinh trưởng thân lá",
-      status: "Lá xanh, tán thoáng; một vài lá vàng nhẹ",
-      prevCare: "Tưới 2 ngày/lần; bón hữu cơ 1 tháng/lần",
-      leafRootNote: "Lá bánh tẻ xanh; rễ trắng khoẻ; gốc sạch",
-      seasonNote: "Đầu mùa khô; nhiệt độ 32–34°C; gió nhẹ",
-      workLog: "10/10 tỉa chồi; 09/10 tưới 12L; 05/10 bón hữu cơ",
-      events: [
-        { d: "2025-10-10", note: "Quả chín (mốc sinh học)" },
-        { d: "2025-09-28", note: "Kết trái" },
-        { d: "2025-08-05", note: "Ra hoa" },
-      ],
-    },
-  },
-  "T-003": {
-    id: "T-003",
-    name: "Bưởi Da Xanh",
-    variety: "Da xanh",
-    plantedAt: "2020-08-20",
-    preNurseryAgeMonths: 8,
-    phase: "Nuôi quả — trước thu hoạch",
-    status: "active",
-    location: LOCATION,
-    plot: "Vườn số 3 — FPT",
-    region: "Miền Nam",
-    soil: "Đất thịt thoát nước tốt",
-    gallery: [
-      "https://images.unsplash.com/photo-1613758947306-0cb0d585b9d6?q=80&w=1200&auto=format&fit=crop",
-    ],
-    caretaker: CARETAKER,
-    planned: [
-      {
-        id: 201,
-        type: "water",
-        title: "Tưới giữ ẩm 70–80%",
-        due: "2025-10-16",
-        details: ["8–10L/cây"],
-      },
-      {
-        id: 202,
-        type: "pest",
-        title: "Theo dõi bệnh Greening",
-        due: "2025-10-17",
-        details: ["Khảo sát lá, ghi chép"],
-      },
-    ],
-    phenology: {
-      stage: "Nuôi quả",
-      status: "Quả cỡ 8–10 cm, lá bóng; sinh trưởng ổn",
-      prevCare: "Bao trái lứa 1; tưới định kỳ 2–3 ngày/lần",
-      leafRootNote: "Lá bánh tẻ, không cháy mép; rễ trắng khoẻ",
-      seasonNote: "Cuối mùa mưa; mưa rải rác",
-      workLog: "16/10 khảo sát Greening; 14/10 tưới 9L/cây",
-      events: [
-        { d: "2025-10-02", note: "Bao trái lứa 2" },
-        { d: "2025-09-05", note: "Tỉa quả nhỏ" },
-      ],
-    },
-  },
-};
 
 /* =========================================================================
    Helpers
@@ -1294,7 +1219,7 @@ function PlannedRow({ p, theme, disabled, openEditMain, openComplete, openEditNo
 
 
 
-function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed }) {
+function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed,  loai, giong  }) {
   const [editNote, setEditNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || "");
   useEffect(() => setNoteDraft(note || ""), [note]);
@@ -1460,19 +1385,22 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
 </CardHeader>
 
   <CardContent>
-    {/* Truyền portalId để widget biết gắn nút lên header */}
-    <LifecycleWidget
-  tree={tree}
-  meta={meta}
-  portalId="lc-controls"   // <— quan trọng
-  value={currentPhaseId}
-  onChange={onPhaseChange}
-  cycleCount={cycleCount}
-  phase1Completed={phase1Completed}
-  disabled={meta.status === "stopped"}
-  treeId={codeKey}
-/>
-  </CardContent>
+  {/* Truyền portalId để widget biết gắn nút lên header */}
+  <LifecycleWidget
+    tree={tree}                     // ✅ dùng prop tree
+    meta={meta}
+    portalId="lc-controls"
+    value={currentPhaseId}
+    onChange={onPhaseChange}
+    cycleCount={cycleCount}
+    phase1Completed={phase1Completed}
+    disabled={meta.status === "stopped"}
+    treeId={codeKey}
+    treeType={loai}         // 👈 thêm
+  treeVariety={giong}
+  />
+</CardContent>
+
 </Card>
 
 
@@ -1824,6 +1752,7 @@ function TopHeader({ codeKey, meta, phen, tree, image, setImage, readOnly, ageAf
     return () => { try { document.head.removeChild(style); } catch {} };
   }, []);
 
+
 // === Helpers đọc Loại/Giống dùng chung toàn file ===
 function getLoai(src) {
   const s =
@@ -1859,23 +1788,102 @@ function getGiong(src) {
     return () => clearInterval(id);
   }, []);
 
+// ---- Source of tree id / data (URL params, querystring, or navigation state)
+const location = useLocation();
+const { id: paramId, treeId: paramTreeId } = useParams() || {};
+
+// ?treeId= or ?id=
+const qs = new URLSearchParams(location.search);
+const qsTreeId = qs.get("treeId") || qs.get("id");
+
+
+// When navigating with: navigate('/trees/xxx', { state: { tree } })
+const stateTree = location.state?.tree || location.state?.treeData || null;
+
+// Final id used everywhere
+const treeId = (
+  paramTreeId ||
+  qsTreeId ||
+  stateTree?.id ||
+  stateTree?._id ||
+  ""
+).toString();
+
   // Chọn cây theo query
-  const q = new URLSearchParams(
-    typeof window !== "undefined" ? window.location.search : ""
+  // Chọn cây theo id + merge với stateTree nếu có
+const baseTree = React.useMemo(() => {
+  // lấy từ demoTrees theo id
+  const fromDemo =
+    getTreeById(treeId) ||
+    TREES?.[treeId] ||
+    (Array.isArray(TREES_ARRAY)
+      ? TREES_ARRAY.find((t) => String(t?.id) === String(treeId))
+      : null) ||
+    {};
+
+  // dữ liệu truyền qua navigate(..., { state: { tree } })
+  const fromState = stateTree || {};
+
+  // merge: chỉ ghi đè nếu giá trị từ stateTree KHÔNG rỗng
+  const merged = { ...fromDemo };
+  Object.entries(fromState).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      merged[key] = value;
+    }
+  });
+
+  return merged;
+}, [stateTree, treeId]);
+
+
+// ⛑️ GUARD: thiếu/không tìm thấy cây → render trạng thái an toàn, tránh crash
+const isEmptyBaseTree = !baseTree || Object.keys(baseTree).length === 0;
+
+if (!treeId || isEmptyBaseTree) {
+  return (
+    <div className="min-h-screen bg-[#1F302F] grid place-items-center p-6">
+      <div className="max-w-lg w-full">
+        <div className="rounded-2xl border bg-white shadow-xl p-5">
+          <div className="text-lg font-semibold mb-1">
+            { !treeId ? "Thiếu tham số cây (treeId)" : "Không tìm thấy dữ liệu cây" }
+          </div>
+          <div className="text-sm text-neutral-700">
+            { !treeId
+              ? "URL chưa có treeId hoặc state không mang theo tree."
+              : "ID không khớp trong dữ liệu demo. Hãy kiểm tra lại đường dẫn hoặc danh sách cây."
+            }
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              className="h-9 px-3 rounded-xl border bg-white hover:bg-neutral-50"
+              onClick={() => (window.history.length > 1 ? window.history.back() : window.location.assign("/"))}
+            >
+              ← Quay lại
+            </button>
+            <button
+              className="h-9 px-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={() => window.location.reload()}
+            >
+              Tải lại trang
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
-  const treeId = q.get("treeId") || "T-001";
-  const baseTree = TREES[treeId] || TREES["T-001"];
-  const tree = baseTree;
+}
+
 
 // ---- DB lifecycle (single source of truth) ----
-const lifecycleFromDB = tree.lifecycle || {}; // bạn có thể gắn từ fetch DB
+const lifecycleFromDB = baseTree.lifecycle || {};
 
 const initialPhaseId = normalizePhaseId(
   lifecycleFromDB.currentPhaseId ||
-  tree?.phenology?.currentPhase ||
-  tree?.phenology?.stage ||
-  tree?.phase
+  baseTree?.phenology?.currentPhase ||
+  baseTree?.phenology?.stage ||
+  baseTree?.phase
 );
+
 
 const initialP1Completed = typeof lifecycleFromDB.phase1Completed === "boolean"
   ? lifecycleFromDB.phase1Completed
@@ -1909,19 +1917,22 @@ const [draft, setDraft] = React.useState(null);
 
  // ==== META (data thật) + DRAFT (để sửa, không làm bẩn state khi Hủy) ====
 const [meta, setMeta] = useState({
-  name: tree.name || "",
-  plantedAt: tree.plantedAt || today(),
-  variety: tree.variety || "",
-  preNurseryAgeMonths: Number(tree.preNurseryAgeMonths || 0),
-  soil: tree.soil || "",
-  status: tree.status || "active",
+  name: baseTree.name || "",
+  plantedAt: baseTree.plantedAt || today(),
+  variety: baseTree.variety || "",
+  preNurseryAgeMonths: Number(baseTree.preNurseryAgeMonths || 0),
+  soil: baseTree.soil || "",
+  status: baseTree.status || "active",
 });
+
+
+
 const [editingMeta, setEditingMeta] = useState(false);
 const [metaDraft, setMetaDraft] = useState(meta);
 const [metaErrors, setMetaErrors] = useState({});
 
 // ==== MÃ CÂY (cho phép đổi mã & migrate LocalStorage ảnh/ghi chú) ====
-const [codeKey, setCodeKey] = useState(tree.id); // trước đây bạn là const codeKey = tree.id;
+const [codeKey, setCodeKey] = useState(baseTree.id || treeId); // trước đây bạn là const codeKey = tree.id;
 const [codeDraft, setCodeDraft] = useState(codeKey);
 // ưu tiên lấy từ tree -> meta -> info/form
 
@@ -1930,8 +1941,8 @@ const [codeDraft, setCodeDraft] = useState(codeKey);
 
 
 // "Xoài Cát" hoặc chỉ "Xoài" nếu không có giống
-const loai  = getLoai(meta) || getLoai(tree);
-const giong = getGiong(meta) || getGiong(tree);
+const loai  = getLoai(meta) || getLoai(baseTree);
+const giong = getGiong(meta) || getGiong(baseTree);
 const tenCayHero = [loai, giong].filter(Boolean).join(" ");
 
   // status flags + ref cho toast hàng ngày
@@ -1994,10 +2005,26 @@ const tenCayHero = [loai, giong].filter(Boolean).join(" ");
   };
 
   // States chính
-  const [planned, setPlanned] = useState(baseTree.planned || []);
-  useEffect(() => {
-    plannedRef.current = planned;
-  }, [planned]);
+ // States chính
+const [planned, setPlannedState] = useState(baseTree.planned || []);
+
+// Wrapper: vừa set state, vừa sync về demoTrees
+function setPlanned(nextOrUpdater) {
+  setPlannedState((prev) => {
+    const next =
+      typeof nextOrUpdater === "function" ? nextOrUpdater(prev) : nextOrUpdater;
+
+    // đồng bộ planned về TREES + TREES_ARRAY
+    syncTreePatch(codeKey, { planned: next });
+
+    return next;
+  });
+}
+
+useEffect(() => {
+  plannedRef.current = planned;
+}, [planned]);
+
 
   const [aiSuggestions, setAiSuggestions] = useState(() =>
   getAISuggestions(baseTree, initialPhaseId)
@@ -2593,13 +2620,13 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
       <div className="grid md:grid-cols-3 gap-6">
         {/* LEFT: thông tin */}
         <div className="md:col-span-2 grid md:grid-cols-2 gap-x-6 gap-y-2">
-          <Field label="Cây" value={meta.name} />
+          <Field label="Cây" value={meta.name || baseTree.name} />
           <Field label="Mã cây" value={`#${codeKey}`} />
           
           <Field label="Giống" value={meta.variety} />
           <Field label="Ngày trồng" value={formatVN(meta.plantedAt)} />
           <Field label="Tuổi trước khi trồng" value={`${meta.preNurseryAgeMonths} tháng`} />
-          <Field label="Loại đất" value={meta.soil || "—"} />
+          <Field label="Loại đất" value={meta.soil || baseTree.soil || "—"} />
           
           
           <Field label="Tổng tuổi" value={`${totalAge} tháng`} />
@@ -2737,35 +2764,45 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
 
           <div className="md:col-span-2 flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => setEditingMeta(false)}>Hủy</Button>
-            <Button
+           <Button
   onClick={() => {
     // Chuẩn hóa draft
     const fixed = {
       ...metaDraft,
-      preNurseryAgeMonths: Math.max(0, parseInt(metaDraft.preNurseryAgeMonths || 0, 10) || 0),
+      preNurseryAgeMonths: Math.max(
+        0,
+        parseInt(metaDraft.preNurseryAgeMonths || 0, 10) || 0
+      ),
     };
 
-// ✅ Validate: buộc phải chọn từ hệ thống
-   const typeList = DROPDOWN_OPTIONS.treeTypes;
-   const varList  = (DROPDOWN_OPTIONS.varietiesByType[fixed.name?.trim()] || []);
-   const soilList = DROPDOWN_OPTIONS.soils;
+    // ✅ Validate: buộc phải chọn từ hệ thống
+    const typeList = DROPDOWN_OPTIONS.treeTypes;
+    const varList =
+      DROPDOWN_OPTIONS.varietiesByType[fixed.name?.trim()] || [];
+    const soilList = DROPDOWN_OPTIONS.soils;
 
-   const errors = {};
-   if (!inList(fixed.name, typeList))    errors.name = "Chỉ được chọn loại có trong hệ thống.";
-   if (!inList(fixed.variety, varList))  errors.variety = "Chỉ được chọn giống hợp lệ theo loại.";
-   if (!inList(fixed.soil, soilList))    errors.soil = "Chỉ được chọn loại đất có trong hệ thống.";
-   setMetaErrors(errors);
-   if (Object.keys(errors).length) return; // ❌ dừng lưu nếu có lỗi
+    const errors = {};
+    if (!inList(fixed.name, typeList))
+      errors.name = "Chỉ được chọn loại có trong hệ thống.";
+    if (!inList(fixed.variety, varList))
+      errors.variety = "Chỉ được chọn giống hợp lệ theo loại.";
+    if (!inList(fixed.soil, soilList))
+      errors.soil = "Chỉ được chọn loại đất có trong hệ thống.";
+    setMetaErrors(errors);
+    if (Object.keys(errors).length) return; // ❌ dừng lưu nếu có lỗi
 
     // Nếu đổi mã cây => migrate LocalStorage ảnh/ghi chú
+    let targetKey = codeKey;         // <— dùng key này để sync demoTrees
     if (codeDraft && codeDraft !== codeKey) {
       const oldImg = imageRegistry.get(codeKey);
       const oldNote = noteRegistry.get(codeKey);
       if (oldImg) imageRegistry.set(codeDraft, oldImg);
       if (oldNote) noteRegistry.set(codeDraft, oldNote);
       imageRegistry.clear(codeKey);
-      noteRegistry.set(codeKey, ""); // xóa ghi chú cũ (tuỳ bạn muốn clear hay giữ)
+      noteRegistry.set(codeKey, "");
+
       setCodeKey(codeDraft);
+      targetKey = codeDraft;        // <— key mới
 
       // (tuỳ chọn) cập nhật URL query ?treeId=...
       try {
@@ -2778,12 +2815,24 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
     // Ghi meta thật
     setMeta(fixed);
 
+    // ✅ Đồng bộ meta sang demoTrees (TreeManagement sẽ đọc được)
+    syncTreePatch(targetKey, {
+      id: targetKey,
+      name: fixed.name,
+      variety: fixed.variety,
+      plantedAt: fixed.plantedAt,
+      preNurseryAgeMonths: fixed.preNurseryAgeMonths,
+      soil: fixed.soil,
+      status: fixed.status,
+    });
+
     // đóng edit
     setEditingMeta(false);
   }}
 >
   Lưu
 </Button>
+
 
           </div>
         </div>
@@ -2818,9 +2867,49 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
           <Button variant="outline" onClick={() => { setPhenDraft(phen); setEditingPhen(false); }}>
             Hủy
           </Button>
-          <Button onClick={() => { setPhen(phenDraft); setEditingPhen(false); /* TODO: gọi API lưu DB */ }}>
-            Lưu
-          </Button>
+          <Button
+  onClick={() => {
+    setPhen(phenDraft);
+    setEditingPhen(false);
+
+    // Gom phenology mới
+    const nextPhen = {
+      ...(baseTree.phenology || {}),
+      leafStatus:   phenDraft.leaf,
+      branchStatus: phenDraft.branch,
+      flowerStatus: phenDraft.flower,
+      fruitStatus:  phenDraft.fruit,
+      stage:        currentPhaseId,
+      currentPhase: currentPhaseId,
+    };
+
+    // Gom state mới (để các màn legacy đọc state.* vẫn đúng)
+    const nextState = {
+      ...(baseTree.state || {}),
+      leaf:   phenDraft.leaf,
+      branch: phenDraft.branch,
+      flower: phenDraft.flower,
+      fruit:  phenDraft.fruit,
+    };
+
+    // ✅ Sync đồng thời phenology + state + *State + stateNote
+    syncTreePatch(codeKey, {
+      phenology: nextPhen,
+      state:     nextState,
+
+      // fallback cho chỗ nào đang dùng stateNote / leafState / ...
+      stateNote:    phenDraft.leaf,
+      leafState:    phenDraft.leaf,
+      branchState:  phenDraft.branch,
+      flowerState:  phenDraft.flower,
+      fruitState:   phenDraft.fruit,
+    });
+  }}
+>
+  Lưu
+</Button>
+
+
         </>
       )}
     </div>
@@ -3120,7 +3209,7 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
                 setImage={setImage}
                 codeKey={codeKey}
                 phen={phen}
-                tree={tree}
+                tree={baseTree}
                 meta={meta}
                 planned={planned}
                 openEditNote={openEditNote}
@@ -3131,15 +3220,34 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
                   currentPhaseId={currentPhaseId}
  cycleCount={cycleCount}
  phase1Completed={phase1Completed}
+  loai={loai}
+  giong={giong}
  onPhaseChange={(payload) => {
-   // payload: { phaseId, cycleCount, phase1Completed }
-   setCurrentPhaseId(payload.phaseId);
-   setCycleCount(payload.cycleCount);
-   setPhase1Completed(payload.phase1Completed);
-  // TODO: gọi API để lưu DB, ví dụ:
-   // api.trees.updateLifecycle(codeKey, payload).catch(console.error);
- }}
-              />
+    // payload: { phaseId, cycleCount, phase1Completed }
+    setCurrentPhaseId(payload.phaseId);
+    setCycleCount(payload.cycleCount);
+    setPhase1Completed(payload.phase1Completed);
+
+    // ✅ đồng bộ lifecycle + phase vào demoTrees
+    syncTreePatch(codeKey, {
+      lifecycle: {
+        ...(lifecycleFromDB || {}),
+        currentPhaseId: payload.phaseId,
+        phase1Completed: payload.phase1Completed,
+        cycleCount: payload.cycleCount,
+      },
+      // nếu bạn có field phase / phenology.stage ở TreeManagement thì cho nó trùng luôn:
+      phase: payload.phaseId,
+      phenology: {
+        ...(baseTree.phenology || {}),
+        stage: payload.phaseId,
+        currentPhase: payload.phaseId,
+      },
+    });
+
+    // sau này thay bằng api.trees.updateLifecycle(...)
+  }}
+/>
               
             </div>
           </aside>
@@ -3586,10 +3694,11 @@ const pageItems = list.slice(start, start + PAGE_SIZE);
 /* =========================================================================
    Small components & helpers
    ========================================================================= */
-const safePhenText = (v) => {
+function safePhenText(v) {
   const s = String(v ?? "").trim();
   return s ? s : "Bình thường";
-};
+}
+
 
 function TypeSwitch({ type, active, onClick, overdue = 0 }) {
   const theme = TYPE_THEME[type];
@@ -3786,10 +3895,24 @@ function LCTransientPath({ d, color, duration = 950, headSize = 10, headPad = 8,
 
 /* ===== Timeline ===== */
 function LifecycleTimeline({
-  activePhase, previewPhase, isPhase1Completed, isSpinning,
-  treeData, transitionFlow, transitionKey, p1Transition, p1Key,
-  trailIndex, suppressId, isBackwardRun, postHideIdx,
+  activePhase,
+  previewPhase,
+  isPhase1Completed,
+  isSpinning,
+  treeData,
+  treeId,
+  treeType,
+  treeVariety,
+  transitionFlow,
+  transitionKey,
+  p1Transition,
+  p1Key,
+  trailIndex,
+  suppressId,
+  isBackwardRun,
+  postHideIdx,
 }) {
+
   const phase1 = { id: "growth_development", name: "Sinh trưởng & Phát triển", icon: "🌱", color: "emerald" };
   const cyclePhases = [
     { id: "flowering",   name: "Ra Hoa",          icon: "🌸", color: "pink"  },
@@ -3945,7 +4068,10 @@ const canEditFruit = useMemo(
   </span>
 
   <span className="text-neutral-400 shrink-0">•</span>
-  <span className="text-neutral-500 shrink-0">#{treeData?.id || "—"}</span>
+<span className="text-neutral-500 shrink-0">
+  #{treeId || treeData?.id || "—"}
+</span>
+
 </div>
 
           <div className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg mb-1.5 pointer-events-none
@@ -3988,10 +4114,19 @@ const canEditFruit = useMemo(
           <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
             <div className="bg-white/90 backdrop-blur rounded-full shadow-xl ring-1 ring-black/5 w-24 h-24 flex flex-col items-center justify-center p-2">
               <div className="text-[10px] text-gray-500 font-medium">Loại cây</div>
-              <div className="text-[13px] font-bold text-emerald-600">{treeData?.type || "—"}</div>
-              <div className="text-[10px] text-gray-500 font-medium mt-0.5">Giống</div>
-              <div className="text-[10px] text-gray-700 font-semibold">{treeData?.variety || "—"}</div>
-              <div className="text-[9px] text-gray-400 mt-0.5">ID: {treeData?.id || "—"}</div>
+<div className="text-[13px] font-bold text-emerald-600">
+  {treeType || "—"}
+</div>
+
+<div className="text-[10px] text-gray-500 font-medium mt-0.5">Giống</div>
+<div className="text-[10px] text-gray-700 font-semibold">
+  {treeVariety || "—"}
+</div>
+
+<div className="text-[9px] text-gray-400 mt-0.5">
+  ID: {treeId || treeData?.id || "—"}
+</div>
+
             </div>
           </div>
 
@@ -4177,8 +4312,22 @@ function LifecycleWidget({
   tree, meta, portalId, value, onChange,
   cycleCount: cycleCountProp, phase1Completed: phase1CompletedProp,
   disabled = false,
-  treeId, // ⬅️ nhận id được truyền từ AsideCards (codeKey)
+  treeId,
+  treeType,
+  treeVariety,
 }) {
+  const cyclePhases = ["flowering", "fruiting", "pre_harvest", "post_harvest"];
+  const isCyclePhase = (p) => cyclePhases.includes(p);
+
+  const displayType =
+  treeType ||
+  getLoai(meta) ||
+  getLoai(tree);
+
+const displayVariety =
+  treeVariety ||
+  getGiong(meta) ||
+  getGiong(tree);
 
   // Ưu tiên phase từ props.value (DB) -> fallback text trong tree
 const initPhase = normalizePhaseId(
@@ -4187,6 +4336,22 @@ const initPhase = normalizePhaseId(
   mapPhaseIdFromText(tree?.phenology?.currentPhase || tree?.phenology?.stage || tree?.phase || "")
 );
 
+// Thứ tự các phase trên vòng tròn
+
+
+// Tính trạng thái ban đầu từ prop / tree
+const initialPhase1Completed =
+  typeof phase1CompletedProp === "boolean"
+    ? phase1CompletedProp
+    : initPhase !== "growth_development";
+
+// Nếu đã qua giai đoạn 1 thì trailIndex = index của phase hiện tại
+// (VD: pre_harvest -> 2; fruiting -> 1; flowering -> 0)
+const initialTrailIndex = initialPhase1Completed
+  ? Math.max(0, cyclePhases.indexOf(initPhase))
+  : -1;
+
+
 // Phase controlled
 const [activePhase, setActivePhase] = useState(initPhase);
 useEffect(() => {
@@ -4194,11 +4359,8 @@ useEffect(() => {
 }, [value]);
 
 // Phase1Completed & cycleCount controlled
-const [isPhase1Completed, setIsPhase1Completed] = useState(
-  typeof phase1CompletedProp === "boolean"
-    ? phase1CompletedProp
-    : initPhase !== "growth_development"
-);
+const [isPhase1Completed, setIsPhase1Completed] =
+   useState(initialPhase1Completed);
 useEffect(() => {
   if (typeof phase1CompletedProp === "boolean") {
     setIsPhase1Completed(phase1CompletedProp);
@@ -4229,9 +4391,36 @@ const [isSpinning, setIsSpinning] = useState(false);
   const [postHideIdx, setPostHideIdx] = useState(null);
   const [isRunning, setIsRunning] = useState(false);
 
-  const cyclePhases = ["flowering", "fruiting", "pre_harvest", "post_harvest"];
-  const isCyclePhase = (p) => cyclePhases.includes(p);
+
   const runSpinReset = () => { setIsSpinning(true); setTimeout(() => setIsSpinning(false), 1000); };
+
+  useEffect(() => {
+  // Nếu parent đẩy phase/phase1Completed mới từ DB thì đồng bộ lại
+  const externalPhase = normalizePhaseId(
+    value ??
+      tree?.lifecycle?.currentPhaseId ??
+      mapPhaseIdFromText(
+        tree?.phenology?.currentPhase ||
+          tree?.phenology?.stage ||
+          tree?.phase ||
+          ""
+      )
+  );
+
+  const externalP1Done =
+    typeof phase1CompletedProp === "boolean"
+      ? phase1CompletedProp
+      : externalPhase !== "growth_development";
+
+  if (!externalP1Done) {
+    setTrailIndex(-1);
+    return;
+  }
+
+  const idx = cyclePhases.indexOf(externalPhase);
+  if (idx >= 0) setTrailIndex(idx);
+}, [value, phase1CompletedProp]);
+
 
   // Modal xác nhận (nhỏ)
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -4442,6 +4631,9 @@ setIsRunning(false);
           isPhase1Completed={isPhase1Completed}
           isSpinning={isSpinning}
           treeData={treeData}
+          treeId={treeId}                 // 👈 mã cây chuẩn
+  treeType={displayType}          // 👈 loại chuẩn
+  treeVariety={displayVariety}
           transitionFlow={transitionFlow}
           transitionKey={transitionKey}
           p1Transition={p1Transition}
