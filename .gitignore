@@ -92,8 +92,22 @@ wwwroot/dist/
 *.ldf
 *.ndf
 
-# Others
-*.dbmdl
-*.bak
-*.sql
-*.sqlproj
+# Environment
+.env
+.env.local
+appsettings.Development.json
+
+# Test results
+TestResults/
+*.trx
+
+# NuGet
+packages/
+*.nupkg
+
+# Excel files (temporary)
+*.xlsx
+*.csv
+
+#cursor
+.cursor/

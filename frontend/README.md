@@ -7,8 +7,9 @@ This is a minimal React scaffold (Create React App style).
 4. npm i -D tailwindcss postcss autoprefixer
 5. npm i lucide-react
 6. npx tailwindcss init -p
-7. chạy thêm các lệch sau nếu không chạy được
-8. npx shadcn-ui@latest init
+7. npx shadcn-ui@latest init
+8. chạy thêm các lệch sau nếu không chạy được
+npm i react-qr-code
 npm i class-variance-authority clsx tailwind-merge lucide-react
 npm i framer-motion react-router-dom
 npm i @radix-ui/react-dropdown-menu @radix-ui/react-separator @radix-ui/react-label @radix-ui/react-dialog @radix-ui/react-slot
