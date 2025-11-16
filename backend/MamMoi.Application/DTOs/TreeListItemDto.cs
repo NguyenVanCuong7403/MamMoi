@@ -9,6 +9,10 @@ namespace MamMoi.Application.DTOs
         string TreeTypeName,
         string StageName,
         string HealthStatus,
-        DateTime CreatedAt
+        string LeafStatus,
+        string BranchStatus,
+        string? ImageUrl,
+        DateTime CreatedAt,
+        DateOnly? PlantDate
     );
 }

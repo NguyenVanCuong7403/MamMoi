@@ -33,6 +33,26 @@ public class TreesController : ControllerBase
         return int.TryParse(idClaim?.Value, out var id) ? id : (int?)null;
     }
 
+
+    /// <summary>
+    /// Helper: Lấy UserId từ JWT Claims
+    /// </summary>
+    private int? GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            return null;
+        }
+
+        if (int.TryParse(userIdClaim, out var userId))
+        {
+            return userId;
+        }
+
+        return null;
+    }
+
     // Helper an toàn: lấy userId từ JWT hoặc ?userId=; nếu thiếu thì trả 400
     private bool TryResolveUserId(out int userId, out IActionResult? errorResult)
     {
@@ -74,7 +94,7 @@ public class TreesController : ControllerBase
         [FromQuery] bool? isActive = null,
         CancellationToken ct = default)
     {
-        var uid = GetUserIdFromClaims() ?? userId;
+        var uid = GetCurrentUserId() ?? userId;
         if (uid is null || uid <= 0)
             return BadRequest("Vui lòng truyền userId (query) hoặc gửi JWT hợp lệ.");
 

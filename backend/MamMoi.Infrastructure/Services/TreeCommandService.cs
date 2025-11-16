@@ -80,10 +80,26 @@ namespace MamMoi.Infrastructure.Services
 
             if (req.StageId.HasValue && req.StageId.Value != tree.StageId)
             {
-                bool okStage = await _db.TreeGrowthStages
-                    .AnyAsync(s => s.StageId == req.StageId && s.TreeTypeId == tree.TreeTypeId, ct);
-                if (!okStage) throw new InvalidOperationException("Stage does not belong to TreeType.");
-                tree.StageId = req.StageId.Value;
+                var minStageId = await _db.TreeGrowthStages
+        .Where(s => s.TreeTypeId == tree.TreeTypeId)
+        .MinAsync(s => (int?)s.StageId, ct);
+                if (minStageId is null)
+                    throw new InvalidOperationException(
+                        $"TreeType {tree.TreeTypeId} does not have any stages configured."
+                    );
+                var realStageId = minStageId.Value + (req.StageId.Value - 1);
+                if (realStageId != tree.StageId)
+                {
+                    // 4) Đảm bảo stage này thuộc đúng TreeType
+                    bool okStage = await _db.TreeGrowthStages
+                        .AnyAsync(s => s.StageId == realStageId && s.TreeTypeId == tree.TreeTypeId, ct);
+
+                    if (!okStage)
+                        throw new InvalidOperationException("Stage does not belong to TreeType.");
+
+                    // 5) Gán StageId thực vào entity
+                    tree.StageId = realStageId;
+                }
             }
 
             if (req.GardenSoilId.HasValue && req.GardenSoilId.Value != tree.GardenSoilId)

@@ -51,13 +51,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (fullName, email, password) => {
+  const register = async (fullName, email, phone, password) => {
     setLoading(true);
     try {
       const response = await AuthRepository.register({
         fullName,
         email,
         password,
+        phone,
       });
 
       console.log("🔍 AuthContext register response:", response);

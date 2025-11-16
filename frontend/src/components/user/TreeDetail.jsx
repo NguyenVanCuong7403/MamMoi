@@ -4,8 +4,11 @@ import { LivingBackground } from "@/components/background";
 import { computeInitialPhase, normalizePhaseBeforeSave } from "@/lib/treePhase";
 import TreeInfoPanel from "@/components/tree/TreeInfoPanel";
 import Section from "@/components/Section";
-import { getTreeById, TREES, TREES_ARRAY } from "@/data/demoTrees";
+//import { getTreeById, TREES, TREES_ARRAY } from "@/data/demoTrees";
 
+import GardenRepository from "@/API/repositories/GardenRepository";
+import TreeRepository from "@/API/repositories/TreeRepository"; 
+import GardenSoilRepository from "@/API/repositories/GardenSoilRepository";
 import { normalize as vnNormalize } from "@/lib/useVnAdmin";
 import { Calendar as CalIcon } from "lucide-react";
 
@@ -14,28 +17,7 @@ import { Label } from "@/components/ui/label"; // nếu bạn dùng Label trong 
 // Đồng bộ lại dữ liệu cây vào demoTrees (TREES + TREES_ARRAY)
 // để các màn khác (TreeManagement) đọc được cùng 1 nguồn.
 function syncTreePatch(codeKey, patch) {
-  if (!codeKey || !patch) return;
-
-  // Cập nhật TREES dạng map
-  if (TREES && TREES[codeKey]) {
-    TREES[codeKey] = {
-      ...TREES[codeKey],
-      ...patch,
-    };
-  }
-
-  // Cập nhật trong TREES_ARRAY
-  if (Array.isArray(TREES_ARRAY)) {
-    const idx = TREES_ARRAY.findIndex(
-      (t) => String(t.id) === String(codeKey)
-    );
-    if (idx !== -1) {
-      TREES_ARRAY[idx] = {
-        ...TREES_ARRAY[idx],
-        ...patch,
-      };
-    }
-  }
+  return;
 }
 
 // Cấu hình 4 loại tình trạng hiện tại
@@ -1024,14 +1006,6 @@ const DROPDOWN_OPTIONS = {
     "Dừa": ["Dừa Xiêm", "Dừa Dứa"],
   },
   soils: [
-    "Đất phù sa", 
-    "Đất phù sa cao ráo",
-    "Đất thịt nhẹ",
-    "Đất thịt thoát nước tốt",
-    "Đất pha cát",
-    "Đất đỏ bazan",
-    "Đất cát ven sông",
-    "Đất phèn đã cải tạo",
   ],
 };
 
@@ -1115,8 +1089,8 @@ function Field({
 }
 
 
-/* =========================================================================
-   Helpers
+/* ============================================================
+   Helpers Helpers
    ========================================================================= */
 function monthsBetween(aStr, b = new Date()) {
   const a = new Date(aStr + "T00:00:00");
@@ -1312,9 +1286,11 @@ const imageRegistry = {
     window.localStorage.setItem(LS_KEY, JSON.stringify(map));
   },
 };
-function ImagePicker({ code, value, onChange, disabled }) {
+function ImagePicker({ code, value, onChange, disabled, treeId }) {
   const [urlInput, setUrlInput] = useState("");
   const [linkOpen, setLinkOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     if (!code) return;
@@ -1323,21 +1299,59 @@ function ImagePicker({ code, value, onChange, disabled }) {
     // eslint-disable-next-line
   }, [code]);
 
-  function handleFile(e) {
+  async function uploadRealImage(file, previewUrl) {
+    try {
+      setUploading(true);
+      setUploadError("");
+
+      const res = await GardenRepository.uploadGardenImage(file);
+      // Tùy ApiClient: nếu nó trả res.data thì chỉnh lại cho đúng
+      const realUrl = res?.url ?? res?.data?.url;
+
+      if (!realUrl) {
+        setUploadError("Không lấy được đường dẫn ảnh từ server, đang dùng ảnh tạm trên máy.");
+        // vẫn giữ previewUrl
+        return;
+      }
+
+      // Cập nhật onChange với URL thật từ server
+      onChange?.(realUrl);
+
+      // Nếu muốn cache theo mã cây thì override registry bằng URL thật
+      if (code) {
+        imageRegistry.set(code, realUrl);
+      }
+      await TreeRepository.uploadTreeImage(treeId, {imageUrl: realUrl});
+    } catch (err) {
+      console.error("Upload garden image failed", err);
+      setUploadError("Tải ảnh lên server thất bại, đang dùng ảnh tạm trên máy.");
+      // Giữ nguyên previewUrl
+    } finally {
+      setUploading(false);
+    }
+  }
+
+
+  const handleFile = async (e) => {
     if (disabled) return;
     const f = e.target.files?.[0];
     if (!f) return;
     const objectUrl = URL.createObjectURL(f);
     onChange(objectUrl);
     if (code) imageRegistry.set(code, objectUrl);
+
+    await uploadRealImage(f, objectUrl);
+    
   }
 
-  function applyUrl() {
+  const applyUrl = async () => {
     if (disabled) return;
     const u = (urlInput || "").trim();
     if (!u) return;
     onChange(u);
     if (code) imageRegistry.set(code, u);
+    
+    await TreeRepository.uploadTreeImage(treeId, {imageUrl: u});
     setUrlInput("");
     setLinkOpen(false);
   }
@@ -1985,7 +1999,7 @@ const displayNote =
     cycleCount={cycleCount}
     phase1Completed={phase1Completed}
     disabled={meta.status === "stopped"}
-    treeId={codeKey}
+    treeId={tree.id}
     treeType={loai}         // 👈 thêm
   treeVariety={giong}
   />
@@ -2006,6 +2020,7 @@ const displayNote =
               value={image}
               onChange={setImage}
               disabled={readOnly}
+              treeId={meta?.treeId || baseTree?.treeId || apiTree?.treeId}
             />
           </CardContent>
         </Card>
@@ -2497,6 +2512,108 @@ function SearchableSelect({
 }
 
 
+function mapStageNameToPhaseId(stageName) {
+  if (!stageName) return "growth_development";
+
+  const s = vnNormalize(String(stageName)).toLowerCase();
+
+  if (s.includes("ra hoa") || (s.includes("hoa") && !s.includes("sau"))) {
+    return "flowering";
+  }
+
+  if (s.includes("dau qua") || s.includes("nuoi qua") || s.includes("trai")) {
+    return "fruiting";
+  }
+
+  if (s.includes("truoc thu hoach")) {
+    return "pre_harvest";
+  }
+
+  if (s.includes("sau thu hoach")) {
+    return "post_harvest";
+  }
+
+  if (s.includes("thu hoach")) {
+    return "pre_harvest";
+  }
+
+  return "growth_development";
+}
+
+function mapDtoToTree(dto) {
+  if (!dto) return {};
+
+
+  const toDateInput = (value) => {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
+
+  const plantedAt = toDateInput(dto.plantDate);
+  const expectedHarvestDate = toDateInput(dto.expectedHarvestDate);
+
+  const phaseId = mapStageNameToPhaseId(dto.stageName);
+  
+
+  return {
+    // ID & mã
+    id: dto.treeId,
+    code: dto.treeCode,
+    name: dto.treeName,
+
+    // Ngày & vị trí
+    plantedAt,
+    plantDate: plantedAt,
+    location: dto.location,
+    gardenId: dto.gardenId,
+    gardenName: dto.gardenName,
+
+    // Loại / giống: để getLoai / getGiong hoạt động
+    loai: dto.treeTypeName,
+    variety: dto.variety,      // nếu DTO sau này có thêm trường này thì tự map
+    tree_type: dto.treeTypeName,
+
+    updatedAt: dto.updatedAt,
+    soil: dto.gardenSoilId,
+    notes: dto.notes,
+    qrUrl: dto.qrcodeUrl,
+    stageName: dto.stageName,
+    phase: dto.stageName,
+
+    status: dto.isActive  ? 'active' : 'stopped',
+
+    isActive: dto.isActive,
+    isFruiting: dto.isFruiting,
+    expectedHarvestDate,
+
+    // Trạng thái sinh trưởng
+    leafStatus: dto.leafStatus,
+    branchStatus: dto.branchStatus,
+    flowerStatus: dto.flowerStatus,
+    fruitStatus: dto.fruitStatus,
+
+    // lifecycle cho vòng tròn giai đoạn
+    lifecycle: {
+      currentPhaseId: phaseId,
+      phase1Completed: phaseId !== "growth_development",
+      cycleCount: 0,
+    },
+    phenology:{
+      currentPhase: phaseId,
+    },
+
+    // fallback cho phần timeline/planned
+    planned: dto.planned || [],
+    timeline: dto.timeline || [],
+  };
+}
+
 
    export default function TreeDetail() {
   // Hiệu ứng toàn cục
@@ -2514,6 +2631,87 @@ function SearchableSelect({
     return () => { try { document.head.removeChild(style); } catch {} };
   }, []);
 
+  const [saving, setSaving] = useState(false);
+
+  async function persistTreePatch(partial) {
+    if (!treeId) return;
+
+
+    try {
+      setSaving(true);
+
+      // body gửi lên API – chỉ cần đúng key camelCase
+      const payload = {
+        // chuỗi
+        treeName: partial.treeName ?? meta?.name ?? null,
+        treeCode: partial.treeCode ?? meta?.code ?? null,
+        location: partial.location ?? meta?.location ?? null,
+        notes: partial.notes ?? meta?.notes ?? meta?.note ?? null,
+
+        // ngày (DateOnly?)
+        plantDate: partial.plantDate
+          ? toDateOnlyString(partial.plantDate)
+          : meta?.plantDate
+          ? toDateOnlyString(meta.plantDate)
+          : null,
+        expectedHarvestDate: partial.expectedHarvestDate
+          ? toDateOnlyString(partial.expectedHarvestDate)
+          : meta?.expectedHarvestDate
+          ? toDateOnlyString(meta.expectedHarvestDate)
+          : null,
+
+        // int?
+        stageId: partial.stageId ?? meta?.stageId ?? null,
+        gardenSoilId:
+          partial.gardenSoilId ??
+          partial.GardenSoilId ?? 
+          meta?.gardenSoilId ??
+          null,
+
+        // bool?
+        isFruiting:
+          partial.isFruiting ??
+          meta?.isFruiting ??
+          null,
+        isActive:
+          (partial.isActive === "stopped" ? false : partial.isActive === "active" ? true : null) ??
+          (typeof meta?.isActive === "boolean"
+            ? meta.isActive
+            : meta?.status === "active"
+            ? true
+            : meta?.status === "inactive"
+            ? false
+            : null),
+
+        // các status text
+        leafStatus: partial.leafStatus ?? meta?.leafStatus ?? null,
+        branchStatus: partial.branchStatus ?? meta?.branchStatus ?? null,
+        flowerStatus: partial.flowerStatus ?? meta?.flowerStatus ?? null,
+        fruitStatus: partial.fruitStatus ?? meta?.fruitStatus ?? null,
+      };
+
+
+      await TreeRepository.updateTree(treeId, payload);
+
+      // cập nhật lại meta local cho đồng bộ
+      setMeta((prev) => ({
+        ...prev,
+        ...partial,
+      }));
+    } catch (err) {
+      console.error("Update tree failed", err);
+      // TODO: show toast / message
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function toDateOnlyString(d) {
+    if (!d) return null;
+    if (typeof d === "string") return d; // đã là "yyyy-MM-dd"
+    if (d instanceof Date) return d.toISOString().slice(0, 10);
+    return null;
+  }
 
 // === Helpers đọc Loại/Giống dùng chung toàn file ===
 function getLoai(src) {
@@ -2562,8 +2760,10 @@ const qsTreeId = qs.get("treeId") || qs.get("id");
 // When navigating with: navigate('/trees/xxx', { state: { tree } })
 const stateTree = location.state?.tree || location.state?.treeData || null;
 
+
 // Final id used everywhere
 const treeId = (
+  paramId ||
   paramTreeId ||
   qsTreeId ||
   stateTree?.id ||
@@ -2571,69 +2771,256 @@ const treeId = (
   ""
 ).toString();
 
+// ---- Load data từ API /api/trees/{id} ----
+  const [apiTree, setApiTree] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    if (!treeId) return;
+
+    // Nếu đã có stateTree khi navigate từ danh sách,
+    // tạm thời ưu tiên dùng stateTree, không fetch lại.
+    //if (stateTree) return;
+
+    let cancelled = false;
+
+    async function fetchTree() {
+      setLoading(true);
+      setLoadError("");
+
+      try {
+      
+        const res = await TreeRepository.getTreeDetail(treeId);
+        const dto = res?.data ?? res;
+        if (!dto) {
+          throw new Error("Không nhận được dữ liệu cây từ API");
+        }
+        if (!cancelled) {
+          setApiTree(mapDtoToTree(dto));
+        }
+        // ====== NEW: load GardenSoils của vườn này ======
+        // giả sử DTO từ backend có: dto.treeId và dto.gardenSoilId
+        if (dto.treeId) {
+          const soilRes = await GardenSoilRepository.getGardenSoilsByTree(dto.treeId);
+          if (!cancelled) {
+            const soils = soilRes?.data ?? soilRes ?? [];
+            setGardenSoils(soils);
+
+            // map GardenSoilId -> object
+            const map = {};
+            soils.forEach(s => {
+              map[s.gardenSoilId] = s;
+            });
+            setGardenSoilsMap(map);
+
+            // fill lại dropdown soil bằng CustomLabel của các GardenSoil
+            DROPDOWN_OPTIONS.soils = soils
+              .map(s => (s.customLabel || "").trim())
+              .filter(Boolean);
+
+            // Lấy customLabel của soil hiện tại từ GardenSoilId trong dto
+            const currentSoil =
+              dto.gardenSoilId != null ? map[dto.gardenSoilId] : null;
+            const soilLabel = currentSoil?.customLabel || "";
+
+            // cập nhật meta để UI hiển thị đúng loại đất
+            setMeta(prev => ({
+              ...prev,
+              gardenSoilId: dto.gardenSoilId ?? null,
+              soil: soilLabel,
+            }));
+          }
+        } else {
+          // nếu DTO không có gardenId vẫn lưu GardenSoilId nếu có
+          setMeta(prev => ({
+            ...prev,
+            gardenSoilId: dto.gardenSoilId ?? null,
+          }));
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Fetch tree detail error", err);
+          setLoadError(err?.message || "Không tải được thông tin cây từ máy chủ.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    fetchTree();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [treeId, stateTree]);
+
   // Chọn cây theo query
   // Chọn cây theo id + merge với stateTree nếu có
-const baseTree = React.useMemo(() => {
-  // lấy từ demoTrees theo id
-  const fromDemo =
-    getTreeById(treeId) ||
-    TREES?.[treeId] ||
-    (Array.isArray(TREES_ARRAY)
-      ? TREES_ARRAY.find((t) => String(t?.id) === String(treeId))
-      : null) ||
-    {};
+  const baseTree = React.useMemo(() => {
+    const fromState = stateTree && Object.keys(stateTree).length > 0
+      ? stateTree
+      : null;
 
-  // dữ liệu truyền qua navigate(..., { state: { tree } })
-  const fromState = stateTree || {};
+    const fromApi = apiTree && Object.keys(apiTree).length > 0
+      ? apiTree
+      : null;
 
-  // merge: chỉ ghi đè nếu giá trị từ stateTree KHÔNG rỗng
-  const merged = { ...fromDemo };
-  Object.entries(fromState).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== "") {
-      merged[key] = value;
-    }
-  });
+      const merged = { ...fromState };
 
-  return merged;
-}, [stateTree, treeId]);
+      
+      if(fromApi) {
+        for (const [k, v] of Object.entries(fromApi)) {
+          if (v !== undefined && v !== null && v !== "") {
+            merged[k] = v;
+          }
+        }
+        if(!merged.phenology) {
+          merged.phenology = {}
+        }
+        merged.phenology.leafStatus = fromApi.leafStatus;
+        merged.phenology.branchStatus = fromApi.branchStatus;
+        merged.phenology.flowerStatus = fromApi.flowerStatus;
+        merged.phenology.fruitStatus = fromApi.fruitStatus;
+      }
 
+
+    // Ưu tiên stateTree (navigate từ danh sách có đủ field),
+    // nếu không có thì dùng dữ liệu đã map từ API
+    return merged || {};
+  }, [stateTree, apiTree]);
 
 // ⛑️ GUARD: thiếu/không tìm thấy cây → render trạng thái an toàn, tránh crash
 const isEmptyBaseTree = !baseTree || Object.keys(baseTree).length === 0;
 
-if (!treeId || isEmptyBaseTree) {
-  return (
-    <div className="min-h-screen bg-[#1F302F] grid place-items-center p-6">
-      <div className="max-w-lg w-full">
-        <div className="rounded-2xl border bg-white shadow-xl p-5">
-          <div className="text-lg font-semibold mb-1">
-            { !treeId ? "Thiếu tham số cây (treeId)" : "Không tìm thấy dữ liệu cây" }
-          </div>
-          <div className="text-sm text-neutral-700">
-            { !treeId
-              ? "URL chưa có treeId hoặc state không mang theo tree."
-              : "ID không khớp trong dữ liệu demo. Hãy kiểm tra lại đường dẫn hoặc danh sách cây."
-            }
-          </div>
-          <div className="mt-3 flex gap-2">
-            <button
-              className="h-9 px-3 rounded-xl border bg-white hover:bg-neutral-50"
-              onClick={() => (window.history.length > 1 ? window.history.back() : window.location.assign("/"))}
-            >
-              ← Quay lại
-            </button>
-            <button
-              className="h-9 px-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
-              onClick={() => window.location.reload()}
-            >
-              Tải lại trang
-            </button>
+  // 1. Thiếu treeId trong URL / state
+  if (!treeId) {
+    return (
+      <div className="min-h-screen bg-[#1F302F] grid place-items-center p-6">
+        <div className="max-w-lg w-full">
+          <div className="rounded-2xl border bg-white shadow-xl p-5">
+            <div className="text-lg font-semibold mb-1">
+              Thiếu tham số cây (treeId)
+            </div>
+            <div className="text-sm text-neutral-700">
+              URL chưa có treeId hoặc state không mang theo tree.
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button
+                className="h-9 px-3 rounded-xl border bg-white hover:bg-neutral-50"
+                onClick={() =>
+                  window.history.length > 1
+                    ? window.history.back()
+                    : window.location.assign("/")
+                }
+              >
+                ← Quay lại
+              </button>
+              <button
+                className="h-9 px-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+                onClick={() => window.location.reload()}
+              >
+                Tải lại trang
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
+
+  // 2. Đang tải từ API
+  if (loading && isEmptyBaseTree) {
+    return (
+      <div className="min-h-screen bg-[#1F302F] grid place-items-center p-6">
+        <div className="max-w-lg w-full">
+          <div className="rounded-2xl border bg-white shadow-xl p-5">
+            <div className="text-lg font-semibold mb-1">
+              Đang tải dữ liệu cây...
+            </div>
+            <div className="text-sm text-neutral-700">
+              Vui lòng đợi trong giây lát.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Lỗi khi gọi API
+  if (loadError && isEmptyBaseTree) {
+    return (
+      <div className="min-h-screen bg-[#1F302F] grid place-items-center p-6">
+        <div className="max-w-lg w-full">
+          <div className="rounded-2xl border bg-white shadow-xl p-5">
+            <div className="text-lg font-semibold mb-1">
+              Không tải được dữ liệu cây
+            </div>
+            <div className="text-sm text-neutral-700">
+              {loadError}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button
+                className="h-9 px-3 rounded-xl border bg-white hover:bg-neutral-50"
+                onClick={() =>
+                  window.history.length > 1
+                    ? window.history.back()
+                    : window.location.assign("/")
+                }
+              >
+                ← Quay lại
+              </button>
+              <button
+                className="h-9 px-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+                onClick={() => window.location.reload()}
+              >
+                Thử lại
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. Có treeId, không lỗi, nhưng không có dữ liệu
+  if (isEmptyBaseTree) {
+    return (
+      <div className="min-h-screen bg-[#1F302F] grid place-items-center p-6">
+        <div className="max-w-lg w-full">
+          <div className="rounded-2xl border bg-white shadow-xl p-5">
+            <div className="text-lg font-semibold mb-1">
+              Không tìm thấy dữ liệu cây
+            </div>
+            <div className="text-sm text-neutral-700">
+              Không tìm thấy cây với ID này trên hệ thống. Hãy kiểm tra lại
+              đường dẫn hoặc danh sách cây.
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button
+                className="h-9 px-3 rounded-xl border bg-white hover:bg-neutral-50"
+                onClick={() =>
+                  window.history.length > 1
+                    ? window.history.back()
+                    : window.location.assign("/")
+                }
+              >
+                ← Quay lại
+              </button>
+              <button
+                className="h-9 px-3 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+                onClick={() => window.location.reload()}
+              >
+                Tải lại trang
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
 
 // ---- DB lifecycle (single source of truth) ----
@@ -2673,33 +3060,48 @@ const canEditFruit = useMemo(
   [currentPhaseId]
 );
 
-// Ở đầu component TreeDetail:
-const [isEditing, setIsEditing] = React.useState(false);
-
-// snapshot lúc bắt đầu edit để có thể rollback
-const [original, setOriginal] = React.useState(null);
-
-// bản nháp cho form - mọi input chỉ ghi vào đây, không đụng `tree`
-const [draft, setDraft] = React.useState(null);
 
  // ==== META (data thật) + DRAFT (để sửa, không làm bẩn state khi Hủy) ====
 const [meta, setMeta] = useState({
-  name: baseTree.name || "",
+  name: baseTree.treeName || "",
   plantedAt: baseTree.plantedAt || today(),
   variety: baseTree.variety || "",
   preNurseryAgeMonths: Number(baseTree.preNurseryAgeMonths || 0),
   soil: baseTree.soil || "",
   status: baseTree.status || "active",
+  notes: baseTree.notes || "",
 });
 
 
+useEffect(() => {
+  if (!baseTree) return;
 
-const [editingMeta, setEditingMeta] = useState(false);
-const [metaDraft, setMetaDraft] = useState(meta);
-const [metaErrors, setMetaErrors] = useState({});
+  setNote(baseTree.notes || "");
+
+  setMeta((prev) => ({
+    ...prev,
+    name: baseTree.treeName ?? baseTree.name ?? prev.name,
+    plantedAt: baseTree.plantedAt ?? prev.plantedAt,
+    variety: baseTree.variety ?? prev.variety,
+    preNurseryAgeMonths: Number(
+      baseTree.preNurseryAgeMonths ?? prev.preNurseryAgeMonths ?? 0
+    ),
+    soil: baseTree.soil ?? prev.soil,
+    status: baseTree.status ?? prev.status,
+    notes: baseTree.notes || "",
+  }));
+}, [
+  baseTree?.updatedAt,  
+  baseTree?.notes,
+]);
+
+ // danh sách GardenSoil của vườn hiện tại & map id -> object
+ const [gardenSoils, setGardenSoils] = useState([]);
+ const [gardenSoilsMap, setGardenSoilsMap] = useState({});
+
 
 // ==== MÃ CÂY (cho phép đổi mã & migrate LocalStorage ảnh/ghi chú) ====
-const [codeKey, setCodeKey] = useState(baseTree.id || treeId); // trước đây bạn là const codeKey = tree.id;
+const [codeKey, setCodeKey] = useState(baseTree.treeCode || treeId); // trước đây bạn là const codeKey = tree.id;
 const [codeDraft, setCodeDraft] = useState(codeKey);
 // ưu tiên lấy từ tree -> meta -> info/form
 
@@ -2809,32 +3211,35 @@ const tenCayHero = [loai, giong].filter(Boolean).join(" ");
       soil: nextMeta.soil,
       status: nextMeta.status,
     });
+    persistTreePatch({treeCode: nextCode});
 
     cancelFieldEdit();
     return;
-  }
+    }
 
   // === 2. Ngày trồng ===
-  if (editingField === "plantedAt") {
-    const next = fieldDraft || "";
-    if (!next) {
-      setFieldError("Vui lòng chọn ngày trồng hợp lệ.");
+    if (editingField === "plantedAt") {
+      const next = fieldDraft || "";
+      if (!next) {
+        setFieldError("Vui lòng chọn ngày trồng hợp lệ.");
+        return;
+      }
+      const nextMeta = { ...meta, plantedAt: next };
+      setMeta(nextMeta);
+      syncTreePatch(codeKey, {
+        id: codeKey,
+        name: nextMeta.name,
+        variety: nextMeta.variety,
+        plantedAt: nextMeta.plantedAt,
+        preNurseryAgeMonths: nextMeta.preNurseryAgeMonths,
+        soil: nextMeta.soil,
+        status: nextMeta.status,
+      });
+
+      persistTreePatch({plantDate: next});
+      cancelFieldEdit();
       return;
     }
-    const nextMeta = { ...meta, plantedAt: next };
-    setMeta(nextMeta);
-    syncTreePatch(codeKey, {
-      id: codeKey,
-      name: nextMeta.name,
-      variety: nextMeta.variety,
-      plantedAt: nextMeta.plantedAt,
-      preNurseryAgeMonths: nextMeta.preNurseryAgeMonths,
-      soil: nextMeta.soil,
-      status: nextMeta.status,
-    });
-    cancelFieldEdit();
-    return;
-  }
     // === 3. Tuổi trước khi trồng ===
     if (editingField === "preNurseryAgeMonths") {
       let n = parseInt(fieldDraft || "0", 10);
@@ -2859,26 +3264,8 @@ const tenCayHero = [loai, giong].filter(Boolean).join(" ");
 
     // === 4. Giống ===
       
-  if (editingField === "variety") {
-    const nextMeta = { ...meta, variety: fieldDraft };
-    setMeta(nextMeta);
-    syncTreePatch(codeKey, {
-      id: codeKey,
-      name: nextMeta.name,
-      variety: nextMeta.variety,
-      plantedAt: nextMeta.plantedAt,
-      preNurseryAgeMonths: nextMeta.preNurseryAgeMonths,
-      soil: nextMeta.soil,
-      status: nextMeta.status,
-    });
-    cancelFieldEdit();
-    return;
-  }
-
-
-    // === 5. Loại đất ===
-    if (editingField === "soil") {
-      const nextMeta = { ...meta, soil: fieldDraft };
+    if (editingField === "variety") {
+      const nextMeta = { ...meta, variety: fieldDraft };
       setMeta(nextMeta);
       syncTreePatch(codeKey, {
         id: codeKey,
@@ -2892,7 +3279,24 @@ const tenCayHero = [loai, giong].filter(Boolean).join(" ");
       cancelFieldEdit();
       return;
     }
+
+
+    // === 5. Loại đất ===
+    if (editingField === "soil") {
+      const nextMeta = { ...meta, soil: fieldDraft };
+      setMeta(nextMeta);
+      persistTreePatch({ gardenSoilId: findGardenSoilIdByLabel(fieldDraft)});
+      cancelFieldEdit();
+      return;
+    }
   }
+
+  const findGardenSoilIdByLabel = (label) => {
+    const match = gardenSoils.find(
+      (s) => (s.customLabel || "").trim() === (label || "").trim()
+    );
+    return match ? match.gardenSoilId : null;
+  };
 
   const statusRef = useRef(meta.status);
   useEffect(() => {
@@ -2932,7 +3336,7 @@ const tenCayHero = [loai, giong].filter(Boolean).join(" ");
 
   // Ảnh theo mã cây
   
-  const [image, setImage] = useState("");
+  const [image, setImage] = useState(() => stateTree?.imageUrl || "");
   useEffect(() => {
     if (!codeKey) return;
     const saved = imageRegistry.get(codeKey);
@@ -2943,11 +3347,12 @@ const tenCayHero = [loai, giong].filter(Boolean).join(" ");
   const [note, setNote] = useState("");
   useEffect(() => {
     if (!codeKey) return;
-    setNote(noteRegistry.get(codeKey) || "");
+    setNote(noteRegistry.get(codeKey) || meta.notes || "");
   }, [codeKey]);
   const saveNote = (text) => {
     setNote(text || "");
     if (codeKey) noteRegistry.set(codeKey, text || "");
+    persistTreePatch({ notes: text });
   };
 
   // States chính
@@ -3045,6 +3450,20 @@ const [phen, setPhen] = useState({
   flower: baseTree.phenology?.flowerStatus || "",
   fruit:  baseTree.phenology?.fruitStatus  || "",
 });
+
+useEffect(() => {
+  setPhen({
+    leaf:
+      baseTree.phenology?.leafStatus ||
+      baseTree.phenology?.leafRootNote ||
+      "",
+    branch: baseTree.phenology?.branchStatus || "",
+    flower: baseTree.phenology?.flowerStatus || "",
+    fruit: baseTree.phenology?.fruitStatus || "",
+  });
+}, [baseTree.phenology?.leafStatus, baseTree.phenology?.branchStatus, 
+  baseTree.phenology?.flowerStatus, baseTree.phenology?.fruitStatus 
+]);
 
 // Field đang sửa trong "Tình trạng hiện tại": "leaf" | "branch" | "flower" | "fruit" | null
 const [editingPhenField, setEditingPhenField] = useState(null);
@@ -3190,6 +3609,11 @@ useEffect(() => {
       flowerState: nextPhen.flower,
       fruitState:  nextPhen.fruit,
     });
+
+    persistTreePatch({ leafStatus: nextPhen.leaf,
+        branchStatus: nextPhen.branch,
+        flowerStatus: nextPhen.flower,
+        fruitStatus: nextPhen.fruit})
   }
 
 
@@ -3809,7 +4233,7 @@ function handleHealthEditorKeyDown(e) {
         {/* 1. Cây (LOẠI CÂY) — KHÔNG cho sửa */}
         <Field
           label="Cây"
-          value={meta.name || baseTree.name}
+          value={meta.name || baseTree.treeName}
           editable={false}
         />
 
@@ -4021,6 +4445,7 @@ function handleHealthEditorKeyDown(e) {
             value={image}
             onChange={setImage}
             disabled={isStopped}
+            treeId={meta?.treeId || baseTree?.treeId || apiTree?.treeId}
           />
         </div>
       </div>
@@ -4513,6 +4938,7 @@ function handleHealthEditorKeyDown(e) {
 
     // Sync về demoTrees để màn khác thấy đúng trạng thái
     syncTreePatch(codeKey, { status: nextStatus });
+    persistTreePatch({ isActive: nextStatus});
 
     setStatusModal({ open: false, next: nextStatus });
   }}
@@ -5588,6 +6014,27 @@ function LifecycleWidget({
   treeType,
   treeVariety,
 }) {
+
+  
+  const labelOf = (id) => ({
+    growth_development:"Sinh trưởng & Phát triển",
+    flowering:"Ra Hoa", fruiting:"Đậu quả", pre_harvest:"Trước thu hoạch", post_harvest:"Sau thu hoạch",
+  }[id] || id);
+
+  // Lấy giá trị đầu tiên có thật (string hoặc object {name/label/...})
+const first = (...xs) => xs.find(Boolean) || "";
+
+// Chuẩn hoá cách đọc "loại" và "giống" từ nhiều kiểu data phổ biến
+const getLoai = (src) =>
+  labelOf(first(
+    src?.loai, src?.type, src?.species, src?.plant, src?.tree_type, src?.cropName, src?.nameLoai
+  ));
+
+const getGiong = (src) =>
+  labelOf(first(
+    src?.giong, src?.variety, src?.cultivar, src?.subtype, src?.tree_variety, src?.nameGiong
+  ));
+
   const cyclePhases = ["flowering", "fruiting", "pre_harvest", "post_harvest"];
   const isCyclePhase = (p) => cyclePhases.includes(p);
 
@@ -5706,24 +6153,6 @@ useEffect(() => {
   setPortalEl(el || null);
 }, [portalId]);
 
-  const labelOf = (id) => ({
-    growth_development:"Sinh trưởng & Phát triển",
-    flowering:"Ra Hoa", fruiting:"Đậu quả", pre_harvest:"Trước thu hoạch", post_harvest:"Sau thu hoạch",
-  }[id] || id);
-
-  // Lấy giá trị đầu tiên có thật (string hoặc object {name/label/...})
-const first = (...xs) => xs.find(Boolean) || "";
-
-// Chuẩn hoá cách đọc "loại" và "giống" từ nhiều kiểu data phổ biến
-const getLoai = (src) =>
-  labelOf(first(
-    src?.loai, src?.type, src?.species, src?.plant, src?.tree_type, src?.cropName, src?.nameLoai
-  ));
-
-const getGiong = (src) =>
-  labelOf(first(
-    src?.giong, src?.variety, src?.cultivar, src?.subtype, src?.tree_variety, src?.nameGiong
-  ));
 
 
   const buildSteps = (from, to) => {
@@ -5798,6 +6227,75 @@ const getGiong = (src) =>
     setPendingPhase(to); setConfirmText({ title, message, highlight }); setConfirmOpen(true);
   };
 
+  async function persistTreePatch(partial) {
+    if (!treeId) return;
+
+
+    try {
+      // body gửi lên API – chỉ cần đúng key camelCase
+      const payload = {
+        // chuỗi
+        treeName: partial.treeName ?? meta?.name ?? null,
+        treeCode: partial.treeCode ?? meta?.code ?? null,
+        location: partial.location ?? meta?.location ?? null,
+        notes: partial.notes ?? meta?.notes ?? meta?.note ?? null,
+
+        // ngày (DateOnly?)
+        plantDate: partial.plantDate
+          ? toDateOnlyString(partial.plantDate)
+          : meta?.plantDate
+          ? toDateOnlyString(meta.plantDate)
+          : null,
+        expectedHarvestDate: partial.expectedHarvestDate
+          ? toDateOnlyString(partial.expectedHarvestDate)
+          : meta?.expectedHarvestDate
+          ? toDateOnlyString(meta.expectedHarvestDate)
+          : null,
+
+        // int?
+        stageId: partial.stageId ?? meta?.stageId ?? null,
+        gardenSoilId:
+          partial.gardenSoilId ??
+          partial.GardenSoilId ?? 
+          meta?.gardenSoilId ??
+          null,
+
+        // bool?
+        isFruiting:
+          partial.isFruiting ??
+          meta?.isFruiting ??
+          null,
+        isActive:
+          (partial.isActive === "stopped" ? false : partial.isActive === "active" ? true : null) ??
+          (typeof meta?.isActive === "boolean"
+            ? meta.isActive
+            : meta?.status === "active"
+            ? true
+            : meta?.status === "inactive"
+            ? false
+            : null),
+
+        // các status text
+        leafStatus: partial.leafStatus ?? meta?.leafStatus ?? null,
+        branchStatus: partial.branchStatus ?? meta?.branchStatus ?? null,
+        flowerStatus: partial.flowerStatus ?? meta?.flowerStatus ?? null,
+        fruitStatus: partial.fruitStatus ?? meta?.fruitStatus ?? null,
+      };
+
+
+      await TreeRepository.updateTree(treeId, payload);
+
+      // cập nhật lại meta local cho đồng bộ
+      setMeta((prev) => ({
+        ...prev,
+        ...partial,
+      }));
+    } catch (err) {
+      console.error("Update tree failed", err);
+      // TODO: show toast / message
+    }
+  }
+
  
   const onConfirmModal = async () => {
     if (isRunning) return;
@@ -5811,46 +6309,66 @@ const getGiong = (src) =>
 
     let nextPhaseId = to;
 
-// Nếu không có bước animation, vẫn phải tự cập nhật trail hợp lý
-if (steps.length === 0) {
-  if (from === "growth_development" && to === "growth_development") {
-    setActivePhase(to);
-  } else if (from === "post_harvest" && to === "flowering") {
-    setActivePhase(to);
-    setTrailIndex(0);
-    runSpinReset();
+    switch(nextPhaseId) {
+      case "growth_development": {
+        persistTreePatch({ stageId: 1});
+        break;
+      }
+      case "flowering":
+      case "fruiting": {
+        persistTreePatch({ stageId: 2});
+        break;
+      }
+      case "pre_harvest": {
+        persistTreePatch({ stageId: 3});
+        break;
+      }
+      case "post_harvest": {
+        persistTreePatch({ stageId: 4});
+        break;
+      }
+    }
+
+  // Nếu không có bước animation, vẫn phải tự cập nhật trail hợp lý
+  if (steps.length === 0) {
+    if (from === "growth_development" && to === "growth_development") {
+      setActivePhase(to);
+    } else if (from === "post_harvest" && to === "flowering") {
+      setActivePhase(to);
+      setTrailIndex(0);
+      runSpinReset();
+    } else {
+      setActivePhase(to);
+      setTrailIndex(cyclePhases.indexOf(to));
+    }
   } else {
-    setActivePhase(to);
-    setTrailIndex(cyclePhases.indexOf(to));
+    await playSteps(steps, to, shouldSpin);
   }
-} else {
-  await playSteps(steps, to, shouldSpin);
-}
 
-// TÍNH TRẠNG THÁI MỚI (sau khi đã chạy animation nếu có)
-const nextP1 = (nextPhaseId !== "growth_development");
+  // TÍNH TRẠNG THÁI MỚI (sau khi đã chạy animation nếu có)
+  const nextP1 = (nextPhaseId !== "growth_development");
 
-// Nếu là Sau thu hoạch -> Ra Hoa thì tăng chu kỳ
-const nextCount =
-  (from === "post_harvest" && nextPhaseId === "flowering")
-    ? (cycleCount + 1)
-    : cycleCount;
+  // Nếu là Sau thu hoạch -> Ra Hoa thì tăng chu kỳ
+  const nextCount =
+    (from === "post_harvest" && nextPhaseId === "flowering")
+      ? (cycleCount + 1)
+      : cycleCount;
 
-// Đặt state local để widget phản ánh ngay
-setIsPhase1Completed(nextP1);
-setCycleCount(nextCount);
-setActivePhase(nextPhaseId);
+  // Đặt state local để widget phản ánh ngay
+  setIsPhase1Completed(nextP1);
+  setCycleCount(nextCount);
+  setActivePhase(nextPhaseId);
 
-// BẮN SỰ KIỆN RA PARENT ĐỂ LƯU DB
-if (typeof onChange === "function") {
-  onChange({
-    phaseId: nextPhaseId,
-    cycleCount: nextCount,
-    phase1Completed: nextP1,
-  });
-}
+  // BẮN SỰ KIỆN RA PARENT ĐỂ LƯU DB
+  if (typeof onChange === "function") {
+    onChange({
+      phaseId: nextPhaseId,
+      cycleCount: nextCount,
+      phase1Completed: nextP1,
+    });
+  }
 
-setIsRunning(false);
+  setIsRunning(false);
 };
 
    const nameSource = (meta?.name ?? tree?.name ?? "").trim();

@@ -5,6 +5,7 @@ using MamMoi.Application;
 using MamMoi.Infrastructure;
 using MamMoi.Infrastructure.External.Weather; // <-- để dùng AlertThresholds
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.FileProviders;
 
 namespace MamMoi.Api
 {
@@ -52,6 +53,7 @@ namespace MamMoi.Api
             {
                 options.AddPolicy("AllowAll", policy =>
                     policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+
             });
 
             // Swagger
@@ -87,6 +89,19 @@ namespace MamMoi.Api
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+
+            var uploadsPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(uploadsPath),
+                RequestPath = "/uploads",
+                OnPrepareResponse = ctx =>
+                {
+                    // Add CORS header for all origins
+                    ctx.Context.Response.Headers.Add("Access-Control-Allow-Origin", "*");
+                }
+            });
 
             app.UseHttpsRedirection();
             app.UseCors("AllowAll");

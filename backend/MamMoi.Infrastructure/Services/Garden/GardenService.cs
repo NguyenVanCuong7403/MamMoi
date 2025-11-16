@@ -56,7 +56,9 @@ public class GardenService : IGardenService
             Location = dto.Location?.Trim(),
             TimeZone = dto.TimeZone?.Trim(),
             ClimateZone = dto.ClimateZone?.Trim(),
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.Now,
+            Status = dto.Status,
+            CoverUrl = dto.CoverUrl,
         };
 
         // 4. Lưu vào database
@@ -181,6 +183,35 @@ public class GardenService : IGardenService
             garden.Name = dto.Name.Trim();
         }
 
+        if (dto.CoverUrl != null)
+        {
+            if (!string.IsNullOrWhiteSpace(garden.CoverUrl) &&
+                garden.CoverUrl != dto.CoverUrl &&
+                garden.CoverUrl.Contains("/uploads/"))
+            {
+                try
+                {
+                    var fileName = Path.GetFileName(new Uri(garden.CoverUrl).LocalPath);
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
+
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        System.IO.File.Delete(filePath);
+                    }
+                }
+                catch
+                {
+                    // Ignore deletion errors, log if needed
+                }
+            }
+            garden.CoverUrl = dto.CoverUrl.Trim();
+        }
+
+        if (dto.Status != null)
+        {
+            garden.Status = dto.Status.Trim();
+        }
+
         if (dto.Location != null) // Allow clearing location
         {
             garden.Location = string.IsNullOrWhiteSpace(dto.Location)
@@ -260,6 +291,34 @@ public class GardenService : IGardenService
                 TotalStaff = totalStaff
             }
         };
+    }
+
+    public async Task<GardenResponseDto> UpdateGardenStatusAsync(int gardenId, int userId, string status)
+    {
+        var isOwner = await _gardenRepository.IsOwnerAsync(gardenId, userId);
+        if (!isOwner)
+        {
+            throw new UnauthorizedAccessException("Chỉ chủ vườn mới có quyền cập nhật trạng thái.");
+        }
+
+        var gardenDynamic = await _gardenRepository.GetByIdAsync(gardenId);
+        if (gardenDynamic == null)
+        {
+            throw new KeyNotFoundException($"Không tìm thấy vườn với ID {gardenId}.");
+        }
+
+        var garden = (Garden)gardenDynamic;
+
+        // 3. Update status
+        garden.Status = status;
+
+        // 4. Save changes
+        await _gardenRepository.UpdateAsync(garden);
+
+        // 5. Reload and return DTO
+        var updatedGardenDynamic = await _gardenRepository.GetByIdAsync(gardenId);
+        var updatedGarden = (Garden)updatedGardenDynamic!;
+        return MapToResponseDto(updatedGarden, userId);
     }
 
     #endregion

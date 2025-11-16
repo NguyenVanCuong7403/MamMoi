@@ -54,7 +54,7 @@ public class UserService : IUserService
             Email = createDto.Email,
             FullName = createDto.FullName ?? string.Empty,
             PasswordHash = HashPassword(createDto.Password),
-            RoleId = 2, // Default role (adjust based on your Role table)
+            RoleId = 3, // Default role (adjust based on your Role table)
             CreatedAt = DateTime.UtcNow,
             IsActive = true
         };

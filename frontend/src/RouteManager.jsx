@@ -22,7 +22,7 @@ export default function RouteManager({ authTab }) {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/auth" element={<AuthScreen defaultTab={authTab} />} />
-      <Route path="/new" element={<AddTreeNewScreen />} />
+      <Route path="/new" element={<LoginGuard><AddTreeNewScreen /></LoginGuard>} />
       <Route path="/preview" element={<CareFlowEditablePreview />} />
       <Route path="/edit" element={<EditTreeBasic />} />
       <Route path="/demo" element={<Demo />} />
@@ -34,14 +34,17 @@ export default function RouteManager({ authTab }) {
 
       
       {/* Garden list/management */}
-      <Route path="/garden" element={<GardenManagement />} />
+      <Route path="/garden" element={
+        <LoginGuard>
+          <GardenManagement />
+        </LoginGuard>} />
       {/* (tuỳ cách implement) nếu điều hướng theo path riêng cho form: */}
       {/* <Route path="/garden/new" element={<GardenManagement mode="create" />} /> */}
       {/* <Route path="/garden/:gardenId/edit" element={<GardenManagement mode="edit" />} /> */}
 
       {/* Trees (độc lập) */}
-<Route path="/tree" element={<TreeManagement />} />
-<Route path="/tree_detail/:id" element={<TreeDetail />} />
+<Route path="/tree" element={<LoginGuard><TreeManagement /></LoginGuard>} />
+<Route path="/tree_detail/:id" element={<LoginGuard><TreeDetail /></LoginGuard>} />
 
 {/* Trees trong 1 garden */}
 <Route path="/garden/:gardenId/trees" element={<TreeManagement />} />

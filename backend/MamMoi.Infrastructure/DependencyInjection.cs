@@ -9,6 +9,7 @@ using MamMoi.Infrastructure.Repositories;
 using MamMoi.Infrastructure.Security;
 using MamMoi.Infrastructure.Services;
 using MamMoi.Infrastructure.External.Weather;
+using MamMoi.Infrastructure.Services.GardenSoils;
 
 namespace MamMoi.Infrastructure;
 
@@ -27,6 +28,7 @@ public static class DependencyInjection
                 configuration.GetConnectionString("DefaultConnection")));
 
         // Register repositories - đơn giản, chỉ register những gì cần
+        services.AddScoped<IGardenSoilService, GardenSoilService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IGardenRepository, GardenRepository>();
         services.AddScoped<IGardenMemberRepository, GardenMemberRepository>();

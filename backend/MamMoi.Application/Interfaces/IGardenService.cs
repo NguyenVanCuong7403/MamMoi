@@ -47,4 +47,5 @@ public interface IGardenService
     /// <param name="dto">Updated garden data</param>
     /// <returns>Updated garden details</returns>
     Task<GardenResponseDto> UpdateGardenAsync(int gardenId, int userId, UpdateGardenDto dto);
+    Task<GardenResponseDto> UpdateGardenStatusAsync(int id, int value, string v);
 }

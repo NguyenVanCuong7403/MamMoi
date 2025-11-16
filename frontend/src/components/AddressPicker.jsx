@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { useVnAdmin, normalize as vnNormalize } from "@/lib/useVnAdmin";
+const MAX_ADDRESS_LEN = 60;
 
 /* ===== helpers ===== */
 const norm = (s) => vnNormalize(String(s || ""));
@@ -15,7 +16,7 @@ const codeOf = (x) =>
 const stripPrefixes = (s) =>
   s
     .replace(
-      /\b(tinh|tỉnh|thanh pho|thành phố|tp|xa|xã|phuong|phường|thi tran|thị trấn)\b/gi,
+      /\b(tinh|tỉnh|thanh pho|thành phố|tp|tp\.?|xa|xã|phuong|phường|thi tran|thị trấn)\b/gi,
       ""
     )
     .replace(/\s+/g, " ")
@@ -30,6 +31,72 @@ const samePlace = (a, b) => {
     B2 = stripPrefixes(B);
   return A2 && B2 && A2 === B2;
 };
+
+/* sort provinces: Hà Nội & TP.HCM lên đầu, sau đó
+   - Nhóm Thành phố trước
+   - Nhóm Tỉnh sau
+   - Trong nhóm: theo ABC bỏ tiền tố */
+function sortProvinces(provinces = []) {
+  const items = [...provinces];
+  const meta = items.map((p) => {
+    const label = p.full_name || p.name || "";
+    const lNorm = norm(label).toLowerCase();
+    const plain = stripPrefixes(label).toLowerCase();
+    const isHN = /ha noi/.test(lNorm);
+    const isHCM = /(ho chi minh|sai gon)/.test(lNorm);
+    const isCity = /(thanh pho|thành phố|tp\b|tp\.)/.test(lNorm);
+    return { p, isHN, isHCM, isCity, plain };
+  });
+
+  meta.sort((a, b) => {
+    if (a.isHN !== b.isHN) return a.isHN ? -1 : 1;
+    if (a.isHCM !== b.isHCM) return a.isHCM ? -1 : 1;
+    if (a.isCity !== b.isCity) return a.isCity ? -1 : 1;
+    if (a.plain < b.plain) return -1;
+    if (a.plain > b.plain) return 1;
+    return 0;
+  });
+
+  return meta.map((m) => m.p);
+}
+
+/* sort wards: Phường trước, rồi Xã, còn lại sau.
+   Trong mỗi nhóm: theo ABC bỏ tiền tố */
+function sortWards(wards = []) {
+  const items = [...wards];
+  const meta = items.map((w) => {
+    const label = w.full_name || w.name || "";
+    const lNorm = norm(label).toLowerCase();
+    const plain = stripPrefixes(label).toLowerCase();
+    const isWard = /\b(phuong|phường)\b/.test(lNorm);
+    const isCommune = /\b(xa|xã)\b/.test(lNorm);
+    let group = 2; // others
+    if (isWard) group = 0;
+    else if (isCommune) group = 1;
+    return { w, group, plain };
+  });
+
+  meta.sort((a, b) => {
+    if (a.group !== b.group) return a.group - b.group;
+    if (a.plain < b.plain) return -1;
+    if (a.plain > b.plain) return 1;
+    return 0;
+  });
+
+  return meta.map((m) => m.w);
+}
+
+/* filter với limit để dropdown không quá nặng */
+function filterList(list, keyword, limit = 200) {
+  const k = norm(keyword);
+  if (!k) return list.slice(0, limit);
+  const filtered = list.filter((it) => {
+    const L = norm(it.full_name || it.name);
+    if (!L) return false;
+    return L.includes(k) || stripPrefixes(L).includes(k);
+  });
+  return filtered.slice(0, limit);
+}
 
 function FieldLabel({ children, required }) {
   return (
@@ -73,18 +140,14 @@ function SuggestList({ items = [], activeLabel = "", onPick }) {
 }
 
 /* =========================================================
-   AddressPicker — 2 cấp (Tỉnh/Thành ⇄ Phường/Xã) + Địa chỉ chi tiết
-   - Reset Phường/Xã khi đổi Tỉnh/Thành
-   - Khóa theo gợi ý (lockToSuggestion)
-   - Nhận invalid từ ngoài (không đỏ khi mới mở)
+   AddressPicker
 ========================================================= */
 export default function AddressPicker({
-  value = {}, // { province, ward, address } — object/string
+  value = {}, // { province, ward, address }
   onChange,
   lockToSuggestion = true,
   required = true,
 
-  // nhận cờ invalid từ cha (GardenModal)
   invalidProvince = false,
   invalidWard = false,
   invalidAddress = false,
@@ -97,12 +160,7 @@ export default function AddressPicker({
     address: "Số nhà / Đường / Khu",
   },
 }) {
-  const {
-    loading,
-    provinces,
-    provinceWardsMap,
-    allWards,
-  } = useVnAdmin();
+  const { loading, provinces, provinceWardsMap, allWards } = useVnAdmin();
 
   // local text state
   const [q, setQ] = useState({
@@ -111,9 +169,16 @@ export default function AddressPicker({
     address: value.address || "",
   });
   const [open, setOpen] = useState({ province: false, ward: false });
-  const wrapRef = useRef(null);
+  const [hasTyped, setHasTyped] = useState({ province: false, ward: false });
 
-  // đồng bộ khi value từ ngoài đổi
+  // ⚠ Dùng ref thay vì state để tránh delay khi blur
+  const justPickedRef = useRef({ province: false, ward: false });
+
+  const wrapRef = useRef(null);
+  const provinceRef = useRef(null);
+  const wardRef = useRef(null);
+
+  // sync khi value bên ngoài đổi
   useEffect(() => {
     setQ({
       province: labelOf(value.province),
@@ -122,84 +187,154 @@ export default function AddressPicker({
     });
   }, [value.province, value.ward, value.address]);
 
-  // xác định province đang chọn (ưu tiên code)
+  // province đang chọn
   const selectedProvince = useMemo(() => {
     const c = codeOf(value.province);
-    if (c) return provinces.find((p) => String(p.code) === c) || null;
+    if (c && Array.isArray(provinces)) {
+      return provinces.find((p) => String(p.code) === c) || null;
+    }
     const l = labelOf(value.province);
+    if (!l || !Array.isArray(provinces)) return null;
     return (
       provinces.find(
         (p) =>
-          samePlace(p.full_name || p.name, l) ||
-          samePlace(p.name || "", l)
+          samePlace(p.full_name || p.name, l) || samePlace(p.name || "", l)
       ) || null
     );
   }, [provinces, value.province]);
 
-  // nguồn gợi ý phường/xã
-  const wardSource = useMemo(() => {
-    if (selectedProvince)
+  // nguồn phường/xã
+  const wardSourceRaw = useMemo(() => {
+    if (selectedProvince && provinceWardsMap) {
       return provinceWardsMap[String(selectedProvince.code)] || [];
-    return allWards;
+    }
+    return allWards || [];
   }, [selectedProvince, provinceWardsMap, allWards]);
 
-  // lọc gợi ý (giới hạn 50)
-  const filter = (list, keyword) => {
-    const k = norm(keyword);
-    if (!k) return list.slice(0, 50);
-    return list
-      .filter((it) => {
-        const L = norm(it.full_name || it.name);
-        return L.includes(k) || stripPrefixes(L).includes(k);
-      })
-      .slice(0, 50);
-  };
+  const provinceOptions = useMemo(
+    () => sortProvinces(Array.isArray(provinces) ? provinces : []),
+    [provinces]
+  );
+  const wardOptions = useMemo(
+    () => sortWards(Array.isArray(wardSourceRaw) ? wardSourceRaw : []),
+    [wardSourceRaw]
+  );
 
-  // ép hợp lệ khi blur (nếu lockToSuggestion = true)
-  const forceValidOrRevert = (level) => {
-    const list = level === "province" ? provinces : wardSource;
-    const txt = q[level];
-    const found = list.find(
-      (it) =>
-        samePlace(it.full_name || it.name, txt) ||
-        samePlace(it.name || "", txt)
-    );
-    if (found) {
-      if (
-        (level === "province" && codeOf(value.province) !== String(found.code)) ||
-        (level === "ward" && codeOf(value.ward) !== String(found.code))
-      ) {
-        pick(level, found);
-      }
-    } else if (lockToSuggestion) {
-      // revert về label đang chọn
-      setQ((s) => ({ ...s, [level]: labelOf(value[level]) }));
-    }
-  };
+  const provinceSuggestions = useMemo(
+    () => filterList(provinceOptions, q.province, 80),
+    [provinceOptions, q.province]
+  );
+  const wardSuggestions = useMemo(
+    () => filterList(wardOptions, q.ward, 220),
+    [wardOptions, q.ward]
+  );
 
-  // pick từ gợi ý
-  const pick = (level, item) => {
+  // chọn từ gợi ý
+  function pick(level, item, { focusOut = false } = {}) {
     const lbl = item.full_name || item.name || "";
+
+    setQ((s) => {
+      const next = { ...s };
+      if (level === "province") {
+        next.province = lbl;
+        next.ward = ""; // đổi tỉnh → reset phường/xã
+      } else if (level === "ward") {
+        next.ward = lbl;
+      }
+      return next;
+    });
+
     setOpen((o) => ({ ...o, [level]: false }));
+    setHasTyped((t) => ({ ...t, [level]: false }));
 
     if (level === "province") {
-      setQ((s) => ({ ...s, province: lbl, ward: "" }));
-      // báo ra ngoài: đổi tỉnh => reset ward
       onChange?.({ province: item, ward: null });
+    } else if (level === "ward") {
+      onChange?.({ ward: item });
+    }
+
+    if (focusOut) {
+      // đánh dấu blur này là do pick → onBlur bỏ qua, không rollback
+      justPickedRef.current[level] = true;
+      const ref = level === "province" ? provinceRef : wardRef;
+      if (ref.current) {
+        ref.current.blur();
+      }
+    }
+  }
+
+  // "buoi" -> "Bưởi" (Enter / blur)
+  function commitFromText(level, { focusOut = false } = {}) {
+    const txt = (q[level] || "").trim();
+    const list = level === "province" ? provinceOptions : wardOptions;
+
+    if (!txt) {
+      if (level === "province") {
+        onChange?.({ province: null, ward: null });
+      } else if (level === "ward") {
+        onChange?.({ ward: null });
+      }
       return;
     }
 
-    // level === "ward"
-    setQ((s) => ({ ...s, ward: lbl }));
-    onChange?.({ ward: item });
-  };
+    const k = norm(txt);
+    const exact = list.find(
+      (it) => norm(it.full_name || it.name) === k
+    );
+    const partial =
+      exact ||
+      list.find((it) => {
+        const L = norm(it.full_name || it.name);
+        return L.includes(k) || stripPrefixes(L).includes(k);
+      });
 
-  // auto-close khi click ngoài
+    if (partial) {
+      pick(level, partial, { focusOut });
+      return;
+    }
+
+    if (lockToSuggestion) {
+      // không khớp gì → trả về label hiện tại
+      setQ((s) => ({
+        ...s,
+        [level]: labelOf(value[level]),
+      }));
+    }
+  }
+
+  function handleKeyDown(e, level) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      commitFromText(level, { focusOut: true });
+    }
+  }
+
+  function handleBlur(level) {
+    setOpen((o) => ({ ...o, [level]: false }));
+    setHasTyped((t) => ({ ...t, [level]: false }));
+
+    // Nếu blur ngay sau khi vừa pick trong dropdown → KHÔNG rollback
+    if (justPickedRef.current[level]) {
+      justPickedRef.current[level] = false;
+      return;
+    }
+
+    // Không gõ gì thì thôi, khỏi ép lại
+    if (!hasTyped[level]) return;
+
+    if (lockToSuggestion) {
+      commitFromText(level, { focusOut: false });
+    }
+  }
+
+  // close khi click ngoài
   useEffect(() => {
     const onDocClick = (e) => {
       if (!wrapRef.current) return;
       if (!wrapRef.current.contains(e.target)) {
         setOpen({ province: false, ward: false });
+        setHasTyped({ province: false, ward: false });
       }
     };
     document.addEventListener("mousedown", onDocClick);
@@ -212,18 +347,20 @@ export default function AddressPicker({
       <div className="relative">
         <FieldLabel required={required}>Tỉnh / Thành phố</FieldLabel>
         <Input
+          ref={provinceRef}
           value={q.province}
           onChange={(e) => {
-            setQ((s) => ({ ...s, province: e.target.value }));
+            const v = e.target.value;
+            setQ((s) => ({ ...s, province: v }));
             setOpen((o) => ({ ...o, province: true }));
+            setHasTyped((t) => ({ ...t, province: true }));
           }}
-          onFocus={() => setOpen((o) => ({ ...o, province: true }))}
-          onBlur={() => {
-            setTimeout(() => {
-              setOpen((o) => ({ ...o, province: false }));
-              forceValidOrRevert("province");
-            }, 80);
+          onFocus={() => {
+            setOpen((o) => ({ ...o, province: true }));
+            setHasTyped((t) => ({ ...t, province: false }));
           }}
+          onBlur={() => handleBlur("province")}
+          onKeyDown={(e) => handleKeyDown(e, "province")}
           placeholder={placeholders.province}
           autoComplete="off"
           spellCheck={false}
@@ -231,9 +368,13 @@ export default function AddressPicker({
         />
         {open.province && !loading && (
           <SuggestList
-            items={filter(provinces, q.province)}
+            items={
+              hasTyped.province
+                ? provinceSuggestions
+                : provinceOptions.slice(0, 80)
+            }
             activeLabel={labelOf(value.province)}
-            onPick={(it) => pick("province", it)}
+            onPick={(it) => pick("province", it, { focusOut: true })}
           />
         )}
       </div>
@@ -242,18 +383,20 @@ export default function AddressPicker({
       <div className="relative">
         <FieldLabel required={required}>Phường / Xã</FieldLabel>
         <Input
+          ref={wardRef}
           value={q.ward}
           onChange={(e) => {
-            setQ((s) => ({ ...s, ward: e.target.value }));
+            const v = e.target.value;
+            setQ((s) => ({ ...s, ward: v }));
             setOpen((o) => ({ ...o, ward: true }));
+            setHasTyped((t) => ({ ...t, ward: true }));
           }}
-          onFocus={() => setOpen((o) => ({ ...o, ward: true }))}
-          onBlur={() => {
-            setTimeout(() => {
-              setOpen((o) => ({ ...o, ward: false }));
-              forceValidOrRevert("ward");
-            }, 80);
+          onFocus={() => {
+            setOpen((o) => ({ ...o, ward: true }));
+            setHasTyped((t) => ({ ...t, ward: false }));
           }}
+          onBlur={() => handleBlur("ward")}
+          onKeyDown={(e) => handleKeyDown(e, "ward")}
           placeholder={placeholders.ward}
           autoComplete="off"
           spellCheck={false}
@@ -261,26 +404,36 @@ export default function AddressPicker({
         />
         {open.ward && !loading && (
           <SuggestList
-            items={filter(wardSource, q.ward)}
+            items={hasTyped.ward ? wardSuggestions : wardOptions.slice(0, 220)}
             activeLabel={labelOf(value.ward)}
-            onPick={(it) => pick("ward", it)}
+            onPick={(it) => pick("ward", it, { focusOut: true })}
           />
         )}
       </div>
 
-      {/* Address detail */}
-      <div className="md:col-span-2">
-        <FieldLabel required={required}>Địa chỉ chi tiết</FieldLabel>
-        <Input
-          value={q.address}
-          onChange={(e) => {
-            const v = e.target.value;
-            setQ((s) => ({ ...s, address: v }));
-            onChange?.({ address: v });
-          }}
-          placeholder={placeholders.address}
-          className={invalidAddress ? inputClassErr : inputClassOk}
-        />
+      {/* Địa chỉ chi tiết */}
+<div className="md:col-span-2">
+  <label className="mb-1 block text-sm text-neutral-600">
+    Địa chỉ chi tiết <span className="text-rose-600">*</span>
+  </label>
+
+  <Input
+    value={value.address || ""}
+    onChange={(e) =>
+      onChange({
+        address: (e.target.value || "").slice(0, MAX_ADDRESS_LEN),
+      })
+    }
+    maxLength={MAX_ADDRESS_LEN}
+    className={`h-12 rounded-xl text-[15px] ${
+      invalidAddress ? "border-rose-500" : "border-neutral-300"
+    }`}
+    placeholder="Số nhà, đường, thôn xóm..."
+  />
+ {/* Bộ đếm ký tự */}
+  <div className="mt-1 text-right text-xs text-neutral-500">
+    {(value.address || "").length}/{MAX_ADDRESS_LEN}
+  </div>
       </div>
     </div>
   );

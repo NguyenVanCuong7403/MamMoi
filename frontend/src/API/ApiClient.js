@@ -8,20 +8,20 @@ export default class ApiClient {
     return this.handleResponse(res);
   }
 
-  static async post(path, body) {
+  static async post(path, body, isFormData = false) {
     const res = await fetch(`${API_BASE}${path}`, {
       method: "POST",
-      headers: this.getHeaders(),
-      body: JSON.stringify(body),
+      headers: this.getHeaders(isFormData),
+      body: isFormData ? body : JSON.stringify(body),
     });
     return this.handleResponse(res);
   }
 
-  static async put(path, body) {
+  static async put(path, body, raw = false) {
     const res = await fetch(`${API_BASE}${path}`, {
       method: "PUT",
       headers: this.getHeaders(),
-      body: JSON.stringify(body),
+      body: raw ? body : JSON.stringify(body),
     });
     return this.handleResponse(res);
   }
@@ -34,11 +34,12 @@ export default class ApiClient {
     return this.handleResponse(res);
   }
 
-  static getHeaders() {
+  static getHeaders(isFormData = false) {
     const token = localStorage.getItem("token");
     const headers = {
-      "Content-Type": "application/json",
     };
+    
+    if (!isFormData) headers["Content-Type"] = "application/json";
     if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
   }
@@ -48,6 +49,7 @@ export default class ApiClient {
       let errorMessage = res.statusText;
       try {
         const errorData = await res.json();
+        console.log(errorData);
         errorMessage = errorData.message || errorData.Message || errorMessage;
       } catch {
         // If not JSON, use text

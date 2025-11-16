@@ -20,6 +20,7 @@ public class TreeQueryService : ITreeQueryService
             .Include(t => t.Garden)
             .Include(t => t.TreeType)
             .Include(t => t.Stage)
+            .Include(t => t.TreeImages)
             .AsQueryable();
 
         if (gardenId is not null) q = q.Where(t => t.GardenId == gardenId);
@@ -45,8 +46,14 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeType.TreeTypeName,
                 t.Stage.StageName,
                 // tổng hợp “health/status” cho cột hiển thị ngắn gọn
-                (t.FruitStatus ?? t.FlowerStatus ?? t.LeafStatus ?? "Bình thường"),
-                t.CreatedAt
+                (t.FruitStatus ?? t.FlowerStatus ?? "Bình thường"),
+                t.LeafStatus,
+                t.BranchStatus,
+                t.TreeImages.OrderBy(img => img.ImageId)
+            .Select(img => img.ImageUrl)
+            .FirstOrDefault(),
+                t.CreatedAt,
+                t.PlantDate
             ))
             .ToListAsync(ct);
 
@@ -68,6 +75,7 @@ public class TreeQueryService : ITreeQueryService
             .Include(t => t.Garden)
             .Include(t => t.TreeType)
             .Include(t => t.Stage)
+            .Include(t => t.TreeImages)
             .Where(t =>
                 string.IsNullOrEmpty(query) ||
                 (t.TreeName != null && t.TreeName.Contains(query)) ||
@@ -89,8 +97,14 @@ public class TreeQueryService : ITreeQueryService
                 t.Garden.Name,
                 t.TreeType.TreeTypeName,
                 t.Stage.StageName,
-                (t.FruitStatus ?? t.FlowerStatus ?? t.LeafStatus ?? "Bình thường"),
-                t.CreatedAt
+                (t.FruitStatus ?? t.FlowerStatus ?? "Bình thường"),
+                t.LeafStatus,
+                t.BranchStatus,
+                t.TreeImages.OrderBy(img => img.ImageId)
+            .Select(img => img.ImageUrl)
+            .FirstOrDefault(),
+                t.CreatedAt,
+                t.PlantDate
             ))
             .ToListAsync(ct);
 

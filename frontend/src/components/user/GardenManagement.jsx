@@ -16,22 +16,31 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import GardenRepository from "../../API/repositories/GardenRepository";
+// ⬇⬇ Nền sống
+import { LivingBackground } from "@/components/background";
+import AddressPicker from "@/components/AddressPicker";
+
 
 // ✅ Dùng default import (đúng với file của bạn: src/lib/useVnAdmin.js)
 import useVnAdmin from "@/lib/useVnAdmin";
 
+
+const PAGE_SIZE = 12;
 /* ===== Theme (khớp vibe TreeManagement) ===== */
 const PALETTE = { bg: "#1F302F", leaf: "#D1DFB6", ivory: "#FBFFDF", accent: "#FFFFA5" };
-
+const MAX_ADDRESS_LEN = 60;
 /* ===== LocalStorage keys (giống UserProfile) ===== */
 const LS_GARDENS = "mm_user_gardens_v3";
+
+const MAX_GARDEN_NAME = 60;      // tối đa 60 ký tự cho tên vườn
+const MAX_GARDEN_ADDRESS = 120;  // tối đa 120 ký tự cho địa chỉ chi tiết
+
 
 /* ===== Default gardens (demo) ===== */
 const defaultGardens = [
 ];
 
 /* ===== LocalStorage helpers ===== */
-/* ===== Selected garden key ===== */
 const LS_SELECTED_GARDEN = "mm_selected_garden_v1";
 
 /* Tạo id ngắn */
@@ -42,8 +51,11 @@ function makeId() {
 /* Đảm bảo mọi vườn đều có id */
 function ensureIds(list) {
   let changed = false;
-  const next = list.map(g => {
-    if (!g.id) { changed = true; return { ...g, id: makeId() }; }
+  const next = list.map((g) => {
+    if (!g.id) {
+      changed = true;
+      return { ...g, id: makeId() };
+    }
     return g;
   });
   //if (changed) save(LS_GARDENS, next);
@@ -61,6 +73,74 @@ function load(k, d) {
 function save(k, v) {
   localStorage.setItem(k, JSON.stringify(v));
 }
+
+// Chuẩn hoá chuỗi (bỏ hoa/thường, bỏ dấu, trim)
+function normalizeKey(str) {
+  return String(str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
+
+
+/**
+ * Logic check cây thuộc vườn nào
+ * → giống hệt isTreeInGarden trong TreeManagement.jsx
+ */
+function isTreeInGardenForCount(tree, garden) {
+  if (!garden) return true;
+
+  const gardenId = garden.id && String(garden.id);
+  const treeGardenId = tree.gardenId && String(tree.gardenId);
+
+  // 1) Trùng id vườn
+  if (gardenId && treeGardenId && treeGardenId === gardenId) {
+    return true;
+  }
+
+  // 2) Fallback theo tên / location
+  const gName = normalizeKey(garden.name || "");
+  if (!gName) return true;
+
+  const candidates = [
+    tree.gardenName,
+    tree.locationLabel,
+    tree.location && tree.location.label,
+    tree.plot,
+  ];
+  const firstNonEmpty = candidates.find(
+    (x) => x && String(x).trim().length > 0
+  );
+  const tKey = normalizeKey(firstNonEmpty || "");
+  if (!tKey) return false;
+
+  // so sánh chứa nhau để tránh lệch "Vườn số 3 FPT" vs "Vườn số 3 FPT Bắc Giang"
+  return tKey.includes(gName) || gName.includes(tKey);
+}
+
+
+function countTreesInGarden(g) {
+  const [count, setCount] = useState(null);
+  const gardenId = g.id;
+  useEffect(() => {
+    async function fetch() {
+      const res = await GardenRepository.getGardenById(gardenId);
+      if (res?.success && res?.data) {
+        setCount(res.data.statistics?.totalTrees || 0);
+      }
+    }
+    fetch();
+  }, [gardenId]);
+
+  return count;
+}
+
+function GardenTreeCount({ g }) {
+  const count = countTreesInGarden(g);
+  return <span>{count ?? "..."} cây ăn quả</span>;
+}
+
 
 /* ===== SafeImage + ImagePicker ===== */
 function normalizeImageUrl(raw = "") {
@@ -112,7 +192,11 @@ function SafeImage({ src, alt = "", className = "", hideOnError = false }) {
   }
 
   if (!url || (failed && hideOnError)) return null;
-  if (failed) return <ImageIcon className="h-6 w-6 text-neutral-400" aria-label="no-image" />;
+  if (failed) {
+    return (
+      <ImageIcon className="h-6 w-6 text-neutral-400" aria-label="no-image" />
+    );
+  }
 
   return (
     <img
@@ -135,12 +219,14 @@ function ImagePicker({ value, onChange }) {
     const f = e.target.files?.[0];
     if (!f) return;
     const objectUrl = URL.createObjectURL(f);
-    onChange(objectUrl);
+    onChange(objectUrl, f);
   }
   function applyUrl() {
     const n = normalizeImageUrl(urlInput || "");
-    const finalUrl = looksBlockedHost(n) ? `/api/image-proxy?u=${encodeURIComponent(n)}` : n;
-    if (finalUrl) onChange(finalUrl);
+    const finalUrl = looksBlockedHost(n)
+      ? `/api/image-proxy?u=${encodeURIComponent(n)}`
+      : n;
+    if (finalUrl) onChange(finalUrl, null);
     setUrlInput("");
     setUseLink(false);
   }
@@ -153,7 +239,11 @@ function ImagePicker({ value, onChange }) {
           <span>Chọn ảnh (tải lên)</span>
           <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
         </label>
-        <Button type="button" className="rounded-2xl h-10 px-4" onClick={() => setUseLink((v) => !v)}>
+        <Button
+          type="button"
+          className="rounded-2xl h-10 px-4"
+          onClick={() => setUseLink((v) => !v)}
+        >
           Dùng link
         </Button>
       </div>
@@ -201,7 +291,7 @@ function StatusPill({ s }) {
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs border ${
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] md:text-[12px] border ${
         map[s] || "bg-neutral-50 text-neutral-700 border-neutral-200"
       }`}
     >
@@ -222,19 +312,32 @@ function ConfirmModal({ open, title, children, onClose, onConfirm }) {
   return (
     <div className="fixed inset-0 z-[1200] grid place-items-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mb-3 flex items-center justify-between">
           <div className="text-lg font-semibold">{title}</div>
-          <button className="rounded p-1 hover:bg-neutral-100" onClick={onClose} aria-label="Đóng">
+          <button
+            className="rounded p-1 hover:bg-neutral-100"
+            onClick={onClose}
+            aria-label="Đóng"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="space-y-3">{children}</div>
         <div className="mt-4 flex justify-end gap-2">
-          <Button className="rounded-2xl h-10 px-4 bg-white border border-neutral-300 hover:bg-neutral-100 text-slate-900" onClick={onClose}>
+          <Button
+            className="rounded-2xl h-10 px-4 bg-white border border-neutral-300 hover:bg-neutral-100 text-slate-900"
+            onClick={onClose}
+          >
             Huỷ
           </Button>
-          <Button className="rounded-2xl h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onConfirm}>
+          <Button
+            className="rounded-2xl h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={onConfirm}
+          >
             Xác nhận
           </Button>
         </div>
@@ -243,115 +346,197 @@ function ConfirmModal({ open, title, children, onClose, onConfirm }) {
   );
 }
 
-/* ===== Garden Form Modal ===== */
+/* ===== Garden Form Modal (dùng AddressPicker) ===== */
 function GardenFormModal({ open, initial, onClose, onSubmit }) {
-  const blank = { name: "", province: "", ward: "", address: "", status: "Đang hoạt động", coverUrl: "" };
-
-  // ✅ Hook luôn ở top-level, 1 lần/Component
-  const { loading=false, error=null, provinces=[], provinceWardsMap={} } = useVnAdmin();
+  const blank = {
+    name: "",
+    province: "",
+    ward: "",
+    address: "",
+    status: "Đang hoạt động",
+    coverUrl: "",
+  };
 
   const [form, setForm] = useState(initial || blank);
   const [touched, setTouched] = useState({});
 
-  useEffect(() => { if (open) { setForm(initial || blank); setTouched({}); } }, [open, initial]);
+  useEffect(() => {
+    if (open) {
+      setForm(initial || blank);
+      setTouched({});
+    }
+  }, [open, initial]);
 
   const errs = {
-    name: !form.name.trim() ? "Tên vườn là bắt buộc" : "",
-    province: !form.province.trim() ? "Nhập Tỉnh/Thành phố" : "",
-    ward: !form.ward.trim() ? "Nhập Phường/Xã" : "",
-    address: !form.address.trim() ? "Nhập địa chỉ chi tiết" : "",
+    name: !String(form.name || "").trim() ? "Tên vườn là bắt buộc" : "",
+    province: !String(form.province || "").trim() ? "Nhập Tỉnh/Thành phố" : "",
+    ward: !String(form.ward || "").trim() ? "Nhập Phường/Xã" : "",
+    address: !String(form.address || "").trim() ? "Nhập địa chỉ chi tiết" : "",
   };
   const canSave = !errs.name && !errs.province && !errs.ward && !errs.address;
 
-  // ✅ useMemo cũng ở top-level, không bị đặt sau early-return
-  const wardOptions = useMemo(() => {
-    const p = provinces.find((x) => x.name === form.province || x.full_name === form.province);
-    return p ? (provinceWardsMap[p.code] || []) : [];
-  }, [provinces, provinceWardsMap, form.province]);
+ function handleAddressChange(patch) {
+  setForm((prev) => {
+    const next = { ...prev };
+
+    if ("province" in patch) {
+      const p = patch.province;
+      next.province = p ? p.full_name || p.name || "" : "";
+      // Nếu AddressPicker reset ward (khi đổi tỉnh) thì xoá luôn text ward
+      if (patch.ward === null) {
+        next.ward = "";
+      }
+    }
+
+    if ("ward" in patch) {
+      const w = patch.ward;
+      next.ward = w ? w.full_name || w.name || "" : "";
+    }
+
+    if ("address" in patch) {
+      const raw = patch.address || "";
+      // ✅ Giới hạn địa chỉ chi tiết chỉ tối đa 60 ký tự
+      next.address = raw.slice(0, MAX_ADDRESS_LEN);
+    }
+
+    return next;
+  });
+}
 
 
 
 
-  // 👉 early-return đặt SAU TẤT CẢ hook để không đổi thứ tự hook giữa các render
   if (!open) return null;
 
   return (
     <div className="fixed inset-0 z-[1200] grid place-items-center">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose}/>
-      <div className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl" onClick={(e)=>e.stopPropagation()}>
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div
+        className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mb-3 flex items-center justify-between">
-          <div className="text-lg font-semibold">{initial ? "Chỉnh sửa vườn" : "Tạo vườn mới"}</div>
-          <button className="rounded p-1 hover:bg-neutral-100" onClick={onClose} aria-label="Đóng"><X className="h-5 w-5"/></button>
+          <div className="text-lg font-semibold">
+            {initial ? "Chỉnh sửa vườn" : "Tạo vườn mới"}
+          </div>
+          <button
+            className="rounded p-1 hover:bg-neutral-100"
+            onClick={onClose}
+            aria-label="Đóng"
+          >
+            <X className="h-5 w-5" />
+          </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <FieldLabel required>Tên vườn</FieldLabel>
-            <Input value={form.name} onChange={(e)=>setForm({...form, name: e.target.value})}
-                   onBlur={()=>setTouched(t=>({...t, name:true}))}
-                   className={`h-12 rounded-xl ${touched.name && errs.name ? "border-rose-500" : "border-neutral-300"}`}
-                   placeholder="Ví dụ: Vườn số 1 FPT"/>
-            {touched.name && errs.name ? <p className="mt-1 text-xs text-rose-600">{errs.name}</p> : null}
-          </div>
+        {/* Tên vườn */}
+<div>
+  <FieldLabel required>Tên vườn</FieldLabel>
+  <Input
+    value={form.name}
+    onChange={(e) =>
+      setForm({
+        ...form,
+        // ✅ giới hạn 60 ký tự
+        name: e.target.value.slice(0, MAX_GARDEN_NAME),
+      })
+    }
+    onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+    maxLength={MAX_GARDEN_NAME}
+    className={`h-12 rounded-xl text-[15px] md:text-base ${
+      touched.name && errs.name ? "border-rose-500" : "border-neutral-300"
+    }`}
+    placeholder="Ví dụ: Vườn số 1 FPT"
+  />
 
+  <div className="mt-1 flex items-center justify-between">
+    {touched.name && errs.name ? (
+      <p className="text-xs text-rose-600">{errs.name}</p>
+    ) : (
+      <span className="text-xs text-transparent">.</span>
+    )}
+    <span className="text-[11px] text-neutral-400">
+      {form.name.length}/{MAX_GARDEN_NAME}
+    </span>
+  </div>
+</div>
+
+
+          {/* Trạng thái */}
           <div>
             <FieldLabel>Trạng thái</FieldLabel>
-            <select value={form.status} onChange={(e)=>setForm({...form, status:e.target.value})} className="h-12 w-full rounded-xl border bg-white px-3">
-              <option>Đang hoạt động</option><option>Dừng hoạt động</option>
-            </select>
-          </div>
-
-          <div>
-            <FieldLabel required>Tỉnh/Thành phố</FieldLabel>
             <select
-              value={form.province}
-              onChange={(e)=>setForm({...form, province:e.target.value, ward:""})}
-              onBlur={()=>setTouched(t=>({...t, province:true}))}
-              className={`h-12 w-full rounded-xl border bg-white px-3 ${touched.province && errs.province ? "border-rose-500" : "border-neutral-300"}`}
-              disabled={loading && !provinces.length}
+              value={form.status}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  status: e.target.value,
+                })
+              }
+              className="h-12 w-full rounded-xl border bg-white px-3 text-[15px] md:text-base"
             >
-              <option value="">{loading ? "Đang tải..." : "(Chọn tỉnh/thành)"}</option>
-              {provinces.map((p)=> <option key={p.code} value={p.name}>{p.full_name || p.name}</option>)}
+              <option>Đang hoạt động</option>
+              <option>Dừng hoạt động</option>
             </select>
-            {error ? <p className="mt-1 text-xs text-amber-600">{String(error)}</p> : null}
-            {touched.province && errs.province ? <p className="mt-1 text-xs text-rose-600">{errs.province}</p> : null}
           </div>
 
-          <div>
-            <FieldLabel required>Phường/Xã</FieldLabel>
-            <select
-              value={form.ward}
-              onChange={(e)=>setForm({...form, ward:e.target.value})}
-              onBlur={()=>setTouched(t=>({...t, ward:true}))}
-              className={`h-12 w-full rounded-xl border bg-white px-3 ${touched.ward && errs.ward ? "border-rose-500" : "border-neutral-300"}`}
-              disabled={!form.province || !wardOptions.length}
-            >
-              <option value="">{!form.province ? "— Chọn tỉnh trước —" : wardOptions.length ? "(Chọn phường/xã)" : "Không có dữ liệu phường/xã"}</option>
-              {wardOptions.map((w)=> <option key={w.code} value={w.name}>{w.full_name || w.name}</option>)}
-            </select>
-            {touched.ward && errs.ward ? <p className="mt-1 text-xs text-rose-600">{errs.ward}</p> : null}
-          </div>
-
+          {/* AddressPicker */}
           <div className="md:col-span-2">
-            <FieldLabel required>Địa chỉ chi tiết</FieldLabel>
-            <Input value={form.address} onChange={(e)=>setForm({...form, address:e.target.value})}
-                   onBlur={()=>setTouched(t=>({...t, address:true}))}
-                   className={`h-12 rounded-xl ${touched.address && errs.address ? "border-rose-500" : "border-neutral-300"}`}
-                   placeholder="Số nhà / thửa đất / mô tả lối vào..."/>
-            {touched.address && errs.address ? <p className="mt-1 text-xs text-rose-600">{errs.address}</p> : null}
+            <AddressPicker
+              value={{
+                province: form.province,
+                ward: form.ward,
+                address: form.address,
+              }}
+              onChange={handleAddressChange}
+              invalidProvince={touched.province && !!errs.province}
+              invalidWard={touched.ward && !!errs.ward}
+              invalidAddress={touched.address && !!errs.address}
+            />
+
+            {(touched.province || touched.ward || touched.address) &&
+            (errs.province || errs.ward || errs.address) ? (
+              <p className="mt-1 text-xs text-rose-600">
+                Vui lòng nhập đầy đủ Tỉnh/Thành, Phường/Xã và địa chỉ chi tiết.
+              </p>
+            ) : null}
           </div>
 
+          {/* Ảnh vườn */}
           <div className="md:col-span-2">
             <FieldLabel>Ảnh vườn</FieldLabel>
-            <ImagePicker value={form.coverUrl} onChange={(v)=>setForm({...form, coverUrl:v})}/>
+            <ImagePicker
+              value={form.coverUrl}
+              onChange={(v, f) => setForm({ ...form, coverUrl: v, file: f })}
+            />
           </div>
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
-          <Button className="rounded-2xl h-10 px-4 bg-white border border-neutral-300 hover:bg-neutral-100 text-slate-900" onClick={onClose}>Huỷ</Button>
-          <Button className="rounded-2xl h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white" disabled={!canSave} onClick={()=>canSave && onSubmit(form)}>
-            {initial ? "Lưu thay đổi" : "Tạo vườn"}
+          <Button
+            className="rounded-2xl h-10 px-4 bg-white border border-neutral-300 hover:bg-neutral-100 text-slate-900"
+            onClick={onClose}
+          >
+            Huỷ
           </Button>
+          <Button
+  className="rounded-2xl h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+  onClick={() => {
+    if (!canSave) {
+      // Mark tất cả field là "đã chạm" để hiện cảnh báo
+      setTouched({
+        name: true,
+        province: true,
+        ward: true,
+        address: true,
+      });
+      return;
+    }
+    onSubmit(form);
+  }}
+>
+  {initial ? "Lưu thay đổi" : "Tạo vườn"}
+</Button>
         </div>
       </div>
     </div>
@@ -359,9 +544,20 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
 }
 
 /* ===== Utils ===== */
-function formatGardenLocation(g) {
-  return [g.address, g.ward, g.province].filter(Boolean).join(", ");
+
+
+function clampText(str, max) {
+  if (!str) return "";
+  const s = String(str);
+  return s.length <= max ? s : s.slice(0, max - 1) + "…";
 }
+
+function formatGardenLocation(g) {
+  const full = [g.address, g.ward, g.province].filter(Boolean).join(", ");
+  return full;
+}
+
+
 
 /* ================================
    MAIN: GardenManagement
@@ -369,86 +565,129 @@ function formatGardenLocation(g) {
 export default function GardenManagement() {
   const navigate = useNavigate();
 
-function openTrees(g) {
-  // Lưu lựa chọn để TreeManagement đọc lại (reload vẫn biết)
-  localStorage.setItem(
-    LS_SELECTED_GARDEN,
-    JSON.stringify({ id: g.id, name: g.name })
+  // Mở danh sách cây của 1 vườn
+  function openTrees(g) {
+    // Lưu vườn đã chọn để TreeManagement / TreeDetail đọc lại
+    localStorage.setItem(
+      LS_SELECTED_GARDEN,
+      JSON.stringify({ id: g.id, name: g.name })
+    );
+
+    // Bắn event để tab TreeManagement đang mở có thể update title ngay
+    window.dispatchEvent(
+      new CustomEvent("mm:garden:selected", {
+        detail: { id: g.id, name: g.name },
+      })
+    );
+
+    // Điều hướng sang màn Tree
+    navigate(
+      `/tree?gardenId=${encodeURIComponent(
+        g.id
+      )}&gardenName=${encodeURIComponent(g.name)}`
+    );
+  }
+
+  // ===== data vườn =====
+  // 1) Khởi tạo từ localStorage + defaultGardens (offline/fallback)
+  const [gardens, setGardens] = useState(() =>
+    ensureIds(load(LS_GARDENS, defaultGardens))
   );
 
-  // Phát event (để nếu TreeManagement đang mở tab khác, tiêu đề nhảy ngay)
-  window.dispatchEvent(
-    new CustomEvent("mm:garden:selected", { detail: { id: g.id, name: g.name } })
-  );
-
-  // Điều hướng (tùy đường dẫn app bạn)
-  navigate(`/tree?gardenId=${encodeURIComponent(g.id)}&gardenName=${encodeURIComponent(g.name)}`);
-}
-
- const [gardens, setGardens] = useState(() => ensureIds(defaultGardens));
-
- useEffect(() => {
+  // 2) Lấy danh sách vườn từ backend, đồng bộ lại state + localStorage
+  useEffect(() => {
     async function fetchGardens() {
       try {
-        const res = await GardenRepository.getGardens(1, 10);
-        if (res.success && res.data?.gardens) {
-          const apiGardens = res.data.gardens.map((g) => {
+        const res = await GardenRepository.getGardens(1, 50); // lấy 50 vườn đầu tiên
+        if (res?.success && Array.isArray(res.data?.gardens)) {
+          const apiGardensRaw = res.data.gardens.map((g) => {
+            let province = "";
             let ward = "";
             let address = "";
-            let province = "";
 
+            // Parse location: "Địa chỉ chi tiết, Phường/Xã, Tỉnh/Thành"
             if (g.location) {
-              const parts = g.location.split(",");
-              if (parts.length >= 2) {
-                ward = parts[0].trim();
-                province = parts.slice(1).join(",").trim();
-                if(parts.length > 2) {
-                  address = parts[0].trim();
-                }
-              } else {
-                ward = g.location;
+              const parts = g.location
+                .split(",")
+                .map((p) => p.trim())
+                .filter(Boolean);
+
+              if (parts.length === 1) {
+                // "Hà Nội"
+                province = parts[0];
+              } else if (parts.length === 2) {
+                // "Phường 1, TP.HCM"
+                ward = parts[0];
+                province = parts[1];
+              } else if (parts.length >= 3) {
+                // "Thôn A, Xã B, Tỉnh C" -> address="Thôn A", ward="Xã B", province="Tỉnh C"
+                address = parts.slice(0, parts.length - 2).join(", ");
+                ward = parts[parts.length - 2];
+                province = parts[parts.length - 1];
               }
             }
 
             return {
+              id: g.gardenId, // ⚠️ phải giữ id backend để TreeManagement / TreeDetail dùng
               name: g.name,
-              province: g.location?.includes(",") ? g.location.split(",").pop().trim() : g.location || "",
+              province,
               ward,
               address,
-              province,
               status: g.status || "Đang hoạt động",
               coverUrl: g.coverUrl || "",
             };
           });
 
+          const apiGardens = ensureIds(apiGardensRaw);
           setGardens(apiGardens);
+          save(LS_GARDENS, apiGardens); // sync localStorage cho lần load sau
         }
       } catch (error) {
         console.error("Failed to fetch gardens:", error);
+        // nếu lỗi, vẫn dùng dữ liệu từ localStorage / defaultGardens
       }
     }
 
     fetchGardens();
   }, []);
 
-
-  // Search + filters
+  // ===== search + filter =====
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all"); // all | active | stopped
   const [provinceFilter, setProvinceFilter] = useState("");
 
-  // Add/Edit modal
+  // ===== phân trang =====
+  const [page, setPage] = useState(1);
+
+  // mỗi khi thay đổi bộ lọc / search → quay lại trang 1
+  useEffect(() => {
+    setPage(1);
+  }, [q, status, provinceFilter]);
+
+  // ===== modal thêm / sửa =====
   const [openForm, setOpenForm] = useState(false);
   const [editingIdx, setEditingIdx] = useState(-1);
 
-  // Delete confirm
+  // ===== confirm xoá =====
   const [confirm, setConfirm] = useState({ open: false, targetIdx: -1 });
 
+  // ===== confirm đổi trạng thái =====
+  const [statusConfirm, setStatusConfirm] = useState({
+    open: false,
+    targetIdx: -1,
+    nextStatus: "",
+    message: "",
+  });
+
+  // ===== lọc danh sách theo search + filter =====
   const filtered = useMemo(() => {
     const QQ = q.trim().toLowerCase();
     return gardens.filter((g) => {
       if (QQ) {
-        const hit = [g.name, g.province, g.ward, g.address].join(" ").toLowerCase().includes(QQ);
+        const hit = [g.name, g.province, g.ward, g.address]
+          .join(" ")
+          .toLowerCase()
+          .includes(QQ);
         if (!hit) return false;
       }
       if (status !== "all") {
@@ -460,7 +699,7 @@ function openTrees(g) {
     });
   }, [gardens, q, status, provinceFilter]);
 
-  // Stats
+  // ===== stats mini =====
   const stats = useMemo(() => {
     const total = gardens.length;
     const active = gardens.filter((g) => g.status === "Đang hoạt động").length;
@@ -468,286 +707,596 @@ function openTrees(g) {
     return { total, active, stopped };
   }, [gardens]);
 
-  // Province list for filter
-  const { provinces = [] } = (typeof useVnAdmin === "function" ? useVnAdmin() : {}) || {};
+  // ===== phân trang từ filtered =====
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const paged = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+
+  // ===== provinces cho filter combobox =====
+  const { provinces = [] } =
+    (typeof useVnAdmin === "function" ? useVnAdmin() : {}) || {};
 
   function openAdd() {
     setEditingIdx(-1);
     setOpenForm(true);
   }
+
   function openEdit(i) {
     setEditingIdx(i);
     setOpenForm(true);
   }
+
   function handleSubmit(form) {
-  if (editingIdx >= 0) {
-    setGardens((gs) => {
-      const prev = gs[editingIdx];
-      const next = [...gs];
-      next[editingIdx] = { ...prev, ...form };
-      
-      // Nếu tên đổi → phát event
-      if (prev.name !== form.name) {
-        window.dispatchEvent(
-          new CustomEvent("mm:garden:renamed", {
-            detail: { id: next[editingIdx].id, name: form.name },
-          })
-        );
+    //console.log(form);
 
-        // Nếu vườn này đang được chọn, cập nhật luôn LS_SELECTED_GARDEN
-        try {
-          const sel = JSON.parse(localStorage.getItem(LS_SELECTED_GARDEN) || "null");
-          if (sel && sel.id === next[editingIdx].id) {
-            localStorage.setItem(
-              LS_SELECTED_GARDEN,
-              JSON.stringify({ id: sel.id, name: form.name })
-            );
-          }
-        } catch {}
+    (async () => {
+    let coverUrl = form.coverUrl; // fallback if user uses URL
+
+    // If user uploaded a file, upload it first
+    if (form.file instanceof File) {
+      try {
+        const data = await GardenRepository.uploadGardenImage(form.file);
+        if (data.success && data.url) {
+          coverUrl = data.url; // update coverUrl with uploaded file URL
+        } else {
+          console.error("File upload failed", data);
+          alert("Upload file thất bại. Vui lòng thử lại.");
+          return;
+        }
+      } catch (err) {
+        console.error("File upload error", err);
+        alert("Upload file thất bại. Vui lòng thử lại.");
+        return;
       }
-      return next;
-    });
-  } else {
-    setGardens((gs) => [{ ...form, id: makeId() }, ...gs]);
-  }
-  setOpenForm(false);
-  setEditingIdx(-1);
-}
+    }
 
+    // Prepare updated form with coverUrl
+    const updatedForm = { ...form, coverUrl };
+    delete updatedForm.file; 
+
+    if (editingIdx >= 0) {
+
+      const payload = {
+        Name: form.name || undefined,                     // optional
+        Location: formatGardenLocation(form) || undefined,// optional
+        Status: form.status ?? "Đang hoạt động",
+        CoverUrl: coverUrl,                               // uploaded file or existing URL
+        TimeZone: form.timeZone ?? null,                  // optional
+        ClimateZone: form.climateZone ?? null             // optional
+      };
+      const res = await GardenRepository.updateGarden(updatedForm.id, payload);
+        if (!res?.success) { alert("Cập nhật vườn thất bại"); return; }
+
+      // sửa vườn
+      setGardens((gs) => {
+        const prev = gs[editingIdx];
+        const next = [...gs];
+        next[editingIdx] = { ...prev, ...updatedForm };
+
+        // Nếu tên đổi → phát event để TreeManagement cập nhật title
+        if (prev.name !== updatedForm.name) {
+          window.dispatchEvent(
+            new CustomEvent("mm:garden:renamed", {
+              detail: { id: next[editingIdx].id, name: updatedForm.name },
+            })
+          );
+
+          // Nếu vườn này đang được chọn, cập nhật luôn LS_SELECTED_GARDEN
+          try {
+            const sel = JSON.parse(
+              localStorage.getItem(LS_SELECTED_GARDEN) || "null"
+            );
+            if (sel && sel.id === next[editingIdx].id) {
+              localStorage.setItem(
+                LS_SELECTED_GARDEN,
+                JSON.stringify({ id: sel.id, name: updatedForm.name })
+              );
+            }
+          } catch {
+            // ignore
+          }
+        }
+
+        save(LS_GARDENS, next);
+        return next;
+      });
+    } else {
+      const payload = {
+        Name: updatedForm.name,
+        Location: formatGardenLocation(updatedForm),  // use your existing function
+        Status: updatedForm.status ?? "Đang hoạt động",
+        CoverUrl: updatedForm.coverUrl,
+        TimeZone: null,
+        ClimateZone: null
+      };
+      const res = await GardenRepository.createGarden(payload);
+        if (!res?.success) {
+          alert("Tạo vườn thất bại");
+          return;
+        }
+        updatedForm.id = res.data.gardenId;
+
+      // thêm mới
+      setGardens((gs) => {
+        const next = [{ ...updatedForm }, ...gs];
+        save(LS_GARDENS, next);
+        return next;
+      });
+    }
+    setOpenForm(false);
+    setEditingIdx(-1);
+    })();
+  }
 
   function askDelete(i) {
     setConfirm({ open: true, targetIdx: i });
   }
+
   function doDelete() {
-  const idx = confirm.targetIdx;
-  const victim = gardens[idx];
+    const idx = confirm.targetIdx;
+    const victim = gardens[idx];
 
-  setGardens((gs) => gs.filter((_, i) => i !== idx));
-  setConfirm({ open: false, targetIdx: -1 });
+    setGardens((gs) => {
+      const next = gs.filter((_, i) => i !== idx);
+      save(LS_GARDENS, next);
+      return next;
+    });
+    setConfirm({ open: false, targetIdx: -1 });
 
-  // Nếu đang chọn vườn này, clear lựa chọn
-  try {
-    const sel = JSON.parse(localStorage.getItem(LS_SELECTED_GARDEN) || "null");
-    if (sel && victim && sel.id === victim.id) {
-      localStorage.removeItem(LS_SELECTED_GARDEN);
-      window.dispatchEvent(new CustomEvent("mm:garden:deleted", { detail: { id: victim.id } }));
+    // Nếu đang chọn vườn này, clear lựa chọn
+    try {
+      const sel = JSON.parse(
+        localStorage.getItem(LS_SELECTED_GARDEN) || "null"
+      );
+      if (sel && victim && sel.id === victim.id) {
+        localStorage.removeItem(LS_SELECTED_GARDEN);
+        window.dispatchEvent(
+          new CustomEvent("mm:garden:deleted", { detail: { id: victim.id } })
+        );
+      }
+    } catch {
+      // ignore
     }
-  } catch {}
-}
+  }
 
+  function askToggleStatus(i) {
+    const g = gardens[i];
+    if (!g) return;
+    const isActive = g.status === "Đang hoạt động";
+    const nextStatus = isActive ? "Dừng hoạt động" : "Đang hoạt động";
+    const message = isActive
+      ? `Bạn có chắc chắn muốn dừng hoạt động vườn "${g.name}"?\nCác cây trong vườn vẫn được giữ nguyên, bạn có thể khởi động lại bất cứ lúc nào.`
+      : `Bạn có muốn khởi động lại vườn "${g.name}" và đánh dấu là đang hoạt động?`;
+
+    setStatusConfirm({
+      open: true,
+      targetIdx: i,
+      nextStatus,
+      message,
+    });
+  }
+
+  function doToggleStatus() {
+    (async () => {
+      try {
+        await GardenRepository.updateGardenStatus(statusConfirm.targetIdx, statusConfirm.nextStatus);
+      } catch (err) {
+        console.error("Failed to update garden status:", err);
+        setStatusConfirm({
+          open: false,
+          targetIdx: -1,
+          nextStatus: "",
+          message: "",
+        });
+        return;
+      }
+      setGardens((gs) => {
+        const idx = statusConfirm.targetIdx;
+        if (idx < 0 || !gs[idx]) return gs;
+        const next = [...gs];
+        next[idx] = { ...next[idx], status: statusConfirm.nextStatus };
+        save(LS_GARDENS, next);
+        return next;
+      });
+      setStatusConfirm({
+        open: false,
+        targetIdx: -1,
+        nextStatus: "",
+        message: "",
+      });
+    })();
+  }
 
   return (
-    <div className="relative min-h-screen pt-[64px]" style={{ background: PALETTE.bg }}>
-      <main className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-6 space-y-6">
-        {/* Header */}
-        <section className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="max-w-[760px]">
-            <span
-              className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-medium"
-              style={{ background: PALETTE.accent, color: PALETTE.bg }}
-            >
-              Quản lý vườn
-            </span>
-            <h1 className="mt-2 text-white text-3xl md:text-4xl font-semibold tracking-tight leading-tight">
-              Garden Management
-            </h1>
-            <p className="text-white/85 mt-1 text-sm md:text-base">
-              Tạo, chỉnh sửa, lọc và tra cứu thông tin các vườn — dùng chung nguồn dữ liệu với UserProfile.
-            </p>
-          </div>
+    <>
+      {/* ✅ Nền sống */}
+      <LivingBackground
+        baseColor={PALETTE.bg}
+        palette={[PALETTE.leaf, PALETTE.ivory, PALETTE.accent]}
+        density={28}
+      />
 
-          <div className="w-full md:w-auto flex items-stretch md:items-center gap-3 md:gap-4">
-            <Button
-              onClick={openAdd}
-              className="h-12 md:h-12 px-5 md:px-6 rounded-2xl text-base font-semibold shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5 transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5"
-              style={{ background: "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)", color: "#1F302F" }}
-            >
-              <span className="inline-flex items-center gap-3">
-                <span className="grid place-items-center w-8 h-8 rounded-xl bg-white/70 backdrop-blur">
-                  <Plus className="w-5 h-5" />
-                </span>
-                Thêm vườn
+      {/* UI trên nền sống */}
+      <div className="relative min-h-screen pt-[64px] z-10">
+        <main className="mx-auto max-w-[1760px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-6 space-y-6 text-[16px] md:text-[17px]">
+          {/* Header */}
+          <section className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="max-w-[820px]">
+              <span
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs md:text-[13px] font-medium"
+                style={{ background: PALETTE.accent, color: PALETTE.bg }}
+              >
+                Quản lý vườn
               </span>
-            </Button>
-          </div>
-        </section>
-
-        {/* Filters */}
-        <section className="sticky top-[64px] z-[50] overflow-visible">
-          <div
-            className="flex flex-col xl:flex-row gap-3 rounded-2xl p-3"
-            style={{ background: "rgba(251,255,223,0.06)", border: "1px solid rgba(255,255,165,0.15)" }}
-          >
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Tìm tên/địa chỉ/tỉnh..."
-                className="pl-9 bg-white/95 text-[#0f1f1e] placeholder:text-neutral-500 rounded-full h-11"
-              />
+              <h1 className="mt-2 text-white text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight leading-tight">
+                Danh Sách Quản Lý Vườn
+              </h1>
+              <p className="text-white/85 mt-2 text-sm md:text-base lg:text-[17px]">
+                Tạo, chỉnh sửa, lọc và tra cứu thông tin các vườn — dùng chung nguồn dữ liệu với
+                UserProfile.
+              </p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <select
-                value={status}
-                onChange={(e) => setStatus(e.target.value)}
-                className="h-11 rounded-full border bg-white px-3 text-[15px]"
-                title="Lọc trạng thái"
+            <div className="w-full md:w-auto flex items-stretch md:items-center gap-3 md:gap-4">
+              <Button
+                onClick={openAdd}
+                className="h-12 md:h-12 px-5 md:px-6 rounded-2xl text-base font-semibold shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5 transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5"
+                style={{
+                  background: "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)",
+                  color: "#1F302F",
+                }}
               >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="active">Đang hoạt động</option>
-                <option value="stopped">Dừng hoạt động</option>
-              </select>
-
-              <select
-                value={provinceFilter}
-                onChange={(e) => setProvinceFilter(e.target.value)}
-                className="h-11 rounded-full border bg-white px-3 text-[15px]"
-                title="Lọc theo tỉnh/thành"
-              >
-                <option value="">Tất cả tỉnh/thành</option>
-                {(provinces || []).map((p) => (
-                  <option key={p.code} value={p.name}>
-                    {p.full_name || p.name}
-                  </option>
-                ))}
-              </select>
-
-              {q || status !== "all" || provinceFilter ? (
-                <Button
-                  variant="outline"
-                  className="h-11 rounded-full"
-                  onClick={() => {
-                    setQ("");
-                    setStatus("all");
-                    setProvinceFilter("");
-                  }}
-                >
-                  Xoá bộ lọc
-                </Button>
-              ) : null}
+                <span className="inline-flex items-center gap-3">
+                  <span className="grid place-items-center w-9 h-9 rounded-xl bg-white/70 backdrop-blur">
+                    <Plus className="w-5 h-5" />
+                  </span>
+                  Thêm vườn
+                </span>
+              </Button>
             </div>
-          </div>
-        </section>
+          </section>
 
-        {/* Mini stats */}
-        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
-          {[
-            { label: "Tổng vườn", value: stats.total },
-            { label: "Đang hoạt động", value: stats.active },
-            { label: "Dừng hoạt động", value: stats.stopped },
-          ].map((s, i) => (
+          {/* Filters */}
+          <section className="sticky top-[64px] z-[50] overflow-visible">
             <div
-              key={i}
-              className="relative rounded-xl px-4 py-3 flex items-center justify-between text-[13px]"
-              style={{ background: "rgba(251,255,223,0.06)", border: "1px solid rgba(255,255,165,0.15)", color: PALETTE.ivory }}
+              className="flex flex-col xl:flex-row gap-3 rounded-2xl p-3"
+              style={{
+                background: "rgba(251,255,223,0.06)",
+                border: "1px solid rgba(255,255,165,0.15)",
+              }}
             >
-              <span className="inline-flex items-center gap-2 opacity-80">{s.label}</span>
-              <span className="font-semibold">{s.value}</span>
-            </div>
-          ))}
-        </section>
-
-        {/* Gardens grid */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 items-stretch">
-          {filtered.map((g, i) => (
-            <Card
-   key={i}
-   className="group rounded-3xl overflow-hidden shadow-sm transition-all duration-200 h-full flex flex-col hover:-translate-y-0.5 hover:shadow-md cursor-pointer"
-   style={{ background: "#FFFFFFF2", borderColor: "rgba(255,255,165,0.25)" }}
-   role="button"
-   tabIndex={0}
-   onClick={() => openTrees(g)}
-  onKeyDown={(e) => e.key === "Enter" && openTrees(g)}
- >
-              {/* Header ảnh: luôn giữ h-40 để không lệch */}
-              
-              <div className="relative h-40 w-full bg-neutral-100">
-                {/* Fallback (icon) */}
-                <div className="absolute inset-0 grid place-items-center text-neutral-400">
-                  {!g.coverUrl && <TreePine className="h-8 w-8" />}
-                </div>
-                {/* Ảnh (ẩn khi lỗi) */}
-                {g.coverUrl ? (
-                  <div className="absolute inset-0 overflow-hidden">
-                    <SafeImage
-                      src={g.coverUrl}
-                      alt={g.name}
-                      className="w-full h-full object-cover"
-                      hideOnError
-                    />
-                  </div>
-                ) : null}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Tìm tên/địa chỉ/tỉnh..."
+                  className="pl-9 bg-white/95 text-[#0f1f1e] placeholder:text-neutral-500 rounded-full h-12 text-[15px]"
+                />
               </div>
 
-              <CardContent className="p-6 flex-1 flex flex-col">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-[#0f1f1e] truncate">{g.name}</div>
-                    <div className="text-xs text-neutral-500 truncate inline-flex items-center gap-1 mt-0.5">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {formatGardenLocation(g)}
+              <div className="flex items-center gap-2 flex-wrap">
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                  className="h-12 rounded-full border bg-white px-3 text-[15px]"
+                  title="Lọc trạng thái"
+                >
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="active">Đang hoạt động</option>
+                  <option value="stopped">Dừng hoạt động</option>
+                </select>
+
+                <select
+                  value={provinceFilter}
+                  onChange={(e) => setProvinceFilter(e.target.value)}
+                  className="h-12 rounded-full border bg-white px-3 text-[15px]"
+                  title="Lọc theo tỉnh/thành"
+                >
+                  <option value="">Tất cả tỉnh/thành</option>
+                  {(provinces || []).map((p) => (
+                    <option key={p.code} value={p.name}>
+                      {p.full_name || p.name}
+                    </option>
+                  ))}
+                </select>
+
+                {q || status !== "all" || provinceFilter ? (
+                  <Button
+                    variant="outline"
+                    className="h-12 rounded-full text-[14px]"
+                    onClick={() => {
+                      setQ("");
+                      setStatus("all");
+                      setProvinceFilter("");
+                    }}
+                  >
+                    Xoá bộ lọc
+                  </Button>
+                ) : null}
+              </div>
+            </div>
+          </section>
+
+          {/* Mini stats */}
+          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
+            {[
+              { label: "Tổng vườn", value: stats.total },
+              { label: "Đang hoạt động", value: stats.active },
+              { label: "Dừng hoạt động", value: stats.stopped },
+            ].map((s, i) => (
+              <div
+                key={i}
+                className="relative rounded-xl px-5 py-3.5 flex items-center justify-between text-[14px]"
+                style={{
+                  background: "rgba(251,255,223,0.06)",
+                  border: "1px solid rgba(255,255,165,0.15)",
+                  color: PALETTE.ivory,
+                }}
+              >
+                <span className="inline-flex items-center gap-2 opacity-80">
+                  {s.label}
+                </span>
+                <span className="font-semibold text-lg">{s.value}</span>
+              </div>
+            ))}
+          </section>
+
+          {/* Gardens grid */}
+          <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
+            {paged.map((g) => {
+              const idx = gardens.findIndex((x) => x.id === g.id);
+              const isActive = g.status === "Đang hoạt động";
+
+              return (
+                <Card
+                  key={g.id}
+                  className="group rounded-3xl overflow-hidden shadow-sm transition-all duration-200 h-full flex flex-col hover:-translate-y-0.5 hover:shadow-md cursor-pointer text-[16px]"
+                  style={{
+                    background: "#FFFFFFF2",
+                    borderColor: "rgba(255,255,165,0.25)",
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openTrees(g)}
+                  onKeyDown={(e) => e.key === "Enter" && openTrees(g)}
+                >
+                  {/* Header ảnh */}
+                  <div className="relative h-52 w-full bg-neutral-100">
+                    <div className="absolute inset-0 grid place-items-center text-neutral-400">
+                      {!g.coverUrl && <TreePine className="h-9 w-9" />}
                     </div>
+                    {g.coverUrl ? (
+                      <div className="absolute inset-0 overflow-hidden">
+                        <SafeImage
+                          src={g.coverUrl}
+                          alt={g.name}
+                          className="w-full h-full object-cover"
+                          hideOnError
+                        />
+                      </div>
+                    ) : null}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent pointer-events-none" />
                   </div>
-                  <StatusPill s={g.status} />
+
+                  <CardContent className="p-6 flex-1 flex flex-col">
+                    {/* Khối thông tin vườn */}
+                    <div className="flex flex-col gap-3 flex-1">
+                      {/* Tên vườn + pill trạng thái */}
+                      <div className="min-w-0">
+                        <div
+                          className="font-semibold text-[17px] md:text-[18px] text-[#0f1f1e] leading-snug break-words"
+                          title={g.name}
+                          style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {g.name}
+                        </div>
+
+                        <div className="mt-2">
+                          <StatusPill s={g.status} />
+                        </div>
+                      </div>
+
+                      {/* Địa chỉ */}
+                      <div className="flex items-start gap-1.5 text-[14px] text-neutral-650">
+                        <MapPin className="h-4 w-4 mt-[1px] flex-shrink-0 text-neutral-500" />
+                        <div
+                          className="min-w-0 leading-snug break-words"
+                          title={formatGardenLocation(g)}
+                          style={{
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                          }}
+                        >
+                          {formatGardenLocation(g) || "Chưa thiết lập địa chỉ"}
+                        </div>
+                      </div>
+
+                      {/* Số cây trong vườn */}
+                      <div>
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 text-[13px] font-medium">
+                          <TreePine className="h-3.5 w-3.5" />
+                          <GardenTreeCount g={g} key={g}/>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Actions ở đáy card */}
+                    <div className="mt-auto pt-4 border-t border-neutral-100 flex items-center justify-between gap-3 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-10 rounded-xl px-4 text-[14px]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (idx >= 0) openEdit(idx);
+                          }}
+                        >
+                          <Edit3 className="w-4 h-4 mr-1.5" />
+                          Sửa vườn
+                        </Button>
+
+                        <button
+                          type="button"
+                          className="hidden inline-flex items-center justify-center h-10 w-10 rounded-xl border border-neutral-200 text-neutral-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-300 transition-colors"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (idx >= 0) askDelete(idx);
+                          }}
+                          aria-label="Xoá vườn"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Nút trạng thái */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (idx >= 0) askToggleStatus(idx);
+                        }}
+                        className={`inline-flex items-center justify-center h-10 px-4 rounded-full text-[13px] font-semibold shadow-sm transition-transform transition-colors ${
+                          isActive
+                            ? "bg-rose-500 text-white hover:bg-rose-600 active:scale-[0.98] shadow-[0_8px_18px_rgba(244,63,94,0.28)]"
+                            : "bg-emerald-500 text-white hover:bg-emerald-600 active:scale-[0.98] shadow-[0_8px_18px_rgba(16,185,129,0.28)]"
+                        }`}
+                      >
+                        {isActive ? "Dừng hoạt động" : "Khởi động lại"}
+                      </button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </section>
+
+          {/* Phân trang */}
+          {filtered.length > 0 && totalPages > 1 && (
+            <section className="mt-2 flex flex-col md:flex-row items-center justify-between gap-3 text-sm text-white/85">
+              <div>
+                Hiển thị{" "}
+                <span className="font-semibold">
+                  {startIndex + 1}-
+                  {Math.min(startIndex + PAGE_SIZE, filtered.length)}
+                </span>{" "}
+                trên <span className="font-semibold">{filtered.length}</span> vườn
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 rounded-full px-3 text-[13px] bg-white/90"
+                  disabled={currentPage === 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Trang trước
+                </Button>
+
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }).map((_, i) => {
+                    const pageNumber = i + 1;
+                    const isCurrent = pageNumber === currentPage;
+                    return (
+                      <button
+                        key={pageNumber}
+                        type="button"
+                        onClick={() => setPage(pageNumber)}
+                        className={`min-w-[32px] h-9 rounded-full text-[13px] px-2 ${
+                          isCurrent
+                            ? "bg-[#FFFFA5] text-[#1F302F] font-semibold"
+                            : "bg-white/10 text-white/80 hover:bg-white/20"
+                        }`}
+                      >
+                        {pageNumber}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                <div className="mt-auto pt-4">
-                  <Separator />
-                  <div className="flex items-center justify-end gap-2 mt-3">
-                    <Button
-  variant="outline"
-  className="h-9 rounded-xl"
-  onClick={(e) => { e.stopPropagation(); openEdit(i); }}
->
-  <Edit3 className="h-4 w-4 mr-1" /> Sửa
-</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-9 rounded-full px-3 text-[13px] bg-white/90"
+                  disabled={currentPage === totalPages}
+                  onClick={() =>
+                    setPage((p) => Math.min(totalPages, p + 1))
+                  }
+                >
+                  Trang sau
+                </Button>
+              </div>
+            </section>
+          )}
 
-<Button
-  variant="outline"
-  className="h-9 rounded-xl"
-  onClick={(e) => { e.stopPropagation(); askDelete(i); }}
->
-  <Trash2 className="h-4 w-4 mr-1" /> Xoá
-</Button>
+          {filtered.length === 0 && (
+            <div className="text-center text-white/70 py-10">
+              Không có vườn phù hợp
+            </div>
+          )}
+        </main>
 
+        {/* Modals */}
+        <GardenFormModal
+          open={openForm}
+          initial={editingIdx >= 0 ? gardens[editingIdx] : null}
+          onClose={() => {
+            setOpenForm(false);
+            setEditingIdx(-1);
+          }}
+          onSubmit={handleSubmit}
+        />
 
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </section>
+        <ConfirmModal
+          open={confirm.open}
+          title="Xoá vườn?"
+          onClose={() => setConfirm({ open: false, targetIdx: -1 })}
+          onConfirm={doDelete}
+        >
+          <p className="text-sm text-neutral-700">
+            Bạn chắc chắn muốn xoá vườn{" "}
+            <span className="font-medium">
+              {confirm.targetIdx >= 0 ? gardens[confirm.targetIdx]?.name : ""}
+            </span>
+            ? Hành động này không thể hoàn tác.
+          </p>
+        </ConfirmModal>
 
-        {filtered.length === 0 && <div className="text-center text-white/70 py-10">Không có vườn phù hợp</div>}
-      </main>
-
-      {/* Modals */}
-      <GardenFormModal
-        open={openForm}
-        initial={editingIdx >= 0 ? gardens[editingIdx] : null}
-        onClose={() => {
-          setOpenForm(false);
-          setEditingIdx(-1);
-        }}
-        onSubmit={handleSubmit}
-      />
-      <ConfirmModal
-        open={confirm.open}
-        title="Xoá vườn?"
-        onClose={() => setConfirm({ open: false, targetIdx: -1 })}
-        onConfirm={doDelete}
-      >
-        <p className="text-sm text-neutral-700">
-          Bạn chắc chắn muốn xoá vườn{" "}
-          <span className="font-medium">
-            {confirm.targetIdx >= 0 ? gardens[confirm.targetIdx]?.name : ""}
-          </span>
-          ? Hành động này không thể hoàn tác.
-        </p>
-      </ConfirmModal>
-    </div>
+        <ConfirmModal
+          open={statusConfirm.open}
+          title={
+            statusConfirm.nextStatus === "Dừng hoạt động"
+              ? "Dừng hoạt động vườn?"
+              : "Khởi động lại vườn?"
+          }
+          onClose={() =>
+            setStatusConfirm({
+              open: false,
+              targetIdx: -1,
+              nextStatus: "",
+              message: "",
+            })
+          }
+          onConfirm={doToggleStatus}
+        >
+          <p className="text-sm text-neutral-700 whitespace-pre-line">
+            {statusConfirm.message}
+          </p>
+        </ConfirmModal>
+      </div>
+    </>
   );
 }

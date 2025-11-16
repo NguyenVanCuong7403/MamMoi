@@ -32,6 +32,19 @@ export default class GardenRepository {
     return ApiClient.get(`/api/gardens/${id}`);
   }
 
+    /**
+   * Upload a garden image file
+   * @param {File} file
+   * @returns {Promise<{success: boolean, url: string}>}
+   */
+  static async uploadGardenImage(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    return ApiClient.post("/api/gardens/upload", formData, true);
+  }
+  
+
   /**
    * Update a garden
    * @param {number} id
@@ -40,4 +53,15 @@ export default class GardenRepository {
   static async updateGarden(id, data) {
     return ApiClient.put(`/api/gardens/${id}`, data);
   }
+
+  /**
+   * Update only the status of a garden
+   * @param {number} id
+   * @param {string} status
+   */
+  static async updateGardenStatus(id, status) {
+    // Wrap in object for future extensibility
+    return ApiClient.put(`/api/gardens/${id}/status`, JSON.stringify(status), true);
+  }
+
 }
