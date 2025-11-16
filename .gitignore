@@ -44,3 +44,6 @@ packages/
 # Excel files (temporary)
 *.xlsx
 *.csv
+
+#cursor
+.cursor/
