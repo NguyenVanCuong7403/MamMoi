@@ -34,15 +34,16 @@ public static class DependencyInjection
         // services.AddScoped<ITreeRepository, TreeRepository>();
 
         // Register application services
-        // services.AddScoped<IUserService, MamMoi.Infrastructure.Services.Users.UserService>(); // Template code, not used
+        services.AddScoped<IUserService, MamMoi.Infrastructure.Services.Users.UserService>();
         services.AddScoped<IGardenService, MamMoi.Infrastructure.Services.Gardens.GardenService>();
         services.AddScoped<IInvitationService, MamMoi.Infrastructure.Services.Staff.StaffService>();
         services.AddScoped<IGardenMemberService, MamMoi.Infrastructure.Services.GardenMember.GardenMemberService>();
-        
+        services.AddScoped<ICareScheduleService, MamMoi.Infrastructure.Services.CareSchedules.CareScheduleService>();
+
         // Register authentication services
         services.AddScoped<IAuthService, MamMoi.Infrastructure.Services.Auth.AuthService>();
         services.AddScoped<IEmailService, MamMoi.Infrastructure.Services.Auth.EmailService>();
-        
+
         // Register infrastructure services
         services.AddScoped<TokenService>();
         services.AddScoped<ITreeTypeService, TreeTypeService>();

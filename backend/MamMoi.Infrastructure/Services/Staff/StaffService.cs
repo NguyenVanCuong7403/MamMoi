@@ -118,7 +118,7 @@ public class StaffService : IInvitationService
             throw new InvalidOperationException("Only Staff users can be assigned to gardens");
 
         // 2.5. Enable tài khoản nếu inactive
-        if (!staff.IsActive)
+        if (staff.IsActive != true)
         {
             staff.IsActive = true;
             _context.Users.Update(staff);
@@ -235,14 +235,13 @@ public class StaffService : IInvitationService
     public async Task<List<UserDto>> GetInactiveStaffAsync()
     {
         var inactiveStaff = await _context.Users
-            .Where(u => u.RoleId == 4 && !u.IsActive) // Staff role = 4, inactive
+            .Where(u => u.RoleId == 4 && u.IsActive != true)  // Staff role = 4, inactive
             .OrderBy(u => u.FullName)
             .ToListAsync();
 
         return inactiveStaff.Select(u => new UserDto
         {
-            Id = Guid.NewGuid(), // Temporary ID for DTO
-            Username = u.Email, // Use email as username
+            UserId = u.UserId,
             Email = u.Email,
             FullName = u.FullName,
             CreatedAt = u.CreatedAt

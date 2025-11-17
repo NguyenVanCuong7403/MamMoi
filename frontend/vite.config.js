@@ -11,7 +11,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': 'http://localhost:5262'  // Forward /api/* to ASP.NET Core backend
+      '/api': 'https://localhost:7237'  // Forward /api/* to ASP.NET Core backend on HTTPS
     }
   },
   resolve: {
