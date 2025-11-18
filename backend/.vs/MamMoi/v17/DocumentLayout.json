@@ -3,6 +3,82 @@
   "WorkspaceRootPath": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\systemadminservices\\userservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\systemadminservices\\userservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\subscriptionplandto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\subscriptionplandto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\staffdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\staffdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\analyticsdashboarddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\analyticsdashboarddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\subscriptiondto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\subscriptiondto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\supportticketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\businessadminservices\\supportticketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\business admin\\subscriptionscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\business admin\\subscriptionscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\subscriptionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\businessadminservices\\subscriptionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\subscriptionplanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\businessadminservices\\subscriptionplanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\customerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\businessadminservices\\customerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\systemadminservices\\activitylogservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\systemadminservices\\activitylogservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\models\\treegrowthstage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\models\\treegrowthstage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\systemadminservices\\treetypeservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\systemadminservices\\treetypeservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\system admin\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\system admin\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\system admin\\settingscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\system admin\\settingscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\supportticketdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\supportticketdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\systemadmindto\\userdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\systemadmindto\\userdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\business admin\\customerscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\business admin\\customerscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\system admin\\growthstagescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\system admin\\growthstagescontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -17,18 +93,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\systemadmindto\\growthstagedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\systemadmindto\\growthstagedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\models\\treegrowthstage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\models\\treegrowthstage.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\systemadminservices\\activitylogservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\systemadminservices\\activitylogservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\systemadminservices\\treetypeservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\systemadminservices\\treetypeservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\interfaces\\igrowthstageservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -91,10 +155,6 @@
       "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\business admin\\supportticketscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\business admin\\subscriptionscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\business admin\\subscriptionscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\business admin\\subscriptionplanscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\business admin\\subscriptionplanscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -111,24 +171,12 @@
       "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\business admin\\gardenscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\business admin\\customerscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\business admin\\customerscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\business admin\\analyticscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\business admin\\analyticscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\supportticketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\businessadminservices\\supportticketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\interfaces\\isupportticketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\interfaces\\isupportticketservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\supportticketdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\supportticketdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\staffservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -137,10 +185,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\interfaces\\istaffservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\interfaces\\istaffservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\staffdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\staffdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\gardenservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -155,14 +199,6 @@
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\gardenmemberdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\systemadmindto\\userdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\systemadmindto\\userdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\subscriptionplandto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\subscriptionplandto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\customerdetaildto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\customerdetaildto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -171,16 +207,8 @@
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\paymentdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\analyticsdashboarddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\analyticsdashboarddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\interfaces\\isubscriptionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\interfaces\\isubscriptionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\dtos\\businessadmindto\\subscriptiondto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\businessadmindto\\subscriptiondto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\analyticsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -189,10 +217,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\interfaces\\ianalyticsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\interfaces\\ianalyticsservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\customerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\businessadminservices\\customerservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\systemadminservices\\dashboardservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -215,14 +239,6 @@
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\systemadmindto\\dashboarddto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\system admin\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\system admin\\userscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\system admin\\settingscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\system admin\\settingscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.api\\controllers\\system admin\\logscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{007AE0D3-680D-30C2-AEBE-7FAC53C2660F}|MamMoi.Api\\MamMoi.Api.csproj|solutionrelative:mammoi.api\\controllers\\system admin\\logscontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -235,24 +251,12 @@
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\dtos\\systemadmindto\\settingdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\subscriptionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\businessadminservices\\subscriptionservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\businessadminservices\\subscriptionplanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\businessadminservices\\subscriptionplanservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application\\interfaces\\ipaymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{B24493EC-2338-4B98-D5D8-BDA5FDAA5C64}|MamMoi.Application\\MamMoi.Application.csproj|solutionrelative:mammoi.application\\interfaces\\ipaymentservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{9AFD5111-3FEE-336D-C31E-9BEC17F7FC44}|MamMoi.Application.Tests\\MamMoi.Application.Tests.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.application.tests\\services\\userservicetests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{9AFD5111-3FEE-336D-C31E-9BEC17F7FC44}|MamMoi.Application.Tests\\MamMoi.Application.Tests.csproj|solutionrelative:mammoi.application.tests\\services\\userservicetests.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\systemadminservices\\userservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\services\\systemadminservices\\userservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\services\\systemadminservices\\systemsettingservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -338,10 +342,6 @@
       "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\security\\tokenservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\models\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|d:\\prn231\\\u0111\u1ED3 \u00E1n\\mammoi\\backend\\mammoi.infrastructure\\models\\gardensoil.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{83FB3F85-BB0C-4868-BC65-ACDEAD008D2B}|MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj|solutionrelative:mammoi.infrastructure\\models\\gardensoil.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
@@ -379,7 +379,7 @@
         },
         {
           "DockedHeight": 196,
-          "SelectedChildIndex": 6,
+          "SelectedChildIndex": 79,
           "Children": [
             {
               "$type": "Bookmark",
@@ -407,20 +407,19 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 19,
               "Title": "GrowthStagesController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\System Admin\\GrowthStagesController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\System Admin\\GrowthStagesController.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\System Admin\\GrowthStagesController.cs",
               "RelativeToolTip": "MamMoi.Api\\Controllers\\System Admin\\GrowthStagesController.cs",
-              "ViewState": "AQIAACAAAAAAAAAAAAAgwEEAAAA2AAAA",
+              "ViewState": "AQIAAAoAAAAAAAAAAAAAAEEAAAA2AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-13T03:12:00.853Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-13T03:12:00.853Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 21,
               "Title": "GrowthStageService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\SystemAdminServices\\GrowthStageService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\GrowthStageService.cs",
@@ -428,25 +427,23 @@
               "RelativeToolTip": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\GrowthStageService.cs",
               "ViewState": "AQIAAFsAAAAAAAAAAAA/wEIAAAAfAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-13T03:04:15.464Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-13T03:04:15.464Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 12,
               "Title": "TreeGrowthStage.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Models\\TreeGrowthStage.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Models\\TreeGrowthStage.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Models\\TreeGrowthStage.cs",
               "RelativeToolTip": "MamMoi.Infrastructure\\Models\\TreeGrowthStage.cs",
-              "ViewState": "AQIAAAkAAAAAAAAAAAA1wCUAAAA3AAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAACUAAAA3AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-13T02:27:58.894Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-13T02:27:58.894Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 23,
               "Title": "IGrowthStageService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IGrowthStageService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\IGrowthStageService.cs",
@@ -458,7 +455,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 3,
+              "DocumentIndex": 22,
               "Title": "GrowthStageDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\SystemAdminDto\\GrowthStageDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\SystemAdminDto\\GrowthStageDto.cs",
@@ -466,12 +463,11 @@
               "RelativeToolTip": "MamMoi.Application\\DTOs\\SystemAdminDto\\GrowthStageDto.cs",
               "ViewState": "AQIAACkAAAAAAAAAAAAswCUAAAAtAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-13T02:22:58.749Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-13T02:22:58.749Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 24,
               "Title": "SoilMasterController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\System Admin\\SoilMasterController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\System Admin\\SoilMasterController.cs",
@@ -483,7 +479,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 26,
               "Title": "SoilMasterService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\SystemAdminServices\\SoilMasterService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\SoilMasterService.cs",
@@ -495,7 +491,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 27,
               "Title": "ISoilMasterService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\ISoilMasterService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\ISoilMasterService.cs",
@@ -507,7 +503,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 28,
               "Title": "SoilMasterDropdownDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\SystemAdminDto\\SoilMasterDropdownDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\SystemAdminDto\\SoilMasterDropdownDto.cs",
@@ -519,7 +515,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 25,
               "Title": "TreeTypesController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\System Admin\\TreeTypesController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\System Admin\\TreeTypesController.cs",
@@ -531,19 +527,19 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 13,
               "Title": "TreeTypeService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\SystemAdminServices\\TreeTypeService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\TreeTypeService.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\SystemAdminServices\\TreeTypeService.cs",
               "RelativeToolTip": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\TreeTypeService.cs",
-              "ViewState": "AQIAABMAAAAAAAAAAAAQwDUAAAASAAAA",
+              "ViewState": "AQIAAEcAAAAAAAAAAAAAwFQAAAAQAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-13T02:01:11.907Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 30,
               "Title": "ITreeTypeService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\ITreeTypeService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\ITreeTypeService.cs",
@@ -555,7 +551,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
+              "DocumentIndex": 31,
               "Title": "TreeTypeDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\SystemAdminDto\\TreeTypeDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\SystemAdminDto\\TreeTypeDto.cs",
@@ -567,7 +563,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 32,
               "Title": "Tree.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Models\\Tree.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Models\\Tree.cs",
@@ -579,7 +575,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 35,
               "Title": "MamMoi.Application.csproj",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\MamMoi.Application.csproj",
               "RelativeDocumentMoniker": "MamMoi.Application\\MamMoi.Application.csproj",
@@ -587,12 +583,11 @@
               "RelativeToolTip": "MamMoi.Application\\MamMoi.Application.csproj",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-11-13T01:27:50.536Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-13T01:27:50.536Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 36,
               "Title": "MamMoi.Api.http",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\MamMoi.Api.http",
               "RelativeDocumentMoniker": "MamMoi.Api\\MamMoi.Api.http",
@@ -604,7 +599,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 21,
+              "DocumentIndex": 37,
               "Title": "SupportTicketsController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\Business Admin\\SupportTicketsController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\Business Admin\\SupportTicketsController.cs",
@@ -616,19 +611,19 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 29,
+              "DocumentIndex": 5,
               "Title": "SupportTicketService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SupportTicketService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SupportTicketService.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SupportTicketService.cs",
               "RelativeToolTip": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SupportTicketService.cs",
-              "ViewState": "AQIAADUAAAAAAAAAAAAgwEoAAAAJAAAA",
+              "ViewState": "AQIAAC0AAAAAAAAAAAAYwFkAAAAnAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-12T07:18:30.416Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 30,
+              "DocumentIndex": 43,
               "Title": "ISupportTicketService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\ISupportTicketService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\ISupportTicketService.cs",
@@ -640,19 +635,19 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 31,
+              "DocumentIndex": 16,
               "Title": "SupportTicketDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\SupportTicketDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\BusinessAdminDto\\SupportTicketDto.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\SupportTicketDto.cs",
               "RelativeToolTip": "MamMoi.Application\\DTOs\\BusinessAdminDto\\SupportTicketDto.cs",
-              "ViewState": "AQIAABQAAAAAAAAAAAA0wCEAAAAAAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAA8AAAAcAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-12T07:14:55.058Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 26,
+              "DocumentIndex": 41,
               "Title": "GardensController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\Business Admin\\GardensController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\Business Admin\\GardensController.cs",
@@ -664,7 +659,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 35,
+              "DocumentIndex": 46,
               "Title": "GardenService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\GardenService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\GardenService.cs",
@@ -676,7 +671,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 36,
+              "DocumentIndex": 47,
               "Title": "IGardenService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IGardenService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\IGardenService.cs",
@@ -688,7 +683,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 37,
+              "DocumentIndex": 48,
               "Title": "GardenMemberDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\GardenMemberDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\BusinessAdminDto\\GardenMemberDto.cs",
@@ -700,7 +695,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 24,
+              "DocumentIndex": 39,
               "Title": "StaffController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\Business Admin\\StaffController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\Business Admin\\StaffController.cs",
@@ -712,7 +707,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 32,
+              "DocumentIndex": 44,
               "Title": "StaffService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\StaffService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\StaffService.cs",
@@ -724,7 +719,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 33,
+              "DocumentIndex": 45,
               "Title": "IStaffService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IStaffService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\IStaffService.cs",
@@ -736,19 +731,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 34,
+              "DocumentIndex": 2,
               "Title": "StaffDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\StaffDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\BusinessAdminDto\\StaffDto.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\StaffDto.cs",
               "RelativeToolTip": "MamMoi.Application\\DTOs\\BusinessAdminDto\\StaffDto.cs",
-              "ViewState": "AQIAAAMAAAAAAAAAAAAAABMAAAAFAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAwAAAAWAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-10T13:38:33.501Z"
+              "WhenOpened": "2025-11-10T13:38:33.501Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 28,
+              "DocumentIndex": 42,
               "Title": "AnalyticsController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\Business Admin\\AnalyticsController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\Business Admin\\AnalyticsController.cs",
@@ -760,7 +756,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 46,
+              "DocumentIndex": 53,
               "Title": "IAnalyticsService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IAnalyticsService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\IAnalyticsService.cs",
@@ -772,7 +768,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 45,
+              "DocumentIndex": 52,
               "Title": "AnalyticsService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\AnalyticsService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\AnalyticsService.cs",
@@ -784,19 +780,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 42,
+              "DocumentIndex": 3,
               "Title": "AnalyticsDashboardDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\AnalyticsDashboardDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\BusinessAdminDto\\AnalyticsDashboardDto.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\AnalyticsDashboardDto.cs",
               "RelativeToolTip": "MamMoi.Application\\DTOs\\BusinessAdminDto\\AnalyticsDashboardDto.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAABsAAAASAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABcAAAArAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-10T08:12:48.414Z"
+              "WhenOpened": "2025-11-10T08:12:48.414Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 38,
               "Title": "SubscriptionPlansController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\Business Admin\\SubscriptionPlansController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\Business Admin\\SubscriptionPlansController.cs",
@@ -808,19 +805,19 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 59,
+              "DocumentIndex": 8,
               "Title": "SubscriptionPlanService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SubscriptionPlanService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SubscriptionPlanService.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SubscriptionPlanService.cs",
               "RelativeToolTip": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SubscriptionPlanService.cs",
-              "ViewState": "AQIAADoAAAAAAAAAAAAQwEAAAAAAAAAA",
+              "ViewState": "AQIAAA8AAAAAAAAAAAAuwCIAAAA5AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-10T07:11:22.19Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 49,
+              "DocumentIndex": 55,
               "Title": "ISubscriptionPlanService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\ISubscriptionPlanService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\ISubscriptionPlanService.cs",
@@ -832,19 +829,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 39,
+              "DocumentIndex": 1,
               "Title": "SubscriptionPlanDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\SubscriptionPlanDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\BusinessAdminDto\\SubscriptionPlanDto.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\SubscriptionPlanDto.cs",
               "RelativeToolTip": "MamMoi.Application\\DTOs\\BusinessAdminDto\\SubscriptionPlanDto.cs",
-              "ViewState": "AQIAABYAAAAAAAAAAAAcwCwAAAAAAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAABkAAAAWAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-10T07:07:07.78Z"
+              "WhenOpened": "2025-11-10T07:07:07.78Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 25,
+              "DocumentIndex": 40,
               "Title": "PaymentsController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\Business Admin\\PaymentsController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\Business Admin\\PaymentsController.cs",
@@ -856,7 +854,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 29,
               "Title": "PaymentService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\PaymentService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\PaymentService.cs",
@@ -868,7 +866,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 60,
+              "DocumentIndex": 62,
               "Title": "IPaymentService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IPaymentService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\IPaymentService.cs",
@@ -880,7 +878,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 41,
+              "DocumentIndex": 50,
               "Title": "PaymentDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\PaymentDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\BusinessAdminDto\\PaymentDto.cs",
@@ -892,7 +890,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 71,
+              "DocumentIndex": 72,
               "Title": "Microsoft.NET.Sdk.Razor.MvcApplicationPartsDiscovery.targets",
               "DocumentMoniker": "C:\\Program Files\\dotnet\\sdk\\8.0.302\\Sdks\\Microsoft.NET.Sdk.Razor\\targets\\Microsoft.NET.Sdk.Razor.MvcApplicationPartsDiscovery.targets",
               "ToolTip": "C:\\Program Files\\dotnet\\sdk\\8.0.302\\Sdks\\Microsoft.NET.Sdk.Razor\\targets\\Microsoft.NET.Sdk.Razor.MvcApplicationPartsDiscovery.targets",
@@ -902,7 +900,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 61,
+              "DocumentIndex": 63,
               "Title": "UserServiceTests.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application.Tests\\Services\\UserServiceTests.cs",
               "RelativeDocumentMoniker": "MamMoi.Application.Tests\\Services\\UserServiceTests.cs",
@@ -914,31 +912,31 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 22,
+              "DocumentIndex": 6,
               "Title": "SubscriptionsController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\Business Admin\\SubscriptionsController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\Business Admin\\SubscriptionsController.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\Business Admin\\SubscriptionsController.cs",
               "RelativeToolTip": "MamMoi.Api\\Controllers\\Business Admin\\SubscriptionsController.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAoAAAAEAAAA",
+              "ViewState": "AQIAABAAAAAAAAAAAAAQwAoAAAAEAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-09T14:10:16.201Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 58,
+              "DocumentIndex": 7,
               "Title": "SubscriptionService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SubscriptionService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SubscriptionService.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SubscriptionService.cs",
               "RelativeToolTip": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\SubscriptionService.cs",
-              "ViewState": "AQIAAGYAAAAAAAAAAAAYwIoAAAAJAAAA",
+              "ViewState": "AQIAAGkAAAAAAAAAAAAYwJEAAAAhAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-09T14:07:10.965Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 43,
+              "DocumentIndex": 51,
               "Title": "ISubscriptionService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\ISubscriptionService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\ISubscriptionService.cs",
@@ -950,19 +948,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 44,
+              "DocumentIndex": 4,
               "Title": "SubscriptionDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\SubscriptionDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\BusinessAdminDto\\SubscriptionDto.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\SubscriptionDto.cs",
               "RelativeToolTip": "MamMoi.Application\\DTOs\\BusinessAdminDto\\SubscriptionDto.cs",
-              "ViewState": "AQIAAAkAAAAAAAAAAAAAADAAAAAAAAAA",
+              "ViewState": "AQIAAAkAAAAAAAAAAAAuwBYAAAAFAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-09T14:03:10.808Z"
+              "WhenOpened": "2025-11-09T14:03:10.808Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 40,
+              "DocumentIndex": 49,
               "Title": "CustomerDetailDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\BusinessAdminDto\\CustomerDetailDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\BusinessAdminDto\\CustomerDetailDto.cs",
@@ -974,31 +973,31 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 27,
+              "DocumentIndex": 18,
               "Title": "CustomersController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\Business Admin\\CustomersController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\Business Admin\\CustomersController.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\Business Admin\\CustomersController.cs",
               "RelativeToolTip": "MamMoi.Api\\Controllers\\Business Admin\\CustomersController.cs",
-              "ViewState": "AQIAAAMAAAAAAAAAAAAuwBAAAAAAAAAA",
+              "ViewState": "AQIAAAwAAAAAAAAAAAAuwB4AAAA5AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-05T10:25:39.748Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 47,
+              "DocumentIndex": 9,
               "Title": "CustomerService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\CustomerService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\CustomerService.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\BusinessAdminServices\\CustomerService.cs",
               "RelativeToolTip": "MamMoi.Infrastructure\\Services\\BusinessAdminServices\\CustomerService.cs",
-              "ViewState": "AQIAAEEAAAAAAAAAAAAgwAcAAAAdAAAA",
+              "ViewState": "AQIAAEQAAAAAAAAAAAAgwI0AAAA4AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-05T10:21:40.898Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 70,
+              "DocumentIndex": 71,
               "Title": "ICustomerService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\ICustomerService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\ICustomerService.cs",
@@ -1010,7 +1009,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 56,
+              "DocumentIndex": 60,
               "Title": "DashboardController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\System Admin\\DashboardController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\System Admin\\DashboardController.cs",
@@ -1022,7 +1021,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 48,
+              "DocumentIndex": 54,
               "Title": "DashboardService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\SystemAdminServices\\DashboardService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\DashboardService.cs",
@@ -1034,7 +1033,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 67,
+              "DocumentIndex": 68,
               "Title": "IDashboardService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IDashboardService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\IDashboardService.cs",
@@ -1046,7 +1045,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 52,
+              "DocumentIndex": 58,
               "Title": "DashboardDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\SystemAdminDto\\DashboardDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\SystemAdminDto\\DashboardDto.cs",
@@ -1058,7 +1057,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 54,
+              "DocumentIndex": 15,
               "Title": "SettingsController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\System Admin\\SettingsController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\System Admin\\SettingsController.cs",
@@ -1070,7 +1069,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 63,
+              "DocumentIndex": 64,
               "Title": "SystemSettingService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\SystemAdminServices\\SystemSettingService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\SystemSettingService.cs",
@@ -1082,7 +1081,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 64,
+              "DocumentIndex": 65,
               "Title": "SystemSettingRepository.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Repositories\\SystemSettingRepository.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Repositories\\SystemSettingRepository.cs",
@@ -1094,7 +1093,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 75,
+              "DocumentIndex": 76,
               "Title": "ISystemSettingService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\ISystemSettingService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\ISystemSettingService.cs",
@@ -1106,7 +1105,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 79,
+              "DocumentIndex": 80,
               "Title": "AppSettings.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Settings\\AppSettings.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Settings\\AppSettings.cs",
@@ -1118,7 +1117,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 57,
+              "DocumentIndex": 61,
               "Title": "SettingDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\SystemAdminDto\\SettingDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\SystemAdminDto\\SettingDto.cs",
@@ -1130,7 +1129,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 77,
+              "DocumentIndex": 78,
               "Title": "ISystemSettingRepository.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Domain\\Interfaces\\ISystemSettingRepository.cs",
               "RelativeDocumentMoniker": "MamMoi.Domain\\Interfaces\\ISystemSettingRepository.cs",
@@ -1142,7 +1141,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 55,
+              "DocumentIndex": 59,
               "Title": "LogsController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\System Admin\\LogsController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\System Admin\\LogsController.cs",
@@ -1154,19 +1153,19 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 11,
               "Title": "ActivityLogService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\SystemAdminServices\\ActivityLogService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\ActivityLogService.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\SystemAdminServices\\ActivityLogService.cs",
               "RelativeToolTip": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\ActivityLogService.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAB8AAABNAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAB8AAAAoAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-04T09:25:07.858Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 65,
+              "DocumentIndex": 66,
               "Title": "ActivityLogRepository.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Repositories\\ActivityLogRepository.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Repositories\\ActivityLogRepository.cs",
@@ -1178,7 +1177,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 82,
+              "DocumentIndex": 83,
               "Title": "IActivityLogService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IActivityLogService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\IActivityLogService.cs",
@@ -1190,7 +1189,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 51,
+              "DocumentIndex": 57,
               "Title": "ActivityLogDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\SystemAdminDto\\ActivityLogDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\SystemAdminDto\\ActivityLogDto.cs",
@@ -1202,7 +1201,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 76,
+              "DocumentIndex": 77,
               "Title": "IActivityLogRepository.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Domain\\Interfaces\\IActivityLogRepository.cs",
               "RelativeDocumentMoniker": "MamMoi.Domain\\Interfaces\\IActivityLogRepository.cs",
@@ -1214,7 +1213,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 69,
+              "DocumentIndex": 70,
               "Title": "Role.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Models\\Role.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Models\\Role.cs",
@@ -1226,19 +1225,19 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 84,
+              "DocumentIndex": 10,
               "Title": "User.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Models\\User.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Models\\User.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Models\\User.cs",
               "RelativeToolTip": "MamMoi.Infrastructure\\Models\\User.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAkAAAAjAAAA",
+              "ViewState": "AQIAAAMAAAAAAAAAAAAAAAkAAAAjAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-11-01T12:32:42.166Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 50,
+              "DocumentIndex": 56,
               "Title": "ISettingService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\ISettingService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\ISettingService.cs",
@@ -1250,7 +1249,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 20,
               "Title": "DependencyInjection.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\DependencyInjection.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\DependencyInjection.cs",
@@ -1258,12 +1257,11 @@
               "RelativeToolTip": "MamMoi.Infrastructure\\DependencyInjection.cs",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAADAAAABAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-01T02:24:34.112Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-11-01T02:24:34.112Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 68,
+              "DocumentIndex": 69,
               "Title": "DependencyInjection.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DependencyInjection.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DependencyInjection.cs",
@@ -1275,7 +1273,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 78,
+              "DocumentIndex": 79,
               "Title": "IUserService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\Interfaces\\IUserService.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\Interfaces\\IUserService.cs",
@@ -1287,19 +1285,20 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 62,
+              "DocumentIndex": 0,
               "Title": "UserService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\SystemAdminServices\\UserService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\UserService.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Services\\SystemAdminServices\\UserService.cs",
               "RelativeToolTip": "MamMoi.Infrastructure\\Services\\SystemAdminServices\\UserService.cs",
-              "ViewState": "AQIAAGsAAAAAAAAAAAAswIwAAAA5AAAA",
+              "ViewState": "AQIAAHMAAAAAAAAAAAAqwEMAAAAfAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-01T01:50:36.336Z"
+              "WhenOpened": "2025-11-01T01:50:36.336Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 83,
+              "DocumentIndex": 84,
               "Title": "TokenService.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Security\\TokenService.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Security\\TokenService.cs",
@@ -1311,7 +1310,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 80,
+              "DocumentIndex": 81,
               "Title": "User.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Domain\\Entities\\User.cs",
               "RelativeDocumentMoniker": "MamMoi.Domain\\Entities\\User.cs",
@@ -1323,7 +1322,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 81,
+              "DocumentIndex": 82,
               "Title": "Role.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Domain\\Entities\\Role.cs",
               "RelativeDocumentMoniker": "MamMoi.Domain\\Entities\\Role.cs",
@@ -1335,7 +1334,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 73,
+              "DocumentIndex": 74,
               "Title": "IUserRepository.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Domain\\Interfaces\\IUserRepository.cs",
               "RelativeDocumentMoniker": "MamMoi.Domain\\Interfaces\\IUserRepository.cs",
@@ -1347,13 +1346,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 38,
+              "DocumentIndex": 17,
               "Title": "UserDto.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\SystemAdminDto\\UserDto.cs",
               "RelativeDocumentMoniker": "MamMoi.Application\\DTOs\\SystemAdminDto\\UserDto.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Application\\DTOs\\SystemAdminDto\\UserDto.cs",
               "RelativeToolTip": "MamMoi.Application\\DTOs\\SystemAdminDto\\UserDto.cs",
-              "ViewState": "AQIAACsAAAAAAAAAAAAkwCIAAAABAAAA",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAACIAAAABAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-31T16:04:26.884Z"
             },
@@ -1371,7 +1370,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 72,
+              "DocumentIndex": 73,
               "Title": "CapstoneDbContext.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Models\\CapstoneDbContext.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Models\\CapstoneDbContext.cs",
@@ -1383,7 +1382,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 66,
+              "DocumentIndex": 67,
               "Title": "UserRepository.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\Repositories\\UserRepository.cs",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\Repositories\\UserRepository.cs",
@@ -1419,7 +1418,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 34,
               "Title": "Program.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Program.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Program.cs",
@@ -1443,19 +1442,19 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 53,
+              "DocumentIndex": 14,
               "Title": "UsersController.cs",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\System Admin\\UsersController.cs",
               "RelativeDocumentMoniker": "MamMoi.Api\\Controllers\\System Admin\\UsersController.cs",
               "ToolTip": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Api\\Controllers\\System Admin\\UsersController.cs",
               "RelativeToolTip": "MamMoi.Api\\Controllers\\System Admin\\UsersController.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAHQAAAA0AAAA",
+              "ViewState": "AQIAABsAAAAAAAAAAAAYwHQAAAA0AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-10-31T15:19:49.923Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 33,
               "Title": "MamMoi.Infrastructure.csproj",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj",
               "RelativeDocumentMoniker": "MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj",
@@ -1463,12 +1462,11 @@
               "RelativeToolTip": "MamMoi.Infrastructure\\MamMoi.Infrastructure.csproj",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAABsAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-10-31T15:19:35.476Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-31T15:19:35.476Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 74,
+              "DocumentIndex": 75,
               "Title": "MamMoi.Domain.csproj",
               "DocumentMoniker": "D:\\prn231\\\u0110\u1ED3 \u00E1n\\MamMoi\\backend\\MamMoi.Domain\\MamMoi.Domain.csproj",
               "RelativeDocumentMoniker": "MamMoi.Domain\\MamMoi.Domain.csproj",
@@ -1476,8 +1474,7 @@
               "RelativeToolTip": "MamMoi.Domain\\MamMoi.Domain.csproj",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-10-31T15:19:23.83Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-31T15:19:23.83Z"
             },
             {
               "$type": "Document",
@@ -1489,8 +1486,7 @@
               "RelativeToolTip": "MamMoi.Application.Tests\\MamMoi.Application.Tests.csproj",
               "ViewState": "AQIAAAAAAAAAAAAAAAAAAA4AAAA4AAAA",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
-              "WhenOpened": "2025-10-31T15:18:21.897Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-10-31T15:18:21.897Z"
             }
           ]
         },

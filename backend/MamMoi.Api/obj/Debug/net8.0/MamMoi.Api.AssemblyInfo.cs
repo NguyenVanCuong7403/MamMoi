@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MamMoi.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b7e6ddf6ae1006be181d6ecd9dc62707a6d9bda4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ed157d9479cc7f4b81db4819c7d717023f66ca86")]
 [assembly: System.Reflection.AssemblyProductAttribute("MamMoi.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MamMoi.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
