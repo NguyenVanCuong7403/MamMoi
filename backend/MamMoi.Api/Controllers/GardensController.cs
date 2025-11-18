@@ -28,6 +28,62 @@ public class GardensController : ControllerBase
     }
 
     /// <summary>
+    /// Upload an image for a garden
+    /// POST /api/gardens/upload
+    /// Accepts multipart/form-data
+    /// </summary>
+    [HttpPost("upload")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> UploadImage([FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "No file uploaded."
+            });
+        }
+
+        try
+        {
+            // Example: save to wwwroot/uploads
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot","uploads");
+
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // Return the accessible URL
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var fileUrl = $"{baseUrl}/uploads/{uniqueFileName}";
+
+            return Ok(new
+            {
+                success = true,
+                url = fileUrl
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading image");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Error uploading image. Please try again."
+            });
+        }
+    }
+
+
+    /// <summary>
     /// CHỨC NĂNG 1: Tạo vườn mới
     /// POST /api/gardens
     /// Chỉ Farmer (RoleId = 4) mới được tạo vườn
@@ -169,6 +225,68 @@ public class GardensController : ControllerBase
             });
         }
     }
+
+    /// <summary>
+    /// Update only the status of a garden
+    /// PUT /api/gardens/{id}/status
+    /// Only the Owner can update
+    /// </summary>
+    [HttpPut("{id}/status")]
+    public async Task<IActionResult> UpdateGardenStatus(int id, [FromBody] string status)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (userId == null)
+            {
+                return Unauthorized(new
+                {
+                    success = false,
+                    message = "Không tìm thấy thông tin user trong token."
+                });
+            }
+            // Optional: trim and validate status string
+            if (string.IsNullOrWhiteSpace(status))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Status không được để trống."
+                });
+            }
+
+            var result = await _gardenService.UpdateGardenStatusAsync(id, userId.Value, status.Trim());
+
+            return Ok(new
+            {
+                success = true,
+                message = "Cập nhật trạng thái vườn thành công!",
+                data = result
+            });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid(); // 403 - Chỉ Owner mới được update
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new
+            {
+                success = false,
+                message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating garden status");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Đã xảy ra lỗi khi cập nhật trạng thái vườn. Vui lòng thử lại sau."
+            });
+        }
+    }
+
 
     /// <summary>
     /// CHỨC NĂNG 4: Cập nhật thông tin vườn

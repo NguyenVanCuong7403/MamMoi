@@ -5,12 +5,15 @@ This is a minimal React scaffold (Create React App style).
 2. Open `frontend` folder./ cd frontend
 3. Install: `npm install`/ npm i
 4. npm i -D tailwindcss postcss autoprefixer
-5. npx tailwindcss init -p
-6. npm i lucide-react
-7. npm i framer-motion react-router-dom
-8. npm i @radix-ui/react-dropdown-menu @radix-ui/react-separator @radix-ui/react-label @radix-ui/react-dialog @radix-ui/react-slot
-9. npx shadcn-ui@latest ini
-10. npm i class-variance-authority clsx tailwind-merge
-11. Start: `npm start`
-12. If your backend runs on another port, set REACT_APP_API_BASE environment variable, e.g.:
+5. npm i lucide-react
+6. npx tailwindcss init -p
+7. npx shadcn-ui@latest init
+8. chạy thêm các lệch sau nếu không chạy được
+npm i react-qr-code
+npm i class-variance-authority clsx tailwind-merge lucide-react
+npm i framer-motion react-router-dom
+npm i @radix-ui/react-dropdown-menu @radix-ui/react-separator @radix-ui/react-label @radix-ui/react-dialog @radix-ui/react-slot
+
+9. Start: `npm start`
+10. If your backend runs on another port, set REACT_APP_API_BASE environment variable, e.g.:
    REACT_APP_API_BASE=http://localhost:5000 npm start

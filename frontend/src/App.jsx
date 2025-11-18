@@ -20,6 +20,7 @@ function App() {
 
       {/* Toàn bộ UI đặt trên lớp hiệu ứng */}
       <div className="relative z-10">
+          <AuthProvider>
         <Header
           onLogin={() => {
             setAuthTab("login");
@@ -28,11 +29,11 @@ function App() {
             setAuthTab("register");
           }}
         />
-          <AuthProvider>
             <RouteManager authTab={authTab} />
-          </AuthProvider>
         <Footer />
+          </AuthProvider>
       </div>
+      
     </Router>
   );
 }

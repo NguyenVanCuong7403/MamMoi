@@ -1,0 +1,51 @@
+﻿namespace MamMoi.Application.DTOs
+{
+    public record CreateTreeRequest(
+        int GardenId,
+        int TreeTypeId,
+        int StageId,
+        string? TreeCode,
+        string? TreeName,
+        DateOnly? PlantDate,
+        int? GardenSoilId,
+        string? Location = null,
+        string? Notes = null,
+        // mô tả trạng thái lá/cành/hoa/quả trên form
+        string? LeafStatus = null,
+        string? BranchStatus = null,
+        string? FlowerStatus = null,
+        string? FruitStatus = null,
+        bool? IsFruiting = null,
+        bool? IsActive = null
+    );
+
+    public record UpdateTreeRequest(
+        string? TreeName,
+        string? TreeCode,
+        DateOnly? PlantDate,
+        int? StageId,
+        int? GardenSoilId,
+        string? Location,
+        bool? IsFruiting,
+        bool? IsActive,
+        DateOnly? ExpectedHarvestDate,
+        string? Notes,
+        string? LeafStatus,
+        string? BranchStatus,
+        string? FlowerStatus,
+        string? FruitStatus
+    );
+
+    // Bỏ HealthStatus vì DB không có; gom các trạng thái cần update nhanh
+    public record UpdateTreeStatusRequest(
+        string? LeafStatus,
+        string? BranchStatus,
+        string? FlowerStatus,
+        string? FruitStatus,
+        bool? IsActive,
+        bool? IsFruiting
+    );
+
+    public record TreeCreatedDto(int TreeId);
+    public record TreeSummaryDto(int TreeId, string? TreeName, string? TreeCode);
+}

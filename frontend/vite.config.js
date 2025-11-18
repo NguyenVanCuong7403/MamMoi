@@ -5,13 +5,9 @@ import path from "path";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  define: {
-    global: 'globalThis',
-    'process.env': {},
-  },
   server: {
     proxy: {
-      '/api': 'http://localhost:5262'  // Forward /api/* to ASP.NET Core backend
+      '/api': 'https://localhost:7237'  // Forward /api/* to ASP.NET Core backend on HTTPS
     }
   },
   resolve: {

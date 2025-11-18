@@ -1,32 +1,96 @@
-# Visual Studio
-.vs/
-*.user
-*.suo
-*.tmp
-*.temp
+## Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+TestResults/
+[Aa]ppPackages/
+BundleArtifacts/
+project.lock.json
+project.fragment.lock.json
+artifacts/
 
-# Build outputs
-bin/
-obj/
+# Visual Studio cache/options
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Visual Studio Code settings
+.vscode/*
+
+# Tye
+.tye/
+
+# ASP.NET Scaffolding
+ScaffoldingReadMe.txt
+
+# Npm/Node (nếu dự án ASP.NET dùng React/Angular)
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+package-lock.json
+yarn.lock
+
+# Publish outputs
+*.Publish.xml
+publish/
 out/
 
-# Logs
-*.log
-logs/
+# NuGet
+*.nupkg
+*.snupkg
+*.nuspec
+packages/
+*.nuget.props
+*.nuget.targets
 
-# IDE
-.vscode/
-.idea/
+# Azure build artifacts
+csx/
+*.build.csdef
 
-# OS
-.DS_Store
-Thumbs.db
+# DotCover
+.idea/.dotCover
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# DotTrace
+*.dotTrace
+
+# DotMemory
+*.dotMemory
+
+# DotCover
+*.dotCover
+
+# Unit test logs
+TestResult.xml
+coverage*.xml
+coverage*.json
+coverage*.info
+*.coverage
+*.coveragexml
+
+# Web files (auto-generated)
+wwwroot/lib/
+wwwroot/dist/
 
 # Database
 *.db
 *.sqlite
 *.mdf
 *.ldf
+*.ndf
 
 # Environment
 .env
@@ -44,3 +108,6 @@ packages/
 # Excel files (temporary)
 *.xlsx
 *.csv
+
+#cursor
+.cursor/

@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MamMoi.Application.DTOs.Garden;
 
@@ -26,6 +26,10 @@ public class CreateGardenDto
     /// </summary>
     [StringLength(100, ErrorMessage = "Time zone cannot exceed 100 characters")]
     public string? TimeZone { get; set; }
+
+    public string Status { get; set; } = "Đang hoạt động";
+
+    public string? CoverUrl { get; set; } = null;
 
     /// <summary>
     /// Climate zone of the garden (optional, max 50 characters)

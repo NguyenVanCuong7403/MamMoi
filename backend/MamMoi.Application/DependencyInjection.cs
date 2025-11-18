@@ -1,3 +1,4 @@
+using MamMoi.Application.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace MamMoi.Application;
@@ -11,16 +12,17 @@ public static class DependencyInjection
     {
         // Register application services here
         // Example: services.AddScoped<IUserService, UserService>();
-        
+
         // Add AutoMapper if using
         // services.AddAutoMapper(Assembly.GetExecutingAssembly());
-        
+
         // Add MediatR if using
         // services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly()));
-        
+
         // Add FluentValidation if using
         // services.AddValidatorsFromAssembly(Assembly.GetExecutingAssembly());
-        
+       
+
         return services;
     }
 }

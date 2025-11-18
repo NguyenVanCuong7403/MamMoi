@@ -56,7 +56,9 @@ public class GardenService : IGardenService
             Location = dto.Location?.Trim(),
             TimeZone = dto.TimeZone?.Trim(),
             ClimateZone = dto.ClimateZone?.Trim(),
-            CreatedAt = DateTime.Now
+            CreatedAt = DateTime.Now,
+            Status = dto.Status,
+            CoverUrl = dto.CoverUrl,
         };
 
         // 4. Lưu vào database
@@ -110,7 +112,9 @@ public class GardenService : IGardenService
             ClimateZone = g.ClimateZone,
             CreatedAt = g.CreatedAt,
             TotalTrees = g.Trees?.Count ?? 0,
-            IsOwner = g.UserId == userId
+            IsOwner = g.UserId == userId,
+            Status = g.Status,
+            CoverUrl = g.CoverUrl,
         }).ToList();
 
         // Return paginated response
@@ -179,6 +183,35 @@ public class GardenService : IGardenService
             garden.Name = dto.Name.Trim();
         }
 
+        if (dto.CoverUrl != null)
+        {
+            if (!string.IsNullOrWhiteSpace(garden.CoverUrl) &&
+                garden.CoverUrl != dto.CoverUrl &&
+                garden.CoverUrl.Contains("/uploads/"))
+            {
+                try
+                {
+                    var fileName = Path.GetFileName(new Uri(garden.CoverUrl).LocalPath);
+                    var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", fileName);
+
+                    if (System.IO.File.Exists(filePath))
+                    {
+                        System.IO.File.Delete(filePath);
+                    }
+                }
+                catch
+                {
+                    // Ignore deletion errors, log if needed
+                }
+            }
+            garden.CoverUrl = dto.CoverUrl.Trim();
+        }
+
+        if (dto.Status != null)
+        {
+            garden.Status = dto.Status.Trim();
+        }
+
         if (dto.Location != null) // Allow clearing location
         {
             garden.Location = string.IsNullOrWhiteSpace(dto.Location)
@@ -214,17 +247,28 @@ public class GardenService : IGardenService
     /// <summary>
     /// Helper: Map Garden entity sang GardenResponseDto với statistics
     /// </summary>
-    private GardenResponseDto MapToResponseDto(GardenEntity garden, int currentUserId)
+    private GardenResponseDto MapToResponseDto(Garden garden, int currentUserId)
     {
-        // Calculate statistics
+        // ---- Calculate statistics ----
         var totalTrees = garden.Trees?.Count ?? 0;
-        var healthyTrees = garden.Trees?.Count(t => t.HealthStatus == "Healthy") ?? 0;
+
+        // Healthy nếu cả 4 trạng thái đều “Bình thường”
+        var healthyTrees = garden.Trees?.Count(t =>
+            t.LeafStatus == "Bình thường" &&
+            t.BranchStatus == "Bình thường" &&
+            t.FlowerStatus == "Bình thường" &&
+            t.FruitStatus == "Bình thường") ?? 0;
+
+        // Cần chú ý nếu có bất kỳ trạng thái nào khác "Bình thường"
         var treesNeedingAttention = garden.Trees?.Count(t =>
-            t.HealthStatus == "Sick" ||
-            t.HealthStatus == "NeedsAttention" ||
-            t.HealthStatus == "Critical") ?? 0;
+            t.LeafStatus != "Bình thường" ||
+            t.BranchStatus != "Bình thường" ||
+            t.FlowerStatus != "Bình thường" ||
+            t.FruitStatus != "Bình thường") ?? 0;
+
         var totalStaff = garden.GardenMembers?.Count(gm => gm.RoleId == 4) ?? 0; // Staff role = 4
 
+        // ---- Build DTO ----
         return new GardenResponseDto
         {
             GardenId = garden.GardenId,
@@ -232,10 +276,13 @@ public class GardenService : IGardenService
             OwnerName = garden.User?.FullName ?? garden.User?.Email ?? "Unknown",
             Name = garden.Name,
             Location = garden.Location,
-            TimeZone = garden.TimeZone,
-            ClimateZone = garden.ClimateZone,
             CreatedAt = garden.CreatedAt,
             IsOwner = garden.UserId == currentUserId,
+
+            // (Bỏ TimeZone & ClimateZone nếu đã loại khỏi model)
+            // TimeZone = garden.TimeZone,
+            // ClimateZone = garden.ClimateZone,
+
             Statistics = new GardenStatistics
             {
                 TotalTrees = totalTrees,
@@ -244,6 +291,34 @@ public class GardenService : IGardenService
                 TotalStaff = totalStaff
             }
         };
+    }
+
+    public async Task<GardenResponseDto> UpdateGardenStatusAsync(int gardenId, int userId, string status)
+    {
+        var isOwner = await _gardenRepository.IsOwnerAsync(gardenId, userId);
+        if (!isOwner)
+        {
+            throw new UnauthorizedAccessException("Chỉ chủ vườn mới có quyền cập nhật trạng thái.");
+        }
+
+        var gardenDynamic = await _gardenRepository.GetByIdAsync(gardenId);
+        if (gardenDynamic == null)
+        {
+            throw new KeyNotFoundException($"Không tìm thấy vườn với ID {gardenId}.");
+        }
+
+        var garden = (Garden)gardenDynamic;
+
+        // 3. Update status
+        garden.Status = status;
+
+        // 4. Save changes
+        await _gardenRepository.UpdateAsync(garden);
+
+        // 5. Reload and return DTO
+        var updatedGardenDynamic = await _gardenRepository.GetByIdAsync(gardenId);
+        var updatedGarden = (Garden)updatedGardenDynamic!;
+        return MapToResponseDto(updatedGarden, userId);
     }
 
     #endregion

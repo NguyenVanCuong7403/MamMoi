@@ -20,14 +20,14 @@ public class AuthService : IAuthService
     private readonly IEmailService _emailService;
     private readonly TokenService _tokenService;
     private readonly IMemoryCache _cache;
-    private readonly CapstoneDb01Context _context;
+    private readonly MamMoiDbContext _context;
 
     public AuthService(
-        IUserRepository userRepository, 
+        IUserRepository userRepository,
         IEmailService emailService,
         TokenService tokenService,
         IMemoryCache cache,
-        CapstoneDb01Context context)
+        MamMoiDbContext context)
     {
         _userRepository = userRepository;
         _emailService = emailService;
@@ -57,7 +57,7 @@ public class AuthService : IAuthService
             FullName = request.FullName,
             Phone = request.Phone,
             PasswordHash = passwordHash,
-            RoleId = 3, // Role Farmer mặc định - có thể tạo vườn và giao việc cho Staff
+            RoleId = 2, // Role Farmer mặc định - có thể tạo vườn và giao việc cho Staff
             IsActive = false, // Chưa active vì chưa verify email
             CreatedAt = DateTime.Now
         };
@@ -71,11 +71,11 @@ public class AuthService : IAuthService
 
         // 6. Lưu OTP vào cache (expire sau 5 phút)
         var cacheKey = $"otp_{request.Email}";
-        var otpData = new 
-        { 
-            Code = otpCode, 
+        var otpData = new
+        {
+            Code = otpCode,
             UserId = userEntity.UserId,
-            CreatedAt = DateTime.Now 
+            CreatedAt = DateTime.Now
         };
         _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(5));
 
@@ -142,8 +142,8 @@ public class AuthService : IAuthService
 
         // 6. Generate tokens
         var accessToken = _tokenService.GenerateToken(
-            userEntity.UserId.ToString(), 
-            userEntity.FullName, 
+            userEntity.UserId.ToString(),
+            userEntity.FullName,
             userEntity.Email,
             new[] { userEntity.Role?.RoleName ?? "User" }
         );
@@ -153,7 +153,7 @@ public class AuthService : IAuthService
         // 7. Lưu refresh token vào cache (expire sau 7 ngày, 2 mappings)
         var refreshTokenKey = $"refresh_{userEntity.UserId}";
         var tokenToUserKey = $"token_{refreshToken}"; // Mapping ngược: token → userId
-        
+
         _cache.Set(refreshTokenKey, refreshToken, TimeSpan.FromDays(7));
         _cache.Set(tokenToUserKey, userEntity.UserId, TimeSpan.FromDays(7)); // Lưu userId
 
@@ -196,23 +196,22 @@ public class AuthService : IAuthService
         var userEntity = (User)user;
 
         // 2. Kiểm tra tài khoản có bị khóa không
-        if (!userEntity.IsActive)
+        if (userEntity.IsActive != true)
         {
-            // Nếu là staff và không có vườn active nào → tài khoản bị khóa hoàn toàn
+            // Đối với Farmer (RoleId = 3): luôn cho phép resend OTP nếu chưa verify
+            // Chỉ khóa hoàn toàn đối với Staff không có garden active
             if (userEntity.RoleId == 4) // Staff role
             {
                 var hasActiveGarden = await _context.GardenMembers
                     .AnyAsync(gm => gm.UserId == userEntity.UserId && gm.Status == "Active");
-                
+
                 if (!hasActiveGarden)
                 {
-                    throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa. Liên hệ admin để kích hoạt lại.");
+                    throw new InvalidOperationException("Tài khoản nhân viên tạm thời bị khóa do không có vườn hoạt động. Vui lòng liên hệ quản lý vườn để được phân công.");
                 }
             }
-            else
-            {
-                // Farmer/Admin chưa verify email → cho phép resend OTP
-            }
+
+            // Farmer hoặc Staff có garden active: cho phép resend OTP
         }
         else
         {
@@ -225,11 +224,11 @@ public class AuthService : IAuthService
 
         // 4. Lưu OTP mới vào cache (ghi đè OTP cũ)
         var cacheKey = $"otp_{request.Email}";
-        var otpData = new 
-        { 
-            Code = otpCode, 
+        var otpData = new
+        {
+            Code = otpCode,
             UserId = userEntity.UserId,
-            CreatedAt = DateTime.Now 
+            CreatedAt = DateTime.Now
         };
         _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(5));
 
@@ -276,15 +275,29 @@ public class AuthService : IAuthService
         }
 
         // 3. Kiểm tra tài khoản có active không
-        if (!userEntity.IsActive)
+        if (userEntity.IsActive != true)
         {
-            throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa. Liên hệ admin để kích hoạt lại.");
+            // Đối với Farmer (RoleId = 3): luôn cho phép resend OTP nếu chưa verify
+            // Chỉ khóa hoàn toàn đối với Staff không có garden active
+            if (userEntity.RoleId == 4) // Staff role
+            {
+                var hasActiveGarden = await _context.GardenMembers
+                    .AnyAsync(gm => gm.UserId == userEntity.UserId && gm.Status == "Active");
+
+                if (!hasActiveGarden)
+                {
+                    throw new InvalidOperationException("Tài khoản nhân viên tạm thời bị khóa do không có vườn hoạt động. Vui lòng liên hệ quản lý vườn để được phân công.");
+                }
+            }
+
+            // Farmer hoặc Staff có garden active: cho phép resend OTP
+            throw new InvalidOperationException("Tài khoản chưa được xác thực. Vui lòng kiểm tra email để nhận mã OTP hoặc sử dụng tính năng 'Gửi lại OTP'.");
         }
 
         // 4. Generate tokens
         var accessToken = _tokenService.GenerateToken(
-            userEntity.UserId.ToString(), 
-            userEntity.FullName, 
+            userEntity.UserId.ToString(),
+            userEntity.FullName,
             userEntity.Email,
             new[] { userEntity.Role?.RoleName ?? "User" }
         );
@@ -294,7 +307,7 @@ public class AuthService : IAuthService
         // 5. Lưu refresh token vào cache (2 mappings)
         var refreshTokenKey = $"refresh_{userEntity.UserId}";
         var tokenToUserKey = $"token_{refreshToken}"; // Mapping ngược: token → userId
-        
+
         _cache.Set(refreshTokenKey, refreshToken, TimeSpan.FromDays(7));
         _cache.Set(tokenToUserKey, userEntity.UserId, TimeSpan.FromDays(7)); // Lưu userId
 
@@ -311,6 +324,7 @@ public class AuthService : IAuthService
             IsEmailVerified = true,
             AccessToken = accessToken,
             RefreshToken = refreshToken,
+            ProfileImageUrl = userEntity.ProfileImageUrl,
             TokenExpiresAt = DateTime.Now.AddMinutes(60),
             Message = "Đăng nhập thành công!"
         };
@@ -348,7 +362,7 @@ public class AuthService : IAuthService
         }
 
         // 4. Kiểm tra user còn active không
-        if (!user.IsActive)
+        if (user.IsActive != true)
         {
             throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa.");
         }
@@ -393,9 +407,9 @@ public class AuthService : IAuthService
             var tokenToUserKey = $"token_{refreshToken}";
             _cache.Remove(tokenToUserKey); // Xóa mapping: token → userId
         }
-        
+
         _cache.Remove(refreshTokenKey); // Xóa mapping: userId → token
-        
+
         await Task.CompletedTask;
     }
 
@@ -412,7 +426,7 @@ public class AuthService : IAuthService
         }
 
         // 2. Kiểm tra tài khoản đã được kích hoạt chưa
-        if (!user.IsActive)
+        if (user.IsActive != true)
         {
             throw new InvalidOperationException("Tài khoản chưa được kích hoạt. Vui lòng xác thực OTP trước.");
         }
@@ -458,14 +472,14 @@ public class AuthService : IAuthService
         var userEntity = (User)user;
 
         // 1.5. Kiểm tra tài khoản có bị khóa không
-        if (!userEntity.IsActive)
+        if (userEntity.IsActive != true)
         {
             // Nếu là staff và không có vườn active nào → tài khoản bị khóa hoàn toàn
             if (userEntity.RoleId == 4) // Staff role
             {
                 var hasActiveGarden = await _context.GardenMembers
                     .AnyAsync(gm => gm.UserId == userEntity.UserId && gm.Status == "Active");
-                
+
                 if (!hasActiveGarden)
                 {
                     throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa. Liên hệ admin để kích hoạt lại.");

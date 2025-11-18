@@ -1,4 +1,4 @@
-namespace MamMoi.Application.DTOs.Garden;
+﻿namespace MamMoi.Application.DTOs.Garden;
 
 /// <summary>
 /// DTO for Garden list item (used in paginated lists).
@@ -12,7 +12,10 @@ public class GardenListDto
     public string? TimeZone { get; set; }
     public string? ClimateZone { get; set; }
     public DateTime CreatedAt { get; set; }
-    
+
+    public string Status { get; set; } = "Đang hoạt động";
+    public string? CoverUrl { get; set; } = null;
+
     /// <summary>
     /// Total number of trees in the garden (for quick overview)
     /// </summary>
