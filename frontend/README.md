@@ -14,6 +14,7 @@ npm i class-variance-authority clsx tailwind-merge lucide-react
 npm i framer-motion react-router-dom
 npm i @radix-ui/react-dropdown-menu @radix-ui/react-separator @radix-ui/react-label @radix-ui/react-dialog @radix-ui/react-slot
 
-9. Start: `npm start`
-10. If your backend runs on another port, set REACT_APP_API_BASE environment variable, e.g.:
+9. npm install @radix-ui/react-alert-dialog
+10. Start: `npm start`
+11. If your backend runs on another port, set REACT_APP_API_BASE environment variable, e.g.:
    REACT_APP_API_BASE=http://localhost:5000 npm start
