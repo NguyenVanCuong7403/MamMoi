@@ -57,7 +57,7 @@ public class AuthService : IAuthService
             FullName = request.FullName,
             Phone = request.Phone,
             PasswordHash = passwordHash,
-            RoleId = 2, // Role Farmer mặc định - có thể tạo vườn và giao việc cho Staff
+            RoleId = 3, // Role Farmer mặc định - có thể tạo vườn và giao việc cho Staff
             IsActive = false, // Chưa active vì chưa verify email
             CreatedAt = DateTime.Now
         };
