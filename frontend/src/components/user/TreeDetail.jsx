@@ -11,6 +11,8 @@ import TreeRepository from "@/API/repositories/TreeRepository";
 import GardenSoilRepository from "@/API/repositories/GardenSoilRepository";
 import { normalize as vnNormalize } from "@/lib/useVnAdmin";
 import { Calendar as CalIcon } from "lucide-react";
+import CareScheduleRepository from "@/API/repositories/CareScheduleRepository";
+
 
 import { Label } from "@/components/ui/label"; // nếu bạn dùng Label trong edit modal
 
@@ -122,6 +124,59 @@ const STATUS_THEME = {
     desc: "Chỉ xem, khoá các hành động tạo/sửa/xoá."
   }
 };
+
+function mapCareTaskFromApi(apiTask) {
+  if (!apiTask) return null;
+
+  // status / completed
+  const status = (apiTask.status || "").toString().toLowerCase();
+  const completed =
+    status.includes("done") ||
+    status.includes("hoàn thành") ||
+    status.includes("completed");
+
+  // taskType -> water | fert | pest | other (để reuse TYPE_THEME)
+  const rawType = (apiTask.taskType || apiTask.type || "").toString();
+  const normType = vnNormalize(rawType);
+
+  let type = "other";
+  if (normType.includes("tuoi") || normType.includes("water")) type = "water";
+  else if (normType.includes("phan") || normType.includes("fert")) type = "fert";
+  else if (
+    normType.includes("sau") ||
+    normType.includes("sau benh") ||
+    normType.includes("pest") ||
+    normType.includes("benh")
+  )
+    type = "pest";
+
+    type = mapTaskTypeFromApi(apiTask.taskType);
+
+  const due =
+    apiTask.scheduledDate || // anh đặt trong DTO thế nào thì map đúng tên thuộc tính ở đây
+    apiTask.scheduleDate ||
+    apiTask.dueDate ||
+    apiTask.date ||
+    null;
+
+  return {
+    id: apiTask.scheduleId ?? apiTask.id,
+    type, // "water" | "fert" | "pest" | "other"
+    title: apiTask.taskName || apiTask.title || "Công việc chăm sóc",
+    due, // string "YYYY-MM-DD" hoặc null
+    details: apiTask.description || apiTask.details || "",
+    priority: apiTask.priority || null,
+
+    completed,
+    completedAt:
+      apiTask.completedDate || apiTask.completedAt || apiTask.doneAt || null,
+    completedNote: apiTask.completedNote || apiTask.note || "",
+
+    // giữ raw lại nếu sau này muốn mở popup chi tiết / debug
+    raw: apiTask,
+  };
+}
+
 
 /* ===== Ambient Decor (Top + Sides) & Scroll Progress ===================== */
 
@@ -1109,6 +1164,58 @@ function normalizeDetails(details) {
     .map((s) => s.replace(/^\s*\d+\.\s*/, "").trim())
     .filter(Boolean);
 }
+
+// Map loại task trên UI sang loại TaskType mà API chấp nhận
+const TASK_TYPE_API_MAP = {
+  // 4 loại ở UI
+  water: "Watering",
+  watering: "Watering",
+
+  fert: "Fertilizing",
+  fertilizer: "Fertilizing",
+  fertilizing: "Fertilizing",
+
+  pest: "Pest Control",
+  "pest_control": "Pest Control",
+
+  disease: "Disease Treatment",
+
+  harvest: "Harvesting",
+  harvesting: "Harvesting",
+
+  mulch: "Mulching",
+  mulching: "Mulching",
+
+  prune: "Pruning",
+  pruning: "Pruning",
+
+  inspect: "Inspection",
+  inspection: "Inspection",
+
+  // fallback “khác” → cho về Inspection cho an toàn
+  other: "Inspection",
+};
+
+function mapTaskTypeForApi(uiType) {
+  if (!uiType) return null;
+  const k = String(uiType).toLowerCase().trim();
+  return TASK_TYPE_API_MAP[k] || null;
+}
+
+function mapTaskTypeFromApi(taskType) {
+  const t = String(taskType || "").toLowerCase();
+  if (t === "watering") return "water";
+  if (t === "fertilizing") return "fert";
+  if (t === "pest control") return "pest";
+  if (t === "disease treatment") return "other";
+  if (t === "harvesting") return "other";
+  if (t === "mulching") return "other";
+  if (t === "pruning") return "other";
+  if (t === "inspection") return "other";
+  return "other";
+}
+
+
 function detailsToPlain(details) {
   return Array.isArray(details) ? details.join(" ") : String(details || "");
 }
@@ -3372,6 +3479,54 @@ function setPlanned(nextOrUpdater) {
   });
 }
 
+  // === Care tasks từ backend (CareSchedules) ==========================
+  const [careTasksLoading, setCareTasksLoading] = useState(false);
+  const [careTasksError, setCareTasksError] = useState(null);
+
+  const loadCareTasks = React.useCallback(async () => {
+    // lấy id cây: ưu tiên id đã resolve, fallback treeId từ URL
+    const numericTreeId =
+      stateTree?.id ||
+      stateTree?._id ||
+      baseTree?.id ||
+      (treeId ? Number(treeId) : null);
+
+    if (!numericTreeId || Number.isNaN(numericTreeId)) return;
+
+    try {
+      setCareTasksLoading(true);
+      setCareTasksError(null);
+
+      const res = await CareScheduleRepository.getTasksByTree(numericTreeId);
+
+      // backend đang trả kiểu nào thì anh chỉnh ở đây
+      const raw =
+        Array.isArray(res?.data?.data) // trường hợp API bọc { data, count }
+          ? res.data.data
+          : Array.isArray(res?.data) // trường hợp trả thẳng array
+          ? res.data
+          : [];
+
+      const mapped = raw
+        .map(mapCareTaskFromApi)
+        .filter(Boolean);
+
+      // planned chính là source cho:
+      // - Các công việc đã lên kế hoạch
+      // - Lịch sử công việc đã hoàn thành (lọc những cái completed === true)
+      setPlanned(mapped);
+    } catch (err) {
+      console.error("Failed to load care tasks", err);
+      setCareTasksError(err);
+    } finally {
+      setCareTasksLoading(false);
+    }
+  }, [stateTree?.id, baseTree?.id, treeId]);
+
+  useEffect(() => {
+    loadCareTasks();
+  }, [loadCareTasks]);
+
 useEffect(() => {
   plannedRef.current = planned;
 }, [planned]);
@@ -3709,18 +3864,50 @@ useEffect(() => {
     setConfirmAddTask({ open: true, snapshot: draft });
   }
 
-  function performAddTask(draft) {
-    if (isStopped) return;
-    setPlanned((prev) => [
-      {
-        id: Date.now(),
-        title: draft.title,
-        type: draft.type,
-        due: draft.due,
-        details: draft.details,
-      },
-      ...prev,
-    ]);
+async function performAddTask(draft) {
+  if (isStopped) return;
+
+  try {
+
+    // ✅ map sang giá trị mà API chấp nhận
+    const apiTaskType = mapTaskTypeForApi(draft.type);
+    if (!apiTaskType) {
+      console.error("Unsupported task type for API:", draft.type);
+      showToast("Loại công việc này chưa được hỗ trợ để gửi lên server.");
+      return;
+    }
+    const numericTreeId =
+      stateTree?.id ||
+      stateTree?._id ||
+      baseTree?.id ||
+      (treeId ? Number(treeId) : null);
+
+    const detailsStr = Array.isArray(draft.details)
+  ? draft.details.filter(Boolean).join("\n") // ["a","b"] -> "a\nb"
+  : (draft.details ?? "");
+
+    const payload = {
+      treeId: numericTreeId,
+      taskType: apiTaskType,        // ✅ giờ là "Watering" / "Fertilizing" ...
+      taskName: draft.title,
+      scheduledDate: draft.due,     // "YYYY-MM-DD"
+      description: detailsStr.trim() || null,   // string (đã normalizeDetails)
+      priority: "Medium",           // tạm fix, sau nếu có UI priority thì map thêm
+    };
+
+    const res = await CareScheduleRepository.addCareTask(payload);
+    const saved = res?.data ?? res;
+
+    // Tuỳ response của backend, thường sẽ có ScheduleId / TaskId
+    const newPlannedItem = {
+      id: saved.scheduleId ?? saved.id ?? Date.now(),
+      title: draft.title,
+      type: draft.type,     // vẫn giữ type ngắn cho UI (water/fert/pest/other)
+      due: draft.due,
+      details: draft.details,
+    };
+
+    setPlanned((prev) => [newPlannedItem, ...prev]);
     setConfirmAddTask({ open: false, snapshot: null });
 
     showToast("Đã thêm công việc thành công");
@@ -3729,7 +3916,13 @@ useEffect(() => {
     setPlannedPage((p) => ({ ...p, [draft.type]: 1 }));
     setNewTask({ title: "", type: draft.type, due: today(), details: "" });
     setErrorsTask({});
+  } catch (err) {
+    console.error("Lỗi khi thêm CareTask", err);
+    showToast("Không thêm được công việc. Vui lòng thử lại.");
   }
+}
+
+
 
   function filteredPlannedBy(type) {
     const qtext = search.toLowerCase();
@@ -3769,22 +3962,49 @@ useEffect(() => {
     if (isStopped) return;
     setCompleteModal({ open: true, forId: id, note: "" });
   }
-  function confirmComplete() {
-    if (!completeModal.forId || isStopped) return;
-    setPlanned((prev) =>
-      prev.map((p) =>
-        p.id === completeModal.forId
-          ? {
-              ...p,
-              completed: true,
-              completedAt: today(),
-              completedNote: completeModal.note,
-            }
-          : p
-      )
-    );
-    setCompleteModal({ open: false, forId: undefined, note: "" });
+async function confirmComplete() {
+  if (isStopped || !completeModal.forId) return;
+
+  const id = completeModal.forId;
+  const note = (completeModal.note || "").trim();
+
+  try {
+    // ✅ Payload gửi cho MarkTaskCompleteDto
+    const payload = {
+      // Đặt đúng tên theo MarkTaskCompleteDto
+      // Ví dụ (bạn chỉnh theo Swagger):
+      completedNote: note || null,
+      completedDate: today(), // "YYYY-MM-DD" hoặc new Date().toISOString().slice(0,10)
+    };
+
+    await CareScheduleRepository.markTaskComplete(id, payload);
+
+    // ✅ Cập nhật UI local: move từ planned → history
+    setPlanned((prev) => {
+      const task = prev.find((t) => t.id === id);
+      const rest = prev.filter((t) => t.id !== id);
+
+      if (!task) return rest;
+
+      const completedTask = {
+        ...task,
+        status: "done",
+        completedAt: payload.completedDate,
+        completedNote: note,
+      };
+
+      // đẩy vào history
+      setHistory((h) => [completedTask, ...h]);
+      return rest;
+    });
+
+    setCompleteModal({ open: false, forId: null, note: "" });
+    showToast("Đã đánh dấu hoàn thành");
+  } catch (err) {
+    console.error("Lỗi khi hoàn thành CareTask", err);
+    showToast("Không đánh dấu được hoàn thành. Vui lòng thử lại.");
   }
+}
 
   function openEditNote(type, id, current) {
     if (isStopped) return;
@@ -3815,39 +4035,79 @@ useEffect(() => {
         : String(p.details || ""),
     });
   }
-  function saveEditMain() {
-    if (!editMain.forId || isStopped) return;
-    const det = normalizeDetails(editMain.details);
+  // ✅ THAY TOÀN BỘ HÀM CŨ BẰNG HÀM NÀY
+async function saveEditMain() {
+  if (isStopped || !editMain) return;
+
+  const draft = {
+    ...editMain,
+    details: (editMain.details ?? "").toString(),
+  };
+
+  const e = validateTaskDraft(draft);
+  setErrorsTask(e);
+  console.log(e);
+  if (Object.keys(e).length) return;
+
+  try {
+    // ✅ Gọi API EditCareTaskDto
+    const payload = {
+      // 👉 ĐẶT TÊN FIELD THEO EditCareTaskDto TRONG BACKEND
+      taskType: mapTaskTypeForApi(draft.type),
+      taskName: draft.title,
+      // nếu bên DTO là PlannedDate / DueDate thì chỉnh lại tên cho đúng
+      plannedDate: draft.due, // "YYYY-MM-DD"
+      details: draft.details?.trim() || null,
+      // priority: draft.priority ?? null,
+      // status: draft.status ?? null,
+    };
+
+
+    await CareScheduleRepository.editCareTask(draft.forId, payload);
+
+    // ✅ Update lại state local cho planned
     setPlanned((prev) =>
-      prev.map((p) =>
-        p.id === editMain.forId
+      prev.map((t) =>
+        t.id === draft.forId
           ? {
-              ...p,
-              title: editMain.title,
-              type: editMain.type,
-              due: editMain.due,
-              details: det,
+              ...t,
+              title: draft.title,
+              type: draft.type,
+              due: draft.due,
+              details: draft.details,
             }
-          : p
+          : t
       )
     );
+
     setEditMain({
-      open: false,
-      forId: undefined,
-      title: "",
-      type: "water",
-      due: today(),
-      details: "",
-    });
+                    open: false,
+                    forId: undefined,
+                    title: "",
+                    type: "water",
+                    due: today(),
+                    details: "",
+                  });
+    showToast("Đã lưu cập nhật công việc");
+  } catch (err) {
+    console.error("Lỗi sửa CareTask", err);
+    showToast("Không sửa được công việc. Vui lòng thử lại.");
   }
+}
+
 
   function askDeleteMain(id) {
     if (isStopped) return;
     setConfirmDel({ open: true, forId: id });
   }
-  function confirmDelete() {
+  async function confirmDelete() {
     if (!confirmDel.forId || isStopped) return;
-    setPlanned((prev) => prev.filter((p) => p.id !== confirmDel.forId));
+    try {
+      var res = await CareScheduleRepository.deleteCareTask(confirmDel.forId);
+      setPlanned((prev) => prev.filter((p) => p.id !== confirmDel.forId));
+    } catch(e) {
+      showToast("Không xóa được công việc. Vui lòng thử lại.");
+    }
     setConfirmDel({ open: false, forId: undefined });
   }
 

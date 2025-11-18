@@ -968,9 +968,9 @@ export default function TreeManagement() {
       try {
         // Ưu tiên gọi bằng location string; backend của bạn có thể mapping ra toạ độ
         const [currentRes, forecastRes, alertsRes] = await Promise.all([
-          WeatherRepository.getCurrentByLocation(locationName),
-          WeatherRepository.getForecastByLocation(locationName, 72),
-          WeatherRepository.getAlertsByLocation(locationName),
+          WeatherRepository.getCurrentByLocation(gInfo.province),
+          WeatherRepository.getForecastByLocation(gInfo.province, 72),
+          WeatherRepository.getAlertsByLocation(gInfo.province),
         ]);
         const currentPayload = currentRes?.data ?? currentRes;
         const forecastPayload = forecastRes?.data ?? forecastRes;

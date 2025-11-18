@@ -57,7 +57,7 @@ public class AuthService : IAuthService
             FullName = request.FullName,
             Phone = request.Phone,
             PasswordHash = passwordHash,
-            RoleId = 3, // Role Farmer mặc định - có thể tạo vườn và giao việc cho Staff
+            RoleId = 2, // Role Farmer mặc định - có thể tạo vườn và giao việc cho Staff
             IsActive = false, // Chưa active vì chưa verify email
             CreatedAt = DateTime.Now
         };
@@ -196,7 +196,7 @@ public class AuthService : IAuthService
         var userEntity = (User)user;
 
         // 2. Kiểm tra tài khoản có bị khóa không
-        if (!userEntity.IsActive)
+        if (userEntity.IsActive != true)
         {
             // Đối với Farmer (RoleId = 3): luôn cho phép resend OTP nếu chưa verify
             // Chỉ khóa hoàn toàn đối với Staff không có garden active
@@ -275,7 +275,7 @@ public class AuthService : IAuthService
         }
 
         // 3. Kiểm tra tài khoản có active không
-        if (!userEntity.IsActive)
+        if (userEntity.IsActive != true)
         {
             // Đối với Farmer (RoleId = 3): luôn cho phép resend OTP nếu chưa verify
             // Chỉ khóa hoàn toàn đối với Staff không có garden active
@@ -362,7 +362,7 @@ public class AuthService : IAuthService
         }
 
         // 4. Kiểm tra user còn active không
-        if (!user.IsActive)
+        if (user.IsActive != true)
         {
             throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa.");
         }
@@ -426,7 +426,7 @@ public class AuthService : IAuthService
         }
 
         // 2. Kiểm tra tài khoản đã được kích hoạt chưa
-        if (!user.IsActive)
+        if (user.IsActive != true)
         {
             throw new InvalidOperationException("Tài khoản chưa được kích hoạt. Vui lòng xác thực OTP trước.");
         }
@@ -472,7 +472,7 @@ public class AuthService : IAuthService
         var userEntity = (User)user;
 
         // 1.5. Kiểm tra tài khoản có bị khóa không
-        if (!userEntity.IsActive)
+        if (userEntity.IsActive != true)
         {
             // Nếu là staff và không có vườn active nào → tài khoản bị khóa hoàn toàn
             if (userEntity.RoleId == 4) // Staff role
