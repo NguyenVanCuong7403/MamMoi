@@ -8,7 +8,7 @@ const DEFAULT_MENU = [
   { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
   { id: "quan-ly", label: "Quản lý cây", href: "/garden" },
   { id: "dang-ky", label: "Đăng ký dịch vụ", href: "#register" },
-  { id: "lien-he", label: "Liên hệ", href: "#contact" },
+  { id: "lien-he", label: "Liên hệ & Hỗ trợ", href: "/report" },
 ];
 
 const DEFAULT_AVATAR =
@@ -389,31 +389,62 @@ export default function MMHeader({
                 <ul className="flex flex-col gap-3">
                   {menuItems.map((item, idx) => {
                     const active = activeMenu === item.id;
+                    const isReportLink = item.href === "/report";
                     return (
                       <li key={item.id}>
-                        <a
-                          href={item.href}
-                          onClick={() => setActiveMenu(item.id)}
-                          className={[
-                            "group relative block w-fit px-1 py-2 rounded-md",
-                            "text-[28px] sm:text-[32px] leading-snug font-bold",
-                            active ? "text-[#FFFFDD]" : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
-                          ].join(" ")}
-                          style={{
-                            animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${200 + idx * 140}ms both`,
-                          }}
-                        >
-                          <span className="relative z-10">{item.label}</span>
-                          {/* underline chậm hơn */}
-                          <span
-  aria-hidden
-  className="mm-underline"
-  data-active={active ? "1" : undefined}
-  style={{
-    backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
-  }}
-/>
-                        </a>
+                        {isReportLink ? (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setActiveMenu(item.id);
+                              closeMenu();
+                              navigate(item.href);
+                            }}
+                            className={[
+                              "group relative block w-fit px-1 py-2 rounded-md",
+                              "text-[28px] sm:text-[32px] leading-snug font-bold",
+                              active ? "text-[#FFFFDD]" : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
+                            ].join(" ")}
+                            style={{
+                              animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${200 + idx * 140}ms both`,
+                            }}
+                          >
+                            <span className="relative z-10">{item.label}</span>
+                            {/* underline chậm hơn */}
+                            <span
+                              aria-hidden
+                              className="mm-underline"
+                              data-active={active ? "1" : undefined}
+                              style={{
+                                backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                              }}
+                            />
+                          </button>
+                        ) : (
+                          <a
+                            href={item.href}
+                            onClick={() => setActiveMenu(item.id)}
+                            className={[
+                              "group relative block w-fit px-1 py-2 rounded-md",
+                              "text-[28px] sm:text-[32px] leading-snug font-bold",
+                              active ? "text-[#FFFFDD]" : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
+                            ].join(" ")}
+                            style={{
+                              animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${200 + idx * 140}ms both`,
+                            }}
+                          >
+                            <span className="relative z-10">{item.label}</span>
+                            {/* underline chậm hơn */}
+                            <span
+                              aria-hidden
+                              className="mm-underline"
+                              data-active={active ? "1" : undefined}
+                              style={{
+                                backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                              }}
+                            />
+                          </a>
+                        )}
                       </li>
                     );
                   })}

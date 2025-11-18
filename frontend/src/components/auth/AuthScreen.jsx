@@ -33,6 +33,9 @@ import { LivingBackground } from "@/components/background";
 const baseInputClass =
   "mm-plain-input h-11 w-full border-none bg-transparent p-0 text-[15px] text-slate-900 placeholder:text-slate-600 focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ADMIN_ROLES = ["SystemAdmin", "BusinessAdmin"];
+const getPostLoginPath = (role) =>
+  role && ADMIN_ROLES.includes(role) ? "/admin/users" : "/";
 
 export default function AuthScreen({ defaultTab = "login" }) {
   const [tab, setTab] = useState(defaultTab);
@@ -118,9 +121,10 @@ export default function AuthScreen({ defaultTab = "login" }) {
       // Đăng nhập thành công -> hiện overlay 0.8s rồi vào hệ thống
       setLoginSuccessOverlay(true);
 
+      const redirectPath = getPostLoginPath(res?.role);
       setTimeout(() => {
         setLoginSuccessOverlay(false);
-        navigate("/");
+        navigate(redirectPath);
       }, 800);
     } catch (err) {
       setAuthDialog({
@@ -262,7 +266,8 @@ export default function AuthScreen({ defaultTab = "login" }) {
             "Chào mừng bạn quay lại Mầm Mới! Đang chuyển tới bảng điều khiển.",
           tone: "success",
         });
-        navigate("/");
+        const redirectPath = getPostLoginPath(res?.role);
+        navigate(redirectPath);
       } else if (pendingAction.type === "register") {
         // Xác thực OTP cho đăng ký tài khoản
         const payload = pendingAction.payload || {};
