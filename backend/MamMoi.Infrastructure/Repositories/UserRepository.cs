@@ -6,9 +6,9 @@ namespace MamMoi.Infrastructure.Repositories;
 
 public class UserRepository : IUserRepository
 {
-    private readonly CapstoneDbContext _context;
+    private readonly MamMoiDbContext _context;
 
-    public UserRepository(CapstoneDbContext context)
+    public UserRepository(MamMoiDbContext context)
     {
         _context = context;
     }
@@ -16,39 +16,20 @@ public class UserRepository : IUserRepository
     public async Task<dynamic?> GetByIdAsync(int userId)
     {
         return await _context.Users
-            .Include(u => u.Role) 
-            .FirstOrDefaultAsync(u => u.UserId == userId); 
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.UserId == userId);
     }
+
     public async Task<dynamic?> GetByEmailAsync(string email)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+        return await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Email == email);
     }
 
-    public async Task<IEnumerable<dynamic>> GetAllAsync(string? searchName, string? email, int? roleId)
+    public async Task<IEnumerable<dynamic>> GetAllAsync()
     {
-        var query = _context.Users
-            .Include(u => u.Role)
-            .AsQueryable();
-        if (!string.IsNullOrWhiteSpace(searchName))
-        {
-            var searchTerm = searchName.Trim().ToLower();
-            query = query.Where(u => u.FullName.ToLower().Contains(searchTerm));
-        }
-
-        if (!string.IsNullOrWhiteSpace(email))
-        {
-            var searchEmail = email.Trim().ToLower();
-            query = query.Where(u => u.Email.ToLower().Contains(searchEmail));
-        }
-
-        if (roleId.HasValue && roleId.Value > 0)
-        {
-            query = query.Where(u => u.RoleId == roleId.Value);
-        }
-        var users = await query
-            .AsNoTracking()
-            .ToListAsync();
-
+        var users = await _context.Users.Include(u => u.Role).ToListAsync();
         return users.Cast<dynamic>();
     }
 

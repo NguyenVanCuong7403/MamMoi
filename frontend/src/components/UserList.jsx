@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import UserRepository from "../api/repositories/UserRepository";
+import UserRepository from "../API/repositories/UserRepository";
 
 export default function UserList() {
   const [users, setUsers] = useState([]);

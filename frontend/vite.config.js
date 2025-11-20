@@ -7,7 +7,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': 'http://localhost:3000'  // Forward /api/* to Express
+      '/api': 'https://localhost:7237'  // Forward /api/* to ASP.NET Core backend on HTTPS
     }
   },
   resolve: {

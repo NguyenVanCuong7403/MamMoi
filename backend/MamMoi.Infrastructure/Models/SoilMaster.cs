@@ -11,10 +11,6 @@ public partial class SoilMaster
 
     public string? Texture { get; set; }
 
-    public decimal? Phmin { get; set; }
-
-    public decimal? Phmax { get; set; }
-
     public string? Drainage { get; set; }
 
     public decimal? OrganicMatterPct { get; set; }

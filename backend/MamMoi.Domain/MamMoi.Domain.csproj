@@ -8,8 +8,15 @@
 
   <ItemGroup>
     <Compile Remove="DTO\**" />
+    <Compile Remove="Entities\**" />
     <EmbeddedResource Remove="DTO\**" />
+    <EmbeddedResource Remove="Entities\**" />
     <None Remove="DTO\**" />
+    <None Remove="Entities\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Interfaces\" />
   </ItemGroup>
 
 </Project>

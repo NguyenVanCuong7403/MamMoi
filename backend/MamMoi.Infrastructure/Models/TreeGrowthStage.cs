@@ -41,8 +41,6 @@ public partial class TreeGrowthStage
 
     public string? ImageUrl { get; set; }
 
-    public bool IsActive { get; set; }
-
     public virtual TreeType TreeType { get; set; } = null!;
 
     public virtual ICollection<Tree> Trees { get; set; } = new List<Tree>();
