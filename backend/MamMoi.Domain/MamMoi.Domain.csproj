@@ -15,8 +15,4 @@
     <None Remove="Entities\**" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Interfaces\" />
-  </ItemGroup>
-
 </Project>

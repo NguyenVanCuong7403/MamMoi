@@ -23,7 +23,11 @@ public partial class Subscription
 
     public string Currency { get; set; } = null!;
 
+    public int? PlanId { get; set; }
+
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+
+    public virtual SubscriptionPlan? Plan { get; set; }
 
     public virtual User User { get; set; } = null!;
 }
