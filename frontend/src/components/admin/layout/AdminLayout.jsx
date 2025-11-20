@@ -28,44 +28,47 @@ export default function AdminLayout({ children }) {
   return (
     <div className="flex min-h-screen w-full text-slate-50">
       {/* Sidebar */}
-      <aside className="flex w-72 flex-col border-r border-emerald-900/40 bg-black/20 px-5 pb-6 pt-28 text-emerald-50 backdrop-blur-2xl lg:pt-32">
-        <div className="mb-8">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-300">
-            Mầm Mới
-          </p>
-          <p className="mt-1 text-xl font-semibold text-emerald-50">
-            Admin Console
-          </p>
-        </div>
+      <aside className="relative flex w-72 flex-col border-r border-emerald-900/40 bg-black/20 px-5 pb-6 text-emerald-50 backdrop-blur-2xl">
+        {/* Wrapper dùng sticky để khối sidebar luôn ở giữa viewport khi cuộn */}
+        <div className="sticky top-1/2 -translate-y-1/2 pt-28 lg:pt-32">
+          <div className="mb-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-300">
+              Mầm Mới
+            </p>
+            <p className="mt-1 text-xl font-semibold text-emerald-50">
+              Admin Console
+            </p>
+          </div>
 
-        <nav className="space-y-2">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.key}
-                to={item.path}
-                className={({ isActive }) =>
-                  cn(
-                    "flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all",
-                    "text-emerald-50/80 hover:bg-emerald-500/10 hover:text-emerald-50",
-                    isActive &&
-                      "bg-emerald-500/15 text-emerald-50 shadow-[0_0_0_1px_rgba(16,185,129,0.45)]"
-                  )
-                }
-              >
-                <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
-              </NavLink>
-            );
-          })}
-        </nav>
+          <nav className="space-y-2">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <NavLink
+                  key={item.key}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    cn(
+                      "flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all",
+                      "text-emerald-50/80 hover:bg-emerald-500/10 hover:text-emerald-50",
+                      isActive &&
+                        "bg-emerald-500/15 text-emerald-50 shadow-[0_0_0_1px_rgba(16,185,129,0.45)]"
+                    )
+                  }
+                >
+                  <Icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </NavLink>
+              );
+            })}
+          </nav>
 
-        <div className="mt-auto pt-6 text-xs text-emerald-100/60">
-          <p className="font-medium">System Admin</p>
-          <p className="text-emerald-200/70">
-            Giám sát người dùng, thanh toán và báo cáo.
-          </p>
+          <div className="mt-8 pt-4 text-xs text-emerald-100/60">
+            <p className="font-medium">System Admin</p>
+            <p className="text-emerald-200/70">
+              Giám sát người dùng, thanh toán và báo cáo.
+            </p>
+          </div>
         </div>
       </aside>
 

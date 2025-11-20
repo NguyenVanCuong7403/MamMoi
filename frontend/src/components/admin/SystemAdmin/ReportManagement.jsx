@@ -7,11 +7,12 @@ import {
   FileDown,
   Filter,
   Loader2,
-  MailCheck,
   RefreshCw,
   Search,
   ShieldCheck,
   ShieldQuestion,
+  TrendingUp,
+  TrendingDown,
 } from "lucide-react";
 import {
   Area,
@@ -24,6 +25,9 @@ import {
   PieChart,
   Pie,
   Cell,
+  Bar,
+  BarChart,
+  Tooltip as RechartsTooltip,
 } from "recharts";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,10 +79,10 @@ const BACKGROUND_PALETTE = {
 };
 
 const TIME_SEGMENTS = [
-  { value: "all", label: "Toàn bộ", durationHours: Infinity },
-  { value: "24h", label: "24h gần nhất", durationHours: 24 },
-  { value: "7d", label: "7 ngày", durationHours: 24 * 7 },
-  { value: "30d", label: "30 ngày", durationHours: 24 * 30 },
+  { value: "day", label: "Ngày", durationHours: 24 },
+  { value: "week", label: "Tuần", durationHours: 24 * 7 },
+  { value: "month", label: "Tháng", durationHours: 24 * 30 },
+  { value: "year", label: "Năm", durationHours: 24 * 365 },
 ];
 
 const PRIORITY_OPTIONS = [
@@ -102,7 +106,9 @@ const STATUS_OPTIONS = [
   { value: "rejected", label: "Bị từ chối" },
 ];
 
-const STATUS_FLOW_OPTIONS = STATUS_OPTIONS.filter((option) => option.value !== "all");
+const STATUS_FLOW_OPTIONS = STATUS_OPTIONS.filter(
+  (option) => option.value !== "all" && option.value !== "in_progress"
+);
 
 const STATUS_META = {
   in_progress: { label: "Đang xử lý", className: "bg-amber-50 text-amber-700" },
@@ -133,7 +139,60 @@ const TYPE_META = {
 
 const SLA_HOURS = 24;
 
-const MOCK_REPORTS = [
+// Tạo dữ liệu mẫu reports
+const generateMockReports = () => {
+  const now = new Date();
+  const users = [
+    { id: "USR-000001", name: "Nguyễn Minh Hoàng", email: "hoang.nm@example.com" },
+    { id: "USR-000002", name: "Trần Thị Mai", email: "mai.tran@orchard.vn" },
+    { id: "USR-000003", name: "Phạm Anh Tuấn", email: "tuan.pham@greengrow.vn" },
+    { id: "USR-000004", name: "Võ Thảo Nhi", email: "nhi.vo@example.com" },
+    { id: "USR-000005", name: "Lê Quang Khải", email: "khai.le@citrus.io" },
+    { id: "USR-000006", name: "Đỗ Thanh Vân", email: "van.do@example.com" },
+    { id: "USR-000007", name: "Huỳnh Tấn Tài", email: "tai.huynh@fruitful.vn" },
+    { id: "USR-000008", name: "Đinh Yến Nhi", email: "yen.nhi@example.com" },
+    { id: "USR-000009", name: "Trương Quý Long", email: "long.truong@agrimax.vn" },
+    { id: "USR-000010", name: "Hồ Khánh Linh", email: "linh.khanh@example.com" },
+    { id: "USR-000011", name: "Tô Thành Phát", email: "phat.to@fruitflow.vn" },
+    { id: "USR-000012", name: "Phan Ngọc Trang", email: "trang.phan@citrus.vn" },
+  ];
+
+  const reportTemplates = [
+    { type: "payment", title: "Thanh toán QR bị treo, không tạo hóa đơn", summary: "User báo thanh toán xong nhưng hệ thống không kích hoạt gói.", priority: "high", status: "in_progress" },
+    { type: "auth", title: "Không nhận được OTP khi đăng nhập", summary: "OTP gửi qua SMS chậm hơn 5 phút, người dùng không thể đăng nhập.", priority: "high", status: "in_progress" },
+    { type: "system", title: "API dự báo thời tiết trả về lỗi 500", summary: "Module đồng bộ thời tiết thất bại với tất cả garden miền Trung.", priority: "medium", status: "resolved" },
+    { type: "other", title: "Gợi ý UI: hiển thị lịch sử chăm sóc dạng timeline", summary: "Nâng cao trải nghiệm xem lịch sử cho từng cây.", priority: "low", status: "in_progress" },
+  ];
+
+  const reports = [];
+  reportTemplates.forEach((template, index) => {
+    const user = users[Math.floor(Math.random() * users.length)];
+    const daysAgo = Math.floor(Math.random() * 30);
+    const date = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
+
+    reports.push({
+      id: `RP-${date.toISOString().split("T")[0].replace(/-/g, "")}-${String(index + 1).padStart(4, "0")}`,
+      type: template.type,
+      title: template.title,
+      summary: template.summary,
+      user: { id: user.id, name: user.name, email: user.email },
+      createdAt: date.toISOString(),
+      priority: template.priority,
+      status: template.status,
+      content: `${template.summary} Chi tiết: Người dùng ${user.name} (${user.id}) gặp vấn đề này.`,
+      evidence: [],
+    });
+  });
+
+  // Sắp xếp reports theo thời gian
+  reports.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  return reports;
+};
+
+const MOCK_REPORTS = generateMockReports();
+
+const MOCK_REPORTS_LEGACY = [
   {
     id: "RP-20251118-0001",
     type: "payment",
@@ -199,6 +258,8 @@ const MOCK_REPORTS = [
     status: "resolved",
     content:
       "Lỗi xuất phát từ thay đổi template pdfjs. Đã triển khai sửa nhưng cần phản hồi người dùng.",
+    internalNote: "Đã kiểm tra và sửa lỗi template PDF. Đã deploy fix vào production. Đã gửi email thông báo cho khách hàng.",
+    emailContent: "Xin chào Hồ Quốc Thịnh,\n\nChúng tôi đã xử lý xong báo cáo RP-20251115-0011. Lỗi đã được khắc phục và bạn có thể tải hóa đơn bình thường.\n\nTrân trọng,\nĐội Hỗ trợ Mầm Mới",
   },
   {
     id: "RP-20251114-0005",
@@ -223,6 +284,8 @@ const MOCK_REPORTS = [
     status: "resolved",
     content:
       "SMTP SendGrid trả về mã 550. Cần cập nhật SPF/DKIM checklist cho khách hàng doanh nghiệp.",
+    internalNote: "Đã hướng dẫn khách hàng cập nhật SPF/DKIM records. Đã verify lại và email hoạt động bình thường.",
+    emailContent: "Xin chào Lý Thị Ánh,\n\nChúng tôi đã xử lý xong báo cáo RP-20251113-0007. Email verify đã hoạt động bình thường sau khi cập nhật SPF/DKIM.\n\nTrân trọng,\nĐội Hỗ trợ Mầm Mới",
   },
   {
     id: "RP-20251113-0015",
@@ -259,6 +322,8 @@ const MOCK_REPORTS = [
     status: "rejected",
     content:
       "Không tái hiện được trên staging, cần thêm log nếu khách hàng cung cấp.",
+    internalNote: "Đã test trên staging và không tái hiện được lỗi. Đã yêu cầu khách hàng cung cấp thêm log nhưng không nhận được phản hồi sau 3 ngày.",
+    emailContent: "Xin chào Đặng Hữu Phúc,\n\nChúng tôi đã kiểm tra báo cáo RP-20251110-0010 nhưng không thể tái hiện lỗi trên hệ thống. Vui lòng cung cấp thêm log hoặc video để chúng tôi có thể hỗ trợ tốt hơn.\n\nTrân trọng,\nĐội Hỗ trợ Mầm Mới",
   },
   {
     id: "RP-20251108-0004",
@@ -290,6 +355,11 @@ function isOverdue(report) {
   return elapsedHours > SLA_HOURS && !closedStatuses.includes(normalizeStatus(report.status));
 }
 
+function wasOverdue(report) {
+  const elapsedHours = (Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
+  return elapsedHours > SLA_HOURS;
+}
+
 function getRemainingHours(report) {
   const elapsedHours = (Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
   return SLA_HOURS - elapsedHours;
@@ -310,36 +380,12 @@ function getStatusBadgeClass(value) {
   return STATUS_META[normalized]?.className ?? STATUS_BADGE_FALLBACK;
 }
 
-function getSlaBadgeMeta(report) {
-  const overdue = isOverdue(report);
-  const normalizedStatus = normalizeStatus(report.status);
-  const remaining = getRemainingHours(report);
-
+function getOverdueBadgeMeta(report) {
+  const overdue = wasOverdue(report);
   if (overdue) {
-    return { label: "Báo cáo bị xử lý muộn.", className: "bg-rose-600 text-white" };
+    return { label: "Report xử lý muộn", className: "bg-rose-600 text-white" };
   }
-
-  if (closedStatuses.includes(normalizedStatus)) {
-    return {
-      label:
-        normalizedStatus === "resolved"
-          ? "Đã xử lý báo cáo muộn."
-          : "Đã từ chối - đóng cam kết xử lý (SLA)",
-      className: "bg-slate-100 text-slate-600",
-    };
-  }
-
-  if (remaining <= 4) {
-    return {
-      label: `Còn ${Math.max(1, Math.ceil(remaining))}h trước hạn cam kết (SLA)`,
-      className: "bg-amber-100 text-amber-700",
-    };
-  }
-
-  return {
-    label: `Còn ${Math.ceil(remaining)}h trong cam kết (SLA)`,
-    className: "bg-emerald-100 text-emerald-700",
-  };
+  return null;
 }
 
 function escapeCsvValue(value) {
@@ -358,11 +404,11 @@ function exportReportsToCSV(reports) {
     "priority",
     "status",
     "created_at",
-    "sla_summary",
+    "overdue_status",
   ];
 
   const rows = reports.map((report) => {
-    const slaMeta = getSlaBadgeMeta(report);
+    const overdueMeta = getOverdueBadgeMeta(report);
     return [
       escapeCsvValue(report.id),
       escapeCsvValue(report.user.id),
@@ -371,7 +417,7 @@ function exportReportsToCSV(reports) {
       escapeCsvValue(PRIORITY_META[report.priority]?.label ?? report.priority),
       escapeCsvValue(getStatusLabel(report.status)),
       escapeCsvValue(new Date(report.createdAt).toLocaleString("vi-VN", { hour12: false })),
-      escapeCsvValue(slaMeta.label),
+      escapeCsvValue(overdueMeta ? overdueMeta.label : ""),
     ].join(",");
   });
 
@@ -387,15 +433,351 @@ function exportReportsToCSV(reports) {
   URL.revokeObjectURL(url);
 }
 
+function ReportTimelineChart({ data, timeframeLabel }) {
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    const value = payload[0].value;
+    return (
+      <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2 text-xs shadow-md">
+        <p className="font-medium text-slate-900">{label}</p>
+        <p className="mt-1 text-emerald-600">+{value} báo cáo</p>
+      </div>
+    );
+  };
+
+  if (data.length === 0) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-emerald-50 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 p-5 text-emerald-50 shadow-lg">
+        <p className="text-sm text-emerald-100/80">Chưa có dữ liệu trong bộ lọc.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col gap-4 rounded-2xl border border-emerald-50 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 p-5 text-emerald-50 shadow-lg">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-200">
+            Báo cáo theo thời gian
+          </p>
+          <h3 className="mt-1 text-lg font-semibold text-white">
+            Xu hướng báo cáo theo {timeframeLabel.toLowerCase()}
+          </h3>
+          <p className="mt-1 text-xs text-emerald-100/80">
+            Quan sát số lượng báo cáo theo thời gian để tối ưu quy trình xử lý.
+          </p>
+        </div>
+      </div>
+      <div className="flex-1 min-h-[260px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <RechartsAreaChart
+            data={data}
+            margin={{
+              left: 0,
+              right: 4,
+              top: 10,
+              bottom: 0,
+            }}
+          >
+            <defs>
+              <linearGradient id="reportTimelineGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#bbf7d0" stopOpacity={0.95} />
+                <stop offset="60%" stopColor="#4ade80" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="#064e3b" strokeDasharray="3 3" opacity={0.35} />
+            <XAxis
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tick={{ fill: "#d1fae5", fontSize: 11 }}
+            />
+            <YAxis
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              tick={{ fill: "#a7f3d0", fontSize: 11 }}
+              width={40}
+              allowDecimals={false}
+            />
+            <RechartsTooltip content={<CustomTooltip />} />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke="#bbf7d0"
+              strokeWidth={2.4}
+              fill="url(#reportTimelineGradient)"
+              dot={{ r: 3, strokeWidth: 1.5, stroke: "#dcfce7", fill: "#22c55e" }}
+              activeDot={{ r: 5, strokeWidth: 0, fill: "#22c55e" }}
+            />
+          </RechartsAreaChart>
+        </ResponsiveContainer>
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-[11px]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-950/40 px-3 py-1">
+          <span className="h-2 w-2 rounded-full bg-emerald-300" />
+          <span className="font-medium text-emerald-100">Báo cáo mới</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const COMPARISON_PERIODS = [
+  { value: "week", label: "Tuần này so với tuần trước" },
+  { value: "month", label: "Tháng này so với tháng trước" },
+  { value: "year", label: "Năm này so với năm trước" },
+];
+
+function ReportTypeDistributionChart({ data, timeFilter = "day", allReports = [] }) {
+  const chartData = data.map((item) => ({
+    ...item,
+    label: item.label ?? TYPE_META[item.key]?.label ?? item.key,
+    color: TYPE_META[item.key]?.color ?? "#22c55e",
+  }));
+
+  const total = chartData.reduce((sum, item) => sum + item.value, 0);
+  const peakValue = chartData.reduce(
+    (max, item) => Math.max(max, item.value),
+    0,
+  );
+
+  // Map timeFilter sang comparison period
+  const getComparisonPeriod = () => {
+    if (timeFilter === "day") return "day";
+    if (timeFilter === "week") return "week";
+    if (timeFilter === "month") return "month";
+    if (timeFilter === "year") return "year";
+    return "week";
+  };
+
+  const comparisonPeriod = getComparisonPeriod();
+
+  // Map comparison period sang label hiển thị
+  const getPeriodLabel = () => {
+    if (comparisonPeriod === "day") return "ngày";
+    if (comparisonPeriod === "week") return "tuần";
+    if (comparisonPeriod === "month") return "tháng";
+    if (comparisonPeriod === "year") return "năm";
+    return "kỳ";
+  };
+
+  const periodLabel = getPeriodLabel();
+
+  // Tính toán comparison data từ dữ liệu thực tế
+  const getComparisonData = () => {
+    const now = new Date();
+    let currentPeriodStart, previousPeriodStart, previousPeriodEnd;
+
+    if (comparisonPeriod === "day") {
+      currentPeriodStart = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+      previousPeriodStart = new Date(now.getTime() - 48 * 60 * 60 * 1000);
+      previousPeriodEnd = currentPeriodStart;
+    } else if (comparisonPeriod === "week") {
+      currentPeriodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      previousPeriodStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      previousPeriodEnd = currentPeriodStart;
+    } else if (comparisonPeriod === "month") {
+      currentPeriodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      previousPeriodStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      previousPeriodEnd = currentPeriodStart;
+    } else {
+      currentPeriodStart = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      previousPeriodStart = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000);
+      previousPeriodEnd = currentPeriodStart;
+    }
+
+    const previousCounts = { total: 0, auth: 0, payment: 0, system: 0, other: 0 };
+
+    allReports.forEach((report) => {
+      const reportDate = new Date(report.createdAt);
+      if (reportDate >= previousPeriodStart && reportDate < previousPeriodEnd) {
+        previousCounts.total += 1;
+        previousCounts[report.type] = (previousCounts[report.type] || 0) + 1;
+      }
+    });
+
+    return previousCounts;
+  };
+
+  const previousData = getComparisonData();
+  const calculateChange = (current, previous) => {
+    if (previous === 0) return current > 0 ? current * 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
+
+  const totalChange = calculateChange(total, previousData.total);
+  
+  // Tính change cho từng loại báo cáo
+  const chartDataWithChange = chartData.map((item) => {
+    const previousValue = previousData[item.key] || 0;
+    const change = calculateChange(item.value, previousValue);
+    return { ...item, change };
+  });
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0].payload;
+    return (
+      <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2 text-xs shadow-md">
+        <p className="font-medium text-slate-900">{label}</p>
+        <p className="mt-1 text-emerald-600">
+          {item.value.toLocaleString("vi-VN")} báo cáo
+        </p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex h-full flex-col gap-4 rounded-2xl border border-emerald-50 bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+            Phân bổ theo loại
+          </p>
+          <h3 className="mt-1 text-lg font-semibold text-slate-900">
+            Số lượng báo cáo theo loại
+          </h3>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex flex-wrap items-center gap-3 text-[11px]">
+            <div className="flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 shadow-sm">
+              <span className="text-slate-500">Tổng số báo cáo:</span>
+              <span className="font-semibold text-slate-900">
+                {total.toLocaleString("vi-VN")}
+              </span>
+              {totalChange > -100 && Math.abs(totalChange) > 0.5 && (
+                <Badge
+                  className={cn(
+                    "ml-1 border-0 px-1.5 py-0 text-[10px]",
+                    totalChange >= 0
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-rose-100 text-rose-700"
+                  )}
+                >
+                  {totalChange >= 0 ? "+" : ""}
+                  {Math.round(totalChange)}%
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-4 md:flex-row md:items-center">
+        <div className="flex-1 w-full md:min-h-[260px]">
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart
+              data={chartData}
+              margin={{ top: 10, right: 8, left: -10, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fill: "#6b7280", fontSize: 11 }}
+                textAnchor="middle"
+                height={60}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fill: "#6b7280", fontSize: 11 }}
+                width={50}
+                domain={[0, (dataMax) => {
+                  if (dataMax === 0) return 1;
+                  // Tính padding 20% và làm tròn lên đến số tròn phù hợp
+                  const padded = dataMax * 1.2;
+                  if (padded < 10) return Math.ceil(padded);
+                  if (padded < 100) return Math.ceil(padded / 5) * 5;
+                  if (padded < 1000) return Math.ceil(padded / 50) * 50;
+                  if (padded < 10000) return Math.ceil(padded / 500) * 500;
+                  return Math.ceil(padded / 1000) * 1000;
+                }]}
+                allowDecimals={false}
+              />
+              <RechartsTooltip content={<CustomTooltip />} />
+              <Bar
+                dataKey="value"
+                radius={[8, 8, 0, 0]}
+                maxBarSize={40}
+              >
+                {chartData.map((item) => (
+                  <Cell key={item.key} fill={item.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="space-y-3 md:w-52">
+          <div className="space-y-2">
+            {chartDataWithChange.map((item) => {
+              return (
+                <div
+                  key={item.key}
+                  className="flex items-center justify-between gap-3 rounded-xl bg-white/80 px-3 py-2 text-sm shadow-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-medium text-slate-800">
+                        {item.label}
+                      </span>
+                      {item.change > -100 && Math.abs(item.change) > 0.5 && (
+                        <Badge
+                          className={cn(
+                            "mt-0.5 w-fit border-0 px-1.5 py-0 text-[10px]",
+                            item.change >= 0
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-rose-100 text-rose-700"
+                          )}
+                        >
+                          {item.change >= 0 ? "+" : ""}
+                          {Math.round(item.change)}% so với {periodLabel} trước
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <span className="font-semibold text-slate-900">
+                    {item.value.toLocaleString("vi-VN")}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ReportManagement() {
+  const [reports, setReports] = useState(MOCK_REPORTS);
+
+  // Hàm cập nhật report
+  const updateReport = (reportId, updates) => {
+    setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, ...updates } : r)));
+  };
+  
   const [filters, setFilters] = useState(defaultFilters);
   const [selectedReport, setSelectedReport] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewDetailOpen, setViewDetailOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [adminNotes, setAdminNotes] = useState("");
   const [emailContent, setEmailContent] = useState("");
   const [statusUpdate, setStatusUpdate] = useState("");
   const [pendingStatus, setPendingStatus] = useState("");
+  const [hasSubmitAttempt, setHasSubmitAttempt] = useState(false);
   const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
 
   const handleFilterChange = (key, value) => {
@@ -411,7 +793,7 @@ export default function ReportManagement() {
     const limitHours = timeWindow?.durationHours ?? Infinity;
     const now = Date.now();
 
-    return MOCK_REPORTS.filter((report) => {
+    return reports.filter((report) => {
       const createdAt = new Date(report.createdAt).getTime();
       const diffHours = (now - createdAt) / (1000 * 60 * 60);
       const matchesTime = diffHours >= 0 && diffHours <= limitHours;
@@ -434,7 +816,7 @@ export default function ReportManagement() {
 
       return matchesTime && matchesPriority && matchesType && matchesStatus && matchesSearch;
     });
-  }, [filters]);
+  }, [filters, reports]);
 
   const sortedReports = useMemo(() => {
     const now = Date.now();
@@ -470,38 +852,169 @@ export default function ReportManagement() {
   const stats = useMemo(() => {
     const overdue = filteredReports.filter((report) => isOverdue(report));
     const resolved = filteredReports.filter((report) => report.status === "resolved");
-    const rejected = filteredReports.filter((report) => report.status === "rejected");
+    // Báo cáo chưa xử lý = tất cả báo cáo đang xử lý (in_progress/new) + tất cả báo cáo xử lý muộn
+    const rejected = filteredReports.filter((report) => {
+      const normalizedStatus = normalizeStatus(report.status);
+      return normalizedStatus === "in_progress" || isOverdue(report);
+    });
 
     return {
       total: filteredReports.length,
       overdue: overdue.length,
       resolved: resolved.length,
       rejected: rejected.length,
-      highOverdue: overdue.filter((report) => report.priority === "high").length,
     };
   }, [filteredReports]);
 
+  const overdueAlert = useMemo(() => {
+    const overdueReports = reports.filter((report) => isOverdue(report));
+    if (overdueReports.length === 0) return null;
+
+    const pickOldest = (reports) =>
+      [...reports].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+
+    for (const priorityKey of Object.keys(PRIORITY_META)) {
+      const reportsByPriority = overdueReports.filter(
+        (report) => report.priority === priorityKey,
+      );
+      if (reportsByPriority.length > 0) {
+        return {
+          type: "priority",
+          priority: priorityKey,
+          count: reportsByPriority.length,
+          nextReport: pickOldest(reportsByPriority),
+        };
+      }
+    }
+
+    const nonPriorityReports = overdueReports.filter(
+      (report) => !PRIORITY_META[report.priority],
+    );
+    if (nonPriorityReports.length > 0) {
+      return {
+        type: "general",
+        count: nonPriorityReports.length,
+        nextReport: pickOldest(nonPriorityReports),
+      };
+    }
+
+    return null;
+  }, [reports]);
+
   const timelineData = useMemo(() => {
     if (filteredReports.length === 0) return [];
-    const buckets = filteredReports.reduce((acc, report) => {
-      const label =
-        filters.time === "24h"
-          ? new Date(report.createdAt).toLocaleTimeString("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: false,
-            })
-          : new Date(report.createdAt).toLocaleDateString("vi-VN", {
-              day: "2-digit",
-              month: "2-digit",
-            });
-      acc[label] = (acc[label] || 0) + 1;
-      return acc;
-    }, {});
 
-    return Object.entries(buckets)
-      .map(([label, value]) => ({ label, value }))
-      .sort((a, b) => (a.label > b.label ? 1 : -1));
+    const now = new Date();
+    let startDate = new Date();
+    let bucketCount = 7;
+    let getBucketLabel;
+
+    if (filters.time === "day") {
+      // 24h gần nhất: 24 bucket theo giờ, từ 23h trước tới hiện tại
+      startDate = new Date(now.getTime() - 23 * 60 * 60 * 1000);
+      startDate.setMinutes(0, 0, 0);
+      bucketCount = 24;
+      getBucketLabel = (date) =>
+        `${String(date.getHours()).padStart(2, "0")}:00`;
+    } else if (filters.time === "week") {
+      // 7 ngày gần nhất: 7 bucket theo ngày
+      startDate = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+      startDate.setHours(0, 0, 0, 0);
+      bucketCount = 7;
+      getBucketLabel = (date) => {
+        const days = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
+        return days[date.getDay()];
+      };
+    } else if (filters.time === "month") {
+      // 30 ngày gần nhất: 30 bucket theo ngày
+      startDate = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+      startDate.setHours(0, 0, 0, 0);
+      bucketCount = 30;
+      getBucketLabel = (date, index) => `Ngày ${index + 1}`;
+    } else {
+      // 12 tháng gần nhất: gom theo tháng
+      startDate = new Date(now);
+      startDate.setMonth(startDate.getMonth() - 11);
+      startDate.setDate(1);
+      startDate.setHours(0, 0, 0, 0);
+      bucketCount = 12;
+      getBucketLabel = (date, index) => `T${index + 1}`;
+    }
+
+    const buckets = [];
+    const isYearView = filters.time === "year";
+    let bucketSize;
+
+    if (isYearView) {
+      // Mỗi bucket là 1 tháng
+      for (let i = 0; i < bucketCount; i++) {
+        const bucketStart = new Date(startDate);
+        bucketStart.setMonth(startDate.getMonth() + i);
+        const bucketEnd = new Date(bucketStart);
+        bucketEnd.setMonth(bucketStart.getMonth() + 1);
+        if (i === bucketCount - 1) {
+          bucketEnd.setTime(now.getTime());
+        }
+
+        const label = getBucketLabel(bucketStart, i);
+        buckets.push({
+          index: i,
+          label,
+          value: 0,
+          startTime: bucketStart.getTime(),
+          endTime: bucketEnd.getTime(),
+        });
+      }
+    } else {
+      // Ngày, tuần, tháng: chia đều theo thời gian giống RevenueGrowthChart
+      bucketSize = (now.getTime() - startDate.getTime()) / bucketCount;
+      for (let i = 0; i < bucketCount; i++) {
+        const bucketStart = new Date(startDate.getTime() + i * bucketSize);
+        const bucketEnd =
+          i === bucketCount - 1
+            ? now
+            : new Date(startDate.getTime() + (i + 1) * bucketSize);
+
+        const label = getBucketLabel(bucketStart, i);
+        buckets.push({
+          index: i,
+          label,
+          value: 0,
+          startTime: bucketStart.getTime(),
+          endTime: bucketEnd.getTime(),
+        });
+      }
+    }
+
+    const startTime = startDate.getTime();
+    const endTime = now.getTime();
+
+    filteredReports.forEach((report) => {
+      const reportTime = new Date(report.createdAt).getTime();
+      if (reportTime < startTime || reportTime > endTime) return;
+
+      for (let i = 0; i < buckets.length; i++) {
+        const bucket = buckets[i];
+        if (i === buckets.length - 1) {
+          if (reportTime >= bucket.startTime && reportTime <= bucket.endTime) {
+            buckets[i].value += 1;
+            break;
+          }
+        } else {
+          if (reportTime >= bucket.startTime && reportTime < bucket.endTime) {
+            buckets[i].value += 1;
+            break;
+          }
+        }
+      }
+    });
+
+    return buckets
+      .sort((a, b) => a.index - b.index)
+      .map((bucket) => ({
+        label: bucket.label,
+        value: bucket.value,
+      }));
   }, [filteredReports, filters.time]);
 
   const typeDistribution = useMemo(() => {
@@ -534,9 +1047,18 @@ export default function ReportManagement() {
     }));
   }, [filteredReports]);
 
+  const isReportClosed = (report) => {
+    const normalizedStatus = normalizeStatus(report.status);
+    return closedStatuses.includes(normalizedStatus);
+  };
+
   const openDialog = (report) => {
     setSelectedReport(report);
-    setDialogOpen(true);
+    if (isReportClosed(report)) {
+      setViewDetailOpen(true);
+    } else {
+      setDialogOpen(true);
+    }
   };
 
   const handleStatusIntent = (value) => {
@@ -561,17 +1083,49 @@ export default function ReportManagement() {
   useEffect(() => {
     if (!selectedReport) return;
     setAdminNotes(selectedReport.internalNote || "");
-    setEmailContent(
-      `Xin chào ${selectedReport.user.name},\n\nChúng tôi đã tiếp nhận báo cáo ${selectedReport.id} và đang xử lý. Khi có cập nhật mới, chúng tôi sẽ phản hồi ngay.\n\nTrân trọng,\nĐội Hỗ trợ Mầm Mới`
-    );
+    setEmailContent(selectedReport.emailContent || "");
     setStatusUpdate("");
     setPendingStatus("");
+    setHasSubmitAttempt(false);
   }, [selectedReport]);
 
+  useEffect(() => {
+    if (!dialogOpen) {
+      setHasSubmitAttempt(false);
+    }
+  }, [dialogOpen]);
+
+  const isAdminNotesValid = adminNotes.trim().length > 0;
+  const isEmailContentValid = emailContent.trim().length > 0;
+  const isStatusValid = Boolean(statusUpdate);
+
+  const showAdminNotesError = hasSubmitAttempt && !isAdminNotesValid;
+  const showEmailContentError = hasSubmitAttempt && !isEmailContentValid;
+  const showStatusError = hasSubmitAttempt && !isStatusValid;
+
   const handleConfirm = () => {
+    if (selectedReport && statusUpdate && isAdminNotesValid && isEmailContentValid) {
+      // Cập nhật report status thông qua context
+      updateReport(selectedReport.id, {
+        status: statusUpdate,
+        internalNote: adminNotes.trim(),
+        emailContent: emailContent.trim(),
+      });
+    }
     setConfirmOpen(false);
     setDialogOpen(false);
     setSelectedReport(null);
+    setStatusUpdate("");
+    setAdminNotes("");
+    setEmailContent("");
+    setHasSubmitAttempt(false);
+  };
+
+  const handleConfirmClick = () => {
+    setHasSubmitAttempt(true);
+    if (isStatusValid && isAdminNotesValid && isEmailContentValid) {
+      setConfirmOpen(true);
+    }
   };
 
   const emptyState =
@@ -598,43 +1152,73 @@ export default function ReportManagement() {
           <div>
             <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
               <ShieldCheck className="h-4 w-4" />
-              System admin
+              Quản trị hệ thống
             </p>
             <h1 className="mt-2 text-3xl font-semibold text-white">
-              Quản lý báo cáo 
+              Quản lý báo cáo
             </h1>
             <p className="text-emerald-100/80">
               Giám sát báo cáo bảo mật, thanh toán và hoạt động hệ thống toàn bộ hệ sinh thái Mầm Mới.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
+              {TIME_SEGMENTS.map((segment) => {
+                const isActive = filters.time === segment.value;
+                return (
+                  <button
+                    key={segment.value}
+                    onClick={() => handleFilterChange("time", segment.value)}
+                    className={cn(
+                      "rounded-full px-4 py-2 text-sm font-semibold transition-all",
+                      isActive
+                        ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/30"
+                        : "text-white/70 hover:text-white"
+                    )}
+                  >
+                    {segment.label}
+                  </button>
+                );
+              })}
+            </div>
             <Button
               variant="outline"
               className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Đồng bộ
-            </Button>
-            <Button className="bg-emerald-500 hover:bg-emerald-400 text-white">
-              <MailCheck className="mr-2 h-4 w-4" />
-              Gửi báo cáo ngày
+              Đồng bộ dữ liệu
             </Button>
           </div>
         </div>
 
-        {stats.highOverdue > 0 && (
+        {overdueAlert && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-rose-700 shadow-lg shadow-rose-200/50">
             <div className="flex flex-wrap items-center gap-3">
               <AlertTriangle className="h-5 w-5" />
-              <p className="font-semibold">
-                Bạn đang có {stats.highOverdue} báo cáo ưu tiên cao quá 24h chưa xử lý!
-              </p>
+              <div className="flex flex-col gap-1">
+                <p className="font-semibold">
+                  {overdueAlert.type === "priority"
+                    ? `Bạn đang có ${overdueAlert.count} báo cáo ưu tiên đang bị quá hạn chưa được xử lý.`
+                    : `Bạn đang có ${overdueAlert.count} báo cáo đang bị quá hạn chưa được xử lý.`}
+                </p>
+                {overdueAlert.type === "priority" && (
+                  <p className="text-sm">
+                    Ưu tiên: Ưu tiên {PRIORITY_META[overdueAlert.priority]?.label?.toLowerCase()} ·
+                    Báo cáo lâu nhất từ {new Date(overdueAlert.nextReport.createdAt).toLocaleString("vi-VN", { hour12: false })}
+                  </p>
+                )}
+                {overdueAlert.type === "general" && (
+                  <p className="text-sm">
+                    Báo cáo lâu nhất từ{" "}
+                    {new Date(overdueAlert.nextReport.createdAt).toLocaleString("vi-VN", { hour12: false })}
+                  </p>
+                )}
+              </div>
               <Button
                 variant="outline"
                 className="border-rose-200 bg-white/70 text-rose-700 hover:bg-white"
                 onClick={() => {
-                  const target = sortedReports.find((report) => isOverdue(report));
-                  if (target) openDialog(target);
+                  if (overdueAlert.nextReport) openDialog(overdueAlert.nextReport);
                 }}
               >
                 Xử lý ngay
@@ -643,304 +1227,98 @@ export default function ReportManagement() {
           </div>
         )}
 
-        <Card className="border-none bg-white rounded-2xl shadow-lg">
-            <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <CardTitle className="text-2xl text-slate-900">Bộ lọc thông minh</CardTitle>
-                <p className="text-sm text-slate-500">
-                  Bộ lọc mặc định: hiển thị toàn bộ báo cáo.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                className="gap-2 rounded-xl border-emerald-100 text-emerald-700 hover:bg-emerald-50"
-                onClick={resetFilters}
-              >
-                <Filter className="h-4 w-4" /> Đặt lại bộ lọc
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <Tabs value={filters.time} onValueChange={(value) => handleFilterChange("time", value)}>
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 rounded-2xl bg-slate-100 p-1">
-                  {TIME_SEGMENTS.map((segment) => (
-                    <TabsTrigger
-                      key={segment.value}
-                      value={segment.value}
-                      className="rounded-xl text-sm font-semibold data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow"
-                    >
-                      {segment.label}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </Tabs>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Select value={filters.priority} onValueChange={(value) => handleFilterChange("priority", value)}>
-                  <SelectTrigger className="rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                    <SelectValue placeholder="Chọn ưu tiên" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRIORITY_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={filters.type} onValueChange={(value) => handleFilterChange("type", value)}>
-                  <SelectTrigger className="rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                    <SelectValue placeholder="Loại báo cáo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả loại báo cáo</SelectItem>
-                    {REPORT_TYPES.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={filters.status} onValueChange={(value) => handleFilterChange("status", value)}>
-                  <SelectTrigger className="rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                    <SelectValue placeholder="Trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Input
-                  placeholder="Tìm theo tiêu đề, mã báo cáo hoặc người gửi..."
-                  className="rounded-xl border-slate-200 bg-slate-50 pl-10 text-slate-800"
-                  value={filters.search}
-                  onChange={(event) => handleFilterChange("search", event.target.value)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="border-none bg-white rounded-2xl shadow-lg">
-              <CardContent className="flex items-center justify-between gap-4 py-6">
-                <div>
-                  <p className="text-sm font-semibold text-rose-600">Báo cáo xử lý muộn</p>
-                  <p className="text-3xl font-semibold text-rose-700">{stats.overdue}</p>
-                </div>
-                <div className="rounded-full bg-rose-50 p-4 text-rose-500">
-                  <Clock className="h-6 w-6" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-none bg-white rounded-2xl shadow-lg">
-              <CardContent className="flex items-center justify-between gap-4 py-6">
-                <div>
-                  <p className="text-sm text-slate-500">Báo cáo bị từ chối</p>
-                  <p className="text-3xl font-semibold text-amber-600">{stats.rejected}</p>
-                  <p className="text-xs text-slate-400">Kiểm tra nguyên nhân và phản hồi khách hàng</p>
-                </div>
-                <div className="rounded-full bg-amber-50 p-4 text-amber-500">
-                  <AlertTriangle className="h-6 w-6" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <Card className="border-none bg-white rounded-2xl shadow-lg">
-            <CardHeader>
+        <Card className="border-none bg-white/95 text-slate-900 rounded-2xl shadow-2xl shadow-emerald-900/10">
+          <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div>
               <CardTitle className="text-2xl text-slate-900">Tổng quan báo cáo</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                {[
-                  {
-                    key: "total",
-                    label: "Tổng số báo cáo",
-                    value: stats.total,
-                    change: 0.08,
-                  },
-                  {
-                    key: "rejected",
-                    label: "Báo cáo bị từ chối",
-                    value: stats.rejected,
-                    change: stats.rejected > 0 ? 0.06 : -0.01,
-                  },
-                  {
-                    key: "overdue",
-                    label: "Báo cáo xử lý muộn",
-                    value: stats.overdue,
-                    change: stats.overdue > 0 ? 0.12 : -0.02,
-                  },
-                  {
-                    key: "resolved",
-                    label: "Đã xử lý",
-                    value: stats.resolved,
-                    change: 0.18,
-                  },
-                ].map((item) => {
-                  const isPositive = item.change >= 0;
-                  const isOverdueCard = item.key === "overdue";
-                  return (
-                    <div
-                      key={item.key}
-                      className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-emerald-100"
-                    >
-                      <p
-                        className={cn(
-                          "text-sm",
-                          isOverdueCard ? "text-rose-600" : "text-slate-500"
-                        )}
-                      >
-                        {item.label}
-                      </p>
-                      <p
-                        className={cn(
-                          "mt-2 text-3xl font-semibold",
-                          isOverdueCard ? "text-rose-700" : "text-slate-900"
-                        )}
-                      >
-                        {item.value}
-                      </p>
-                      <Badge
-                        className={cn(
-                          "mt-3 border-0 px-2.5 py-0.5 text-sm",
-                          isOverdueCard
-                            ? "bg-rose-100 text-rose-700"
-                            : isPositive
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-rose-100 text-rose-700"
-                        )}
-                      >
-                        {isPositive ? "+" : ""}
-                        {Math.round(item.change * 100)}% so với kỳ trước
-                      </Badge>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div className="grid grid-cols-1 xl:grid-cols-[2fr_1.2fr] gap-4">
-                <Card className="rounded-2xl border border-slate-100 bg-emerald-50/50 shadow-inner">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg text-slate-800">Báo cáo theo thời gian</CardTitle>
-                  </CardHeader>
-                  <CardContent className="h-72">
-                    {timelineData.length === 0 ? (
-                      <div className="flex h-full items-center justify-center text-sm text-slate-500">
-                        Chưa có dữ liệu trong bộ lọc.
-                      </div>
-                    ) : (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RechartsAreaChart data={timelineData} margin={{ left: 0, right: 0 }}>
-                          <defs>
-                            <linearGradient id="reportArea" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#10b981" stopOpacity={0.6} />
-                              <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#d1fae5" />
-                          <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-                          <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
-                          <Tooltip
-                            contentStyle={{
-                              borderRadius: "12px",
-                              borderColor: "#a7f3d0",
-                              backgroundColor: "#fff",
-                            }}
-                          />
-                          <Area
-                            type="monotone"
-                            dataKey="value"
-                            stroke="#047857"
-                            strokeWidth={2}
-                            fill="url(#reportArea)"
-                          />
-                        </RechartsAreaChart>
-                      </ResponsiveContainer>
+              <p className="text-sm text-slate-500">
+                Dữ liệu {TIME_SEGMENTS.find((t) => t.value === filters.time)?.label?.toLowerCase() ?? "kỳ"} hiện tại{" "}
+                <span className="font-semibold text-emerald-600">so với kỳ trước</span>
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              className="gap-2 rounded-xl border-emerald-100 text-emerald-700 hover:bg-emerald-50"
+              onClick={resetFilters}
+            >
+              <Filter className="h-4 w-4" /> Đặt lại bộ lọc
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {[
+                {
+                  key: "total",
+                  label: "Tổng số báo cáo",
+                  value: stats.total,
+                },
+                {
+                  key: "rejected",
+                  label: "Báo cáo chưa xử lý",
+                  value: stats.rejected,
+                },
+                {
+                  key: "overdue",
+                  label: "Báo cáo xử lý muộn",
+                  value: stats.overdue,
+                },
+                {
+                  key: "resolved",
+                  label: "Đã xử lý",
+                  value: stats.resolved,
+                },
+              ].map((item) => {
+                const isOverdueCard = item.key === "overdue";
+                return (
+                  <div
+                    key={item.key}
+                    className={cn(
+                      "rounded-2xl border border-emerald-50 bg-white px-6 py-5 shadow-sm",
+                      isOverdueCard && "border-rose-100 bg-rose-50/70"
                     )}
-                  </CardContent>
-                </Card>
+                  >
+                    <p
+                      className={cn(
+                        "text-sm",
+                        isOverdueCard ? "text-rose-600" : "text-slate-500"
+                      )}
+                    >
+                      {item.label}
+                    </p>
+                    <p
+                      className={cn(
+                        "mt-2 text-3xl font-semibold",
+                        isOverdueCard ? "text-rose-700" : "text-slate-900"
+                      )}
+                    >
+                      {item.value}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
 
-                <Card className="rounded-2xl border border-slate-100 bg-white shadow-inner">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg text-slate-800">Phân bổ theo loại</CardTitle>
-                  </CardHeader>
-                  <CardContent className="flex flex-col gap-4 lg:flex-row">
-                    <div className="h-64 w-full lg:w-1/2">
-                      <ResponsiveContainer>
-                        <PieChart>
-                          <Pie
-                            data={typeDistribution}
-                            dataKey="value"
-                            nameKey="label"
-                            innerRadius={55}
-                            outerRadius={90}
-                            paddingAngle={typeDistribution.length > 1 ? 4 : 0}
-                          >
-                            {typeDistribution.map((entry) => (
-                              <Cell key={entry.key} fill={TYPE_META[entry.key]?.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(value) => `${value} báo cáo`}
-                            contentStyle={{
-                              borderRadius: "12px",
-                              borderColor: "#bbf7d0",
-                              backgroundColor: "#fff",
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="flex-1 space-y-3">
-                      {typeDistribution.map((item) => (
-                        <div
-                          key={item.key}
-                          className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50/50 px-3 py-2"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span
-                              className="h-3 w-3 rounded-full"
-                              style={{ backgroundColor: TYPE_META[item.key]?.color }}
-                            />
-                            <div>
-                              <p className="text-sm font-semibold text-slate-800">{item.label}</p>
-                              <p className="text-xs text-slate-500">{item.value} báo cáo</p>
-                            </div>
-                          </div>
-                          <span className="text-sm font-semibold text-emerald-700">
-                            {filteredReports.length
-                              ? Math.round((item.value / filteredReports.length) * 100)
-                              : 0}
-                            %
-                          </span>
-                        </div>
-                      ))}
-                      <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-3">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">
-                          Ưu tiên tổng thể
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-3">
-                          {priorityDistribution.map((item) => (
-                            <div
-                              key={item.key}
-                              className="flex items-center gap-2 rounded-lg bg-white px-2 py-1 text-sm font-semibold shadow-sm"
-                            >
-                              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                              {item.label}: {item.percent}%
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
+        <Card className="border-none bg-transparent text-slate-900 shadow-none">
+          <CardContent className="grid gap-6 p-0 lg:grid-cols-3 lg:min-h-[360px]">
+            <div className="lg:col-span-2 h-full">
+              <ReportTimelineChart
+                data={timelineData}
+                timeframeLabel={TIME_SEGMENTS.find((t) => t.value === filters.time)?.label ?? "Kỳ"}
+              />
+            </div>
+            <div className="lg:col-span-1 h-full">
+              <ReportTypeDistributionChart
+                data={typeDistribution}
+                timeFilter={filters.time}
+                allReports={reports}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-          <Card className="border-none bg-white rounded-2xl shadow-lg">
+        <Card className="border-none bg-white/95 text-slate-900 rounded-2xl shadow-2xl shadow-emerald-900/10">
             <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <CardTitle className="text-2xl text-slate-900">Danh sách báo cáo</CardTitle>
@@ -966,6 +1344,18 @@ export default function ReportManagement() {
                     onChange={(event) => handleFilterChange("search", event.target.value)}
                   />
                 </div>
+                <Select value={filters.priority} onValueChange={(value) => handleFilterChange("priority", value)}>
+                  <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
+                    <SelectValue placeholder="Ưu tiên" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PRIORITY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Select value={filters.type} onValueChange={(value) => handleFilterChange("type", value)}>
                   <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
                     <SelectValue placeholder="Loại báo cáo" />
@@ -1003,30 +1393,31 @@ export default function ReportManagement() {
                 </Button>
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-slate-100">
+              <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
                 <Table>
-                  <TableHeader className="bg-emerald-50/80">
-                  <TableRow className="text-xs uppercase tracking-wider text-slate-500">
+                  <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
+                  <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
                     <TableHead>Mã báo cáo</TableHead>
                       <TableHead>User</TableHead>
                       <TableHead>Loại</TableHead>
                     <TableHead>Ưu tiên</TableHead>
                       <TableHead>Thời gian gửi</TableHead>
-                      <TableHead>Trạng thái & cam kết xử lý (SLA)</TableHead>
+                      <TableHead>Trạng thái</TableHead>
                       <TableHead className="text-right">Hành động</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sortedReports.map((report) => {
                       const overdue = isOverdue(report);
-                      const slaMeta = getSlaBadgeMeta(report);
+                      const overdueMeta = getOverdueBadgeMeta(report);
                       return (
                         <TableRow
                           key={report.id}
                           className={cn(
-                            "text-sm",
-                            overdue ? "bg-rose-50/70" : "bg-white",
-                            "border-b border-slate-100"
+                            "text-sm border-b border-slate-100 transition",
+                            overdue
+                              ? "bg-rose-50/70 hover:bg-rose-100/80"
+                              : "bg-white/60 hover:bg-emerald-50/40"
                           )}
                         >
                           <TableCell className="font-semibold text-slate-900">{report.id}</TableCell>
@@ -1046,20 +1437,38 @@ export default function ReportManagement() {
                             {new Date(report.createdAt).toLocaleString("vi-VN", { hour12: false })}
                           </TableCell>
                           <TableCell>
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-wrap items-center gap-2">
                               <Badge className={cn("border-0", getStatusBadgeClass(report.status))}>
                                 {getStatusLabel(report.status)}
                               </Badge>
-                              <Badge className={cn("border-0", slaMeta.className)}>{slaMeta.label}</Badge>
+                              {overdueMeta && (
+                                <Badge className={cn("border-0", overdueMeta.className)}>
+                                  {overdueMeta.label}
+                                </Badge>
+                              )}
+                              {isReportClosed(report) && report.internalNote && (
+                                <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
+                                  <span className="font-semibold text-slate-700">Log nội bộ: </span>
+                                  <span className="line-clamp-1">
+                                    {report.internalNote.length > 100
+                                      ? `${report.internalNote.substring(0, 100)}...`
+                                      : report.internalNote}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
                             <Button
                               variant="ghost"
-                              className="text-emerald-700 hover:bg-emerald-50"
+                              className={cn(
+                                isReportClosed(report)
+                                  ? "text-slate-700 hover:bg-slate-50"
+                                  : "text-emerald-700 hover:bg-emerald-50"
+                              )}
                               onClick={() => openDialog(report)}
                             >
-                              Xử lý
+                              {isReportClosed(report) ? "Xem chi tiết" : "Xử lý"}
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -1101,12 +1510,8 @@ export default function ReportManagement() {
                   <Badge className={cn("border-0", PRIORITY_META[selectedReport.priority]?.className)}>
                     Ưu tiên {PRIORITY_META[selectedReport.priority]?.label}
                   </Badge>
-                  {isOverdue(selectedReport) ? (
-                    <Badge className="border-0 bg-rose-600 text-white">Quá hạn</Badge>
-                  ) : (
-                    <Badge className="border-0 bg-emerald-100 text-emerald-700">
-                      Còn {Math.max(1, Math.ceil(getRemainingHours(selectedReport)))}h trong cam kết (SLA)
-                    </Badge>
+                  {wasOverdue(selectedReport) && (
+                    <Badge className="border-0 bg-rose-600 text-white">Report xử lý muộn</Badge>
                   )}
                 </div>
               </div>
@@ -1155,8 +1560,18 @@ export default function ReportManagement() {
                     value={adminNotes}
                     onChange={(event) => setAdminNotes(event.target.value)}
                     placeholder="Admin đã xử lý như thế nào..."
-                    className="rounded-2xl border-slate-200 bg-white"
+                    required
+                    aria-invalid={showAdminNotesError}
+                    className={cn(
+                      "rounded-2xl border bg-white",
+                      showAdminNotesError ? "border-rose-300" : "border-slate-200"
+                    )}
                   />
+                  {showAdminNotesError && (
+                    <p className="text-xs font-medium text-rose-600">
+                      Vui lòng ghi log nội bộ trước khi xác nhận.
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm font-semibold text-slate-700">Nội dung phản hồi người dùng</p>
@@ -1165,8 +1580,18 @@ export default function ReportManagement() {
                     value={emailContent}
                     onChange={(event) => setEmailContent(event.target.value)}
                     placeholder="Nội dung email sẽ gửi cho người dùng..."
-                    className="rounded-2xl border-slate-200 bg-white"
+                    required
+                    aria-invalid={showEmailContentError}
+                    className={cn(
+                      "rounded-2xl border bg-white",
+                      showEmailContentError ? "border-rose-300" : "border-slate-200"
+                    )}
                   />
+                  {showEmailContentError && (
+                    <p className="text-xs font-medium text-rose-600">
+                      Vui lòng soạn nội dung phản hồi cho người dùng.
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1179,7 +1604,7 @@ export default function ReportManagement() {
                   <SelectTrigger
                     className={cn(
                       "rounded-2xl",
-                      statusUpdate ? "border-slate-200" : "border-rose-200"
+                      showStatusError ? "border-rose-300" : "border-slate-200"
                     )}
                   >
                     <SelectValue placeholder="Chọn trạng thái xử lý" />
@@ -1206,18 +1631,120 @@ export default function ReportManagement() {
                     ))}
                   </SelectContent>
                 </Select>
-                {!statusUpdate && (
+                {showStatusError && (
                   <p className="text-xs font-medium text-rose-600">Vui lòng chọn trạng thái cần xử lý.</p>
                 )}
               </div>
 
               <Button
                 className="w-full rounded-2xl bg-emerald-600 py-6 text-lg font-semibold hover:bg-emerald-700"
-                disabled={!statusUpdate}
-                onClick={() => statusUpdate && setConfirmOpen(true)}
+                disabled={!selectedReport}
+                onClick={handleConfirmClick}
               >
                 Xác nhận xử lý
               </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={viewDetailOpen} onOpenChange={(open) => setViewDetailOpen(open)}>
+        <DialogContent className="max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-slate-900">Chi tiết báo cáo</DialogTitle>
+            <DialogDescription>
+              Thông tin chi tiết về báo cáo đã được xử lý. Không thể chỉnh sửa.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedReport && (
+            <div className="space-y-6 py-2">
+              <div className="grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-2">
+                <div>
+                  <p className="text-xs font-semibold uppercase text-slate-400">Mã báo cáo</p>
+                  <p className="text-sm font-mono text-slate-900">{selectedReport.id}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase text-slate-400">Người gửi</p>
+                  <p className="text-sm text-slate-900">{selectedReport.user.name}</p>
+                  <p className="text-xs font-mono text-slate-500">{selectedReport.user.id}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold uppercase text-slate-400">Loại báo cáo</p>
+                  <p className="text-sm text-slate-900">{TYPE_META[selectedReport.type]?.label}</p>
+                </div>
+                <div className="space-x-2">
+                  <Badge className={cn("border-0", PRIORITY_META[selectedReport.priority]?.className)}>
+                    Ưu tiên {PRIORITY_META[selectedReport.priority]?.label}
+                  </Badge>
+                  <Badge className={cn("border-0", getStatusBadgeClass(selectedReport.status))}>
+                    {getStatusLabel(selectedReport.status)}
+                  </Badge>
+                  {wasOverdue(selectedReport) && (
+                    <Badge className="border-0 bg-rose-600 text-white">Report xử lý muộn</Badge>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold uppercase text-slate-400">Nội dung báo cáo</p>
+                <p className="mt-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+                  {selectedReport.content}
+                </p>
+              </div>
+
+              {selectedReport.evidence?.length > 0 && (
+                <div>
+                  <p className="text-xs font-semibold uppercase text-slate-400">Ảnh chứng minh</p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    {selectedReport.evidence.map((item, index) => (
+                      <div
+                        key={`${item.url}-${index}`}
+                        className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                      >
+                        <img
+                          src={item.url}
+                          alt={item.caption}
+                          className="h-40 w-full object-cover"
+                          loading="lazy"
+                        />
+                        <div className="flex items-center justify-between px-3 py-2">
+                          <p className="text-sm font-medium text-slate-700">{item.caption}</p>
+                          <Button variant="ghost" asChild className="text-emerald-600 hover:bg-emerald-50">
+                            <a href={item.url} target="_blank" rel="noopener noreferrer">
+                              Xem
+                            </a>
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-slate-700">Log nội bộ</p>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 min-h-[120px]">
+                    {selectedReport.internalNote || "Không có log nội bộ."}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-sm font-semibold text-slate-700">Nội dung phản hồi người dùng</p>
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 min-h-[120px] whitespace-pre-wrap">
+                    {selectedReport.emailContent || "Không có nội dung phản hồi."}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  className="rounded-2xl border-slate-200 px-6"
+                  onClick={() => setViewDetailOpen(false)}
+                >
+                  Đóng
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>
@@ -1238,7 +1765,7 @@ export default function ReportManagement() {
             <AlertDialogTitle>Xác nhận trạng thái mới</AlertDialogTitle>
             <AlertDialogDescription>
               Bạn sắp chọn trạng thái <strong>{getStatusLabel(pendingStatus)}</strong> cho báo cáo{" "}
-              {selectedReport?.id}. Việc này sẽ ảnh hưởng tới bảng cam kết xử lý (SLA).
+              {selectedReport?.id}.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">

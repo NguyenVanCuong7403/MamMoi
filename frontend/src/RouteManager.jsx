@@ -66,6 +66,7 @@ export default function RouteManager({ authTab }) {
         }
       />
 
+      {/* Admin routes */}
       <Route
         path="/admin/users"
         element={
