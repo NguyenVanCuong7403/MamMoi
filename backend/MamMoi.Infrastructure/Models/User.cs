@@ -61,4 +61,3 @@ public partial class User
 
     public virtual ICollection<WeatherAlert> WeatherAlerts { get; set; } = new List<WeatherAlert>();
 }
-

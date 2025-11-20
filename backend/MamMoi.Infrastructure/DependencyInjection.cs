@@ -32,6 +32,9 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IGardenRepository, GardenRepository>();
         services.AddScoped<IGardenMemberRepository, GardenMemberRepository>();
+        services.AddScoped<ISystemSettingRepository, SystemSettingRepository>();
+        services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+
         // Thêm repositories khác khi cần:
         // services.AddScoped<ITreeRepository, TreeRepository>();
 
@@ -59,6 +62,22 @@ public static class DependencyInjection
         services.AddHttpClient<IWeatherProvider, OpenWeatherMapProvider>();
         services.AddScoped<IWeatherService, WeatherService>();
         services.Configure<AlertThresholds>(configuration.GetSection("AlertThresholds"));
+        //admin
+        services.AddScoped<IGardenManagerService, MamMoi.Infrastructure.Services.BusinessAdmin.GardenManagerService>();
+        services.AddScoped<IStaffService, MamMoi.Infrastructure.Services.BusinessAdmin.StaffService>();
+        services.AddScoped<IAnalyticsService, MamMoi.Infrastructure.Services.BusinessAdmin.AnalyticsService>();
+        services.AddScoped<ICustomerService, MamMoi.Infrastructure.Services.BusinessAdmin.CustomerService>();
+        services.AddScoped<IGrowthStageService, MamMoi.Infrastructure.Services.BusinessAdmin.GrowthStageService>();
+        services.AddScoped<IStaffService, MamMoi.Infrastructure.Services.BusinessAdmin.StaffService>();
+        services.AddScoped<IPaymentService, MamMoi.Infrastructure.Services.BusinessAdmin.PaymentService>();
+        services.AddScoped<ISupportTicketService, MamMoi.Infrastructure.Services.BusinessAdmin.SupportTicketService>();
+        services.AddScoped<ISoilMasterService, MamMoi.Infrastructure.Services.BusinessAdmin.SoilMasterService>();
+        services.AddScoped<IActivityLogService, MamMoi.Infrastructure.Services.SystemAdmin.ActivityLogService>();
+        services.AddScoped<IDashboardService, MamMoi.Infrastructure.Services.SystemAdmin.DashboardService>();
+        services.AddScoped<ISubscriptionPlanService, MamMoi.Infrastructure.Services.SystemAdmin.SubscriptionPlanService>();
+        services.AddScoped<ISubscriptionService, MamMoi.Infrastructure.Services.SystemAdmin.SubscriptionService>();
+        services.AddScoped<ISysAdminUserService, MamMoi.Infrastructure.Services.SystemAdmin.SysAdminUserService>();
+        services.AddScoped<ISystemSettingService, MamMoi.Infrastructure.Services.SystemAdmin.SystemSettingService>();
 
         return services;
     }
