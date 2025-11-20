@@ -10,6 +10,7 @@ public partial class Tree
     public int GardenId { get; set; }
     public int UserId { get; set; }
     public int TreeTypeId { get; set; }
+    public int? VarietyId { get; set; }
     public int StageId { get; set; }
 
     public string? TreeCode { get; set; }
@@ -21,6 +22,8 @@ public partial class Tree
 
     public bool? IsActive { get; set; } = true;
     public bool? IsFruiting { get; set; }
+
+    public int? preMonths { get; set; }
 
     public DateOnly? ExpectedHarvestDate { get; set; }
 
@@ -41,6 +44,7 @@ public partial class Tree
     public virtual GardenSoil? GardenSoil { get; set; }
     public virtual TreeGrowthStage Stage { get; set; } = null!;
     public virtual TreeType TreeType { get; set; } = null!;
+    public virtual TreeVariety TreeVariety { get; set; } = null!;
     public virtual User User { get; set; } = null!;
 
     public virtual ICollection<ActivityLog> ActivityLogs { get; set; } = new List<ActivityLog>();

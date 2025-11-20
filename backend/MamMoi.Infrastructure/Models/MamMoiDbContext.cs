@@ -30,6 +30,7 @@ public partial class MamMoiDbContext : DbContext
     public virtual DbSet<TreeGrowthStage> TreeGrowthStages { get; set; }
     public virtual DbSet<TreeImage> TreeImages { get; set; }
     public virtual DbSet<TreeType> TreeTypes { get; set; }
+    public virtual DbSet<TreeVariety> TreeVarietys { get; set; }
     public virtual DbSet<User> Users { get; set; }
     public virtual DbSet<WeatherAlert> WeatherAlerts { get; set; }
     public virtual DbSet<WeatherHistory> WeatherHistories { get; set; }
@@ -506,6 +507,48 @@ public partial class MamMoiDbContext : DbContext
                         j.IndexerProperty<int>("TreeId").HasColumnName("TreeID");
                         j.IndexerProperty<int>("DiseaseId").HasColumnName("DiseaseID");
                     });
+        });
+
+        // ===== TreeVariety =====
+        modelBuilder.Entity<TreeVariety>(entity =>
+        {
+            entity.ToTable("TreeVariety");
+
+            entity.HasKey(e => e.VarietyId)
+                  .HasName("PK_TreeVariety");
+
+            entity.Property(e => e.VarietyId)
+                  .HasColumnName("VarietyID");
+
+            // TreeTypeId (nullable FK)
+            entity.Property(e => e.TreeTypeId)
+                  .HasColumnName("TreeTypeID");
+
+            // VarietyName nvarchar(255) nullable
+            entity.Property(e => e.VarietyName)
+                  .HasColumnName("VarietyName")
+                  .HasColumnType("nvarchar(255)")
+                  .HasMaxLength(255);
+
+            // VarietyDescription nvarchar(max) nullable
+            entity.Property(e => e.VarietyDescription)
+                  .HasColumnName("VarietyDescription")
+                  .HasColumnType("nvarchar(max)");
+
+            // Relationship: TreeVariety -> TreeTypes (optional)
+            entity.HasOne(d => d.TreeType)              // navigation property on TreeVariety
+                  .WithMany(p => p.TreeVarieties)          // navigation collection on TreeType (adjust name if different)
+                  .HasForeignKey(d => d.TreeTypeId)
+                  .HasConstraintName("FK_TreeVariety_TreeTypes")
+                  .OnDelete(DeleteBehavior.Restrict); // choose behavior you want (Restrict/SetNull/Cascade)
+
+            // Optional: inverse FK from Trees -> TreeVariety is typically configured on Tree entity,
+            // but you can declare the inverse here if you have navigation from TreeVariety to Trees:
+            entity.HasMany(e => e.Trees)               // navigation collection on TreeVariety
+                  .WithOne(t => t.TreeVariety)             // navigation on Tree
+                  .HasForeignKey(t => t.VarietyId)
+                  .HasConstraintName("FK_Trees_TreeVariety")
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ===== TreeGrowthStage =====

@@ -10,6 +10,7 @@ using MamMoi.Infrastructure.Security;
 using MamMoi.Infrastructure.Services;
 using MamMoi.Infrastructure.External.Weather;
 using MamMoi.Infrastructure.Services.GardenSoils;
+using MamMoi.Infrastructure.External;
 
 namespace MamMoi.Infrastructure;
 
@@ -49,6 +50,7 @@ public static class DependencyInjection
         // Register infrastructure services
         services.AddScoped<TokenService>();
         services.AddScoped<ITreeTypeService, TreeTypeService>();
+        services.AddScoped<ITreeVarietyService, TreeVarietyService>();
         services.AddScoped<ITreeQueryService, TreeQueryService>();
         services.AddScoped<ITreeCommandService, TreeCommandService>();
         services.AddScoped<ITreeImageService, TreeImageService>();
@@ -59,6 +61,11 @@ public static class DependencyInjection
         services.AddHttpClient<IWeatherProvider, OpenWeatherMapProvider>();
         services.AddScoped<IWeatherService, WeatherService>();
         services.Configure<AlertThresholds>(configuration.GetSection("AlertThresholds"));
+
+        services.AddHttpClient<IAiRecommendationService, AiRecommendationService>();
+
+        services.Configure<GeminiOptions>(
+            configuration.GetSection("Gemini"));
 
         return services;
     }

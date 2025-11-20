@@ -21,6 +21,7 @@ public class TreeQueryService : ITreeQueryService
             .Include(t => t.TreeType)
             .Include(t => t.Stage)
             .Include(t => t.TreeImages)
+            .Include(t => t.TreeVariety)
             .AsQueryable();
 
         if (gardenId is not null) q = q.Where(t => t.GardenId == gardenId);
@@ -44,6 +45,7 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeName,
                 t.Garden.Name,
                 t.TreeType.TreeTypeName,
+                t.TreeVariety.VarietyName,
                 t.Stage.StageName,
                 // tổng hợp “health/status” cho cột hiển thị ngắn gọn
                 (t.FruitStatus ?? t.FlowerStatus ?? "Bình thường"),
@@ -52,10 +54,12 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeImages.OrderBy(img => img.ImageId)
             .Select(img => img.ImageUrl)
             .FirstOrDefault(),
+                t.preMonths,
                 t.CreatedAt,
                 t.PlantDate
             ))
             .ToListAsync(ct);
+        Console.WriteLine(items.ElementAt(0));
 
         return new PagedResult<TreeListItemDto>
         {
@@ -96,6 +100,7 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeName,
                 t.Garden.Name,
                 t.TreeType.TreeTypeName,
+                t.TreeVariety.VarietyName,
                 t.Stage.StageName,
                 (t.FruitStatus ?? t.FlowerStatus ?? "Bình thường"),
                 t.LeafStatus,
@@ -103,6 +108,7 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeImages.OrderBy(img => img.ImageId)
             .Select(img => img.ImageUrl)
             .FirstOrDefault(),
+                t.preMonths,
                 t.CreatedAt,
                 t.PlantDate
             ))
@@ -126,16 +132,19 @@ public class TreeQueryService : ITreeQueryService
             .Include(t => t.Garden)
             .Include(t => t.TreeType)
             .Include(t => t.Stage)
+            .Include(t => t.TreeVariety)
             .Select(t => new TreeDetailDto(
     t.TreeId,
     t.GardenId,
     t.UserId,
     t.TreeTypeId,
     t.StageId,
+    t.VarietyId ?? 0,
     t.TreeCode,
     t.TreeName,
     t.PlantDate,
     t.Location,
+    t.preMonths,
     t.GardenSoilId,
     t.IsActive,
     t.IsFruiting,
@@ -150,6 +159,7 @@ public class TreeQueryService : ITreeQueryService
     t.Garden.Name,
     t.TreeType.TreeTypeName,
     t.Stage.StageName,
+    t.TreeVariety.VarietyName,
     t.LeafStatus,
     t.BranchStatus,
     t.FlowerStatus,

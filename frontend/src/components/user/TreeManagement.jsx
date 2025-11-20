@@ -1751,7 +1751,6 @@ export default function TreeManagement() {
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-7 items-stretch">
               {pageItems.map((t) => {
                 const stopped = isStopped(t);
-
                 const {
                   leafTxt,
                   branchTxt,
@@ -1760,6 +1759,7 @@ export default function TreeManagement() {
                   showFlower,
                   showFruit,
                 } = getTreeConditions(t);
+
 
                 const gInfo =
                   gardenById[
@@ -1859,7 +1859,7 @@ export default function TreeManagement() {
                           </div>
                           <div className="mt-1 flex items-center gap-2 text-neutral-800">
                             <Calendar className="h-4 w-4" />{" "}
-                            {monthsBetween(t.plantedAt)}{" "}
+                            {monthsBetween(t.plantedAt) + t.preMonths}{" "}
                             tháng
                           </div>
                         </div>

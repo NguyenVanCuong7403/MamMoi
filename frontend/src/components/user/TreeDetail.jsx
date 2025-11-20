@@ -2775,6 +2775,8 @@ function mapDtoToTree(dto) {
           meta?.gardenSoilId ??
           null,
 
+        preMonths: partial.preMonths ?? meta?.preNurseryAgeMonths ?? 0, 
+
         // bool?
         isFruiting:
           partial.isFruiting ??
@@ -3173,7 +3175,7 @@ const [meta, setMeta] = useState({
   name: baseTree.treeName || "",
   plantedAt: baseTree.plantedAt || today(),
   variety: baseTree.variety || "",
-  preNurseryAgeMonths: Number(baseTree.preNurseryAgeMonths || 0),
+  preNurseryAgeMonths: Number(baseTree.preMonths || 0),
   soil: baseTree.soil || "",
   status: baseTree.status || "active",
   notes: baseTree.notes || "",
@@ -3365,6 +3367,8 @@ const tenCayHero = [loai, giong].filter(Boolean).join(" ");
         soil: nextMeta.soil,
         status: nextMeta.status,
       });
+      
+      persistTreePatch({preMonths: n});
       cancelFieldEdit();
       return;
     }
@@ -6574,17 +6578,20 @@ useEffect(() => {
         persistTreePatch({ stageId: 1});
         break;
       }
-      case "flowering":
-      case "fruiting": {
+      case "flowering": {
         persistTreePatch({ stageId: 2});
         break;
       }
-      case "pre_harvest": {
+      case "fruiting": {
         persistTreePatch({ stageId: 3});
         break;
       }
-      case "post_harvest": {
+      case "pre_harvest": {
         persistTreePatch({ stageId: 4});
+        break;
+      }
+      case "post_harvest": {
+        persistTreePatch({ stageId: 5});
         break;
       }
     }

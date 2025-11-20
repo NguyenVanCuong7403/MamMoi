@@ -1081,6 +1081,9 @@ export default function AddTreeNewScreen() {
   const [treeTypes, setTreeTypes] = useState([]);
   const [treeTypeId, setTreeTypeId] = useState("");  
   const [variety, setVariety] = useState("");
+  const [varietiesAll, setVarietiesAll] = useState([]);
+  const [varietiesByType, setVarietiesByType] = useState({});
+  const [selectedVarietyId, setSelectedVarietyId] = useState("");
   const [status, setStatus] = useState(""); // GIỮ để bảo toàn payload (không render form)
   //const [soil, setSoil] = useState("");
   const [gardenSoils, setGardenSoils] = useState([]);     
@@ -1275,6 +1278,36 @@ const effectivePhase = phaseOverride || defaultPhase5;
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+  let mounted = true;
+  (async () => {
+    try {
+      const res = await TreeRepository.getTreeVarieties(); // giả sử trả array TreeVarietyDto
+      if (!mounted) return;
+      const arr = Array.isArray(res) ? res : (res.data || []);
+      setVarietiesAll(arr);
+
+      // build mapping by TreeTypeId
+      const map = {};
+      arr.forEach(v => {
+        const key = String(v.treeTypeId ?? v.TreeTypeId ?? v.TreeTypeID ?? v.TreeTypeId ?? "0");
+        if (!map[key]) map[key] = [];
+        map[key].push({
+          value: v.varietyId ?? v.VarietyId ?? v.VarietyID ?? v.VarietyId,
+          label: v.treeVarietyName ?? v.TreeVarietyName ?? v.TreeVarietyName,
+          raw: v
+        });
+      });
+      setVarietiesByType(map);
+    } catch (err) {
+      console.error("Failed to load varieties", err);
+      setVarietiesAll([]);
+      setVarietiesByType({});
+    }
+  })();
+  return () => { mounted = false; };
+}, []);
+
   // Validate submit (remove gardenId requirement)
   const REQUIRED_MSG = {
     code: "Vui lòng nhập mã cây (hoặc sẽ tự gợi ý sau khi chọn Loại + Giống).",
@@ -1337,7 +1370,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
         code,
         speciesKey,
         speciesLabel,
-        variety,
+        selectedVarietyId,
         soil,          // từ soilLabel
         gardenId: currentGarden.id,
         plantDate,
@@ -1361,7 +1394,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
       // Map phase → StageId 1..5
       var tempSId = Math.max(1, PHASES5.indexOf(effectivePhase) + 1);
-      const stageIndex = (Number(treeTypeId) - 1) * 4 + ((tempSId >= 3) ? tempSId - 1 : tempSId);
+      const stageIndex = (Number(treeTypeId) - 1) * 5 + (tempSId);
 
       // Chuẩn CreateTreeRequest đúng backend
       const createReq = {
@@ -1369,6 +1402,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
         TreeTypeId: treeTypeId ? Number(treeTypeId) : 0, // đã validate không rỗng từ trước
         StageId: stageIndex,
 
+        TreeVarietyId: selectedVarietyId,
         TreeCode: code.trim() || null,
         TreeName: [speciesLabel, variety].filter(Boolean).join(" ") || null,
         PlantDate: plantDate || null, // dạng "yyyy-MM-dd" → DateOnly? bên C#
@@ -1377,6 +1411,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
         Location: null, // hiện UI chưa có, sau này thêm field Location thì map vào đây
 
         Notes: (note || userIntent || "").trim() || null,
+        preMonths: preAgeNum,
 
         LeafStatus: leafInfo.trim() || null,
         BranchStatus: branchInfo.trim() || null,
@@ -1601,18 +1636,18 @@ const effectivePhase = phaseOverride || defaultPhase5;
 <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
   <Label className="text-neutral-700">Giống</Label>
   <SearchableSelect
-    value={variety}
+    value={selectedVarietyId}
     onChange={(val) => {
-      setVariety(val);
+      setSelectedVarietyId(val);
       setErrors((x) => ({ ...x, variety: undefined }));
     }}
     options={
-      speciesKey
-        ? (VARIETIES[speciesKey] || []).map((v) => ({ value: v, label: v }))
-        : []
+      treeTypeId
+      ? (varietiesByType[String(treeTypeId)] || []).map((v) => ({ value: v.value, label: v.label }))
+      : []
     }
-    placeholder={speciesKey ? "— Chọn giống —" : "Chọn loại cây trước"}
-    disabled={!speciesKey}
+    placeholder={treeTypeId  ? "— Chọn giống —" : "Chọn loại cây trước"}
+    disabled={!treeTypeId}
     error={errors.variety}
     inputPlaceholder="Gõ tên giống (Cát Chu, Ri6...)"
   />

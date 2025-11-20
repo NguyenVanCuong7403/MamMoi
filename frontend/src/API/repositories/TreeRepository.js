@@ -7,6 +7,12 @@ export default class TreeRepository {
   static async getTreeTypes() {
     return ApiClient.get("/api/trees/types");
   }
+  /**
+   * Get all tree varieties
+   */
+  static async getTreeVarieties() {
+    return ApiClient.get("/api/trees/varieties");
+  }
 
   /**
    * Get my trees (with optional filters, pagination, and sort)
