@@ -1,30 +1,66 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
-import { BarChart3, CreditCard, Users } from "lucide-react";
+import { BarChart3, CreditCard, Users, Sprout } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/API/context/AuthContext";
 
-const NAV_ITEMS = [
-  {
-    key: "users",
-    label: "Quản lý người dùng",
-    icon: Users,
-    path: "/admin/users",
+const ROLE_NAV_ITEMS = {
+  systemadmin: [
+    {
+      key: "users",
+      label: "Quản lý người dùng",
+      icon: Users,
+      path: "/admin/users",
+    },
+    {
+      key: "billing",
+      label: "Quản lý thanh toán",
+      icon: CreditCard,
+      path: "/admin/subscriptions",
+    },
+    {
+      key: "reports",
+      label: "Report",
+      icon: BarChart3,
+      path: "/admin/reports",
+    },
+  ],
+  businessadmin: [
+    {
+      key: "reports",
+      label: "Quản lý báo cáo",
+      icon: BarChart3,
+      path: "/admin/business/reports",
+    },
+    {
+      key: "tree-types",
+      label: "Quản lý loại cây",
+      icon: Sprout,
+      path: "/admin/business/trees",
+    },
+  ],
+};
+
+const ROLE_SUMMARY = {
+  systemadmin: {
+    title: "System Admin",
+    description: "Giám sát người dùng, thanh toán và báo cáo.",
   },
-  {
-    key: "billing",
-    label: "Quản lý thanh toán",
-    icon: CreditCard,
-    path: "/admin/subscriptions",
+  businessadmin: {
+    title: "Business Admin",
+    description: "Theo dõi báo cáo sản xuất và quản lý danh mục cây.",
   },
-  {
-    key: "reports",
-    label: "Report",
-    icon: BarChart3,
-    path: "/admin/reports",
-  },
-];
+};
+
+const DEFAULT_ROLE_KEY = "systemadmin";
 
 export default function AdminLayout({ children }) {
+  const { user } = useAuth();
+  const roleKey = (user?.role || "").toLowerCase();
+  const activeRoleKey = ROLE_NAV_ITEMS[roleKey] ? roleKey : DEFAULT_ROLE_KEY;
+  const navItems = ROLE_NAV_ITEMS[activeRoleKey];
+  const { title, description } = ROLE_SUMMARY[activeRoleKey] || ROLE_SUMMARY[DEFAULT_ROLE_KEY];
+
   return (
     <div className="flex min-h-screen w-full text-slate-50">
       {/* Sidebar */}
@@ -41,7 +77,7 @@ export default function AdminLayout({ children }) {
           </div>
 
           <nav className="space-y-2">
-            {NAV_ITEMS.map((item) => {
+            {navItems.map((item) => {
               const Icon = item.icon;
               return (
                 <NavLink
@@ -64,10 +100,8 @@ export default function AdminLayout({ children }) {
           </nav>
 
           <div className="mt-8 pt-4 text-xs text-emerald-100/60">
-            <p className="font-medium">System Admin</p>
-            <p className="text-emerald-200/70">
-              Giám sát người dùng, thanh toán và báo cáo.
-            </p>
+            <p className="font-medium">{title}</p>
+            <p className="text-emerald-200/70">{description}</p>
           </div>
         </div>
       </aside>

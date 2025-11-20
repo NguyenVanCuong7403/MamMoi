@@ -20,8 +20,11 @@ import PricingPage from "./components/user/PricingPage";
 import SystemAdminUserManagement from "./components/admin/SystemAdmin/UserManagement";
 import SystemAdminSubscriptionManagement from "./components/admin/SystemAdmin/SubscriptionManagement";
 import SystemAdminReportManagement from "./components/admin/SystemAdmin/ReportManagement";
+import BusinessAdminTreeManagement from "./components/admin/BusinessAdmin/TreeTypeManagement";
+import BusinessAdminReportManagement from "./components/admin/BusinessAdmin/ReportManagementBA";
 
 const ADMIN_ROLES = ["SystemAdmin", "BusinessAdmin"];
+const BUSINESS_ADMIN_ROLES = ["BusinessAdmin", "SystemAdmin"];
 
 
 export default function RouteManager({ authTab }) {
@@ -88,6 +91,22 @@ export default function RouteManager({ authTab }) {
         element={
           <RoleGuard roles={ADMIN_ROLES}>
             <SystemAdminReportManagement />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/business/reports"
+        element={
+          <RoleGuard roles={BUSINESS_ADMIN_ROLES}>
+            <BusinessAdminReportManagement />
+          </RoleGuard>
+        }
+      />
+      <Route
+        path="/admin/business/trees"
+        element={
+          <RoleGuard roles={BUSINESS_ADMIN_ROLES}>
+            <BusinessAdminTreeManagement />
           </RoleGuard>
         }
       />

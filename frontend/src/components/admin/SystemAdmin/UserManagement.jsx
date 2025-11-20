@@ -156,6 +156,36 @@ const getPlanLabel = (planValue) => {
 };
 
 // Tạo dữ liệu mẫu users
+const GARDEN_NAME_TEMPLATES = [
+  "Vườn Cam",
+  "Vườn Bưởi",
+  "Vườn Sầu Riêng",
+  "Vườn Măng Cụt",
+  "Vườn Thanh Long",
+  "Vườn Tiêu",
+  "Vườn Điều",
+];
+
+const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+const generateMockGardens = (role) => {
+  if (role === "SystemAdmin") return [];
+
+  const gardenCount = role === "BusinessAdmin" ? randomInt(2, 5) : randomInt(1, 3);
+
+  return Array.from({ length: gardenCount }).map((_, index) => {
+    const templateName =
+      GARDEN_NAME_TEMPLATES[Math.floor(Math.random() * GARDEN_NAME_TEMPLATES.length)];
+    const treeCount = randomInt(50, 400);
+
+    return {
+      id: `GRD-${String(Date.now() + index + Math.floor(Math.random() * 1000)).slice(-6)}`,
+      name: `${templateName} #${index + 1}`,
+      treeCount,
+    };
+  });
+};
+
 const generateMockUsers = () => {
   const now = new Date();
   const userTemplates = [
@@ -191,6 +221,9 @@ const generateMockUsers = () => {
     const lastLogin =
       lastLoginRaw < createdAt ? createdAt : lastLoginRaw;
 
+    const gardens = generateMockGardens(template.role);
+    const totalTreesManaged = gardens.reduce((sum, garden) => sum + garden.treeCount, 0);
+
     return {
       id: userId,
       name: template.name,
@@ -202,6 +235,8 @@ const generateMockUsers = () => {
       phone: template.phone,
       createdAt: createdAt.toISOString(),
       lastLogin: lastLogin.toISOString(),
+      gardens,
+      totalTreesManaged,
     };
   });
 };
@@ -590,41 +625,27 @@ function ActionMenu({ user, onOpenModal }) {
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-44 rounded-xl border-emerald-50 bg-white shadow-lg">
-        <DropdownMenuItem
-          onSelect={(event) => {
-            event.preventDefault();
-            onOpenModal("details", user);
-          }}
-        >
+        <DropdownMenuItem onSelect={() => onOpenModal("details", user)}>
           Xem chi tiết
         </DropdownMenuItem>
         {user.status === "banned" ? (
           <DropdownMenuItem
             className="text-emerald-600 focus:bg-emerald-50"
-            onSelect={(event) => {
-              event.preventDefault();
-              onOpenModal("unlock", user);
-            }}
+            onSelect={() => onOpenModal("unlock", user)}
           >
             Mở khoá người dùng
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem
             className="text-amber-600 focus:bg-amber-50"
-            onSelect={(event) => {
-              event.preventDefault();
-              onOpenModal("deactivate", user);
-            }}
+            onSelect={() => onOpenModal("deactivate", user)}
           >
             Khoá người dùng
           </DropdownMenuItem>
         )}
         <DropdownMenuItem
           className="text-rose-600 focus:bg-rose-50"
-          onSelect={(event) => {
-            event.preventDefault();
-            onOpenModal("delete", user);
-          }}
+          onSelect={() => onOpenModal("delete", user)}
         >
           Xoá vĩnh viễn
         </DropdownMenuItem>
@@ -1330,18 +1351,10 @@ export default function SystemAdminUserManagement() {
                     </p>
                     <div className="flex items-center gap-3">
                       <Button
-                        variant="outline"
-                        className="border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:bg-slate-50 disabled:text-slate-300"
+                        className="border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700 disabled:border-emerald-200 disabled:bg-emerald-200 disabled:text-white/80"
                         disabled={!filteredUsers.length}
                       >
                         Xuất CSV
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="text-emerald-600 hover:bg-emerald-50"
-                        onClick={handleResetFilters}
-                      >
-                        Làm mới nhanh
                       </Button>
                     </div>
                   </div>
@@ -1539,6 +1552,49 @@ export default function SystemAdminUserManagement() {
                         <p className="text-lg font-semibold text-slate-900">
                           {getPlanLabel(selectedUser.plan)}
                         </p>
+                      </div>
+                      <div className="rounded-xl border border-slate-100 p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <p className="text-sm text-slate-500">Quy mô vận hành</p>
+                            <p className="text-lg font-semibold text-slate-900">
+                              {selectedUser.gardens?.length ?? 0} vườn
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-slate-500">Tổng cây đang quản lý</p>
+                            <p className="text-lg font-semibold text-emerald-600">
+                              {(selectedUser.totalTreesManaged ?? 0).toLocaleString("vi-VN")}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="mt-4 space-y-3">
+                          {selectedUser.gardens?.length ? (
+                            selectedUser.gardens.map((garden) => (
+                              <div
+                                key={garden.id}
+                                className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/80 px-3 py-2 text-sm"
+                              >
+                                <div>
+                                  <p className="font-semibold text-emerald-900">{garden.name}</p>
+                                  <p className="text-xs text-emerald-700">
+                                    Mã: {garden.id}
+                                  </p>
+                                </div>
+                                <div className="text-right">
+                                  <p className="text-xs text-slate-500">Cây đang chăm sóc</p>
+                                  <p className="text-base font-semibold text-emerald-700">
+                                    {garden.treeCount.toLocaleString("vi-VN")}
+                                  </p>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-sm text-slate-500">
+                              Người dùng chưa quản lý vườn nào.
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
 

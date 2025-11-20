@@ -201,6 +201,7 @@ const generateMockTransactions = () => {
 const MOCK_TRANSACTIONS = generateMockTransactions();
 
 const PAGE_SIZE = 10;
+const HISTORY_PAGE_SIZE = 5;
 
 // Hàm format số tiền linh động (k, triệu, tỷ)
 function formatCurrency(value) {
@@ -694,6 +695,7 @@ function SubscriptionManagement() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyUser, setHistoryUser] = useState(null);
   const [historyRecords, setHistoryRecords] = useState([]);
+  const [historyPage, setHistoryPage] = useState(1);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [statusTarget, setStatusTarget] = useState(null);
   const [statusDraft, setStatusDraft] = useState("");
@@ -1047,6 +1049,13 @@ function SubscriptionManagement() {
     return () => clearTimeout(timeout);
   }, [banner]);
 
+  useEffect(() => {
+    const totalHistoryPages = Math.max(1, Math.ceil(historyRecords.length / HISTORY_PAGE_SIZE));
+    if (historyPage > totalHistoryPages) {
+      setHistoryPage(totalHistoryPages);
+    }
+  }, [historyRecords, historyPage]);
+
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPage(1);
@@ -1102,6 +1111,7 @@ function SubscriptionManagement() {
       .sort((a, b) => new Date(b.time) - new Date(a.time));
     setHistoryUser({ id: tx.userId, name: tx.userName });
     setHistoryRecords(records);
+    setHistoryPage(1);
     setHistoryOpen(true);
   };
 
@@ -1109,6 +1119,7 @@ function SubscriptionManagement() {
     setHistoryOpen(false);
     setHistoryUser(null);
     setHistoryRecords([]);
+    setHistoryPage(1);
   };
 
   const openStatusDialog = (tx) => {
@@ -1147,6 +1158,20 @@ function SubscriptionManagement() {
   const endIndex = Math.min(page * PAGE_SIZE, filteredTransactions.length);
   const canSaveStatus =
     !!statusTarget && !!statusDraft && statusTarget.status !== statusDraft;
+  const historyTotalPages = Math.max(
+    1,
+    Math.ceil(historyRecords.length / HISTORY_PAGE_SIZE),
+  );
+  const historyStartIndex =
+    historyRecords.length === 0 ? 0 : (historyPage - 1) * HISTORY_PAGE_SIZE + 1;
+  const historyEndIndex = Math.min(
+    historyPage * HISTORY_PAGE_SIZE,
+    historyRecords.length,
+  );
+  const historyPaginatedRecords = historyRecords.slice(
+    (historyPage - 1) * HISTORY_PAGE_SIZE,
+    historyPage * HISTORY_PAGE_SIZE,
+  );
 
   return (
     <>
@@ -1480,25 +1505,22 @@ function SubscriptionManagement() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
-                            variant="ghost"
                             size="sm"
-                            className="text-emerald-700 hover:bg-emerald-50"
+                            className="rounded-full border border-emerald-100 bg-white/90 px-4 py-2 text-emerald-700 shadow-sm transition hover:bg-emerald-50"
                             onClick={() => openDetail(tx)}
                           >
                             Xem chi tiết
                           </Button>
                           <Button
-                            variant="ghost"
                             size="sm"
-                            className="text-slate-500 hover:bg-slate-100"
+                            className="rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-slate-600 shadow-sm transition hover:bg-slate-50"
                             onClick={() => openStatusDialog(tx)}
                           >
                             Cập nhật trạng thái
                           </Button>
                           <Button
-                            variant="ghost"
                             size="sm"
-                            className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
+                            className="rounded-full bg-emerald-600 px-4 py-2 text-white shadow-sm transition hover:bg-emerald-700"
                             onClick={() => openRenewDialog(tx)}
                           >
                             Gia hạn / kích hoạt
@@ -1620,7 +1642,45 @@ function SubscriptionManagement() {
             </DialogHeader>
             {historyRecords.length > 0 ? (
               <div className="space-y-4">
-                {historyRecords.map((record) => (
+                <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
+                  <span>
+                    Hiển thị{" "}
+                    {historyRecords.length === 0
+                      ? 0
+                      : `${historyStartIndex}–${historyEndIndex}`}{" "}
+                    / {historyRecords.length} giao dịch
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-3"
+                      disabled={historyPage === 1}
+                      onClick={() =>
+                        setHistoryPage((prev) => Math.max(1, prev - 1))
+                      }
+                    >
+                      Trước
+                    </Button>
+                    <span className="text-xs text-slate-400">
+                      Trang {historyPage} / {historyTotalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-3"
+                      disabled={historyPage === historyTotalPages}
+                      onClick={() =>
+                        setHistoryPage((prev) =>
+                          Math.min(historyTotalPages, prev + 1),
+                        )
+                      }
+                    >
+                      Sau
+                    </Button>
+                  </div>
+                </div>
+                {historyPaginatedRecords.map((record) => (
                   <div
                     key={record.id}
                     className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4"
@@ -1761,25 +1821,58 @@ function SubscriptionManagement() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Trạng thái mới</label>
-                <Select value={statusDraft} onValueChange={setStatusDraft}>
-                  <SelectTrigger className="rounded-xl border-slate-200 bg-white">
-                    <SelectValue placeholder="Chọn trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TRANSACTION_STATUS.filter((option) => option.value !== "all").map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {TRANSACTION_STATUS.filter((option) => option.value !== "all").map((option) => {
+                    const isPending = option.value === "pending";
+                    const isFailed = option.value === "failed";
+                    const isActive = statusDraft === option.value;
+                    const isCurrent = statusTarget?.status === option.value;
+                    return (
+                        <button
+                          type="button"
+                          key={option.value}
+                          disabled={isPending}
+                          onClick={() => !isPending && setStatusDraft(option.value)}
+                          className={cn(
+                            "rounded-2xl border p-3 text-left text-sm font-semibold transition focus:outline-none",
+                            "border-slate-200 bg-white text-slate-700 hover:border-emerald-200 hover:text-emerald-700",
+                            isActive && !isPending && !isFailed && "border-emerald-400 bg-emerald-50 text-emerald-700 shadow-inner ring-2 ring-emerald-100",
+                            isActive && isFailed && "border-rose-500 bg-rose-50 text-rose-700 shadow-inner ring-2 ring-rose-100",
+                            isPending && "cursor-not-allowed opacity-60",
+                          )}
+                        >
+                        <span>{option.label}</span>
+                        <p className="mt-1 text-xs font-normal text-slate-500">
+                          {option.value === "success"
+                            ? "Hoàn tất giao dịch"
+                            : option.value === "failed"
+                            ? "Không thể xử lý"
+                            : "Hệ thống tự động xử lý"}
+                        </p>
+                        {isCurrent && (
+                          <span
+                            className={cn(
+                              "mt-2 block text-[10px] font-medium",
+                              isFailed ? "text-rose-600" : "text-emerald-600",
+                            )}
+                          >
+                            Giao dịch đang ở trạng thái này
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-xs text-slate-500">
+                  Trạng thái “Đang xử lý” được hệ thống kiểm soát và không thể cập nhật thủ công.
+                </p>
               </div>
               <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-800">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <div>
                   <p className="font-semibold">Xác nhận trước khi cập nhật</p>
                   <p className="text-xs text-amber-700">
-                    Thao tác này có thể ảnh hưởng tới SLA với khách hàng. Vui lòng chắc chắn trước khi lưu.
+                    Thao tác này có thể ảnh hưởng tới dịch vụ của khách hàng. Vui lòng chắc chắn trước khi lưu.
                   </p>
                 </div>
               </div>

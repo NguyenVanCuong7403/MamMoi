@@ -6,7 +6,7 @@ import { useAuth } from "@/API/context/AuthContext"
 
 const DEFAULT_MENU = [
   { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
-  { id: "quan-ly", label: "Quản lý cây", href: "/garden" },
+  { id: "quan-ly", label: "Quản lý vườn & cây", href: "/garden" },
   { id: "dang-ky", label: "Đăng ký dịch vụ", href: "#register" },
   { id: "lien-he", label: "Liên hệ & Hỗ trợ", href: "/report" },
 ];
