@@ -53,6 +53,7 @@ public static class DependencyInjection
         // Register infrastructure services
         services.AddScoped<TokenService>();
         services.AddScoped<ITreeTypeService, TreeTypeService>();
+        services.AddScoped<ITreeTypeManagerService, MamMoi.Infrastructure.Services.BusinessAdmin.TreeTypeManagerService>();
         services.AddScoped<ITreeQueryService, TreeQueryService>();
         services.AddScoped<ITreeCommandService, TreeCommandService>();
         services.AddScoped<ITreeImageService, TreeImageService>();

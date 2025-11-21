@@ -8,7 +8,7 @@ namespace MamMoi.Api.Controllers.Business_Admin
 {
     [ApiController]
     [Route("api/business-admin/tree-types")]
-    [Authorize(Roles = "Business Admin")]
+    
     public class TreeTypesController : ControllerBase
     {
         private readonly ITreeTypeManagerService _treeTypeService;
