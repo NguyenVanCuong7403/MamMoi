@@ -72,6 +72,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentService, MamMoi.Infrastructure.Services.BusinessAdmin.PaymentService>();
         services.AddScoped<ISupportTicketService, MamMoi.Infrastructure.Services.BusinessAdmin.SupportTicketService>();
         services.AddScoped<ISoilMasterService, MamMoi.Infrastructure.Services.BusinessAdmin.SoilMasterService>();
+        services.AddScoped<ITreeVarietyService, MamMoi.Infrastructure.Services.BusinessAdmin.TreeVarietyService>();
         services.AddScoped<IActivityLogService, MamMoi.Infrastructure.Services.SystemAdmin.ActivityLogService>();
         services.AddScoped<IDashboardService, MamMoi.Infrastructure.Services.SystemAdmin.DashboardService>();
         services.AddScoped<ISubscriptionPlanService, MamMoi.Infrastructure.Services.SystemAdmin.SubscriptionPlanService>();

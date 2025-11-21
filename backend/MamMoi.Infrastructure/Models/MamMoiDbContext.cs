@@ -718,7 +718,8 @@ public partial class MamMoiDbContext : DbContext
 
             entity.ToTable("TreeVariety");
 
-            entity.Property(e => e.VarietyId).HasColumnName("VarietyID");
+            entity.Property(e => e.VarietyId).HasColumnName("VarietyID")
+                .ValueGeneratedOnAdd();
             entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
             entity.Property(e => e.VarietyName).HasMaxLength(100);
             entity.Property(e => e.VarietyDescription).HasMaxLength(500);

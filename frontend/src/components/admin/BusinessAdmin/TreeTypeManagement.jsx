@@ -391,13 +391,13 @@ const soilDefaultValues = {
 const mapSoilToFormValues = (soil) =>
   soil
     ? {
-        SoilName: soil.SoilName ?? "",
-        Texture: soil.Texture ?? "",
-        Drainage: soil.Drainage ?? "",
-        OrganicMatterPct: soil.OrganicMatterPct ?? undefined,
-        EC_dS_m: soil.EC_dS_m ?? undefined,
-        Notes: soil.Notes ?? "",
-      }
+      SoilName: soil.SoilName ?? "",
+      Texture: soil.Texture ?? "",
+      Drainage: soil.Drainage ?? "",
+      OrganicMatterPct: soil.OrganicMatterPct ?? undefined,
+      EC_dS_m: soil.EC_dS_m ?? undefined,
+      Notes: soil.Notes ?? "",
+    }
     : soilDefaultValues;
 
 function ImageDropzone({ value, onChange }) {
@@ -980,7 +980,7 @@ export default function TreeTypeManagement() {
           <SheetTitle>
             {editingTree ? "Chỉnh sửa loại cây" : "Thêm loại cây mới"}
           </SheetTitle>
-        
+
         </SheetHeader>
         <Separator className="my-4" />
         <ScrollArea className="h-[calc(100vh-12rem)] pr-4">
@@ -1241,51 +1241,51 @@ export default function TreeTypeManagement() {
                     const actualIndex = varietyPageStart + index;
                     return (
                       <div key={fieldItem.id} className="rounded-xl border border-slate-200 bg-white p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-500">
-                          <Layers className="h-3.5 w-3.5" />
-                          Giống {actualIndex + 1}
+                        <div className="flex items-center justify-between">
+                          <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-500">
+                            <Layers className="h-3.5 w-3.5" />
+                            Giống {actualIndex + 1}
+                          </div>
+                          {varietyFields.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="text-rose-500 hover:text-rose-600"
+                              onClick={() => remove(actualIndex)}
+                            >
+                              Xoá
+                            </Button>
+                          )}
                         </div>
-                        {varietyFields.length > 1 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="text-rose-500 hover:text-rose-600"
-                            onClick={() => remove(actualIndex)}
-                          >
-                            Xoá
-                          </Button>
-                        )}
-                      </div>
-                      <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name={`Varieties.${actualIndex}.VarietyName`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Tên giống</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Ví dụ: Hass Premium" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name={`Varieties.${actualIndex}.VarietyDescription`}
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Mô tả</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Điểm nổi bật" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
+                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                          <FormField
+                            control={form.control}
+                            name={`Varieties.${actualIndex}.VarietyName`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Tên giống</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Ví dụ: Hass Premium" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name={`Varieties.${actualIndex}.VarietyDescription`}
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Mô tả</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Điểm nổi bật" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
                       </div>
                     );
                   })}
@@ -1362,7 +1362,7 @@ export default function TreeTypeManagement() {
 
         <div className="space-y-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-           
+
             <div className="flex w-full flex-col gap-2 sm:max-w-md sm:flex-row sm:items-center">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />

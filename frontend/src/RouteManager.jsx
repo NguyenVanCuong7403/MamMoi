@@ -97,17 +97,13 @@ export default function RouteManager({ authTab }) {
       <Route
         path="/admin/business/reports"
         element={
-          <RoleGuard roles={BUSINESS_ADMIN_ROLES}>
-            <BusinessAdminReportManagement />
-          </RoleGuard>
+          <BusinessAdminReportManagement />
         }
       />
       <Route
         path="/admin/business/trees"
         element={
-          <RoleGuard roles={BUSINESS_ADMIN_ROLES}>
-            <BusinessAdminTreeManagement />
-          </RoleGuard>
+          <BusinessAdminTreeManagement />
         }
       />
 
