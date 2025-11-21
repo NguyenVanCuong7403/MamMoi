@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
   const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem("refreshToken"));
   const [loading, setLoading] = useState(false);
 
-  const login = async (email, password) => {
+  const login = async (email, password, remember = false) => {
     setLoading(true);
     try {
       const response = await AuthRepository.login(email, password);
@@ -92,6 +92,13 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", data.accessToken);
       localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("user", JSON.stringify(userData));
+
+      // Lưu email để ghi nhớ đăng nhập (KHÔNG lưu password vì lý do bảo mật)
+      if (remember) {
+        localStorage.setItem("rememberedEmail", email);
+      } else {
+        localStorage.removeItem("rememberedEmail");
+      }
 
       setUser(userData);
       setToken(data.accessToken);
@@ -241,6 +248,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
+    // KHÔNG xóa rememberedEmail khi logout - để giữ lại cho lần đăng nhập sau
     setUser(null);
     setToken(null);
     setRefreshToken(null);

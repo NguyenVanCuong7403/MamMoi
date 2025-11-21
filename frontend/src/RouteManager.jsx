@@ -23,10 +23,6 @@ import SystemAdminReportManagement from "./components/admin/SystemAdmin/ReportMa
 import BusinessAdminTreeManagement from "./components/admin/BusinessAdmin/TreeTypeManagement";
 import BusinessAdminReportManagement from "./components/admin/BusinessAdmin/ReportManagementBA";
 
-const ADMIN_ROLES = ["SystemAdmin", "BusinessAdmin"];
-const BUSINESS_ADMIN_ROLES = ["BusinessAdmin", "SystemAdmin"];
-
-
 export default function RouteManager({ authTab }) {
   return (
     <Routes>
@@ -69,11 +65,11 @@ export default function RouteManager({ authTab }) {
         }
       />
 
-      {/* Admin routes */}
+      {/* Admin routes - SystemAdmin only */}
       <Route
         path="/admin/users"
         element={
-          <RoleGuard roles={ADMIN_ROLES}>
+          <RoleGuard roles={["SystemAdmin"]}>
             <SystemAdminUserManagement />
           </RoleGuard>
         }
@@ -81,7 +77,7 @@ export default function RouteManager({ authTab }) {
       <Route
         path="/admin/subscriptions"
         element={
-          <RoleGuard roles={ADMIN_ROLES}>
+          <RoleGuard roles={["SystemAdmin"]}>
             <SystemAdminSubscriptionManagement />
           </RoleGuard>
         }
@@ -89,15 +85,16 @@ export default function RouteManager({ authTab }) {
       <Route
         path="/admin/reports"
         element={
-          <RoleGuard roles={ADMIN_ROLES}>
+          <RoleGuard roles={["SystemAdmin"]}>
             <SystemAdminReportManagement />
           </RoleGuard>
         }
       />
+      {/* BusinessAdmin routes - BusinessAdmin only */}
       <Route
         path="/admin/business/reports"
         element={
-          <RoleGuard roles={BUSINESS_ADMIN_ROLES}>
+          <RoleGuard roles={["BusinessAdmin"]}>
             <BusinessAdminReportManagement />
           </RoleGuard>
         }
@@ -105,7 +102,7 @@ export default function RouteManager({ authTab }) {
       <Route
         path="/admin/business/trees"
         element={
-          <RoleGuard roles={BUSINESS_ADMIN_ROLES}>
+          <RoleGuard roles={["BusinessAdmin"]}>
             <BusinessAdminTreeManagement />
           </RoleGuard>
         }

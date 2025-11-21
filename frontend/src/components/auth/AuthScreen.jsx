@@ -33,17 +33,34 @@ import { LivingBackground } from "@/components/background";
 const baseInputClass =
   "mm-plain-input h-11 w-full border-none bg-transparent p-0 text-[15px] text-slate-900 placeholder:text-slate-600 focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ROLE_HOME_PATH = {
-  systemadmin: "/admin/users",
-  businessadmin: "/admin/business/trees",
+const normalizeRole = (role) => {
+  if (!role) return null;
+  return role.toString().toLowerCase().trim();
 };
 
 const getPostLoginPath = (role) => {
-  if (typeof role !== "string" || role.length === 0) return "/";
-  const normalizedRole = role.toLowerCase();
-  return ROLE_HOME_PATH[normalizedRole] || "/";
+  if (!role) {
+    console.warn("⚠️ No role provided, redirecting to home");
+    return "/";
+  }
+  
+  const normalizedRole = normalizeRole(role);
+  console.log("🔍 Normalized role:", normalizedRole);
+  
+  // SystemAdmin redirect to user management
+  if (normalizedRole === "systemadmin") {
+    return "/admin/users";
+  }
+  
+  // BusinessAdmin redirect to tree management
+  if (normalizedRole === "businessadmin") {
+    return "/admin/business/trees";
+  }
+  
+  // Default user redirect to home
+  console.log("⚠️ Unknown role, redirecting to home");
+  return "/";
 };
-const LOGIN_REMEMBER_KEY = "mm-login-remember";
 
 export default function AuthScreen({ defaultTab = "login" }) {
   const [tab, setTab] = useState(defaultTab);
@@ -130,9 +147,18 @@ export default function AuthScreen({ defaultTab = "login" }) {
       setLoginSuccessOverlay(true);
 
       const redirectPath = getPostLoginPath(res?.role);
+      console.log("✅ Login successful - Role:", res?.role, "Redirect to:", redirectPath);
+      
       setTimeout(() => {
-        setLoginSuccessOverlay(false);
-        navigate(redirectPath);
+        try {
+          setLoginSuccessOverlay(false);
+          console.log("🚀 Navigating to:", redirectPath);
+          navigate(redirectPath, { replace: true });
+        } catch (navError) {
+          console.error("❌ Navigation error:", navError);
+          // Fallback: try window.location if navigate fails
+          window.location.href = redirectPath;
+        }
       }, 800);
     } catch (err) {
       setAuthDialog({
@@ -640,9 +666,17 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
   const [show, setShow] = useState(false);
   const [caps, setCaps] = useState(false);
 
-  const [acct, setAcct] = useState("");
+  // Load email đã lưu từ localStorage khi component mount
+  const [acct, setAcct] = useState(() => {
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    return rememberedEmail || "";
+  });
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(() => {
+    // Nếu có email đã lưu, tự động tick vào checkbox "Ghi nhớ đăng nhập"
+    const rememberedEmail = localStorage.getItem("rememberedEmail");
+    return !!rememberedEmail;
+  });
 
   const [acctError, setAcctError] = useState("");
   const [pwError, setPwError] = useState("");
@@ -651,31 +685,6 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
 
   const acctRef = useRef(null);
   const pwRef = useRef(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const saved = localStorage.getItem(LOGIN_REMEMBER_KEY);
-      if (!saved) return;
-      const parsed = JSON.parse(saved);
-      if (parsed?.acct) {
-        setAcct(parsed.acct);
-        setRemember(true);
-      }
-    } catch {
-      // ignore corrupted localStorage entry
-    }
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!remember) {
-      localStorage.removeItem(LOGIN_REMEMBER_KEY);
-      return;
-    }
-    const payload = JSON.stringify({ acct: acct.trim() });
-    localStorage.setItem(LOGIN_REMEMBER_KEY, payload);
-  }, [remember, acct]);
 
   useEffect(() => {
     // reset hoàn toàn sau khi đăng ký xong
@@ -874,7 +883,14 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
         <label className="flex items-center gap-2 text-xs sm:text-sm">
           <Checkbox
             checked={remember}
-            onCheckedChange={(v) => setRemember(Boolean(v))}
+            onCheckedChange={(v) => {
+              const newValue = Boolean(v);
+              setRemember(newValue);
+              // Nếu bỏ tick, xóa email đã lưu
+              if (!newValue) {
+                localStorage.removeItem("rememberedEmail");
+              }
+            }}
           />
           Ghi nhớ đăng nhập
         </label>
@@ -1195,8 +1211,6 @@ function RegisterForm({ onSubmitRegister }) {
         <Input
           ref={nameRef}
           className={baseInputClass}
-          name="register-fullname"
-          autoComplete="off"
           placeholder="Tên của bạn"
           value={name}
           onChange={handleNameChange}
@@ -1218,8 +1232,6 @@ function RegisterForm({ onSubmitRegister }) {
             ref={emailRef}
             className={baseInputClass}
             type="email"
-            name="register-email"
-            autoComplete="off"
             placeholder="Email của bạn"
             value={email}
             onChange={handleEmailChange}
@@ -1240,8 +1252,6 @@ function RegisterForm({ onSubmitRegister }) {
             ref={phoneRef}
             className={baseInputClass}
             inputMode="tel"
-            name="register-phone"
-            autoComplete="off"
             placeholder="Số điện thoại của bạn"
             value={phoneValue}
             onChange={handlePhoneChange}
@@ -1271,8 +1281,6 @@ function RegisterForm({ onSubmitRegister }) {
             ref={pwRef}
             className={baseInputClass}
             type={show ? "text" : "password"}
-            name="register-password"
-            autoComplete="new-password"
             placeholder="Tối thiểu 8 ký tự"
             value={pw}
             onChange={(e) => {
@@ -1312,8 +1320,6 @@ function RegisterForm({ onSubmitRegister }) {
             ref={pw2Ref}
             className={baseInputClass}
             type={show2 ? "text" : "password"}
-            name="register-password-confirm"
-            autoComplete="new-password"
             placeholder="nhập lại mật khẩu"
             value={pw2}
             onChange={(e) => {

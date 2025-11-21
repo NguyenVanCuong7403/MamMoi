@@ -79,8 +79,12 @@ export default function MMHeader({
       // không bật search của header
       const dateOpen = document.querySelector('[data-mm-date-open="1"]');
 
+      // Kiểm tra xem có đang ở màn hình AddTreeNewScreen không
+      const addTreeScreen = document.querySelector('[data-mm-screen="add-tree"]');
+
       if (e.key === "Enter") {
         if (dateOpen) return; // khung lịch đang mở → không làm gì
+        if (addTreeScreen && !typing) return; // đang ở màn hình thêm cây và không focus input → không mở search
 
         if (!typing && !searchOpen) {
           setSearchOpen(true);

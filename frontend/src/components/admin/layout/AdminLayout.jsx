@@ -1,5 +1,5 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Navigate } from "react-router-dom";
 import { BarChart3, CreditCard, Users, Sprout } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/API/context/AuthContext";
@@ -52,14 +52,26 @@ const ROLE_SUMMARY = {
   },
 };
 
-const DEFAULT_ROLE_KEY = "systemadmin";
+const VALID_ADMIN_ROLES = ["systemadmin", "businessadmin"];
 
 export default function AdminLayout({ children }) {
   const { user } = useAuth();
+  
+  // Ensure user is logged in
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+  
   const roleKey = (user?.role || "").toLowerCase();
-  const activeRoleKey = ROLE_NAV_ITEMS[roleKey] ? roleKey : DEFAULT_ROLE_KEY;
-  const navItems = ROLE_NAV_ITEMS[activeRoleKey];
-  const { title, description } = ROLE_SUMMARY[activeRoleKey] || ROLE_SUMMARY[DEFAULT_ROLE_KEY];
+  
+  // Only allow valid admin roles
+  if (!VALID_ADMIN_ROLES.includes(roleKey)) {
+    return <Navigate to="/" replace />;
+  }
+  
+  // Get navigation items for the user's role
+  const navItems = ROLE_NAV_ITEMS[roleKey] || [];
+  const { title, description } = ROLE_SUMMARY[roleKey] || { title: "Admin", description: "" };
 
   return (
     <div className="flex min-h-screen w-full text-slate-50">
