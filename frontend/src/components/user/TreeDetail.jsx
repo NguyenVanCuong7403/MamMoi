@@ -2770,10 +2770,14 @@ function mapDtoToTree(dto) {
     newValues: {},
   });
 
-  // Helper function to get today's date string (YYYY-MM-DD)
+  // Helper function to get today's date string (YYYY-MM-DD) based on local time
+  // This ensures 00:00 AM is the reset point for a new day
   function getTodayDateString() {
     const today = new Date();
-    return today.toISOString().slice(0, 10);
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   }
 
   async function persistTreePatch(partial) {
@@ -2902,24 +2906,36 @@ function getGiong(src) {
     return () => clearInterval(id);
   }, []);
 
-  // Real-time check for midnight (new day) - check every minute
+  // Real-time check for midnight (new day) - check every second for accurate detection
   const [currentDate, setCurrentDate] = useState(() => {
     const today = new Date();
-    return today.toISOString().slice(0, 10);
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   });
 
   useEffect(() => {
-    // Check every minute to detect midnight
+    // Check every second to detect midnight accurately
+    // After 23:59, we need to detect 00:00 immediately to show the modal
     const checkInterval = setInterval(() => {
       const today = new Date();
-      const todayString = today.toISOString().slice(0, 10);
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const todayString = `${year}-${month}-${day}`;
       
       // If date changed (midnight passed), update currentDate
       // This will trigger the useEffect that checks if modal should be shown
       if (todayString !== currentDate) {
+        console.log("[DailyHealthModal] Date changed detected", {
+          oldDate: currentDate,
+          newDate: todayString,
+          currentTime: today.toLocaleTimeString('vi-VN'),
+        });
         setCurrentDate(todayString);
       }
-    }, 60000); // Check every minute
+    }, 1000); // Check every second for realtime detection
 
     return () => clearInterval(checkInterval);
   }, [currentDate]);
@@ -3078,6 +3094,13 @@ const isEmptyBaseTree = !baseTree || Object.keys(baseTree).length === 0;
   // Check if daily health update modal should be shown
   // Check every time component mounts, treeId/baseTree changes, or date changes (midnight)
   // Modal will show if user hasn't confirmed today (localStorage doesn't have "true" for today)
+  // 
+  // Logic:
+  // - 00:00 AM (midnight) is the reset point for a new day (based on local time)
+  // - After 23:59, when it becomes 00:00, currentDate state changes
+  // - This triggers this useEffect to check localStorage for the new day
+  // - If no confirmation exists for the new day, modal shows automatically
+  // - Modal can only be shown once per day (tracked by localStorage key: healthUpdate_{treeId}_{YYYY-MM-DD})
   React.useEffect(() => {
     const currentTreeId = treeId;
     console.log("[DailyHealthModal] useEffect triggered", {
@@ -3123,7 +3146,10 @@ const isEmptyBaseTree = !baseTree || Object.keys(baseTree).length === 0;
 
     function getTodayDateString() {
       const today = new Date();
-      return today.toISOString().slice(0, 10);
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
 
     const today = getTodayDateString();
