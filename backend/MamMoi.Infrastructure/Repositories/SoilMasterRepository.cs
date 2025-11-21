@@ -1,5 +1,5 @@
-using MamMoi.Domain.Interfaces;
-using DomainSoilMaster = MamMoi.Domain.Models.SoilMaster;
+using MamMoi.Application.Interfaces;
+using MamMoi.Application.DTOs.SystemAdmin;
 using MamMoi.Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -19,10 +19,10 @@ namespace MamMoi.Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task<IEnumerable<DomainSoilMaster>> GetAllAsync()
+        public async Task<IEnumerable<SoilMasterDto>> GetAllAsync()
         {
             return await _context.SoilMasters
-                .Select(s => new DomainSoilMaster
+                .Select(s => new SoilMasterDto
                 {
                     SoilMasterID = s.SoilMasterId,
                     SoilName = s.SoilName,
@@ -35,11 +35,11 @@ namespace MamMoi.Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<DomainSoilMaster> GetByIdAsync(int id)
+        public async Task<SoilMasterDto> GetByIdAsync(int id)
         {
             var soil = await _context.SoilMasters.FindAsync(id);
             if (soil == null) return null;
-            return new DomainSoilMaster
+            return new SoilMasterDto
             {
                 SoilMasterID = soil.SoilMasterId,
                 SoilName = soil.SoilName,
@@ -51,7 +51,7 @@ namespace MamMoi.Infrastructure.Repositories
             };
         }
 
-        public async Task<DomainSoilMaster> CreateAsync(DomainSoilMaster soilMaster)
+        public async Task<SoilMasterDto> CreateAsync(SoilMasterDto soilMaster)
         {
             var soil = new SoilMaster
             {
@@ -60,7 +60,8 @@ namespace MamMoi.Infrastructure.Repositories
                 Drainage = soilMaster.Drainage,
                 OrganicMatterPct = soilMaster.OrganicMatterPct,
                 EcDSM = soilMaster.ECdSm,
-                Notes = soilMaster.Notes
+                Notes = soilMaster.Notes,
+                CreatedAt = DateTime.UtcNow
             };
             _context.SoilMasters.Add(soil);
             await _context.SaveChangesAsync();
@@ -68,7 +69,7 @@ namespace MamMoi.Infrastructure.Repositories
             return soilMaster;
         }
 
-        public async Task<DomainSoilMaster> UpdateAsync(DomainSoilMaster soilMaster)
+        public async Task<SoilMasterDto> UpdateAsync(SoilMasterDto soilMaster)
         {
             var soil = await _context.SoilMasters.FindAsync(soilMaster.SoilMasterID);
             if (soil == null) return null;
