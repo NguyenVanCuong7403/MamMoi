@@ -55,15 +55,15 @@ public partial class MamMoiDbContext : DbContext
 
     public virtual DbSet<TreeType> TreeTypes { get; set; }
 
+    public virtual DbSet<TreeVariety> TreeVarieties { get; set; }
+
     public virtual DbSet<User> Users { get; set; }
 
     public virtual DbSet<WeatherAlert> WeatherAlerts { get; set; }
 
     public virtual DbSet<WeatherHistory> WeatherHistories { get; set; }
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
-        => optionsBuilder.UseSqlServer(" Server=(local);database= MamMoiDB;uid=sa;pwd=sa; TrustServerCertificate=true ");
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -710,6 +710,22 @@ public partial class MamMoiDbContext : DbContext
                 .HasForeignKey(d => d.SoilMasterId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_TreeTypes_SoilMaster");
+        });
+
+        modelBuilder.Entity<TreeVariety>(entity =>
+        {
+            entity.HasKey(e => e.VarietyId).HasName("PK__TreeVari__1BF79D36");
+
+            entity.ToTable("TreeVariety");
+
+            entity.Property(e => e.VarietyId).HasColumnName("VarietyID");
+            entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
+            entity.Property(e => e.VarietyName).HasMaxLength(100);
+            entity.Property(e => e.VarietyDescription).HasMaxLength(500);
+
+            entity.HasOne(d => d.TreeType).WithMany(p => p.TreeVarieties)
+                .HasForeignKey(d => d.TreeTypeId)
+                .HasConstraintName("FK__TreeVarie__TreeT__245D67DE");
         });
 
         modelBuilder.Entity<User>(entity =>
