@@ -1468,8 +1468,10 @@ const effectivePhase = phaseOverride || defaultPhase5;
   /* ------------------------------ UI ------------------------------ */
   return (
     <div
+      data-fluid-page
       className="min-h-screen relative overflow-hidden"
       style={{ backgroundColor: "#1F302F", paddingTop: "calc(var(--mm-header-h, 88px) + 12px)" }}
+      data-mm-screen="add-tree"
     >
       {/* Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
@@ -1488,7 +1490,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
       <div style={zoomStyle}>
         {/* Header */}
         <section className="relative">
-          <div className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 pb-3">
+          <div data-fluid-shell className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 pb-3">
             <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
               <div>
                 <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
@@ -1531,7 +1533,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
         </section>
 
         {/* Main */}
-        <main className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 py-6 space-y-6">
+        <main data-fluid-shell className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 py-6 space-y-6">
           <div className="grid lg:grid-cols-12 gap-6 items-start">
             {/* LEFT – form */}
             <div className="lg:col-span-8 space-y-6">

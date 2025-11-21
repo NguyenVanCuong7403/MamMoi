@@ -722,13 +722,36 @@ export default function GardenManagement() {
     setOpenForm(true);
   }
 
+  const ensureGardenExists = (idx, silent = false) => {
+    if (idx < 0 || !gardens[idx]) {
+      if (!silent) {
+        alert("Vườn không tồn tại trong hệ thống. Vui lòng tải lại danh sách.");
+      }
+      return null;
+    }
+    return gardens[idx];
+  };
+
   function openEdit(i) {
+    if (!ensureGardenExists(i)) return;
     setEditingIdx(i);
     setOpenForm(true);
   }
 
   function handleSubmit(form) {
     //console.log(form);
+
+    const normalizedSubmittedName = normalizeKey(form.name);
+    const isDuplicateName = gardens.some((g, idx) => {
+      if (!g?.name) return false;
+      if (editingIdx >= 0 && idx === editingIdx) return false;
+      return normalizeKey(g.name) === normalizedSubmittedName;
+    });
+
+    if (isDuplicateName) {
+      alert(`Tên vườn "${form.name}" đã có trong hệ thống.`);
+      return;
+    }
 
     (async () => {
     let coverUrl = form.coverUrl; // fallback if user uses URL
@@ -830,12 +853,17 @@ export default function GardenManagement() {
   }
 
   function askDelete(i) {
+    if (!ensureGardenExists(i)) return;
     setConfirm({ open: true, targetIdx: i });
   }
 
   function doDelete() {
     const idx = confirm.targetIdx;
-    const victim = gardens[idx];
+    const victim = ensureGardenExists(idx, true);
+    if (!victim) {
+      setConfirm({ open: false, targetIdx: -1 });
+      return;
+    }
 
     setGardens((gs) => {
       const next = gs.filter((_, i) => i !== idx);
@@ -861,7 +889,7 @@ export default function GardenManagement() {
   }
 
   function askToggleStatus(i) {
-    const g = gardens[i];
+    const g = ensureGardenExists(i);
     if (!g) return;
     const isActive = g.status === "Đang hoạt động";
     const nextStatus = isActive ? "Dừng hoạt động" : "Đang hoạt động";
@@ -918,8 +946,11 @@ export default function GardenManagement() {
       />
 
       {/* UI trên nền sống */}
-      <div className="relative min-h-screen pt-[64px] z-10">
-        <main className="mx-auto max-w-[1760px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-6 space-y-6 text-[16px] md:text-[17px]">
+      <div data-fluid-page className="relative min-h-screen pt-[64px] z-10">
+        <main
+          data-fluid-shell
+          className="mx-auto max-w-[1760px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-6 space-y-6 text-[16px] md:text-[17px]"
+        >
           {/* Header */}
           <section className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="max-w-[820px]">

@@ -15,7 +15,7 @@ const PALETTE = {
   ivory: "#FBFFDF", 
   accent: "#FFFFA5" 
 };
-const CONTAINER = "mx-auto w-full max-w-[1200px] px-4 sm:px-6 lg:px-10 2xl:px-16";
+const CONTAINER = "mx-auto w-full max-w-none px-4 sm:px-6 lg:px-10 2xl:px-16";
 
 const INPUT_OK =
   "h-14 w-full rounded-xl bg-white/95 border border-white/30 placeholder:text-neutral-500 focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 text-base";
@@ -200,8 +200,8 @@ export default function Report() {
       />
 
       {/* UI trên nền sống */}
-      <div className="relative min-h-screen pt-[64px] z-10">
-        <div className={`${CONTAINER} pt-8 pb-16`}>
+      <div data-fluid-page className="relative min-h-screen pt-[64px] z-10">
+        <div data-fluid-shell className={`${CONTAINER} pt-8 pb-16`}>
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/10 backdrop-blur-sm mb-4">
@@ -210,7 +210,7 @@ export default function Report() {
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
             Liên hệ & Hỗ trợ
           </h1>
-          <p className="text-lg text-white/80 max-w-2xl mx-auto">
+          <p data-fluid-text className="text-lg text-white/80 max-w-2xl mx-auto">
             Chúng tôi luôn sẵn sàng hỗ trợ bạn. Vui lòng điền thông tin bên dưới và chúng tôi sẽ phản hồi trong thời gian sớm nhất.
           </p>
         </div>

@@ -97,7 +97,7 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div data-fluid-page className="min-h-screen bg-gray-50">
       {/* Hero Section with Topographic Background */}
       <div className="relative bg-gradient-to-br from-emerald-800 to-emerald-900 text-white overflow-hidden">
         {/* Topographic Pattern */}
@@ -117,7 +117,7 @@ export default function PricingPage() {
           </svg>
         </div>
 
-        <div className="relative container mx-auto px-4 py-16">
+        <div data-fluid-shell className="relative container mx-auto px-4 py-16">
           <div className="text-center mb-12">
             <span className="inline-block bg-emerald-700 text-white px-4 py-1 rounded-full text-sm mb-4">
               Dịch vụ
@@ -125,13 +125,16 @@ export default function PricingPage() {
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Đăng ký gói chăm sóc<br />cây ăn quả cho nông hộ
             </h1>
-            <p className="text-emerald-100 max-w-2xl mx-auto">
+                <p data-fluid-text className="text-emerald-100 max-w-2xl mx-auto">
               Theo dõi vườn cây, nhận cảnh báo sâu bệnh vì lịch tưới bón thông minh – thiết kế riêng cho
             </p>
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div
+            data-fluid-shell
+            className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto"
+          >
             {plans.map((plan, index) => (
               <Card 
                 key={index} 
@@ -183,8 +186,11 @@ export default function PricingPage() {
       </div>
 
       {/* Features Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+      <div data-fluid-shell className="container mx-auto px-4 py-16">
+        <div
+          data-fluid-shell
+          className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto"
+        >
           {features.map((feature, index) => (
             <Card key={index} className="text-center">
               <CardContent className="p-6">
@@ -201,14 +207,14 @@ export default function PricingPage() {
 
       {/* Newsletter Section */}
       <div className="bg-gray-100 py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
+        <div data-fluid-shell className="container mx-auto px-4">
+          <div data-fluid-shell className="max-w-3xl mx-auto">
             <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   Đăng ký nhận tin & ưu đãi
                 </h2>
-                <p className="text-gray-600">
+                <p data-fluid-text className="text-gray-600">
                   Chúng tôi sẽ gửi hướng dẫn kỹnh tạo vườn, kèm 7 ngày dùng thử Pro.
                 </p>
               </div>
@@ -229,7 +235,7 @@ export default function PricingPage() {
           </div>
 
           {/* Promo Box */}
-          <div className="max-w-3xl mx-auto mt-8">
+          <div data-fluid-shell className="max-w-3xl mx-auto mt-8">
             <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -251,13 +257,13 @@ export default function PricingPage() {
       </div>
 
       {/* FAQ Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-3xl mx-auto">
+      <div data-fluid-shell className="container mx-auto px-4 py-16">
+        <div data-fluid-shell className="max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-3">
               Câu hỏi thường gặp
             </h2>
-            <p className="text-gray-600">
+            <p data-fluid-text className="text-gray-600">
               Nếu không thấy câu trả lời, hãy nhắn chúng tôi qua chat.
             </p>
           </div>

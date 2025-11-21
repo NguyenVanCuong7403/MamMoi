@@ -1022,6 +1022,7 @@ export default function CareFlowEditablePreview() {
 
   return (
    <div
+   data-fluid-page
    className="relative min-h-screen overflow-hidden bg-background"
    style={{ paddingTop: "88px" }}
  >
@@ -1029,7 +1030,7 @@ export default function CareFlowEditablePreview() {
    <div className="pointer-events-none absolute inset-0 -z-10">
      <LivingBackground density={34} baseColor="#1F302F" />
    </div>
-   <main className="relative z-10 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+   <main data-fluid-shell className="relative z-10 px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
           <CardContent className="p-6">
             <div className="flex items-start justify-between gap-6">

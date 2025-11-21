@@ -79,7 +79,7 @@ const BACKGROUND_PALETTE = {
   accent: "#FFFFA5",
 };
 
-const SOIL_PAGE_SIZE = 10;
+const SOIL_PAGE_SIZE = 5;
 const TREE_PAGE_SIZE = 8;
 const VARIETY_PAGE_SIZE = 5;
 const environmentLabelClass = "text-[13px] font-semibold text-slate-600 leading-tight min-h-[32px]";
@@ -720,7 +720,12 @@ export default function TreeTypeManagement() {
   const [soilDetailSaving, setSoilDetailSaving] = useState(false);
   const [soilDeleting, setSoilDeleting] = useState(false);
   const [soilDeleteConfirmOpen, setSoilDeleteConfirmOpen] = useState(false);
+  const [soilUpdateConfirmOpen, setSoilUpdateConfirmOpen] = useState(false);
   const [soilSearch, setSoilSearch] = useState("");
+  const [pendingSoilUpdate, setPendingSoilUpdate] = useState(null);
+  const [soilDetailEditMode, setSoilDetailEditMode] = useState(false);
+  const [soilCancelConfirmOpen, setSoilCancelConfirmOpen] = useState(false);
+  const [soilRevertConfirmOpen, setSoilRevertConfirmOpen] = useState(false);
   const [treePage, setTreePage] = useState(1);
   const [varietyDialogOpen, setVarietyDialogOpen] = useState(false);
   const [activeVarietyTree, setActiveVarietyTree] = useState(null);
@@ -795,6 +800,12 @@ export default function TreeTypeManagement() {
     return filteredSoils.slice(start, start + SOIL_PAGE_SIZE);
   }, [soilPage, filteredSoils]);
 
+  const soilRangeStart = filteredSoils.length ? (soilPage - 1) * SOIL_PAGE_SIZE + 1 : 0;
+  const soilRangeEnd = filteredSoils.length
+    ? Math.min(filteredSoils.length, soilRangeStart + paginatedSoils.length - 1)
+    : 0;
+  const shouldShowSoilPagination = filteredSoils.length > SOIL_PAGE_SIZE;
+
   const handleRefresh = useCallback(async () => {
     setLoading(true);
     const [treeData, soilData] = await Promise.all([fetchTreeTypes(), fetchSoils()]);
@@ -832,14 +843,20 @@ export default function TreeTypeManagement() {
   useEffect(() => {
     if (!soilDialogOpen) {
       soilDetailForm.reset(soilDefaultValues);
+      setSoilDetailEditMode(false);
       setSoilPage(1);
       setCreateSoilOverlayOpen(false);
       setSoilCreateConfirmOpen(false);
       setPendingSoilCreate(null);
+      setPendingSoilUpdate(null);
+      setSoilUpdateConfirmOpen(false);
       soilForm.reset(soilDefaultValues);
       setSoilSearch("");
       return;
     }
+    setPendingSoilUpdate(null);
+    setSoilUpdateConfirmOpen(false);
+    setSoilDetailEditMode(false);
     soilDetailForm.reset(mapSoilToFormValues(selectedSoil));
   }, [selectedSoil, soilDialogOpen, soilDetailForm, soilForm]);
 
@@ -982,10 +999,39 @@ export default function TreeTypeManagement() {
   };
 
   const handleSelectSoil = (soilId) => {
+    setPendingSoilUpdate(null);
+    setSoilUpdateConfirmOpen(false);
+    setSoilDetailEditMode(false);
+    setSoilCancelConfirmOpen(false);
+    setSoilRevertConfirmOpen(false);
     setSelectedSoilId(soilId);
   };
 
-  const handleUpdateSoil = async (values) => {
+  const handleStartEditSoil = () => {
+    if (!selectedSoil) return;
+    setSoilDetailEditMode(true);
+    setPendingSoilUpdate(null);
+    setSoilUpdateConfirmOpen(false);
+    soilDetailForm.reset(mapSoilToFormValues(selectedSoil));
+  };
+
+  const handleCancelSoilEdit = () => {
+    soilDetailForm.reset(mapSoilToFormValues(selectedSoil));
+    setPendingSoilUpdate(null);
+    setSoilUpdateConfirmOpen(false);
+    setSoilDetailEditMode(false);
+    setSoilCancelConfirmOpen(false);
+  };
+
+  const handleRevertSoilEdit = () => {
+    if (!selectedSoil) return;
+    soilDetailForm.reset(mapSoilToFormValues(selectedSoil));
+    setPendingSoilUpdate(null);
+    setSoilUpdateConfirmOpen(false);
+    setSoilRevertConfirmOpen(false);
+  };
+
+  const handlePrepareUpdateSoil = (values) => {
     if (!selectedSoilId) return;
 
     const trimmedName = values.SoilName?.trim() ?? "";
@@ -1003,10 +1049,41 @@ export default function TreeTypeManagement() {
       return;
     }
 
+    setPendingSoilUpdate(values);
+    setSoilUpdateConfirmOpen(true);
+  };
+
+  const handleUpdateSoil = async (valuesOverride) => {
+    const values = valuesOverride ?? pendingSoilUpdate;
+    if (!selectedSoilId || !values) return;
+
+    const trimmedName = values.SoilName?.trim() ?? "";
+    const duplicateSoilName = soils.some(
+      (soil) =>
+        soil.SoilMasterID !== selectedSoilId &&
+        normalizeText(soil.SoilName ?? "") === normalizeText(trimmedName),
+    );
+
+    if (duplicateSoilName) {
+      soilDetailForm.setError("SoilName", {
+        type: "manual",
+        message: buildDuplicateMessage("Loại đất", trimmedName),
+      });
+      setPendingSoilUpdate(null);
+      setSoilUpdateConfirmOpen(false);
+      return;
+    }
+
     setSoilDetailSaving(true);
     try {
       const updated = await updateSoil(selectedSoilId, values);
-      setSoils((prev) => prev.map((soil) => (soil.SoilMasterID === updated.SoilMasterID ? updated : soil)));
+      setSoils((prev) =>
+        prev.map((soil) => (soil.SoilMasterID === updated.SoilMasterID ? updated : soil)),
+      );
+      soilDetailForm.reset(mapSoilToFormValues(updated));
+      setPendingSoilUpdate(null);
+      setSoilUpdateConfirmOpen(false);
+      setSoilDetailEditMode(false);
     } finally {
       setSoilDetailSaving(false);
     }
@@ -1025,7 +1102,12 @@ export default function TreeTypeManagement() {
       if (form.getValues("SoilMasterID") === selectedSoilId) {
         form.setValue("SoilMasterID", "");
       }
+      setPendingSoilUpdate(null);
+      setSoilUpdateConfirmOpen(false);
       setSoilDeleteConfirmOpen(false);
+      setSoilCancelConfirmOpen(false);
+      setSoilRevertConfirmOpen(false);
+      setSoilDetailEditMode(false);
     } finally {
       setSoilDeleting(false);
     }
@@ -1637,83 +1719,100 @@ export default function TreeTypeManagement() {
 
           <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
             <div className="space-y-3">
-              <ScrollArea className="max-h-[420px] rounded-2xl border border-slate-200 bg-white/70 p-3">
-                <div className="space-y-3">
-                  {soils.length === 0 ? (
-                    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
-                      <Layers className="h-5 w-5 text-slate-400" />
-                      Chưa có loại đất nào. Bấm &quot;Thêm đất&quot; để bắt đầu.
-                    </div>
-                  ) : filteredSoils.length === 0 ? (
-                    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
-                      <Search className="h-5 w-5 text-slate-400" />
-                      Không tìm thấy loại đất phù hợp với từ khoá.
-                    </div>
-                  ) : (
-                    paginatedSoils.map((soil) => {
-                      const isActive = selectedSoilId === soil.SoilMasterID;
-                      return (
-                        <div
-                          key={soil.SoilMasterID}
-                          className={cn(
-                            "flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                            isActive ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white hover:border-emerald-200",
-                          )}
-                          onClick={() => handleSelectSoil(soil.SoilMasterID)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              handleSelectSoil(soil.SoilMasterID);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <div>
-                            <p className="font-semibold text-slate-900">{soil.SoilName}</p>
-                            <p className="text-xs text-slate-500">{soil.SoilMasterID}</p>
+              <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                <ScrollArea className="max-h-[420px] overflow-visible pr-2">
+                  <div className="grid gap-2">
+                    {soils.length === 0 ? (
+                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
+                        <Layers className="h-5 w-5 text-emerald-300" />
+                        Chưa có loại đất nào. Bấm &quot;Thêm đất&quot; để bắt đầu.
+                      </div>
+                    ) : filteredSoils.length === 0 ? (
+                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
+                        <Search className="h-5 w-5 text-emerald-300" />
+                        Không tìm thấy loại đất phù hợp với từ khoá.
+                      </div>
+                    ) : (
+                      paginatedSoils.map((soil, index) => {
+                        const isActive = selectedSoilId === soil.SoilMasterID;
+                        const absoluteIndex = soilRangeStart + index;
+                        return (
+                          <div
+                            key={soil.SoilMasterID}
+                            className={cn(
+                              "group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                              isActive
+                                ? "border-emerald-500 shadow-sm shadow-emerald-100"
+                                : "border-slate-200 hover:border-emerald-200",
+                            )}
+                            onClick={() => handleSelectSoil(soil.SoilMasterID)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                handleSelectSoil(soil.SoilMasterID);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <div className="min-w-0 space-y-1">
+                              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                                #{absoluteIndex}
+                              </p>
+                              <p className="text-sm font-semibold leading-snug text-slate-900 line-clamp-2">
+                                {soil.SoilName}
+                              </p>
+                              <p className="text-xs text-slate-500">{soil.SoilMasterID}</p>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide",
+                                isActive
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                                  : "border-slate-300 bg-white text-slate-600",
+                              )}
+                            >
+                              {isActive ? "Đang chọn" : "Chọn"}
+                            </Badge>
                           </div>
-                          {isActive && (
-                            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500">
-                              Đang chọn
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </ScrollArea>
-              {filteredSoils.length > 0 && (
-                <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white/60 px-3 py-2 text-sm text-slate-600">
-                  <div className="flex items-center justify-between">
-                    <span>
-                      Trang {soilPage}/{totalSoilPages}
-                    </span>
-                    <span>{filteredSoils.length} loại đất</span>
+                        );
+                      })
+                    )}
                   </div>
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={soilPage === 1}
-                      onClick={() => setSoilPage((prev) => Math.max(1, prev - 1))}
-                    >
-                      Trước
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={soilPage >= totalSoilPages || filteredSoils.length === 0}
-                      onClick={() =>
-                        setSoilPage((prev) => Math.min(totalSoilPages, prev + 1))
-                      }
-                    >
-                      Sau
-                    </Button>
+                </ScrollArea>
+                {filteredSoils.length > 0 && (
+                  <div className="mt-3 flex flex-wrap items-center justify-end gap-3 text-xs text-slate-500">
+                    {shouldShowSoilPagination && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 rounded-full px-3 text-xs"
+                          onClick={() => setSoilPage((prev) => Math.max(1, prev - 1))}
+                          disabled={soilPage === 1}
+                        >
+                          Trước
+                        </Button>
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                          Trang {soilPage}/{totalSoilPages}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 rounded-full px-3 text-xs"
+                          onClick={() =>
+                            setSoilPage((prev) => Math.min(totalSoilPages, prev + 1))
+                          }
+                          disabled={soilPage === totalSoilPages}
+                        >
+                          Sau
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white/90 p-4">
@@ -1727,7 +1826,10 @@ export default function TreeTypeManagement() {
                     <p className="text-sm text-slate-500">Cập nhật thông tin chi tiết cho loại đất này.</p>
                   </div>
                   <Form {...soilDetailForm}>
-                    <form className="space-y-4" onSubmit={soilDetailForm.handleSubmit(handleUpdateSoil)}>
+                    <form
+                      className="space-y-4"
+                      onSubmit={soilDetailForm.handleSubmit(handlePrepareUpdateSoil)}
+                    >
                       <FormField
                         control={soilDetailForm.control}
                         name="SoilName"
@@ -1735,7 +1837,11 @@ export default function TreeTypeManagement() {
                           <FormItem>
                             <FormLabel>Tên đất</FormLabel>
                             <FormControl>
-                              <Input placeholder="Ví dụ: Đất phù sa ngọt" {...field} />
+                              <Input
+                                placeholder="Ví dụ: Đất phù sa ngọt"
+                                disabled={!soilDetailEditMode || soilDetailSaving}
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1749,7 +1855,11 @@ export default function TreeTypeManagement() {
                             <FormItem>
                               <FormLabel>Thành phần</FormLabel>
                               <FormControl>
-                                <Input placeholder="Thịt nhẹ, cát pha..." {...field} />
+                                <Input
+                                  placeholder="Thịt nhẹ, cát pha..."
+                                  disabled={!soilDetailEditMode || soilDetailSaving}
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1762,7 +1872,11 @@ export default function TreeTypeManagement() {
                             <FormItem>
                               <FormLabel>Khả năng thoát nước</FormLabel>
                               <FormControl>
-                                <Input placeholder="Tốt/Trung bình/Kém" {...field} />
+                                <Input
+                                  placeholder="Tốt/Trung bình/Kém"
+                                  disabled={!soilDetailEditMode || soilDetailSaving}
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1780,6 +1894,7 @@ export default function TreeTypeManagement() {
                                 <Input
                                   type="number"
                                   step="0.1"
+                                  disabled={!soilDetailEditMode || soilDetailSaving}
                                   value={field.value ?? ""}
                                   onChange={(e) => field.onChange(e.target.value)}
                                   placeholder="Ví dụ: 2.5"
@@ -1799,6 +1914,7 @@ export default function TreeTypeManagement() {
                                 <Input
                                   type="number"
                                   step="0.1"
+                                  disabled={!soilDetailEditMode || soilDetailSaving}
                                   value={field.value ?? ""}
                                   onChange={(e) => field.onChange(e.target.value)}
                                   placeholder="Ví dụ: 1.2"
@@ -1816,24 +1932,45 @@ export default function TreeTypeManagement() {
                           <FormItem>
                             <FormLabel>Ghi chú</FormLabel>
                             <FormControl>
-                              <Textarea placeholder="Ghi chú thêm..." {...field} />
+                              <Textarea
+                                placeholder="Ghi chú thêm..."
+                                disabled={!soilDetailEditMode || soilDetailSaving}
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => soilDetailForm.reset(mapSoilToFormValues(selectedSoil))}
-                        >
-                          Hoàn tác
-                        </Button>
-                        <Button type="submit" disabled={soilDetailSaving}>
-                          {soilDetailSaving ? "Đang lưu..." : "Lưu thay đổi"}
-                        </Button>
-                      </div>
+                      {soilDetailEditMode ? (
+                        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={soilDetailSaving}
+                            onClick={() => setSoilRevertConfirmOpen(true)}
+                          >
+                            Hoàn tác
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={soilDetailSaving}
+                            onClick={() => setSoilCancelConfirmOpen(true)}
+                          >
+                            Huỷ
+                          </Button>
+                          <Button type="submit" disabled={soilDetailSaving}>
+                            {soilDetailSaving ? "Đang lưu..." : "Lưu thay đổi"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+                          <Button type="button" onClick={handleStartEditSoil} disabled={!selectedSoil}>
+                            Chỉnh sửa
+                          </Button>
+                        </div>
+                      )}
                     </form>
                   </Form>
                   <Separator className="my-4" />
@@ -1858,6 +1995,60 @@ export default function TreeTypeManagement() {
         </div>
 
         <AlertDialog
+          open={soilRevertConfirmOpen}
+          onOpenChange={(open) => {
+            if (soilDetailSaving) return;
+            setSoilRevertConfirmOpen(open);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận hoàn tác</AlertDialogTitle>
+              <AlertDialogDescription>
+                Hoàn tác sẽ đưa tất cả trường về dữ liệu hiện tại của loại đất&nbsp;
+                <span className="font-semibold text-slate-900">
+                  {selectedSoil?.SoilName || "đang chọn"}
+                </span>
+                . Tiếp tục?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={soilDetailSaving}>Huỷ</AlertDialogCancel>
+              <AlertDialogAction onClick={handleRevertSoilEdit} disabled={soilDetailSaving}>
+                Đồng ý
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={soilCancelConfirmOpen}
+          onOpenChange={(open) => {
+            if (soilDetailSaving) return;
+            setSoilCancelConfirmOpen(open);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Huỷ chỉnh sửa</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn sẽ thoát chế độ chỉnh sửa và mọi thay đổi chưa lưu sẽ bị bỏ. Chắc chắn muốn huỷ?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={soilDetailSaving}>Tiếp tục chỉnh sửa</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleCancelSoilEdit}
+                disabled={soilDetailSaving}
+                className="bg-rose-600 hover:bg-rose-500"
+              >
+                Huỷ chỉnh sửa
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
           open={soilDeleteConfirmOpen}
           onOpenChange={(open) => {
             if (!soilDeleting) {
@@ -1880,6 +2071,40 @@ export default function TreeTypeManagement() {
                 disabled={soilDeleting}
               >
                 {soilDeleting ? "Đang xoá..." : "Xoá đất"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={soilUpdateConfirmOpen}
+          onOpenChange={(open) => {
+            if (soilDetailSaving) return;
+            setSoilUpdateConfirmOpen(open);
+            if (!open) {
+              setPendingSoilUpdate(null);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận lưu thay đổi</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn có chắc muốn cập nhật thông tin loại đất{" "}
+                <span className="font-semibold text-slate-900">
+                  {pendingSoilUpdate?.SoilName || selectedSoil?.SoilName || "đang chọn"}
+                </span>
+                ?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={soilDetailSaving}>Huỷ</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleUpdateSoil(pendingSoilUpdate)}
+                disabled={soilDetailSaving}
+                className="bg-emerald-600 hover:bg-emerald-500"
+              >
+                {soilDetailSaving ? "Đang lưu..." : "Lưu thay đổi"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -2262,14 +2487,7 @@ export default function TreeTypeManagement() {
                   </div>
                 </ScrollArea>
                 {filteredVarieties.length > 0 && (
-                  <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-                    <p>
-                      Hiển thị{" "}
-                      {varietyRangeStart === 0
-                        ? "0"
-                        : `${varietyRangeStart}-${varietyRangeEnd}`}{" "}
-                      / {filteredVarieties.length} giống
-                    </p>
+                  <div className="mt-3 flex flex-wrap items-center justify-end gap-3 text-xs text-slate-500">
                     {shouldShowVarietyPagination && (
                       <div className="flex items-center gap-2">
                         <Button

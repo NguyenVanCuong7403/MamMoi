@@ -34,7 +34,7 @@ import LivingBackground from "@/components/background/LivingBackground";
    Theme & helpers
 ========================================================= */
 const BG = "#1F302F";
-const CONTAINER = "mx-auto w-full max-w-[2160px] px-6 sm:px-8 lg:px-12 2xl:px-16";
+const CONTAINER = "mx-auto w-full max-w-none px-6 sm:px-8 lg:px-12 2xl:px-16";
 const LEFT_COL = "col-span-12 lg:col-span-8 xl:col-span-9";
 const RIGHT_COL = "col-span-12 lg:col-span-4 xl:col-span-3";
 
@@ -2477,13 +2477,14 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
   };
   const closeOtp = () => setOtpState({ open: false, target: null });
 
- return (
-  <div className="min-h-screen relative">
+return (
+  <div data-fluid-page className="min-h-screen relative">
     <LivingBackground density={28} baseColor={BG} />
     <PageRails />
 
       {/* Banner */}
       <div
+        data-fluid-shell
         className={`${CONTAINER} pt-20 pb-6`}
         inert={overlayOpen ? "" : undefined}
       >
@@ -2552,6 +2553,7 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
 
       {/* Main */}
       <main
+        data-fluid-shell
         className={`${CONTAINER} pb-16`}
         inert={overlayOpen ? "" : undefined}
       >
