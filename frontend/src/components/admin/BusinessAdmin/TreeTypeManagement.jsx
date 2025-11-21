@@ -10,10 +10,11 @@ import {
   Layers,
   Image as ImageIcon,
 } from "lucide-react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import AdminLayout from "../layout/AdminLayout";
+import ApiClient from "@/API/ApiClient";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,9 +80,9 @@ const BACKGROUND_PALETTE = {
   accent: "#FFFFA5",
 };
 
-const SOIL_PAGE_SIZE = 10;
-const VARIETY_PAGE_SIZE = 4;
+const SOIL_PAGE_SIZE = 5;
 const TREE_PAGE_SIZE = 8;
+const VARIETY_PAGE_SIZE = 5;
 const environmentLabelClass = "text-[13px] font-semibold text-slate-600 leading-tight min-h-[32px]";
 
 const toleranceLevels = [
@@ -91,50 +92,18 @@ const toleranceLevels = [
   { value: "None", label: "Không xác định" },
 ];
 
+const normalizeText = (value = "") => value.trim().toLowerCase();
+
+const buildDuplicateMessage = (entityLabel, value) =>
+  `${entityLabel} "${value}" đã có trong hệ thống.`;
+
 const truncateText = (text = "", maxChars = 60) => {
   const value = (text ?? "").trim();
   if (value.length <= maxChars) return value;
   return `${value.slice(0, maxChars).trimEnd()}…`;
 };
 
-let soilStore = [
-  {
-    SoilMasterID: "SOIL-01",
-    SoilName: "Đất phù sa",
-    Texture: "Tơi xốp",
-    Drainage: "Tốt",
-    OrganicMatterPct: 2.5,
-    EC_dS_m: 1.1,
-    Notes: "Giàu dinh dưỡng, trung tính.",
-  },
-  {
-    SoilMasterID: "SOIL-02",
-    SoilName: "Đất đỏ bazan",
-    Texture: "Thịt nặng",
-    Drainage: "Trung bình",
-    OrganicMatterPct: 3.1,
-    EC_dS_m: 1.4,
-    Notes: "Thích hợp cây công nghiệp dài ngày.",
-  },
-  {
-    SoilMasterID: "SOIL-03",
-    SoilName: "Đất cát pha",
-    Texture: "Cát pha",
-    Drainage: "Tốt",
-    OrganicMatterPct: 1.2,
-    EC_dS_m: 0.8,
-    Notes: "Cần tưới giữ ẩm thường xuyên.",
-  },
-  {
-    SoilMasterID: "SOIL-04",
-    SoilName: "Đất thịt nhẹ",
-    Texture: "Thịt nhẹ",
-    Drainage: "Trung bình",
-    OrganicMatterPct: 2.0,
-    EC_dS_m: 1.0,
-    Notes: "Phù hợp cây ăn quả phổ thông.",
-  },
-];
+
 
 const createVariety = (index, overrides = {}) => ({
   VarietyID: `VAR-${index}`,
@@ -265,34 +234,21 @@ async function deleteTreeType(treeTypeId) {
 }
 
 async function fetchSoils() {
-  await mockDelay();
-  return JSON.parse(JSON.stringify(soilStore));
+  // Add cache buster to prevent API caching
+  const cacheBuster = Date.now();
+  return await ApiClient.get(`/api/business-admin/soil-masters/all?_t=${cacheBuster}`);
 }
 
 async function createSoil(payload) {
-  await mockDelay();
-  const newSoil = {
-    ...payload,
-    SoilMasterID: `SOIL-${String(soilStore.length + 1).padStart(2, "0")}`,
-  };
-  soilStore = [newSoil, ...soilStore];
-  return JSON.parse(JSON.stringify(newSoil));
+  return await ApiClient.post("/api/business-admin/soil-masters", payload);
 }
 
 async function updateSoil(soilId, payload) {
-  await mockDelay();
-  soilStore = soilStore.map((soil) =>
-    soil.SoilMasterID === soilId ? { ...soil, ...payload } : soil,
-  );
-  const updated = soilStore.find((soil) => soil.SoilMasterID === soilId);
-  return JSON.parse(JSON.stringify(updated));
+  return await ApiClient.put(`/api/business-admin/soil-masters/${soilId}`, payload);
 }
 
 async function deleteSoil(soilId) {
-  await mockDelay();
-  const removed = soilStore.find((soil) => soil.SoilMasterID === soilId);
-  soilStore = soilStore.filter((soil) => soil.SoilMasterID !== soilId);
-  return JSON.parse(JSON.stringify(removed));
+  return await ApiClient.delete(`/api/business-admin/soil-masters/${soilId}`);
 }
 
 const numberField = () =>
@@ -327,7 +283,6 @@ const formSchema = z
     FloodTolerance: z.string().min(1),
     FrostTolerance: z.string().min(1),
     WindTolerance: z.string().min(1),
-    Varieties: z.array(varietySchema).min(1, "Thêm ít nhất 1 giống cây"),
     IsActive: z.boolean().default(true),
   })
   .refine(
@@ -364,9 +319,6 @@ const defaultFormValues = {
   FloodTolerance: "Medium",
   FrostTolerance: "Medium",
   WindTolerance: "Medium",
-  Varieties: [
-    { VarietyID: "", VarietyName: "", VarietyDescription: "" },
-  ],
   IsActive: true,
 };
 
@@ -391,12 +343,12 @@ const soilDefaultValues = {
 const mapSoilToFormValues = (soil) =>
   soil
     ? {
-      SoilName: soil.SoilName ?? "",
-      Texture: soil.Texture ?? "",
-      Drainage: soil.Drainage ?? "",
-      OrganicMatterPct: soil.OrganicMatterPct ?? undefined,
-      EC_dS_m: soil.EC_dS_m ?? undefined,
-      Notes: soil.Notes ?? "",
+      SoilName: soil.soilName ?? "",
+      Texture: soil.texture ?? "",
+      Drainage: soil.drainage ?? "",
+      OrganicMatterPct: soil.organicMatterPct ?? undefined,
+      EC_dS_m: soil.eCdSm ?? undefined,
+      Notes: soil.notes ?? "",
     }
     : soilDefaultValues;
 
@@ -493,8 +445,8 @@ function FilterBar({ filters, onChange, soils }) {
         <SelectContent>
           <SelectItem value="all">Tất cả đất</SelectItem>
           {soilOptions.map((soil) => (
-            <SelectItem key={soil.SoilMasterID} value={soil.SoilMasterID}>
-              {soil.SoilName}
+            <SelectItem key={soil.soilMasterID} value={String(soil.soilMasterID)}>
+              {soil.soilName}
             </SelectItem>
           ))}
         </SelectContent>
@@ -531,11 +483,11 @@ function SpecsSummary({ tree }) {
   );
 }
 
-function TreeTable({ trees, soils, onEdit, onDelete, onToggleStatus, pagination }) {
+function TreeTable({ trees, soils, onEdit, onDelete, onToggleStatus, onManageVarieties, pagination }) {
   const soilLookup = useMemo(
     () =>
       soils.reduce((acc, soil) => {
-        acc[soil.SoilMasterID] = soil.SoilName;
+        acc[soil.soilMasterID] = soil.soilName;
         return acc;
       }, {}),
     [soils],
@@ -628,7 +580,14 @@ function TreeTable({ trees, soils, onEdit, onDelete, onToggleStatus, pagination 
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    <Button
+                      size="sm"
+                      className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700"
+                      onClick={() => onManageVarieties(tree)}
+                    >
+                      Thêm giống
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -712,9 +671,29 @@ export default function TreeTypeManagement() {
   const [soilDetailSaving, setSoilDetailSaving] = useState(false);
   const [soilDeleting, setSoilDeleting] = useState(false);
   const [soilDeleteConfirmOpen, setSoilDeleteConfirmOpen] = useState(false);
+  const [soilUpdateConfirmOpen, setSoilUpdateConfirmOpen] = useState(false);
   const [soilSearch, setSoilSearch] = useState("");
-  const [varietyPage, setVarietyPage] = useState(1);
+  const [pendingSoilUpdate, setPendingSoilUpdate] = useState(null);
+  const [soilDetailEditMode, setSoilDetailEditMode] = useState(false);
+  const [soilCancelConfirmOpen, setSoilCancelConfirmOpen] = useState(false);
+  const [soilRevertConfirmOpen, setSoilRevertConfirmOpen] = useState(false);
   const [treePage, setTreePage] = useState(1);
+  const [varietyDialogOpen, setVarietyDialogOpen] = useState(false);
+  const [activeVarietyTree, setActiveVarietyTree] = useState(null);
+  const [selectedVarietyId, setSelectedVarietyId] = useState(null);
+  const [varietySearch, setVarietySearch] = useState("");
+  const [varietyPage, setVarietyPage] = useState(1);
+  const [varietySaving, setVarietySaving] = useState(false);
+  const [varietyDeleting, setVarietyDeleting] = useState(false);
+  const [varietyDeleteConfirmOpen, setVarietyDeleteConfirmOpen] = useState(false);
+  const [createVarietyOverlayOpen, setCreateVarietyOverlayOpen] = useState(false);
+  const [varietyCreateConfirmOpen, setVarietyCreateConfirmOpen] = useState(false);
+  const [pendingVarietyCreate, setPendingVarietyCreate] = useState(null);
+  const [varietyDetailEditMode, setVarietyDetailEditMode] = useState(false);
+  const [varietyUpdateConfirmOpen, setVarietyUpdateConfirmOpen] = useState(false);
+  const [pendingVarietyUpdate, setPendingVarietyUpdate] = useState(null);
+  const [varietyCancelEditConfirmOpen, setVarietyCancelEditConfirmOpen] = useState(false);
+  const [varietyRevertConfirmOpen, setVarietyRevertConfirmOpen] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -732,9 +711,27 @@ export default function TreeTypeManagement() {
     defaultValues: soilDefaultValues,
     mode: "onChange",
   });
+  const varietyForm = useForm({
+    resolver: zodResolver(varietySchema),
+    defaultValues: {
+      VarietyID: "",
+      VarietyName: "",
+      VarietyDescription: "",
+    },
+    mode: "onChange",
+  });
+  const varietyDetailForm = useForm({
+    resolver: zodResolver(varietySchema),
+    defaultValues: {
+      VarietyID: "",
+      VarietyName: "",
+      VarietyDescription: "",
+    },
+    mode: "onChange",
+  });
 
   const selectedSoil = useMemo(
-    () => soils.find((soil) => soil.SoilMasterID === selectedSoilId) ?? null,
+    () => soils.find((soil) => soil.soilMasterID === selectedSoilId) ?? null,
     [selectedSoilId, soils],
   );
 
@@ -742,8 +739,8 @@ export default function TreeTypeManagement() {
     const term = soilSearch.trim().toLowerCase();
     if (!term) return soils;
     return soils.filter((soil) => {
-      const name = soil.SoilName?.toLowerCase() ?? "";
-      const id = soil.SoilMasterID?.toLowerCase() ?? "";
+      const name = soil.soilName?.toLowerCase() ?? "";
+      const id = String(soil.soilMasterID ?? "");
       return name.includes(term) || id.includes(term);
     });
   }, [soils, soilSearch]);
@@ -754,16 +751,11 @@ export default function TreeTypeManagement() {
     return filteredSoils.slice(start, start + SOIL_PAGE_SIZE);
   }, [soilPage, filteredSoils]);
 
-  const { fields: varietyFields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "Varieties",
-  });
-  const totalVarietyPages = Math.max(1, Math.ceil(varietyFields.length / VARIETY_PAGE_SIZE));
-  const varietyPageStart = (varietyPage - 1) * VARIETY_PAGE_SIZE;
-  const visibleVarietyFields = varietyFields.slice(
-    varietyPageStart,
-    varietyPageStart + VARIETY_PAGE_SIZE,
-  );
+  const soilRangeStart = filteredSoils.length ? (soilPage - 1) * SOIL_PAGE_SIZE + 1 : 0;
+  const soilRangeEnd = filteredSoils.length
+    ? Math.min(filteredSoils.length, soilRangeStart + paginatedSoils.length - 1)
+    : 0;
+  const shouldShowSoilPagination = filteredSoils.length > SOIL_PAGE_SIZE;
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
@@ -784,10 +776,6 @@ export default function TreeTypeManagement() {
   }, [filteredSoils]);
 
   useEffect(() => {
-    setVarietyPage((prev) => Math.min(prev, totalVarietyPages));
-  }, [totalVarietyPages]);
-
-  useEffect(() => {
     if (!soilDialogOpen) return;
     if (filteredSoils.length === 0) {
       if (selectedSoilId !== null) {
@@ -796,24 +784,30 @@ export default function TreeTypeManagement() {
       return;
     }
     const stillExists = selectedSoilId
-      ? filteredSoils.some((soil) => soil.SoilMasterID === selectedSoilId)
+      ? filteredSoils.some((soil) => soil.soilMasterID === selectedSoilId)
       : false;
     if (!stillExists || !selectedSoilId) {
-      setSelectedSoilId(filteredSoils[0].SoilMasterID);
+      setSelectedSoilId(filteredSoils[0].soilMasterID);
     }
   }, [soilDialogOpen, filteredSoils, selectedSoilId]);
 
   useEffect(() => {
     if (!soilDialogOpen) {
       soilDetailForm.reset(soilDefaultValues);
+      setSoilDetailEditMode(false);
       setSoilPage(1);
       setCreateSoilOverlayOpen(false);
       setSoilCreateConfirmOpen(false);
       setPendingSoilCreate(null);
+      setPendingSoilUpdate(null);
+      setSoilUpdateConfirmOpen(false);
       soilForm.reset(soilDefaultValues);
       setSoilSearch("");
       return;
     }
+    setPendingSoilUpdate(null);
+    setSoilUpdateConfirmOpen(false);
+    setSoilDetailEditMode(false);
     soilDetailForm.reset(mapSoilToFormValues(selectedSoil));
   }, [selectedSoil, soilDialogOpen, soilDetailForm, soilForm]);
 
@@ -856,7 +850,6 @@ export default function TreeTypeManagement() {
   const handleOpenCreate = () => {
     form.reset(defaultFormValues);
     setEditingTree(null);
-    setVarietyPage(1);
     setSheetOpen(true);
   };
 
@@ -876,25 +869,41 @@ export default function TreeTypeManagement() {
       FloodTolerance: tree.FloodTolerance ?? "Medium",
       FrostTolerance: tree.FrostTolerance ?? "Medium",
       WindTolerance: tree.WindTolerance ?? "Medium",
-      Varieties:
-        tree.Varieties?.length > 0
-          ? tree.Varieties
-          : [{ VarietyID: "", VarietyName: "", VarietyDescription: "" }],
       IsActive: tree.IsActive ?? true,
     });
     setEditingTree(tree);
-    setVarietyPage(1);
     setSheetOpen(true);
   };
 
   const handleSubmit = async (values) => {
+    const trimmedName = values.TreeTypeName?.trim() ?? "";
+    const duplicateTreeName = trees.some(
+      (tree) =>
+        tree.TreeTypeID !== editingTree?.TreeTypeID &&
+        normalizeText(tree.TreeTypeName ?? "") === normalizeText(trimmedName),
+    );
+
+    if (duplicateTreeName) {
+      form.setError("TreeTypeName", {
+        type: "manual",
+        message: buildDuplicateMessage("Loại cây", trimmedName),
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       if (editingTree) {
-        const updated = await updateTreeType(editingTree.TreeTypeID, values);
+        const updated = await updateTreeType(editingTree.TreeTypeID, {
+          ...editingTree,
+          ...values,
+        });
         setTrees((prev) => prev.map((tree) => (tree.TreeTypeID === updated.TreeTypeID ? updated : tree)));
       } else {
-        const created = await createTreeType(values);
+        const created = await createTreeType({
+          ...values,
+          Varieties: [],
+        });
         setTrees((prev) => [created, ...prev]);
       }
       setSheetOpen(false);
@@ -904,6 +913,19 @@ export default function TreeTypeManagement() {
   };
 
   const handlePrepareCreateSoil = (values) => {
+    const trimmedName = values.SoilName?.trim() ?? "";
+    const duplicateSoilName = soils.some(
+      (soil) => normalizeText(soil.soilName ?? "") === normalizeText(trimmedName),
+    );
+
+    if (duplicateSoilName) {
+      soilForm.setError("SoilName", {
+        type: "manual",
+        message: buildDuplicateMessage("Loại đất", trimmedName),
+      });
+      return;
+    }
+
     setPendingSoilCreate(values);
     setSoilCreateConfirmOpen(true);
   };
@@ -914,12 +936,14 @@ export default function TreeTypeManagement() {
     setSoilSaving(true);
     try {
       const created = await createSoil(payload);
-      setSoils((prev) => [created, ...prev.filter((soil) => soil.SoilMasterID !== created.SoilMasterID)]);
+      // Reload all soils from API to get fresh data
+      const freshSoils = await fetchSoils();
+      setSoils(freshSoils);
       setSoilPage(1);
-      form.setValue("SoilMasterID", created.SoilMasterID);
+      form.setValue("SoilMasterID", created.soilMasterID);
       setCreateSoilOverlayOpen(false);
       setSoilCreateConfirmOpen(false);
-      setSelectedSoilId(created.SoilMasterID);
+      setSelectedSoilId(created.soilMasterID);
       soilForm.reset(soilDefaultValues);
       setPendingSoilCreate(null);
     } finally {
@@ -928,15 +952,95 @@ export default function TreeTypeManagement() {
   };
 
   const handleSelectSoil = (soilId) => {
+    setPendingSoilUpdate(null);
+    setSoilUpdateConfirmOpen(false);
+    setSoilDetailEditMode(false);
+    setSoilCancelConfirmOpen(false);
+    setSoilRevertConfirmOpen(false);
     setSelectedSoilId(soilId);
   };
 
-  const handleUpdateSoil = async (values) => {
+  const handleStartEditSoil = () => {
+    if (!selectedSoil) return;
+    setSoilDetailEditMode(true);
+    setPendingSoilUpdate(null);
+    setSoilUpdateConfirmOpen(false);
+    soilDetailForm.reset(mapSoilToFormValues(selectedSoil));
+  };
+
+  const handleCancelSoilEdit = () => {
+    soilDetailForm.reset(mapSoilToFormValues(selectedSoil));
+    setPendingSoilUpdate(null);
+    setSoilUpdateConfirmOpen(false);
+    setSoilDetailEditMode(false);
+    setSoilCancelConfirmOpen(false);
+  };
+
+  const handleRevertSoilEdit = () => {
+    if (!selectedSoil) return;
+    soilDetailForm.reset(mapSoilToFormValues(selectedSoil));
+    setPendingSoilUpdate(null);
+    setSoilUpdateConfirmOpen(false);
+    setSoilRevertConfirmOpen(false);
+  };
+
+  const handlePrepareUpdateSoil = (values) => {
     if (!selectedSoilId) return;
+
+    const trimmedName = values.SoilName?.trim() ?? "";
+    const duplicateSoilName = soils.some(
+      (soil) =>
+        soil.soilMasterID !== selectedSoilId &&
+        normalizeText(soil.soilName ?? "") === normalizeText(trimmedName),
+    );
+
+    if (duplicateSoilName) {
+      soilDetailForm.setError("SoilName", {
+        type: "manual",
+        message: buildDuplicateMessage("Loại đất", trimmedName),
+      });
+      return;
+    }
+
+    setPendingSoilUpdate(values);
+    setSoilUpdateConfirmOpen(true);
+  };
+
+  const handleUpdateSoil = async (valuesOverride) => {
+    const values = valuesOverride ?? pendingSoilUpdate;
+    if (!selectedSoilId || !values) return;
+
+    const trimmedName = values.SoilName?.trim() ?? "";
+    const duplicateSoilName = soils.some(
+      (soil) =>
+        soil.soilMasterID !== selectedSoilId &&
+        normalizeText(soil.soilName ?? "") === normalizeText(trimmedName),
+    );
+
+    if (duplicateSoilName) {
+      soilDetailForm.setError("SoilName", {
+        type: "manual",
+        message: buildDuplicateMessage("Loại đất", trimmedName),
+      });
+      setPendingSoilUpdate(null);
+      setSoilUpdateConfirmOpen(false);
+      return;
+    }
+
     setSoilDetailSaving(true);
     try {
       const updated = await updateSoil(selectedSoilId, values);
-      setSoils((prev) => prev.map((soil) => (soil.SoilMasterID === updated.SoilMasterID ? updated : soil)));
+      // Reload all soils from API to get fresh data
+      const freshSoils = await fetchSoils();
+      setSoils(freshSoils);
+      // Reset form with updated data
+      const updatedSoil = freshSoils.find(s => s.soilMasterID === selectedSoilId);
+      if (updatedSoil) {
+        soilDetailForm.reset(mapSoilToFormValues(updatedSoil));
+      }
+      setPendingSoilUpdate(null);
+      setSoilUpdateConfirmOpen(false);
+      setSoilDetailEditMode(false);
     } finally {
       setSoilDetailSaving(false);
     }
@@ -947,15 +1051,20 @@ export default function TreeTypeManagement() {
     setSoilDeleting(true);
     try {
       await deleteSoil(selectedSoilId);
-      setSoils((prev) => {
-        const next = prev.filter((soil) => soil.SoilMasterID !== selectedSoilId);
-        setSelectedSoilId(next[0]?.SoilMasterID ?? null);
-        return next;
-      });
+      // Reload all soils from API to get fresh data
+      const freshSoils = await fetchSoils();
+      setSoils(freshSoils);
+      // Select first soil or null
+      setSelectedSoilId(freshSoils[0]?.soilMasterID ?? null);
       if (form.getValues("SoilMasterID") === selectedSoilId) {
         form.setValue("SoilMasterID", "");
       }
+      setPendingSoilUpdate(null);
+      setSoilUpdateConfirmOpen(false);
       setSoilDeleteConfirmOpen(false);
+      setSoilCancelConfirmOpen(false);
+      setSoilRevertConfirmOpen(false);
+      setSoilDetailEditMode(false);
     } finally {
       setSoilDeleting(false);
     }
@@ -971,6 +1080,310 @@ export default function TreeTypeManagement() {
     await deleteTreeType(deleteTarget.TreeTypeID);
     setTrees((prev) => prev.filter((tree) => tree.TreeTypeID !== deleteTarget.TreeTypeID));
     setDeleteTarget(null);
+  };
+
+  const mapVarietyToFormValues = (variety) =>
+    variety
+      ? {
+        VarietyID: variety.VarietyID ?? "",
+        VarietyName: variety.VarietyName ?? "",
+        VarietyDescription: variety.VarietyDescription ?? "",
+      }
+      : {
+        VarietyID: "",
+        VarietyName: "",
+        VarietyDescription: "",
+      };
+
+  const handleOpenVarietyDialog = (tree) => {
+    setActiveVarietyTree(tree);
+    setSelectedVarietyId(tree.Varieties?.[0]?.VarietyID ?? null);
+    setVarietySearch("");
+    setVarietyDetailEditMode(false);
+    setVarietyPage(1);
+    setCreateVarietyOverlayOpen(false);
+    setVarietyCreateConfirmOpen(false);
+    setPendingVarietyCreate(null);
+    setPendingVarietyUpdate(null);
+    setVarietyUpdateConfirmOpen(false);
+    setVarietyCancelEditConfirmOpen(false);
+    setVarietyRevertConfirmOpen(false);
+    varietyForm.reset({
+      VarietyID: "",
+      VarietyName: "",
+      VarietyDescription: "",
+    });
+    varietyDetailForm.reset(mapVarietyToFormValues(tree.Varieties?.[0] ?? null));
+    setVarietyDialogOpen(true);
+  };
+
+  const filteredVarieties = useMemo(() => {
+    if (!activeVarietyTree) return [];
+    const items = activeVarietyTree.Varieties || [];
+    const term = varietySearch.trim().toLowerCase();
+    if (!term) return items;
+    return items.filter((item) => {
+      const name = item.VarietyName?.toLowerCase() ?? "";
+      const id = item.VarietyID?.toLowerCase() ?? "";
+      return name.includes(term) || id.includes(term);
+    });
+  }, [activeVarietyTree, varietySearch]);
+
+  const totalVarietyPages = Math.max(1, Math.ceil(filteredVarieties.length / VARIETY_PAGE_SIZE));
+
+  const paginatedVarieties = useMemo(() => {
+    if (!filteredVarieties.length) return [];
+    const startIndex = (varietyPage - 1) * VARIETY_PAGE_SIZE;
+    return filteredVarieties.slice(startIndex, startIndex + VARIETY_PAGE_SIZE);
+  }, [filteredVarieties, varietyPage]);
+
+  useEffect(() => {
+    setVarietyPage(1);
+  }, [activeVarietyTree, varietySearch]);
+
+  useEffect(() => {
+    if (filteredVarieties.length === 0) {
+      if (varietyPage !== 1) {
+        setVarietyPage(1);
+      }
+      return;
+    }
+    const maxPage = Math.max(1, Math.ceil(filteredVarieties.length / VARIETY_PAGE_SIZE));
+    if (varietyPage > maxPage) {
+      setVarietyPage(maxPage);
+    }
+  }, [filteredVarieties.length, varietyPage]);
+
+  const varietyRangeStart = filteredVarieties.length
+    ? (varietyPage - 1) * VARIETY_PAGE_SIZE + 1
+    : 0;
+  const varietyRangeEnd = filteredVarieties.length
+    ? Math.min(filteredVarieties.length, varietyRangeStart + paginatedVarieties.length - 1)
+    : 0;
+  const shouldShowVarietyPagination = filteredVarieties.length > VARIETY_PAGE_SIZE;
+
+  const selectedVariety = useMemo(() => {
+    if (!activeVarietyTree) return null;
+    return activeVarietyTree.Varieties?.find((item) => item.VarietyID === selectedVarietyId) ?? null;
+  }, [activeVarietyTree, selectedVarietyId]);
+
+  const resetVarietyDetailToSelected = () => {
+    if (selectedVariety) {
+      varietyDetailForm.reset(mapVarietyToFormValues(selectedVariety));
+    } else {
+      varietyDetailForm.reset({
+        VarietyID: "",
+        VarietyName: "",
+        VarietyDescription: "",
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (!varietyDialogOpen) {
+      setActiveVarietyTree(null);
+      setSelectedVarietyId(null);
+      setVarietySearch("");
+      setCreateVarietyOverlayOpen(false);
+      setVarietyCreateConfirmOpen(false);
+      setPendingVarietyCreate(null);
+      setVarietyDetailEditMode(false);
+      setPendingVarietyUpdate(null);
+      setVarietyUpdateConfirmOpen(false);
+      setVarietyCancelEditConfirmOpen(false);
+      setVarietyRevertConfirmOpen(false);
+      varietyForm.reset({
+        VarietyID: "",
+        VarietyName: "",
+        VarietyDescription: "",
+      });
+      varietyDetailForm.reset({
+        VarietyID: "",
+        VarietyName: "",
+        VarietyDescription: "",
+      });
+      setVarietyDeleteConfirmOpen(false);
+      setVarietySaving(false);
+      setVarietyDeleting(false);
+      return;
+    }
+
+    if (!activeVarietyTree) return;
+    const currentVarieties = activeVarietyTree.Varieties || [];
+    const selected =
+      currentVarieties.find((item) => item.VarietyID === selectedVarietyId) ||
+      currentVarieties[0] ||
+      null;
+    if (selected) {
+      setSelectedVarietyId(selected.VarietyID);
+      varietyDetailForm.reset(mapVarietyToFormValues(selected));
+    } else {
+      setSelectedVarietyId(null);
+      setVarietyDetailEditMode(false);
+      varietyDetailForm.reset({
+        VarietyID: "",
+        VarietyName: "",
+        VarietyDescription: "",
+      });
+    }
+  }, [varietyDialogOpen, activeVarietyTree, selectedVarietyId, varietyDetailForm, varietyForm]);
+
+  const handleSelectVariety = (varietyId) => {
+    setSelectedVarietyId(varietyId);
+    setVarietyDetailEditMode(false);
+  };
+
+  const syncUpdatedTreeVarieties = (updatedTree) => {
+    setTrees((prev) =>
+      prev.map((tree) => (tree.TreeTypeID === updatedTree.TreeTypeID ? updatedTree : tree)),
+    );
+    setActiveVarietyTree(updatedTree);
+  };
+
+  const handlePrepareCreateVariety = (values) => {
+    if (!activeVarietyTree) return;
+
+    const trimmedName = values.VarietyName?.trim() ?? "";
+    const duplicateVarietyName = (activeVarietyTree.Varieties || []).some(
+      (item) => normalizeText(item.VarietyName ?? "") === normalizeText(trimmedName),
+    );
+
+    if (duplicateVarietyName) {
+      varietyForm.setError("VarietyName", {
+        type: "manual",
+        message: buildDuplicateMessage("Giống cây", trimmedName),
+      });
+      return;
+    }
+
+    setPendingVarietyCreate(values);
+    setVarietyCreateConfirmOpen(true);
+  };
+
+  const handleCreateVariety = async (payloadOverride) => {
+    if (!activeVarietyTree) return;
+    const values = payloadOverride ?? pendingVarietyCreate;
+    if (!values) return;
+    setVarietySaving(true);
+    try {
+      const newList = [
+        ...(activeVarietyTree.Varieties || []),
+        {
+          VarietyID: values.VarietyID,
+          VarietyName: values.VarietyName,
+          VarietyDescription: values.VarietyDescription ?? "",
+        },
+      ];
+      const updated = await updateTreeType(activeVarietyTree.TreeTypeID, {
+        ...activeVarietyTree,
+        Varieties: newList,
+      });
+      syncUpdatedTreeVarieties(updated);
+      varietyForm.reset({
+        VarietyID: "",
+        VarietyName: "",
+        VarietyDescription: "",
+      });
+      setSelectedVarietyId(
+        updated.Varieties?.[updated.Varieties.length - 1]?.VarietyID ?? null,
+      );
+      setVarietyDetailEditMode(false);
+      setCreateVarietyOverlayOpen(false);
+      setVarietyCreateConfirmOpen(false);
+      setPendingVarietyCreate(null);
+    } finally {
+      setVarietySaving(false);
+    }
+  };
+
+  const handleUpdateVariety = async (valuesOverride) => {
+    const values = valuesOverride ?? pendingVarietyUpdate;
+    if (!activeVarietyTree || !selectedVarietyId || !values) return;
+    setVarietySaving(true);
+    try {
+      const newList = (activeVarietyTree.Varieties || []).map((item) =>
+        item.VarietyID === selectedVarietyId
+          ? {
+            ...item,
+            VarietyName: values.VarietyName,
+            VarietyDescription: values.VarietyDescription ?? "",
+          }
+          : item,
+      );
+      const updated = await updateTreeType(activeVarietyTree.TreeTypeID, {
+        ...activeVarietyTree,
+        Varieties: newList,
+      });
+      syncUpdatedTreeVarieties(updated);
+      setVarietyDetailEditMode(false);
+      setPendingVarietyUpdate(null);
+      setVarietyUpdateConfirmOpen(false);
+    } finally {
+      setVarietySaving(false);
+    }
+  };
+
+  const handlePrepareUpdateVariety = (values) => {
+    if (!varietyDetailEditMode) return;
+
+    const trimmedName = values.VarietyName?.trim() ?? "";
+    const duplicateVarietyName = (activeVarietyTree?.Varieties || []).some(
+      (item) =>
+        item.VarietyID !== selectedVarietyId &&
+        normalizeText(item.VarietyName ?? "") === normalizeText(trimmedName),
+    );
+
+    if (duplicateVarietyName) {
+      varietyDetailForm.setError("VarietyName", {
+        type: "manual",
+        message: buildDuplicateMessage("Giống cây", trimmedName),
+      });
+      return;
+    }
+
+    setPendingVarietyUpdate(values);
+    setVarietyUpdateConfirmOpen(true);
+  };
+
+  const handleStartVarietyEdit = () => {
+    if (!selectedVariety) return;
+    setVarietyDetailEditMode(true);
+    resetVarietyDetailToSelected();
+  };
+
+  const handleConfirmCancelVarietyEdit = () => {
+    resetVarietyDetailToSelected();
+    setVarietyDetailEditMode(false);
+    setPendingVarietyUpdate(null);
+    setVarietyUpdateConfirmOpen(false);
+    setVarietyCancelEditConfirmOpen(false);
+  };
+
+  const handleConfirmRevertVarietyChanges = () => {
+    resetVarietyDetailToSelected();
+    setVarietyRevertConfirmOpen(false);
+  };
+
+  const handleDeleteVariety = async () => {
+    if (!activeVarietyTree || !selectedVarietyId) return;
+    setVarietyDeleting(true);
+    try {
+      const newList = (activeVarietyTree.Varieties || []).filter(
+        (item) => item.VarietyID !== selectedVarietyId,
+      );
+      const updated = await updateTreeType(activeVarietyTree.TreeTypeID, {
+        ...activeVarietyTree,
+        Varieties: newList,
+      });
+      syncUpdatedTreeVarieties(updated);
+      setSelectedVarietyId(updated.Varieties?.[0]?.VarietyID ?? null);
+      setVarietyDeleteConfirmOpen(false);
+      setVarietyDetailEditMode(false);
+      setVarietyCancelEditConfirmOpen(false);
+      setVarietyRevertConfirmOpen(false);
+    } finally {
+      setVarietyDeleting(false);
+    }
   };
 
   const renderSheet = () => (
@@ -1011,7 +1424,7 @@ export default function TreeTypeManagement() {
                       <FormItem>
                         <FormLabel>Tên loại cây</FormLabel>
                         <FormControl>
-                          <Input placeholder="Ví dụ: Xoài cát Hòa Lộc" {...field} />
+                          <Input placeholder="Ví dụ: Xoài,Bưởi,Thanh Long,.." {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -1208,122 +1621,6 @@ export default function TreeTypeManagement() {
                   )}
                 </div>
               </section>
-
-              <section className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="inline-flex items-center rounded-full bg-emerald-600/90 px-4 py-1 text-sm font-semibold uppercase tracking-[0.3em] text-white">
-                      Danh sách giống cây
-                    </p>
-                    <p className="text-sm text-slate-500">
-                      Quản lý trực tiếp các giống thuộc loại cây này.
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      append({ VarietyID: "", VarietyName: "", VarietyDescription: "" });
-                      const nextPage = Math.max(
-                        1,
-                        Math.ceil((varietyFields.length + 1) / VARIETY_PAGE_SIZE),
-                      );
-                      setVarietyPage(nextPage);
-                    }}
-                  >
-                    + Thêm giống mới
-                  </Button>
-                </div>
-
-                <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
-                  {visibleVarietyFields.map((fieldItem, index) => {
-                    const actualIndex = varietyPageStart + index;
-                    return (
-                      <div key={fieldItem.id} className="rounded-xl border border-slate-200 bg-white p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-slate-500">
-                            <Layers className="h-3.5 w-3.5" />
-                            Giống {actualIndex + 1}
-                          </div>
-                          {varietyFields.length > 1 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="text-rose-500 hover:text-rose-600"
-                              onClick={() => remove(actualIndex)}
-                            >
-                              Xoá
-                            </Button>
-                          )}
-                        </div>
-                        <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                          <FormField
-                            control={form.control}
-                            name={`Varieties.${actualIndex}.VarietyName`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Tên giống</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Ví dụ: Hass Premium" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name={`Varieties.${actualIndex}.VarietyDescription`}
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Mô tả</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Điểm nổi bật" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {varietyFields.length === 0 && (
-                    <p className="text-sm text-slate-500">Chưa có giống nào.</p>
-                  )}
-                  {varietyFields.length > VARIETY_PAGE_SIZE && (
-                    <div className="flex flex-wrap items-center justify-between gap-3 pt-2 text-sm text-slate-600">
-                      <span>
-                        Trang {varietyPage}/{totalVarietyPages}
-                      </span>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={varietyPage === 1}
-                          onClick={() => setVarietyPage((prev) => Math.max(1, prev - 1))}
-                        >
-                          Trước
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          disabled={varietyPage >= totalVarietyPages}
-                          onClick={() =>
-                            setVarietyPage((prev) => Math.min(totalVarietyPages, prev + 1))
-                          }
-                        >
-                          Sau
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </section>
-
               <SheetFooter>
                 <Button type="submit" className="w-full" disabled={saving}>
                   {saving ? "Đang lưu..." : "Lưu thay đổi"}
@@ -1379,97 +1676,110 @@ export default function TreeTypeManagement() {
 
           <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">
             <div className="space-y-3">
-              <ScrollArea className="max-h-[420px] rounded-2xl border border-slate-200 bg-white/70 p-3">
-                <div className="space-y-3">
-                  {soils.length === 0 ? (
-                    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
-                      <Layers className="h-5 w-5 text-slate-400" />
-                      Chưa có loại đất nào. Bấm &quot;Thêm đất&quot; để bắt đầu.
-                    </div>
-                  ) : filteredSoils.length === 0 ? (
-                    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-6 text-center text-sm text-slate-500">
-                      <Search className="h-5 w-5 text-slate-400" />
-                      Không tìm thấy loại đất phù hợp với từ khoá.
-                    </div>
-                  ) : (
-                    paginatedSoils.map((soil) => {
-                      const isActive = selectedSoilId === soil.SoilMasterID;
-                      return (
-                        <div
-                          key={soil.SoilMasterID}
-                          className={cn(
-                            "flex cursor-pointer items-center justify-between rounded-xl border px-3 py-3 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                            isActive ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white hover:border-emerald-200",
-                          )}
-                          onClick={() => handleSelectSoil(soil.SoilMasterID)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              handleSelectSoil(soil.SoilMasterID);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <div>
-                            <p className="font-semibold text-slate-900">{soil.SoilName}</p>
-                            <p className="text-xs text-slate-500">{soil.SoilMasterID}</p>
+              <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                <ScrollArea className="max-h-[420px] overflow-visible pr-2">
+                  <div className="grid gap-2">
+                    {soils.length === 0 ? (
+                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
+                        <Layers className="h-5 w-5 text-emerald-300" />
+                        Chưa có loại đất nào. Bấm &quot;Thêm đất&quot; để bắt đầu.
+                      </div>
+                    ) : filteredSoils.length === 0 ? (
+                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
+                        <Search className="h-5 w-5 text-emerald-300" />
+                        Không tìm thấy loại đất phù hợp với từ khoá.
+                      </div>
+                    ) : (
+                      paginatedSoils.map((soil, index) => {
+                        const isActive = selectedSoilId === soil.soilMasterID;
+                        const absoluteIndex = soilRangeStart + index;
+                        return (
+                          <div
+                            key={soil.soilMasterID}
+                            className={cn(
+                              "group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                              isActive
+                                ? "border-emerald-500 shadow-sm shadow-emerald-100"
+                                : "border-slate-200 hover:border-emerald-200",
+                            )}
+                            onClick={() => handleSelectSoil(soil.soilMasterID)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                handleSelectSoil(soil.soilMasterID);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold leading-snug text-slate-900 line-clamp-2">
+                                {soil.soilName}
+                              </p>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide",
+                                isActive
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                                  : "border-slate-300 bg-white text-slate-600",
+                              )}
+                            >
+                              {isActive ? "Đang chọn" : "Chọn"}
+                            </Badge>
                           </div>
-                          {isActive && (
-                            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-500">
-                              Đang chọn
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </ScrollArea>
-              {filteredSoils.length > 0 && (
-                <div className="flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white/60 px-3 py-2 text-sm text-slate-600">
-                  <div className="flex items-center justify-between">
-                    <span>
-                      Trang {soilPage}/{totalSoilPages}
-                    </span>
-                    <span>{filteredSoils.length} loại đất</span>
+                        );
+                      })
+                    )}
                   </div>
-                  <div className="flex items-center justify-end gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={soilPage === 1}
-                      onClick={() => setSoilPage((prev) => Math.max(1, prev - 1))}
-                    >
-                      Trước
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={soilPage >= totalSoilPages || filteredSoils.length === 0}
-                      onClick={() =>
-                        setSoilPage((prev) => Math.min(totalSoilPages, prev + 1))
-                      }
-                    >
-                      Sau
-                    </Button>
+                </ScrollArea>
+                {filteredSoils.length > 0 && (
+                  <div className="mt-3 flex flex-wrap items-center justify-end gap-3 text-xs text-slate-500">
+                    {shouldShowSoilPagination && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 rounded-full px-3 text-xs"
+                          onClick={() => setSoilPage((prev) => Math.max(1, prev - 1))}
+                          disabled={soilPage === 1}
+                        >
+                          Trước
+                        </Button>
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                          Trang {soilPage}/{totalSoilPages}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 rounded-full px-3 text-xs"
+                          onClick={() =>
+                            setSoilPage((prev) => Math.min(totalSoilPages, prev + 1))
+                          }
+                          disabled={soilPage === totalSoilPages}
+                        >
+                          Sau
+                        </Button>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white/90 p-4">
               {selectedSoil ? (
                 <>
                   <div className="mb-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      {selectedSoil.SoilMasterID}
-                    </p>
-                    <h3 className="text-xl font-semibold text-slate-900">{selectedSoil.SoilName}</h3>
+                    <h3 className="text-xl font-semibold text-slate-900">{selectedSoil.soilName}</h3>
                     <p className="text-sm text-slate-500">Cập nhật thông tin chi tiết cho loại đất này.</p>
                   </div>
                   <Form {...soilDetailForm}>
-                    <form className="space-y-4" onSubmit={soilDetailForm.handleSubmit(handleUpdateSoil)}>
+                    <form
+                      className="space-y-4"
+                      onSubmit={soilDetailForm.handleSubmit(handlePrepareUpdateSoil)}
+                    >
                       <FormField
                         control={soilDetailForm.control}
                         name="SoilName"
@@ -1477,7 +1787,11 @@ export default function TreeTypeManagement() {
                           <FormItem>
                             <FormLabel>Tên đất</FormLabel>
                             <FormControl>
-                              <Input placeholder="Ví dụ: Đất phù sa ngọt" {...field} />
+                              <Input
+                                placeholder="Ví dụ: Đất phù sa ngọt"
+                                disabled={!soilDetailEditMode || soilDetailSaving}
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -1491,7 +1805,11 @@ export default function TreeTypeManagement() {
                             <FormItem>
                               <FormLabel>Thành phần</FormLabel>
                               <FormControl>
-                                <Input placeholder="Thịt nhẹ, cát pha..." {...field} />
+                                <Input
+                                  placeholder="Thịt nhẹ, cát pha..."
+                                  disabled={!soilDetailEditMode || soilDetailSaving}
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1504,7 +1822,11 @@ export default function TreeTypeManagement() {
                             <FormItem>
                               <FormLabel>Khả năng thoát nước</FormLabel>
                               <FormControl>
-                                <Input placeholder="Tốt/Trung bình/Kém" {...field} />
+                                <Input
+                                  placeholder="Tốt/Trung bình/Kém"
+                                  disabled={!soilDetailEditMode || soilDetailSaving}
+                                  {...field}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -1522,6 +1844,7 @@ export default function TreeTypeManagement() {
                                 <Input
                                   type="number"
                                   step="0.1"
+                                  disabled={!soilDetailEditMode || soilDetailSaving}
                                   value={field.value ?? ""}
                                   onChange={(e) => field.onChange(e.target.value)}
                                   placeholder="Ví dụ: 2.5"
@@ -1541,6 +1864,7 @@ export default function TreeTypeManagement() {
                                 <Input
                                   type="number"
                                   step="0.1"
+                                  disabled={!soilDetailEditMode || soilDetailSaving}
                                   value={field.value ?? ""}
                                   onChange={(e) => field.onChange(e.target.value)}
                                   placeholder="Ví dụ: 1.2"
@@ -1558,24 +1882,45 @@ export default function TreeTypeManagement() {
                           <FormItem>
                             <FormLabel>Ghi chú</FormLabel>
                             <FormControl>
-                              <Textarea placeholder="Ghi chú thêm..." {...field} />
+                              <Textarea
+                                placeholder="Ghi chú thêm..."
+                                disabled={!soilDetailEditMode || soilDetailSaving}
+                                {...field}
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
-                      <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => soilDetailForm.reset(mapSoilToFormValues(selectedSoil))}
-                        >
-                          Hoàn tác
-                        </Button>
-                        <Button type="submit" disabled={soilDetailSaving}>
-                          {soilDetailSaving ? "Đang lưu..." : "Lưu thay đổi"}
-                        </Button>
-                      </div>
+                      {soilDetailEditMode ? (
+                        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            disabled={soilDetailSaving}
+                            onClick={() => setSoilRevertConfirmOpen(true)}
+                          >
+                            Hoàn tác
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            disabled={soilDetailSaving}
+                            onClick={() => setSoilCancelConfirmOpen(true)}
+                          >
+                            Huỷ
+                          </Button>
+                          <Button type="submit" disabled={soilDetailSaving}>
+                            {soilDetailSaving ? "Đang lưu..." : "Lưu thay đổi"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+                          <Button type="button" onClick={handleStartEditSoil} disabled={!selectedSoil}>
+                            Chỉnh sửa
+                          </Button>
+                        </div>
+                      )}
                     </form>
                   </Form>
                   <Separator className="my-4" />
@@ -1600,6 +1945,60 @@ export default function TreeTypeManagement() {
         </div>
 
         <AlertDialog
+          open={soilRevertConfirmOpen}
+          onOpenChange={(open) => {
+            if (soilDetailSaving) return;
+            setSoilRevertConfirmOpen(open);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận hoàn tác</AlertDialogTitle>
+              <AlertDialogDescription>
+                Hoàn tác sẽ đưa tất cả trường về dữ liệu hiện tại của loại đất&nbsp;
+                <span className="font-semibold text-slate-900">
+                  {selectedSoil?.SoilName || "đang chọn"}
+                </span>
+                . Tiếp tục?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={soilDetailSaving}>Huỷ</AlertDialogCancel>
+              <AlertDialogAction onClick={handleRevertSoilEdit} disabled={soilDetailSaving}>
+                Đồng ý
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={soilCancelConfirmOpen}
+          onOpenChange={(open) => {
+            if (soilDetailSaving) return;
+            setSoilCancelConfirmOpen(open);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Huỷ chỉnh sửa</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn sẽ thoát chế độ chỉnh sửa và mọi thay đổi chưa lưu sẽ bị bỏ. Chắc chắn muốn huỷ?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={soilDetailSaving}>Tiếp tục chỉnh sửa</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleCancelSoilEdit}
+                disabled={soilDetailSaving}
+                className="bg-rose-600 hover:bg-rose-500"
+              >
+                Huỷ chỉnh sửa
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
           open={soilDeleteConfirmOpen}
           onOpenChange={(open) => {
             if (!soilDeleting) {
@@ -1622,6 +2021,40 @@ export default function TreeTypeManagement() {
                 disabled={soilDeleting}
               >
                 {soilDeleting ? "Đang xoá..." : "Xoá đất"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={soilUpdateConfirmOpen}
+          onOpenChange={(open) => {
+            if (soilDetailSaving) return;
+            setSoilUpdateConfirmOpen(open);
+            if (!open) {
+              setPendingSoilUpdate(null);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận lưu thay đổi</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn có chắc muốn cập nhật thông tin loại đất{" "}
+                <span className="font-semibold text-slate-900">
+                  {pendingSoilUpdate?.SoilName || selectedSoil?.SoilName || "đang chọn"}
+                </span>
+                ?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={soilDetailSaving}>Huỷ</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleUpdateSoil(pendingSoilUpdate)}
+                disabled={soilDetailSaving}
+                className="bg-emerald-600 hover:bg-emerald-500"
+              >
+                {soilDetailSaving ? "Đang lưu..." : "Lưu thay đổi"}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
@@ -1789,6 +2222,498 @@ export default function TreeTypeManagement() {
     </>
   );
 
+  const renderCreateVarietyOverlay = () => (
+    <>
+      <Dialog
+        open={createVarietyOverlayOpen}
+        onOpenChange={(open) => {
+          if (varietySaving) return;
+          setCreateVarietyOverlayOpen(open);
+          if (!open) {
+            setVarietyCreateConfirmOpen(false);
+            setPendingVarietyCreate(null);
+            varietyForm.reset({
+              VarietyID: "",
+              VarietyName: "",
+              VarietyDescription: "",
+            });
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Thêm giống mới</DialogTitle>
+            <DialogDescription>
+              Điền thông tin giống và xác nhận để bổ sung vào loại cây hiện tại.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...varietyForm}>
+            <form className="space-y-4" onSubmit={varietyForm.handleSubmit(handlePrepareCreateVariety)}>
+              <FormField
+                control={varietyForm.control}
+                name="VarietyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tên giống</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ví dụ: Hass Premium" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={varietyForm.control}
+                name="VarietyDescription"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Mô tả</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Đặc điểm nổi bật" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="flex flex-wrap justify-end gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-2xl border-rose-200 text-rose-600 hover:bg-rose-50"
+                  onClick={() => setCreateVarietyOverlayOpen(false)}
+                  disabled={varietySaving}
+                >
+                  Huỷ
+                </Button>
+                <Button
+                  type="submit"
+                  className="rounded-2xl bg-emerald-600 text-white hover:bg-emerald-500"
+                  disabled={varietySaving || !activeVarietyTree}
+                >
+                  {varietySaving ? "Đang xử lý..." : "Thêm giống"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog
+        open={varietyCreateConfirmOpen}
+        onOpenChange={(open) => {
+          if (varietySaving) return;
+          setVarietyCreateConfirmOpen(open);
+          if (!open) {
+            setPendingVarietyCreate(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận thêm giống mới</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bạn chuẩn bị thêm giống&nbsp;
+              <span className="font-semibold text-slate-900">{pendingVarietyCreate?.VarietyName || "mới"}</span>
+              . Vui lòng xác nhận để tiếp tục.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={varietySaving}>Huỷ</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-emerald-600 hover:bg-emerald-500"
+              onClick={() => handleCreateVariety(pendingVarietyCreate)}
+              disabled={varietySaving}
+            >
+              {varietySaving ? "Đang lưu..." : "Thêm giống"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
+  );
+
+  const renderVarietyDialog = () => (
+    <Dialog
+      open={varietyDialogOpen}
+      onOpenChange={(open) => {
+        if (!open && (varietySaving || varietyDeleting)) return;
+        setVarietyDialogOpen(open);
+      }}
+    >
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>Quản lý giống cây</DialogTitle>
+          <DialogDescription>
+            Thêm, tìm kiếm và chỉnh sửa các giống thuộc loại cây{" "}
+            <span className="font-semibold text-slate-900">
+              {activeVarietyTree?.TreeTypeName || ""}
+            </span>
+            .
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex w-full flex-col gap-2 sm:max-w-md sm:flex-row sm:items-center">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  value={varietySearch}
+                  onChange={(event) => setVarietySearch(event.target.value)}
+                  placeholder="Tìm kiếm theo tên hoặc mã giống..."
+                  className="h-11 rounded-2xl border-slate-200 bg-white/80 pl-9"
+                />
+              </div>
+            </div>
+            <Button
+              className="w-full gap-2 rounded-2xl bg-emerald-600 px-5 py-2 text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-500 sm:w-auto"
+              onClick={() => setCreateVarietyOverlayOpen(true)}
+              disabled={!activeVarietyTree}
+            >
+              <Plus className="h-4 w-4" />
+              Thêm giống mới
+            </Button>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+            <div className="space-y-3">
+              <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                <ScrollArea className="max-h-[440px] overflow-visible pr-2">
+                  <div className="grid gap-2">
+                    {!activeVarietyTree || (activeVarietyTree.Varieties || []).length === 0 ? (
+                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
+                        <Layers className="h-5 w-5 text-emerald-300" />
+                        Chưa có giống nào. Bấm &quot;Thêm giống mới&quot; để bắt đầu.
+                      </div>
+                    ) : filteredVarieties.length === 0 ? (
+                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
+                        <Search className="h-5 w-5 text-emerald-300" />
+                        Không tìm thấy giống phù hợp với từ khoá.
+                      </div>
+                    ) : (
+                      paginatedVarieties.map((item, index) => {
+                        const isActive = selectedVarietyId === item.VarietyID;
+                        const absoluteIndex = varietyRangeStart + index;
+                        return (
+                          <div
+                            key={item.VarietyID}
+                            className={cn(
+                              "group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                              isActive
+                                ? "border-emerald-500 shadow-sm shadow-emerald-100"
+                                : "border-black hover:border-slate-700",
+                            )}
+                            onClick={() => handleSelectVariety(item.VarietyID)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                handleSelectVariety(item.VarietyID);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <div className="min-w-0 space-y-1">
+                              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                                #{absoluteIndex}
+                              </p>
+                              <p className="text-sm font-semibold leading-snug text-slate-900 line-clamp-2">
+                                {item.VarietyName}
+                              </p>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide",
+                                isActive ? "border-emerald-200 bg-emerald-50 text-emerald-600" : "border-slate-300 bg-white text-slate-600",
+                              )}
+                            >
+                              {isActive ? "Đang chọn" : "Chọn"}
+                            </Badge>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+                {filteredVarieties.length > 0 && (
+                  <div className="mt-3 flex flex-wrap items-center justify-end gap-3 text-xs text-slate-500">
+                    {shouldShowVarietyPagination && (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 rounded-full px-3 text-xs"
+                          onClick={() => setVarietyPage((prev) => Math.max(1, prev - 1))}
+                          disabled={varietyPage === 1}
+                        >
+                          Trước
+                        </Button>
+                        <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+                          Trang {varietyPage}/{totalVarietyPages}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 rounded-full px-3 text-xs"
+                          onClick={() =>
+                            setVarietyPage((prev) => Math.min(totalVarietyPages, prev + 1))
+                          }
+                          disabled={varietyPage === totalVarietyPages}
+                        >
+                          Sau
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-3xl border border-emerald-100 bg-white/95 p-6 shadow-lg shadow-emerald-50">
+              {selectedVarietyId && activeVarietyTree ? (
+                <>
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.4em] text-emerald-400">
+                        Chi tiết giống
+                      </p>
+                      <h3 className="mt-1 text-2xl font-semibold text-slate-900">
+                        {selectedVariety?.VarietyName}
+                      </h3>
+                    </div>
+                    {!varietyDetailEditMode && (
+                      <Button
+                        variant="outline"
+                        className="rounded-2xl border-emerald-200 text-emerald-600 hover:bg-emerald-50"
+                        onClick={handleStartVarietyEdit}
+                      >
+                        Sửa
+                      </Button>
+                    )}
+                  </div>
+                  <Separator className="my-4" />
+                  <Form {...varietyDetailForm}>
+                    <form
+                      className="space-y-4"
+                      onSubmit={varietyDetailForm.handleSubmit(handlePrepareUpdateVariety)}
+                    >
+                      <FormField
+                        control={varietyDetailForm.control}
+                        name="VarietyName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Tên giống</FormLabel>
+                            <FormControl>
+                              <Input
+                                {...field}
+                                disabled={!varietyDetailEditMode || varietySaving}
+                                className={cn(
+                                  "h-11 rounded-2xl",
+                                  !varietyDetailEditMode && "bg-slate-50 text-slate-500",
+                                )}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={varietyDetailForm.control}
+                        name="VarietyDescription"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Mô tả</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                {...field}
+                                disabled={!varietyDetailEditMode || varietySaving}
+                                className={cn(
+                                  "min-h-[120px] rounded-2xl",
+                                  !varietyDetailEditMode && "bg-slate-50 text-slate-500",
+                                )}
+                                placeholder="Đặc điểm nổi bật, vùng canh tác phù hợp..."
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      {varietyDetailEditMode ? (
+                        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="text-amber-600 hover:bg-amber-50"
+                            onClick={() => setVarietyRevertConfirmOpen(true)}
+                            disabled={varietySaving}
+                          >
+                            Hoàn tác
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="border-rose-200 text-rose-600 hover:bg-rose-50"
+                            onClick={() => setVarietyCancelEditConfirmOpen(true)}
+                            disabled={varietySaving}
+                          >
+                            Huỷ
+                          </Button>
+                          <Button
+                            type="submit"
+                            disabled={!varietyDetailEditMode || varietySaving}
+                            className="bg-emerald-600 text-white hover:bg-emerald-500"
+                          >
+                            {varietySaving ? "Đang lưu..." : "Lưu thay đổi"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
+                          Trạng thái chỉ xem. Bấm &quot;Sửa&quot; để mở khoá chỉnh sửa.
+                        </p>
+                      )}
+                    </form>
+                  </Form>
+                  <Separator className="my-4" />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full rounded-2xl border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                    onClick={() => setVarietyDeleteConfirmOpen(true)}
+                    disabled={varietyDeleting}
+                  >
+                    Xoá giống
+                  </Button>
+                </>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center text-slate-500">
+                  <Layers className="h-10 w-10 text-emerald-200" />
+                  Chọn một giống ở danh sách bên trái để xem chi tiết.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <AlertDialog
+          open={varietyDeleteConfirmOpen}
+          onOpenChange={(open) => {
+            if (!varietyDeleting) {
+              setVarietyDeleteConfirmOpen(open);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xoá giống cây</AlertDialogTitle>
+              <AlertDialogDescription>
+                Thao tác này sẽ xoá vĩnh viễn giống đang chọn khỏi loại cây và không thể hoàn tác.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={varietyDeleting}>Huỷ</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-rose-600 hover:bg-rose-500"
+                onClick={handleDeleteVariety}
+                disabled={varietyDeleting}
+              >
+                {varietyDeleting ? "Đang xoá..." : "Xoá giống"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={varietyUpdateConfirmOpen}
+          onOpenChange={(open) => {
+            if (varietySaving) return;
+            setVarietyUpdateConfirmOpen(open);
+            if (!open) {
+              setPendingVarietyUpdate(null);
+            }
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Xác nhận lưu thay đổi</AlertDialogTitle>
+              <AlertDialogDescription>
+                Bạn có chắc muốn cập nhật thông tin giống{" "}
+                <span className="font-semibold text-slate-900">
+                  {pendingVarietyUpdate?.VarietyName || selectedVariety?.VarietyName}
+                </span>
+                ?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={varietySaving}>Huỷ</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => handleUpdateVariety(pendingVarietyUpdate)}
+                disabled={varietySaving}
+                className="bg-emerald-600 hover:bg-emerald-500"
+              >
+                {varietySaving ? "Đang lưu..." : "Lưu thay đổi"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={varietyCancelEditConfirmOpen}
+          onOpenChange={(open) => {
+            if (varietySaving) return;
+            setVarietyCancelEditConfirmOpen(open);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Huỷ chỉnh sửa?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Mọi thay đổi đang thực hiện sẽ bị bỏ qua và khung chi tiết trở lại trạng thái chỉ xem.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={varietySaving}>Tiếp tục chỉnh sửa</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmCancelVarietyEdit}
+                className="bg-rose-600 hover:bg-rose-500"
+                disabled={varietySaving}
+              >
+                Huỷ chỉnh sửa
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog
+          open={varietyRevertConfirmOpen}
+          onOpenChange={(open) => {
+            if (varietySaving) return;
+            setVarietyRevertConfirmOpen(open);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Hoàn tác thay đổi</AlertDialogTitle>
+              <AlertDialogDescription>
+                Mẫu sẽ được đưa về giá trị mới nhất đã lưu. Bạn có chắc chắn?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={varietySaving}>Không</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmRevertVarietyChanges}
+                className="bg-amber-500 hover:bg-amber-400"
+                disabled={varietySaving}
+              >
+                Hoàn tác
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </DialogContent>
+    </Dialog>
+  );
+
   return (
     <>
       <LivingBackground
@@ -1854,6 +2779,7 @@ export default function TreeTypeManagement() {
                   onEdit={handleOpenEdit}
                   onDelete={(tree) => setDeleteTarget(tree)}
                   onToggleStatus={handleToggleStatus}
+                  onManageVarieties={handleOpenVarietyDialog}
                   pagination={{
                     page: treePage,
                     totalPages: totalTreePages,
@@ -1868,6 +2794,8 @@ export default function TreeTypeManagement() {
             {renderSheet()}
             {renderSoilDialog()}
             {renderCreateSoilOverlay()}
+            {renderVarietyDialog()}
+            {renderCreateVarietyOverlay()}
 
             <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
               <AlertDialogContent>
