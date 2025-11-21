@@ -481,7 +481,7 @@ function SearchableSelect({
   }
 
   return (
-    <div className="relative" ref={wrapRef}>
+    <div className="relative min-w-0" ref={wrapRef}>
       <Input
         ref={inputRef}
         value={text}
@@ -517,7 +517,7 @@ function SearchableSelect({
         autoComplete="off"
         spellCheck={false}
         className={
-          "h-11 w-full rounded-xl bg-white placeholder:text-neutral-400 " +
+          "h-11 w-full min-w-0 rounded-xl bg-white placeholder:text-neutral-400 " +
           (disabled ? "opacity-60 cursor-not-allowed " : "") +
           (error
             ? "border border-red-500 focus-visible:ring-2 focus-visible:ring-rose-500/40 focus-visible:border-red-500"
@@ -583,12 +583,100 @@ function DateInput({ value, onChange, error }) {
   const [parts, setParts] = React.useState(() => parseIsoToParts(value));
   const [open, setOpen] = React.useState(false);
   const wrapRef = React.useRef(null);
+  const containerRef = React.useRef(null);
+  const contentRef = React.useRef(null);
   const dayRef = React.useRef(null);
   const monthRef = React.useRef(null);
   const yearRef = React.useRef(null);
+  const [fontSize, setFontSize] = React.useState(16);
+  const [inputWidths, setInputWidths] = React.useState({ day: 48, month: 48, year: 80 });
 
   // Hôm nay (để đánh dấu trên lịch khi chưa chọn gì)
   const today = new Date();
+
+  // Tự động resize để đảm bảo nội dung vừa khung
+  React.useEffect(() => {
+    const container = containerRef.current;
+    const content = contentRef.current;
+    if (!container || !content) return;
+
+    const calculateSizes = () => {
+      const containerWidth = container.offsetWidth;
+      const containerHeight = container.offsetHeight;
+      
+      if (containerWidth === 0 || containerHeight === 0) return;
+      
+      // Lấy computed styles để tính padding chính xác
+      const computedStyle = window.getComputedStyle(container);
+      const paddingLeft = parseFloat(computedStyle.paddingLeft) || 12;
+      const paddingRight = parseFloat(computedStyle.paddingRight) || 12;
+      const padding = paddingLeft + paddingRight;
+      
+      // Ước tính gap và slashes
+      const gap = 12; // gap-1 sm:gap-1.5
+      const slashesWidth = 20; // 2 slashes với font-size
+      
+      const availableWidth = containerWidth - padding - gap * 2 - slashesWidth;
+      
+      if (availableWidth <= 0) return;
+      
+      // Phân bổ width: ngày và tháng bằng nhau, năm lấy phần còn lại
+      const dayMonthMinWidth = 40;
+      const yearMinWidth = 70;
+      const totalMinWidth = dayMonthMinWidth * 2 + yearMinWidth;
+      
+      let dayMonthWidth, yearWidth;
+      
+      if (availableWidth >= totalMinWidth) {
+        // Có đủ không gian, phân bổ hợp lý
+        dayMonthWidth = Math.min(56, availableWidth * 0.25); // max 56px cho ngày/tháng
+        yearWidth = Math.max(yearMinWidth, availableWidth - dayMonthWidth * 2);
+      } else {
+        // Không đủ không gian, scale xuống
+        const scale = availableWidth / totalMinWidth;
+        dayMonthWidth = dayMonthMinWidth * scale;
+        yearWidth = yearMinWidth * scale;
+      }
+      
+      // Tính font-size dựa trên height và width
+      const baseFontSizeFromHeight = containerHeight * 0.35;
+      const baseFontSizeFromWidth = Math.min(containerWidth / 15, 16);
+      const calculatedFontSize = Math.min(
+        16, 
+        Math.max(11, Math.min(baseFontSizeFromHeight, baseFontSizeFromWidth))
+      );
+      
+      setFontSize(calculatedFontSize);
+      setInputWidths({
+        day: Math.max(30, dayMonthWidth),
+        month: Math.max(30, dayMonthWidth),
+        year: Math.max(60, yearWidth),
+      });
+    };
+
+    // Delay nhỏ để đảm bảo DOM đã render
+    const timeoutId = setTimeout(calculateSizes, 10);
+
+    const resizeObserver = new ResizeObserver(() => {
+      calculateSizes();
+    });
+
+    resizeObserver.observe(container);
+
+    // Cũng listen window resize và zoom
+    const handleResize = () => {
+      setTimeout(calculateSizes, 50);
+    };
+    window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
+
+    return () => {
+      clearTimeout(timeoutId);
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
+    };
+  }, []);
 
   // Đồng bộ khi value bên ngoài thay đổi
   React.useEffect(() => {
@@ -830,15 +918,20 @@ function DateInput({ value, onChange, error }) {
       data-mm-date-open={open ? "1" : undefined}
     >
       <div
-       className={
-    "flex items-center justify-between w-full min-w-0 rounded-xl border bg-white h-11 px-3 " +
-    (error
-      ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/40"
-      : "border-neutral-300 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/40")
-  }
-  onClick={() => setOpen(true)}
->
-        <div className="flex items-center gap-1 flex-1 min-w-0">
+        ref={containerRef}
+        className={
+          "flex items-center w-full min-w-0 rounded-xl border bg-white h-11 sm:h-12 px-3 sm:px-4 overflow-hidden " +
+          (error
+            ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/40"
+            : "border-neutral-300 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/40")
+        }
+        onClick={() => setOpen(true)}
+      >
+        <div 
+          ref={contentRef}
+          className="flex items-center gap-1 sm:gap-1.5 flex-1 min-w-0"
+          style={{ fontSize: `${fontSize}px` }}
+        >
           <input
             ref={dayRef}
             value={parts.d}
@@ -847,8 +940,15 @@ function DateInput({ value, onChange, error }) {
             onFocus={() => setOpen(true)}
             placeholder="Ngày"
             inputMode="numeric"
-  className="w-8 sm:w-9 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400"          />
-<span className="text-neutral-300 text-sm">/</span>
+            className="flex-shrink-0 bg-transparent border-none outline-none text-center placeholder:text-neutral-400"
+            style={{ 
+              width: `${inputWidths.day}px`,
+              minWidth: '30px',
+              maxWidth: '100%',
+              fontSize: 'inherit',
+            }}
+          />
+          <span className="text-neutral-300 flex-shrink-0" style={{ fontSize: 'inherit' }}>/</span>
           <input
             ref={monthRef}
             value={parts.m}
@@ -857,8 +957,15 @@ function DateInput({ value, onChange, error }) {
             onFocus={() => setOpen(true)}
             placeholder="Tháng"
             inputMode="numeric"
-className="w-9 sm:w-10 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400"         />
-          <span className="text-neutral-300 text-sm">/</span>
+            className="flex-shrink-0 bg-transparent border-none outline-none text-center placeholder:text-neutral-400"
+            style={{ 
+              width: `${inputWidths.month}px`,
+              minWidth: '30px',
+              maxWidth: '100%',
+              fontSize: 'inherit',
+            }}
+          />
+          <span className="text-neutral-300 flex-shrink-0" style={{ fontSize: 'inherit' }}>/</span>
           <input
             ref={yearRef}
             value={parts.y}
@@ -867,19 +974,15 @@ className="w-9 sm:w-10 bg-transparent border-none outline-none text-xs sm:text-s
             onFocus={() => setOpen(true)}
             placeholder="Năm"
             inputMode="numeric"
-className="w-11 sm:w-12 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400"
+            className="flex-1 bg-transparent border-none outline-none text-center placeholder:text-neutral-400 min-w-0"
+            style={{ 
+              minWidth: `${inputWidths.year}px`,
+              fontSize: 'inherit',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
           />
         </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen((v) => !v);
-          }}
-          className="ml-2 inline-flex items-center justify-center"
-        >
-          <CalIcon className="w-4 h-4 text-neutral-500" />
-        </button>
       </div>
 
       {open && (
@@ -1489,19 +1592,19 @@ const effectivePhase = phaseOverride || defaultPhase5;
       <div style={zoomStyle}>
         {/* Header */}
         <section className="relative">
-          <div className="mm-fluid-shell px-6 lg:px-10 pb-3">
-            <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
+          <div className="mm-fluid-shell px-4 sm:px-6 lg:px-10 pb-3">
+            <div className="mt-2 flex flex-wrap items-end justify-between gap-4 min-w-0">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-white">
                   Thêm cây mới
                 </h1>
-                <p className="text-emerald-100/80 text-sm mt-1">
+                <p className="text-emerald-100/80 text-xs sm:text-sm mt-1">
                   Tạo cây với các thông tin chi tiết giúp AI đưa ra gợi ý chăm sóc tốt nhất cho bạn.
                 </p>
                 {currentGarden ? (
-                  <div className="mt-2 inline-flex items-center gap-2 text-emerald-100/80 text-xs">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span>
+                  <div className="mt-2 inline-flex items-center gap-2 text-emerald-100/80 text-xs flex-wrap">
+                    <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="min-w-0 break-words">
                       Trong vườn: <b>{currentGarden.name}</b>{regionTag ? ` — ${regionTag}` : ""}
                     </span>
                   </div>
@@ -1513,13 +1616,13 @@ const effectivePhase = phaseOverride || defaultPhase5;
               </div>
 
               {/* Progress mini-stepper */}
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-5">
+              <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                <div className="flex items-center gap-3 sm:gap-5 flex-wrap">
                   <StepDot label="Thông tin" active={!infoDone} done={infoDone} />
                   <StepDot label="Ảnh & Preview" active={infoDone && !previewDone} done={previewDone} />
                   <StepDot label="Ghi chú" active={true} done={noteDone} />
                 </div>
-                <div className="w-[360px] h-2 rounded-full bg-white/10 overflow-hidden ring-1 ring-white/10">
+                <div className="w-full sm:w-[280px] md:w-[360px] max-w-full h-2 rounded-full bg-white/10 overflow-hidden ring-1 ring-white/10">
                   <div
                     className="h-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-sky-400 transition-all duration-500"
                     style={{ width: `${Math.max(8, progress)}%` }}
@@ -1532,15 +1635,15 @@ const effectivePhase = phaseOverride || defaultPhase5;
         </section>
 
         {/* Main */}
-        <main className="mm-fluid-shell px-6 lg:px-10 py-6 space-y-6">
-          <div className="grid lg:grid-cols-12 gap-6 items-start">
+        <main className="mm-fluid-shell px-4 sm:px-6 lg:px-10 py-6 space-y-6 overflow-x-auto">
+          <div className="grid lg:grid-cols-12 gap-4 sm:gap-6 items-start min-w-0" style={{ alignContent: "start" }}>
             {/* LEFT – form */}
-            <div className="lg:col-span-8 space-y-6">
+            <div className="lg:col-span-8 space-y-6 min-w-0" style={{ alignSelf: "start" }}>
               <Card className="relative z-20 rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
 
-                <CardHeader className="pb-3">
+                <CardHeader className="p-6 pb-3 min-h-[72px] flex items-center">
                   <CardTitle className="flex items-center gap-2">
-                    <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700">
+                    <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
                       <Sprout className="w-4 h-4" />
                     </span>
                     Thông tin cơ bản
@@ -1548,11 +1651,11 @@ const effectivePhase = phaseOverride || defaultPhase5;
                 </CardHeader>
 
                 {/* Balanced grid: 12 cols */}
-                <CardContent className="grid grid-cols-12 gap-5 text-sm">
+                <CardContent className="grid grid-cols-12 gap-3 sm:gap-4 md:gap-5 text-sm min-w-0">
                   {/* 1. Mã cây */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
                     <Label htmlFor="code" className="text-neutral-700">Mã cây</Label>
-                    <div className="relative">
+                    <div className="relative min-w-0">
 <Input
   id="code"
   value={code}
@@ -1564,7 +1667,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
     setErrors((x) => ({ ...x, code: undefined }));
   }}
   onKeyDown={handleTextInputKeyDown}
-  className={`rounded-xl h-11 w-full bg-white border-neutral-300 placeholder:text-neutral-400
+  className={`rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400
     focus:ring-emerald-500/40 focus:border-emerald-500
     ${errors.code ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : ""}`}
 />
@@ -1574,7 +1677,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
                   </div>
 
                   {/* 2. Loại cây */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
   <Label className="text-neutral-700">Loại cây</Label>
   <SearchableSelect
   value={treeTypeId}
@@ -1599,7 +1702,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
 
                   {/* 3. Giống */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
   <Label className="text-neutral-700">Giống</Label>
   <SearchableSelect
     value={variety}
@@ -1621,19 +1724,19 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
 
                   {/* 4. Tuổi trước khi trồng */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
                     <Label className="text-neutral-700">Tuổi trước khi trồng (tháng)</Label>
-                    <div className="relative">
+                    <div className="relative min-w-0">
                      <Input
   type="number"
   min={0}
   value={preAge}
   onChange={(e) => setPreAge(e.target.value)}
   onKeyDown={handleTextInputKeyDown}   // ✅ THÊM
-  className="rounded-xl h-11 pr-12 w-full bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
+  className="rounded-xl h-11 pr-10 sm:pr-12 w-full min-w-0 bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
 />
 
-                      <span className="absolute right-3 top-2.5 text-sm text-neutral-600">tháng</span>
+                      <span className="absolute right-2 sm:right-3 top-2.5 text-xs sm:text-sm text-neutral-600 whitespace-nowrap">tháng</span>
                     </div>
                   </div>
 
@@ -1654,7 +1757,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
 
                 {/* 6. Mô tả tình trạng lá */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
   <Label className="text-neutral-700">Mô tả tình trạng lá</Label>
   <Input
     value={leafInfo}
@@ -1670,13 +1773,13 @@ const effectivePhase = phaseOverride || defaultPhase5;
     }}
     onKeyDown={handleTextInputKeyDown}
     placeholder="VD: lá xanh tốt, vàng nhẹ, sâu…"
-    className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
+    className="rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
   />
 </div>
 
 
                 {/* 7. Mô tả tình trạng cành */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
   <Label className="text-neutral-700">Mô tả tình trạng cành</Label>
   <Input
     value={branchInfo}
@@ -1692,14 +1795,14 @@ const effectivePhase = phaseOverride || defaultPhase5;
     }}
     onKeyDown={handleTextInputKeyDown}
     placeholder="Tình trạng cành, ..."
-    className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
+    className="rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
   />
 </div>
 
 
 
                   {/* 8. Loại đất */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
   <Label className="text-neutral-700">Loại đất</Label>
   <SearchableSelect
   value={gardenSoilId}
@@ -1727,9 +1830,9 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
 
                   {/* 9. Giai đoạn */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
   <Label className="text-neutral-700">Giai đoạn</Label>
-  <div className="relative">
+  <div className="relative min-w-0">
     <select
   value={phaseOverride}
   onChange={(e) => {
@@ -1738,7 +1841,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
     e.target.blur(); // chọn xong thì bỏ focus, tắt viền xanh
   }}
   className={
-    "h-11 w-full rounded-xl border bg-white px-3 text-sm appearance-none " +
+    "h-11 w-full min-w-0 rounded-xl border bg-white px-2 sm:px-3 text-xs sm:text-sm appearance-none " +
     (errors.phaseOverride
       ? "border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500"
       : "border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500")
@@ -1761,7 +1864,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
 
                   {/* 10. Mô tả tình trạng hoa (always visible, gated) */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
   <Label className="text-neutral-700">Mô tả tình trạng hoa</Label>
   <Input
     value={flowerInfo}
@@ -1779,14 +1882,14 @@ const effectivePhase = phaseOverride || defaultPhase5;
     onKeyDown={handleTextInputKeyDown}
     disabled={!canEditFlower}
     placeholder="Mô tả tình trạng, tỉ lệ ra hoa, ..."
-    className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
+    className={`rounded-xl h-11 w-full min-w-0 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
       border-neutral-300 ${!canEditFlower ? "opacity-60 cursor-not-allowed" : ""}`}
   />
 </div>
 
 
                   {/* 11. Mô tả tình trạng quả (always visible, gated) */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
   <Label className="text-neutral-700">Mô tả tình trạng quả</Label>
   <Input
     value={fruitInfo}
@@ -1804,7 +1907,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
     onKeyDown={handleTextInputKeyDown}
     disabled={!canEditFruit}
     placeholder="Số lượng, kích thước, tình trạng, ..."
-    className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
+    className={`rounded-xl h-11 w-full min-w-0 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
       border-neutral-300 ${!canEditFruit ? "opacity-60 cursor-not-allowed" : ""}`}
   />
 </div>
@@ -1875,11 +1978,19 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
             {/* RIGHT – preview */}
             <div
-              className="lg:col-span-4 space-y-6 lg:sticky"
-              style={{ top: "calc(var(--mm-header-h, 88px) + 8px)" }}
+              className="lg:col-span-4 space-y-6 lg:sticky min-w-0"
+              style={{ 
+                top: "calc(var(--mm-header-h, 88px) - 88px)",
+                alignSelf: "start"
+              }}
             >
-              <Card className="rounded-2xl overflow-hidden bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-                <CardHeader className="pb-3"><CardTitle>Ảnh & Preview</CardTitle></CardHeader>
+              <Card className="relative z-20 rounded-2xl overflow-hidden bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
+                <CardHeader className="p-6 pb-3 min-h-[72px] flex items-center">
+                  <CardTitle className="flex items-center gap-2">
+                    <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-transparent shrink-0"></span>
+                    Ảnh & Preview
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="space-y-4">
                   <ImagePicker code={code} value={image} onChange={setImage} onFileSelected={setImageFile} />
                   <div className="rounded-xl border bg-white overflow-hidden ring-1 ring-black/5">
