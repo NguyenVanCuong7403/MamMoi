@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using MamMoi.Application.DTOs.SystemAdmin.MamMoi.Application.DTOs.SystemAdmin;
 
 namespace MamMoi.Api.Controllers
 {

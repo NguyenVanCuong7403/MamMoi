@@ -7,7 +7,6 @@ using Microsoft.EntityFrameworkCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using MamMoi.Application.DTOs.SystemAdmin.MamMoi.Application.DTOs.SystemAdmin;
 
 namespace MamMoi.Infrastructure.Services.BusinessAdmin
 {

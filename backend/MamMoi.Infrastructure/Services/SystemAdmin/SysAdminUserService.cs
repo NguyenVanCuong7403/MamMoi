@@ -1,5 +1,6 @@
 ﻿
-using MamMoi.Application.DTOs.SystemAdmin.MamMoi.Application.DTOs.SystemAdmin;
+using MamMoi.Application.DTOs.SystemAdmin;
+using MamMoi.Application.DTOs;
 using MamMoi.Application.Interfaces;
 using MamMoi.Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
@@ -67,8 +68,8 @@ namespace MamMoi.Infrastructure.Services.SystemAdmin
             return new PagedResult<SysUserDto>
             {
                 Items = items,
-                TotalCount = totalCount,
-                PageNumber = filter.PageNumber,
+                Total = totalCount,
+                Page = filter.PageNumber,
                 PageSize = filter.PageSize
             };
         }
@@ -138,6 +139,53 @@ namespace MamMoi.Infrastructure.Services.SystemAdmin
 
             if (u == null) return null;
             return MapToDto(u);
+        }
+
+        public async Task<SysUserDetailDto?> GetUserDetailAsync(int id)
+        {
+            var user = await _context.Users
+                .Include(u => u.Role)
+                .Include(u => u.Gardens)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.UserId == id);
+
+            if (user == null) return null;
+
+            // Get tree counts for each garden without including full tree entities
+            var gardenTreeCounts = await _context.Trees
+                .Where(t => t.UserId == id)
+                .GroupBy(t => t.GardenId)
+                .Select(g => new { GardenId = g.Key, TreeCount = g.Count() })
+                .ToDictionaryAsync(g => g.GardenId, g => g.TreeCount);
+
+            var gardens = user.Gardens.Select(g => new GardenSummaryDto
+            {
+                GardenId = g.GardenId.ToString(),
+                GardenName = g.Name,
+                TreeCount = gardenTreeCounts.ContainsKey(g.GardenId) ? gardenTreeCounts[g.GardenId] : 0,
+                Province = g.Location ?? "Chưa xác định"
+            }).ToList();
+
+            return new SysUserDetailDto
+            {
+                UserId = user.UserId,
+                FullName = user.FullName,
+                Email = user.Email,
+                Phone = user.Phone,
+                Address = user.Address,
+                PreferredLanguage = user.PreferredLanguage,
+                ExperienceLevel = user.ExperienceLevel,
+                ProfileImageUrl = user.ProfileImageUrl,
+                RoleId = user.RoleId,
+                RoleName = user.Role.RoleName,
+                IsActive = user.IsActive,
+                CreatedAt = user.CreatedAt,
+                UpdatedAt = user.UpdatedAt,
+                TotalGardens = user.Gardens.Count,
+                TotalTrees = gardenTreeCounts.Values.Sum(),
+                Gardens = gardens,
+                PlanName = "Free" // Có thể lấy từ subscription table sau
+            };
         }
 
         // 5. TOGGLE (Dùng int id)

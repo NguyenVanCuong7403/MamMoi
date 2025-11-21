@@ -72,6 +72,7 @@ import {
   Tooltip as RechartsTooltip,
   Cell,
 } from "recharts";
+import SysAdminUserRepository from "@/API/repositories/SysAdminUserRepository";
 
 
 const BACKGROUND_PALETTE = {
@@ -247,7 +248,7 @@ const PAGE_SIZE = 10;
 
 const defaultFilters = {
   search: "",
-  role: "all",
+  role: "Farmer",
   status: "all",
   plan: "all",
 };
@@ -655,12 +656,16 @@ function ActionMenu({ user, onOpenModal }) {
 }
 
 export default function SystemAdminUserManagement() {
-  const [users, setUsers] = useState(MOCK_USERS);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
   const [timeframe, setTimeframe] = useState("week");
   const [filters, setFilters] = useState(defaultFilters);
   const [page, setPage] = useState(1);
   const [activeModal, setActiveModal] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userDetail, setUserDetail] = useState(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
   const [planDraft, setPlanDraft] = useState("");
   const [passwordDraft, setPasswordDraft] = useState("");
   const [generatedPassword, setGeneratedPassword] = useState("");
@@ -688,6 +693,32 @@ export default function SystemAdminUserManagement() {
   const deleteUser = (userId) => {
     setUsers((prev) => prev.filter((u) => u.id !== userId));
   };
+
+  // Load users from API
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setLoading(true);
+        const filter = {
+          pageNumber: page,
+          pageSize: 10, // or whatever default
+          searchTerm: filters.search || '',
+          role: filters.role !== 'all' ? filters.role : undefined,
+          status: filters.status !== 'all' ? (filters.status === 'active' ? true : false) : undefined,
+        };
+        const result = await SysAdminUserRepository.getAll(filter);
+        setUsers(result.users);
+        setTotalCount(result.totalCount);
+      } catch (error) {
+        console.error('Error loading users:', error);
+        // Maybe show error message
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, [page, filters]);
 
   // Tính toán stats từ users thực tế
   const stats = useMemo(() => {
@@ -763,21 +794,9 @@ export default function SystemAdminUserManagement() {
   }, [actionNotice]);
 
   const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
-      const query = filters.search.trim().toLowerCase();
-      const matchesSearch =
-        !query ||
-        user.name.toLowerCase().includes(query) ||
-        user.email.toLowerCase().includes(query);
-
-      const matchesRole = filters.role === "all" || user.role === filters.role;
-      const matchesStatus = filters.status === "all" || user.status === filters.status;
-      const userPlan = normalizePlanValue(user.plan);
-      const matchesPlan = filters.plan === "all" || userPlan === filters.plan;
-
-      return matchesSearch && matchesRole && matchesStatus && matchesPlan;
-    });
-  }, [filters, users]);
+    // Since filtering is done on API, just return users
+    return users;
+  }, [users]);
 
   // Phân bổ gói dịch vụ: bám theo danh sách đã lọc để biểu đồ linh động với bộ lọc
   const planBreakdown = useMemo(() => {
@@ -951,7 +970,7 @@ export default function SystemAdminUserManagement() {
     return (currentCount - previousCount) / previousCount;
   }, [users, timeframe]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
   const paginatedUsers = filteredUsers.slice(
     (page - 1) * PAGE_SIZE,
     page * PAGE_SIZE,
@@ -971,9 +990,24 @@ export default function SystemAdminUserManagement() {
     setFilters(defaultFilters);
   };
 
-  const openModal = (type, user) => {
+  const openModal = async (type, user) => {
     setSelectedUser(user);
     setActiveModal(type);
+    
+    if (type === "details") {
+      setLoadingDetail(true);
+      try {
+        const detail = await SysAdminUserRepository.getDetail(user.id);
+        setUserDetail(detail);
+      } catch (error) {
+        console.error('Error loading user detail:', error);
+        // Fallback to basic user info
+        setUserDetail(user);
+      } finally {
+        setLoadingDetail(false);
+      }
+    }
+    
     if (type === "plan") {
       setPlanDraft(normalizePlanValue(user?.plan));
       setPlanAcknowledged(false);
@@ -998,6 +1032,8 @@ export default function SystemAdminUserManagement() {
   const closeModal = () => {
     setActiveModal(null);
     setSelectedUser(null);
+    setUserDetail(null);
+    setLoadingDetail(false);
     setPasswordError("");
     setEditError("");
     setGeneratedPassword("");
@@ -1346,7 +1382,7 @@ export default function SystemAdminUserManagement() {
 
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <p className="text-sm text-slate-500">
-                      Hiển thị {paginatedUsers.length} / {filteredUsers.length} người
+                      Hiển thị {users.length} / {totalCount} người
                       dùng
                     </p>
                     <div className="flex items-center gap-3">
@@ -1375,61 +1411,73 @@ export default function SystemAdminUserManagement() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {paginatedUsers.map((user) => (
-                          <TableRow
-                            key={user.id}
-                            className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
-                          >
-                            <TableCell className="font-semibold text-slate-900">
-                              {user.id}
-                            </TableCell>
-                            <TableCell className="text-slate-800">
-                              {user.name}
-                            </TableCell>
-                            <TableCell className="text-slate-500">
-                              {user.email}
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                className={cn(
-                                  "px-3 py-1 text-xs font-semibold",
-                                  ROLE_META[user.role]?.className ??
-                                    "bg-slate-100 text-slate-600 border border-slate-200",
-                                )}
-                              >
-                                {ROLE_META[user.role]?.label ?? user.role}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                className={cn(
-                                  "border-0",
-                                  STATUS_META[user.status]?.className,
-                                )}
-                              >
-                                {STATUS_META[user.status]?.label}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="font-medium text-slate-800">
-                              {getPlanLabel(user.plan)}
-                            </TableCell>
-                            <TableCell className="text-slate-500">
-                              {new Date(user.lastLogin).toLocaleString("vi-VN", {
-                                hour12: false,
-                              })}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <ActionMenu user={user} onOpenModal={openModal} />
+                        {loading ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8">
+                              <div className="flex items-center justify-center">
+                                <RefreshCcw className="h-6 w-6 animate-spin mr-2" />
+                                Đang tải...
+                              </div>
                             </TableCell>
                           </TableRow>
-                        ))}
+                        ) : users.length === 0 ? (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-8 text-slate-500">
+                              Không có người dùng nào
+                            </TableCell>
+                          </TableRow>
+                        ) : (
+                          users.map((user) => (
+                            <TableRow
+                              key={user.id}
+                              className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
+                            >
+                              <TableCell className="font-semibold text-slate-900">
+                                {user.id}
+                              </TableCell>
+                              <TableCell className="text-slate-800">
+                                {user.name}
+                              </TableCell>
+                              <TableCell className="text-slate-500">
+                                {user.email}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={cn(
+                                    "px-3 py-1 text-xs font-semibold",
+                                    ROLE_META[user.role]?.className ??
+                                      "bg-slate-100 text-slate-600 border border-slate-200",
+                                  )}
+                                >
+                                  {ROLE_META[user.role]?.label ?? user.role}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={cn(
+                                    "border-0",
+                                    STATUS_META[user.status]?.className,
+                                  )}
+                                >
+                                  {STATUS_META[user.status]?.label}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-medium text-slate-800">
+                                {getPlanLabel(user.plan)}
+                              </TableCell>
+                              <TableCell className="text-slate-500">
+                                {new Date(user.lastLogin).toLocaleString("vi-VN", {
+                                  hour12: false,
+                                })}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <ActionMenu user={user} onOpenModal={openModal} />
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        )}
                       </TableBody>
                     </Table>
-                    {filteredUsers.length === 0 && (
-                      <div className="p-10 text-center text-slate-400">
-                        Không có người dùng phù hợp.
-                      </div>
-                    )}
                   </div>
 
                   <Pagination>
@@ -1481,44 +1529,49 @@ export default function SystemAdminUserManagement() {
                 if (!open) closeModal();
               }}
             >
-              <DialogContent className="max-w-3xl rounded-2xl border border-emerald-50 shadow-2xl">
-                <DialogHeader>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl border border-emerald-50 shadow-2xl">
+                <DialogHeader className="sticky top-0 bg-white/95 backdrop-blur-sm pb-4 border-b border-slate-100">
                   <DialogTitle>Thông tin chi tiết</DialogTitle>
                   <DialogDescription>
                     Hồ sơ chi tiết của {selectedUser?.name}
                   </DialogDescription>
                 </DialogHeader>
-                {selectedUser && (
-                  <div className="grid gap-6 md:grid-cols-[3fr,2fr]">
+                {loadingDetail ? (
+                  <div className="flex items-center justify-center py-8">
+                    <RefreshCcw className="h-6 w-6 animate-spin mr-2" />
+                    Đang tải thông tin chi tiết...
+                  </div>
+                ) : userDetail && (
+                  <div className="grid gap-6 lg:grid-cols-[3fr,2fr] mt-4">
                   <div className="space-y-4">
                       <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
                         <p className="text-sm text-slate-500">Họ tên</p>
                         <p className="text-lg font-semibold text-slate-900">
-                          {selectedUser.name}
+                          {userDetail.name}
                         </p>
                       </div>
                       <div className="grid gap-4 md:grid-cols-2">
                         <div className="rounded-xl border border-slate-100 p-4">
                           <p className="text-sm text-slate-500">Email</p>
                           <p className="break-all font-medium">
-                            {selectedUser.email}
+                            {userDetail.email}
                           </p>
                         </div>
                         <div className="rounded-xl border border-slate-100 p-4">
                           <p className="text-sm text-slate-500">Số điện thoại</p>
-                          <p className="font-medium">{selectedUser.phone}</p>
+                          <p className="font-medium">{userDetail.phone}</p>
                         </div>
                         <div className="rounded-xl border border-slate-100 p-4">
                           <p className="text-sm text-slate-500">Vai trò</p>
                           <Badge
                             className={cn(
                               "mt-1 px-3 py-1 text-xs font-semibold",
-                              ROLE_META[selectedUser.role]?.className ??
+                              ROLE_META[userDetail.role]?.className ??
                                 "bg-slate-100 text-slate-600 border border-slate-200",
                             )}
                           >
-                            {ROLE_META[selectedUser.role]?.label ??
-                              selectedUser.role}
+                            {ROLE_META[userDetail.role]?.label ??
+                              userDetail.role}
                           </Badge>
                         </div>
                         <div className="rounded-xl border border-slate-100 p-4">
@@ -1526,76 +1579,91 @@ export default function SystemAdminUserManagement() {
                           <Badge
                             className={cn(
                               "mt-1 border-0",
-                              STATUS_META[selectedUser.status]?.className,
+                              STATUS_META[userDetail.status]?.className,
                             )}
                           >
-                            {STATUS_META[selectedUser.status]?.label}
+                            {STATUS_META[userDetail.status]?.label}
                           </Badge>
                         </div>
                       </div>
                       <div className="rounded-xl border border-slate-100 p-4">
                         <p className="text-sm text-slate-500">Địa phương</p>
-                        <p className="font-medium">{selectedUser.province}</p>
+                        <p className="font-medium">{userDetail.address}</p>
                       </div>
                       <div className="rounded-xl border border-slate-100 p-4">
                         <p className="text-sm text-slate-500">Ngày tạo tài khoản</p>
                         <p className="font-medium">
                           {new Date(
-                            selectedUser.createdAt ?? selectedUser.lastLogin,
+                            userDetail.lastLogin,
                           ).toLocaleString("vi-VN", {
                             hour12: false,
                           })}
                         </p>
                       </div>
-                      <div className="rounded-xl border border-slate-100 p-4">
-                        <p className="text-sm text-slate-500">Gói hiện tại</p>
-                        <p className="text-lg font-semibold text-slate-900">
-                          {getPlanLabel(selectedUser.plan)}
-                        </p>
-                      </div>
-                      <div className="rounded-xl border border-slate-100 p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div>
-                            <p className="text-sm text-slate-500">Quy mô vận hành</p>
+                      {userDetail.role === "Farmer" && (
+                        <>
+                          <div className="rounded-xl border border-slate-100 p-4">
+                            <p className="text-sm text-slate-500">Gói hiện tại</p>
                             <p className="text-lg font-semibold text-slate-900">
-                              {selectedUser.gardens?.length ?? 0} vườn
+                              {getPlanLabel(userDetail.plan)}
                             </p>
                           </div>
-                          <div className="text-right">
-                            <p className="text-sm text-slate-500">Tổng cây đang quản lý</p>
-                            <p className="text-lg font-semibold text-emerald-600">
-                              {(selectedUser.totalTreesManaged ?? 0).toLocaleString("vi-VN")}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-4 space-y-3">
-                          {selectedUser.gardens?.length ? (
-                            selectedUser.gardens.map((garden) => (
-                              <div
-                                key={garden.id}
-                                className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/80 px-3 py-2 text-sm"
-                              >
-                                <div>
-                                  <p className="font-semibold text-emerald-900">{garden.name}</p>
-                                  <p className="text-xs text-emerald-700">
-                                    Mã: {garden.id}
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-xs text-slate-500">Cây đang chăm sóc</p>
-                                  <p className="text-base font-semibold text-emerald-700">
-                                    {garden.treeCount.toLocaleString("vi-VN")}
-                                  </p>
-                                </div>
+                          <div className="rounded-xl border border-slate-100 p-4">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <div>
+                                <p className="text-sm text-slate-500">Quy mô vận hành</p>
+                                <p className="text-lg font-semibold text-slate-900">
+                                  {userDetail.totalGardens ?? 0} vườn
+                                </p>
                               </div>
-                            ))
-                          ) : (
-                            <p className="text-sm text-slate-500">
-                              Người dùng chưa quản lý vườn nào.
-                            </p>
-                          )}
+                              <div className="text-right">
+                                <p className="text-sm text-slate-500">Tổng cây đang quản lý</p>
+                                <p className="text-lg font-semibold text-emerald-600">
+                                  {(userDetail.totalTrees ?? 0).toLocaleString("vi-VN")}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="mt-4 space-y-3 max-h-60 overflow-y-auto">
+                              {userDetail.gardens?.length ? (
+                                userDetail.gardens.map((garden) => (
+                                  <div
+                                    key={garden.gardenId}
+                                    className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/80 px-3 py-2 text-sm"
+                                  >
+                                    <div>
+                                      <p className="font-semibold text-emerald-900">{garden.gardenName}</p>
+                                      <p className="text-xs text-emerald-700">
+                                        Mã: {garden.gardenId}
+                                      </p>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-xs text-slate-500">Cây đang chăm sóc</p>
+                                      <p className="text-base font-semibold text-emerald-700">
+                                        {garden.treeCount.toLocaleString("vi-VN")}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <p className="text-sm text-slate-500">
+                                  Người dùng chưa quản lý vườn nào.
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
+                      {userDetail.role !== "Farmer" && (
+                        <div className="rounded-xl border border-slate-100 p-4">
+                          <p className="text-sm text-slate-500">Quyền hạn quản trị</p>
+                          <p className="text-lg font-semibold text-slate-900">
+                            {userDetail.role === "SystemAdmin" ? "Quản trị hệ thống" : "Quản trị doanh nghiệp"}
+                          </p>
+                          <p className="text-sm text-slate-600 mt-1">
+                            Có quyền quản lý và giám sát toàn bộ hệ thống
+                          </p>
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     <div className="space-y-4 rounded-xl border border-slate-100 bg-slate-50 p-4">
@@ -1603,18 +1671,20 @@ export default function SystemAdminUserManagement() {
                         Thao tác nhanh
                       </p>
                       <div className="space-y-2">
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start gap-2 border-emerald-100 text-emerald-700 hover:bg-emerald-50"
-                          onClick={() => openModal("plan", selectedUser)}
-                        >
-                          <ShieldCheck className="h-4 w-4" />
-                          Nâng / hạ cấp gói
-                        </Button>
+                        {userDetail.role === "Farmer" && (
+                          <Button
+                            variant="outline"
+                            className="w-full justify-start gap-2 border-emerald-100 text-emerald-700 hover:bg-emerald-50"
+                            onClick={() => openModal("plan", userDetail)}
+                          >
+                            <ShieldCheck className="h-4 w-4" />
+                            Nâng / hạ cấp gói
+                          </Button>
+                        )}
                         <Button
                           variant="outline"
                           className="w-full justify-start gap-2 border-slate-200 text-slate-700 hover:bg-slate-50"
-                          onClick={() => openModal("edit", selectedUser)}
+                          onClick={() => openModal("edit", userDetail)}
                         >
                           <UserCheck className="h-4 w-4" />
                           Sửa thông tin

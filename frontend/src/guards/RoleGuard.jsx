@@ -8,18 +8,19 @@ const normalizeRoles = (input = []) =>
     .map((role) => role.toLowerCase());
 
 export default function RoleGuard({ children, roles = [] }) {
-  const { user } = useAuth();
-  if (!user) return <Navigate to="/auth" replace />;
+  // DISABLED: Role-based authentication temporarily disabled for development
+  // const { user } = useAuth();
+  // if (!user) return <Navigate to="/auth" replace />;
 
-  const userRoles = normalizeRoles([
-    user.role,
-    ...(Array.isArray(user.roles) ? user.roles : []),
-  ]);
-  const requiredRoles = normalizeRoles(roles);
+  // const userRoles = normalizeRoles([
+  //   user.role,
+  //   ...(Array.isArray(user.roles) ? user.roles : []),
+  // ]);
+  // const requiredRoles = normalizeRoles(roles);
 
-  if (requiredRoles.length > 0 && !requiredRoles.some((role) => userRoles.includes(role))) {
-    return <Navigate to="/" replace />;
-  }
+  // if (requiredRoles.length > 0 && !requiredRoles.some((role) => userRoles.includes(role))) {
+  //   return <Navigate to="/" replace />;
+  // }
 
   return children;
 }

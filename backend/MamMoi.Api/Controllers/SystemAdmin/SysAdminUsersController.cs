@@ -1,5 +1,4 @@
 ﻿using MamMoi.Application.DTOs.SystemAdmin;
-using MamMoi.Application.DTOs.SystemAdmin.MamMoi.Application.DTOs.SystemAdmin;
 using MamMoi.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -8,7 +7,7 @@ namespace MamMoi.Api.Controllers.SystemAdmin
 {
     [ApiController]
     [Route("api/sys-admin/users")]
-    [Authorize(Roles = "System Admin")]
+    [Authorize(Roles = "SystemAdmin")]
     public class SysAdminUsersController : ControllerBase
     {
         private readonly ISysAdminUserService _service;
@@ -31,6 +30,15 @@ namespace MamMoi.Api.Controllers.SystemAdmin
         public async Task<IActionResult> GetById(int id)
         {
             var user = await _service.GetUserByIdAsync(id);
+            if (user == null) return NotFound("User not found");
+            return Ok(user);
+        }
+
+        // GET: api/sys-admin/users/{id}/details
+        [HttpGet("{id}/details")]
+        public async Task<IActionResult> GetDetails(int id)
+        {
+            var user = await _service.GetUserDetailAsync(id);
             if (user == null) return NotFound("User not found");
             return Ok(user);
         }

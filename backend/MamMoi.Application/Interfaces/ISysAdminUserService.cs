@@ -1,4 +1,5 @@
-﻿using MamMoi.Application.DTOs.SystemAdmin.MamMoi.Application.DTOs.SystemAdmin;
+﻿using MamMoi.Application.DTOs.SystemAdmin;
+using MamMoi.Application.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +14,7 @@ namespace MamMoi.Application.Interfaces
         Task<PagedResult<SysUserDto>> GetUsersAsync(SysUserFilterDto filter);
 
         Task<SysUserDto?> GetUserByIdAsync(int id);
+        Task<SysUserDetailDto?> GetUserDetailAsync(int id);
         Task<SysUserDto> CreateUserAsync(SysUserCreateDto dto);
         Task<bool> UpdateUserAsync(int id, SysUserUpdateDto dto);
         Task<bool> ToggleUserStatusAsync(int id); // Khóa/Mở khóa nhanh
