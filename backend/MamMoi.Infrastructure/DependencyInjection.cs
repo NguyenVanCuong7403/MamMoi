@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IGardenMemberRepository, GardenMemberRepository>();
         services.AddScoped<ISystemSettingRepository, SystemSettingRepository>();
         services.AddScoped<IActivityLogRepository, ActivityLogRepository>();
+        services.AddScoped<ISoilMasterRepository, SoilMasterRepository>();
 
         // Thêm repositories khác khi cần:
         // services.AddScoped<ITreeRepository, TreeRepository>();

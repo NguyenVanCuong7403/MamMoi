@@ -7,7 +7,7 @@ namespace MamMoi.Api.Controllers.SystemAdmin
 {
     [ApiController]
     [Route("api/sys-admin/users")]
-    [Authorize(Roles = "SystemAdmin")]
+    
     public class SysAdminUsersController : ControllerBase
     {
         private readonly ISysAdminUserService _service;
