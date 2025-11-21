@@ -1259,7 +1259,7 @@ export default function TreeManagement() {
 
   /* ================== Render ================== */
   return (
-    <div data-fluid-page className="relative min-h-screen overflow-hidden pt-[64px]">
+    <div className="mm-fluid-page relative min-h-screen overflow-hidden pt-[64px]">
       <LivingBackground
         theme="aurora"
         baseColor={PALETTE.bg}
@@ -1281,10 +1281,7 @@ export default function TreeManagement() {
       
 
       <div style={zoomWrapperStyle}>
-        <main
-          data-fluid-shell
-          className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-4 space-y-6"
-        >
+        <main className="mm-fluid-shell px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-4 space-y-6">
 {/* Header + weather (chia đôi hero) */}
 <section className="mb-4">
    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start lg:items-end">

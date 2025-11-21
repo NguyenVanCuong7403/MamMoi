@@ -96,31 +96,34 @@
     -webkit-text-fill-color: #0f172a;
   }
 
-  [data-fluid-page] {
+  .mm-fluid-page {
     width: 100%;
     min-height: 100vh;
     margin: 0 auto;
     overflow-x: hidden;
+    position: relative;
   }
 
-  [data-fluid-shell] {
-    width: 100% !important;
+  .mm-fluid-shell {
+    width: 100%;
     max-width: none !important;
+    margin-inline: auto;
+    box-sizing: border-box;
   }
 
-  [data-fluid-text] {
+  .mm-fluid-text {
     text-wrap: pretty;
     word-break: break-word;
     hyphens: auto;
   }
 
-  [data-fluid-cluster] {
+  .mm-fluid-cluster {
     display: flex;
     flex-wrap: wrap;
     gap: clamp(12px, 1.5vw, 32px);
   }
 
-  [data-fluid-grid] {
+  .mm-fluid-grid {
     display: grid;
     gap: clamp(16px, 2vw, 32px);
     grid-template-columns: repeat(

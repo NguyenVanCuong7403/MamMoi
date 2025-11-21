@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 
 export default function InvoiceSuccess() {
   return (
-    <div data-fluid-page className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
-      <Card data-fluid-shell className="w-full max-w-2xl">
+    <div className="min-h-screen bg-gray-50 p-4 flex items-center justify-center">
+      <Card className="w-full max-w-2xl">
         <CardContent className="p-8">
           {/* Success Header */}
           <div className="text-center mb-8">

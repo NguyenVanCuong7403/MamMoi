@@ -217,7 +217,7 @@ function AmbientDecor() {
 
       {/* Aurora + wave ở TOP */}
       <div className="pointer-events-none fixed inset-x-0 -top-20 z-[1]">
-        <div data-fluid-shell className="relative mx-auto max-w-[1800px]">
+        <div className="mm-fluid-shell relative">
           <div className="absolute left-1/2 -translate-x-1/2 w-[1100px] h-[260px] rounded-[999px] blur-3xl bg-gradient-to-r from-emerald-400/20 via-lime-300/10 to-emerald-500/20 animate-[mm-pulse_6s_ease-in-out_infinite]" />
           <svg viewBox="0 0 1200 220" className="mx-auto w-[1200px] h-[220px] opacity-70">
             <defs>
@@ -266,10 +266,7 @@ function AmbientDecor() {
 function PageHero({ breadcrumb, title, subtitle, right }) {
   return (
     <header className="relative">
-      <div
-        data-fluid-shell
-        className="mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-10 2xl:px-16 pt-20 md:pt-24"
-      >
+      <div className="mm-fluid-shell w-full px-4 sm:px-6 lg:px-10 2xl:px-16 pt-20 md:pt-24">
         <div className="flex items-start justify-between gap-4">
           <div>
             {/* Tiêu đề */}
@@ -286,7 +283,7 @@ function PageHero({ breadcrumb, title, subtitle, right }) {
 
             {/* Mô tả */}
             {subtitle ? (
-              <p className="mt-2 text-sm md:text-base text-emerald-50/90 max-w-3xl">
+              <p className="mm-fluid-text mt-2 text-sm md:text-base text-emerald-50/90 max-w-3xl">
                 {subtitle}
               </p>
             ) : null}
@@ -1869,28 +1866,7 @@ function PlannedRow({ p, theme, disabled, openEditMain, openComplete, openEditNo
 const NOTE_PREVIEW_MAX = 230;
 
 
-function AsideCards({
-  image,
-  setImage,
-  codeKey,
-  phen,
-  tree,
-  meta,
-  planned,
-  openEditNote,
-  note,
-  onSaveNote,
-  readOnly = false,
-  showImageTop = false,
-  currentPhaseId,
-  onPhaseChange,
-  cycleCount,
-  phase1Completed,
-  loai,
-  giong,
-  resolvedTreeId,
-  resolvedTreeOwnerId,
-}) {
+function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed,  loai, giong  }) {
   const [editNote, setEditNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || "");
   // Chuẩn bị text hiển thị cho khung "Ghi chú" (chỉ xem)
@@ -2109,8 +2085,7 @@ const displayNote =
     cycleCount={cycleCount}
     phase1Completed={phase1Completed}
     disabled={meta.status === "stopped"}
-    treeId={resolvedTreeId}
-    treeOwnerId={resolvedTreeOwnerId}
+    treeId={tree.id}
     treeType={loai}         // 👈 thêm
     treeVariety={giong}
   />
@@ -2675,7 +2650,6 @@ function mapDtoToTree(dto) {
   return {
     // ID & mã
     id: dto.treeId,
-    userId: dto.userId,
     code: dto.treeCode,
     name: dto.treeName,
 
@@ -2695,7 +2669,6 @@ function mapDtoToTree(dto) {
     soil: dto.gardenSoilId,
     notes: dto.notes,
     qrUrl: dto.qrcodeUrl,
-    stageId: dto.stageId,
     stageName: dto.stageName,
     phase: dto.stageName,
 
@@ -2783,6 +2756,7 @@ function mapDtoToTree(dto) {
     try {
       setSaving(true);
 
+      // body gửi lên API – chỉ cần đúng key camelCase
       const payload = {
         // chuỗi
         treeName: partial.treeName ?? meta?.name ?? null,
@@ -2806,7 +2780,7 @@ function mapDtoToTree(dto) {
         stageId: partial.stageId ?? meta?.stageId ?? null,
         gardenSoilId:
           partial.gardenSoilId ??
-          partial.GardenSoilId ??
+          partial.GardenSoilId ?? 
           meta?.gardenSoilId ??
           null,
 
@@ -2816,13 +2790,7 @@ function mapDtoToTree(dto) {
           meta?.isFruiting ??
           null,
         isActive:
-          (partial.isActive === "stopped"
-            ? false
-            : partial.isActive === "active"
-            ? true
-            : typeof partial.isActive === "boolean"
-            ? partial.isActive
-            : null) ??
+          (partial.isActive === "stopped" ? false : partial.isActive === "active" ? true : null) ??
           (typeof meta?.isActive === "boolean"
             ? meta.isActive
             : meta?.status === "active"
@@ -2839,13 +2807,7 @@ function mapDtoToTree(dto) {
       };
 
 
-      const ownerId =
-        partial.userId ??
-        meta?.userId ??
-        baseTree?.userId ??
-        null;
-
-      await TreeRepository.updateTree(treeId, payload, ownerId || undefined);
+      await TreeRepository.updateTree(treeId, payload);
 
       // cập nhật lại meta local cho đồng bộ
       setMeta((prev) => ({
@@ -3253,7 +3215,6 @@ const canEditFruit = useMemo(
 
  // ==== META (data thật) + DRAFT (để sửa, không làm bẩn state khi Hủy) ====
 const [meta, setMeta] = useState({
-  treeId: baseTree.id || baseTree.treeId || treeId || null,
   name: baseTree.treeName || "",
   plantedAt: baseTree.plantedAt || today(),
   variety: baseTree.variety || "",
@@ -3261,8 +3222,6 @@ const [meta, setMeta] = useState({
   soil: baseTree.soil || "",
   status: baseTree.status || "active",
   notes: baseTree.notes || "",
-  stageId: baseTree.stageId || null,
-  userId: baseTree.userId || null,
 });
 
 
@@ -3273,12 +3232,6 @@ useEffect(() => {
 
   setMeta((prev) => ({
     ...prev,
-    treeId:
-      baseTree.id ??
-      baseTree.treeId ??
-      prev.treeId ??
-      treeId ??
-      null,
     name: baseTree.treeName ?? baseTree.name ?? prev.name,
     plantedAt: baseTree.plantedAt ?? prev.plantedAt,
     variety: baseTree.variety ?? prev.variety,
@@ -3288,29 +3241,11 @@ useEffect(() => {
     soil: baseTree.soil ?? prev.soil,
     status: baseTree.status ?? prev.status,
     notes: baseTree.notes || "",
-    stageId: baseTree.stageId ?? prev.stageId ?? null,
-    userId: baseTree.userId ?? prev.userId ?? null,
   }));
 }, [
   baseTree?.updatedAt,  
   baseTree?.notes,
-  baseTree?.stageId,
-  baseTree?.userId,
-  baseTree?.id,
 ]);
-
-const resolvedTreeId =
-  baseTree.id ??
-  baseTree.treeId ??
-  meta?.treeId ??
-  treeId;
-
-const resolvedTreeOwnerId =
-  baseTree.userId ??
-  meta?.userId ??
-  apiTree?.userId ??
-  stateTree?.userId ??
-  null;
 
  // danh sách GardenSoil của vườn hiện tại & map id -> object
  const [gardenSoils, setGardenSoils] = useState([]);
@@ -4699,7 +4634,7 @@ function handleHealthEditorKeyDown(e) {
 
 
   return (
-    <div data-fluid-page className="min-h-screen bg-transparent isolate overflow-x-hidden">
+    <div className="mm-fluid-page min-h-screen bg-transparent isolate overflow-x-hidden">
       
       {/* HERO giống màn danh sách cây */}
 <PageHero
@@ -4712,10 +4647,7 @@ function handleHealthEditorKeyDown(e) {
   subtitle="Theo dõi tuổi cây, giai đoạn sinh trưởng, công việc và tình trạng chăm sóc — tất cả trên một màn hình."
 />
 
-      <main
-        data-fluid-shell
-        className="mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-10 2xl:px-16 pt-6 md:pt-8 pb-10 space-y-8"
-      >
+      <main className="mm-fluid-shell w-full px-4 sm:px-6 lg:px-10 2xl:px-16 pt-6 md:pt-8 pb-10 space-y-8">
 
         {/* daily overdue toast */}
         {dailyToast.show && (
@@ -5402,20 +5334,11 @@ function handleHealthEditorKeyDown(e) {
  phase1Completed={phase1Completed}
   loai={loai}
   giong={giong}
-resolvedTreeId={resolvedTreeId}
-resolvedTreeOwnerId={resolvedTreeOwnerId}
-                onPhaseChange={(payload) => {
-    // payload: { phaseId, cycleCount, phase1Completed, stageId? }
+ onPhaseChange={(payload) => {
+    // payload: { phaseId, cycleCount, phase1Completed }
     setCurrentPhaseId(payload.phaseId);
     setCycleCount(payload.cycleCount);
     setPhase1Completed(payload.phase1Completed);
-    if (payload.stageId != null) {
-      setMeta((prev) => ({
-        ...prev,
-        stageId: payload.stageId,
-      }));
-      persistTreePatch({ stageId: payload.stageId });
-    }
 
     // ✅ đồng bộ lifecycle + phase vào demoTrees
     syncTreePatch(codeKey, {
@@ -5427,7 +5350,6 @@ resolvedTreeOwnerId={resolvedTreeOwnerId}
       },
       // nếu bạn có field phase / phenology.stage ở TreeManagement thì cho nó trùng luôn:
       phase: payload.phaseId,
-      stageId: payload.stageId ?? undefined,
       phenology: {
         ...(baseTree.phenology || {}),
         stage: payload.phaseId,

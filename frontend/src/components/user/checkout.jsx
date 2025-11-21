@@ -150,8 +150,8 @@ export default function MamMoiQrCheckout({ order: orderProp, bank: bankProp }) {
 
   // ====== UI ======
   return (
-    <div data-fluid-page className="min-h-screen w-full bg-[#f6f8f7] dark:bg-background px-5 py-8">
-      <div data-fluid-shell className="mx-auto max-w-6xl grid gap-6 md:grid-cols-[1.15fr_0.85fr]">
+    <div className="min-h-screen w-full bg-[#f6f8f7] dark:bg-background px-5 py-8">
+      <div className="mx-auto max-w-6xl grid gap-6 md:grid-cols-[1.15fr_0.85fr]">
         {/* LEFT: QR & bank info */}
         <Card className="border-0 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between gap-2">

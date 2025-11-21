@@ -123,7 +123,7 @@ function PaymentHistory(props) {
 
   // ── Render ─────────────────────────────────────
   return (
-    <div data-fluid-page className="min-h-screen bg-gray-50">
+    <div className="mm-fluid-page min-h-screen bg-gray-50">
       {/* Header */}
       <div className="relative bg-emerald-800 h-28 overflow-hidden">
         <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -141,7 +141,7 @@ function PaymentHistory(props) {
         </div>
       </div>
 
-      <div data-fluid-shell className="max-w-7xl mx-auto px-6 py-8">
+      <div className="mm-fluid-shell max-w-7xl mx-auto px-6 py-8">
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           {/* Filters */}
           <div className="flex items-center gap-4 mb-6">

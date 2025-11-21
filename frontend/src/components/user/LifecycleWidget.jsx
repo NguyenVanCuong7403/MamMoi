@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useRef, useState, useLayoutEffect } from "re
 import { createPortal } from "react-dom";
 import { ChevronDown, ArrowDown } from "lucide-react";
 import TreeRepository from "@/API/repositories/TreeRepository";
-import { normalize as vnNormalize } from "@/lib/useVnAdmin";
 
 // =========================================================================
 // Phase ID Aliases & Helpers
@@ -523,8 +522,8 @@ function LCPhaseDropdown({ activePhase, onPickPhase, onStartNewCycle }) {
     { id: "pre_harvest", name: "Trước thu hoạch", icon: "🔍" },
     { id: "post_harvest", name: "Sau thu hoạch", icon: "🌿" },
   ];
-  return (
-    <div data-fluid-shell className="relative">
+    return (
+     <div className="mm-fluid-shell relative">
       <button
         onClick={() => setOpen(o => !o)}
         className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-extrabold text-white
@@ -574,7 +573,6 @@ export default function LifecycleWidget({
   cycleCount: cycleCountProp, phase1Completed: phase1CompletedProp,
   disabled = false,
   treeId,
-  treeOwnerId,
   treeType,
   treeVariety,
   onPhaseGateChange,
@@ -585,148 +583,6 @@ export default function LifecycleWidget({
     growth_development:"Sinh trưởng & Phát triển",
     flowering:"Ra Hoa", fruiting:"Đậu quả", pre_harvest:"Trước thu hoạch", post_harvest:"Sau thu hoạch",
   }[id] || id);
-
-  const DEFAULT_PHASE_STAGE_MAP = {
-    growth_development: { order: 1, name: labelOf("growth_development"), stageId: null },
-    flowering: { order: 2, name: labelOf("flowering"), stageId: null },
-    fruiting: { order: 3, name: labelOf("fruiting"), stageId: null },
-    pre_harvest: { order: 4, name: labelOf("pre_harvest"), stageId: null },
-    post_harvest: { order: 5, name: labelOf("post_harvest"), stageId: null },
-  };
-
-  const [phaseStageMap, setPhaseStageMap] = useState(DEFAULT_PHASE_STAGE_MAP);
-
-  const resolvedTreeId =
-    treeId ??
-    tree?.id ??
-    tree?.treeId ??
-    meta?.treeId ??
-    meta?.id ??
-    null;
-
-  const resolvedOwnerId =
-    treeOwnerId ??
-    meta?.userId ??
-    tree?.userId ??
-    null;
-
-  const buildPhaseStageMap = (stages) => {
-    if (!Array.isArray(stages) || stages.length === 0) return null;
-
-    const map = {};
-    const norm = (s) => vnNormalize(String(s || "")).toLowerCase();
-
-    const phaseHintsFromName = (stageName) => {
-      const normalized = norm(stageName);
-      const phases = new Set();
-      if (!normalized) {
-        phases.add("growth_development");
-        return phases;
-      }
-
-      if (normalized.includes("sau thu hoach")) phases.add("post_harvest");
-      if (normalized.includes("truoc thu hoach")) phases.add("pre_harvest");
-      if (
-        normalized.includes("dau qua") ||
-        normalized.includes("nuoi qua") ||
-        normalized.includes("ra qua") ||
-        normalized.includes("ket trai") ||
-        normalized.includes("trai")
-      ) {
-        phases.add("fruiting");
-      }
-      if (
-        normalized.includes("ra hoa") ||
-        (normalized.includes("hoa") && !normalized.includes("sau"))
-      ) {
-        phases.add("flowering");
-      }
-      if (
-        normalized.includes("sinh truong") ||
-        normalized.includes("phat trien") ||
-        normalized.includes("phase 1") ||
-        normalized.includes("giai doan 1")
-      ) {
-        phases.add("growth_development");
-      }
-
-      if (phases.size === 0) phases.add("growth_development");
-      return phases;
-    };
-
-    const decorated = stages
-      .map((stage, idx) => {
-        const sortKey = Number(
-          stage.stageOrder ??
-            stage.order ??
-            stage.sequence ??
-            stage.stageId ??
-            stage.id ??
-            idx
-        );
-        return { stage, sortKey: Number.isFinite(sortKey) ? sortKey : idx, idx };
-      })
-      .sort((a, b) => {
-        if (a.sortKey !== b.sortKey) return a.sortKey - b.sortKey;
-        return a.idx - b.idx;
-      });
-
-    decorated.forEach(({ stage }, index) => {
-      const ordinal = index + 1;
-      const stageName = (stage.stageName ?? stage.name ?? "").trim();
-      const phaseMatches = phaseHintsFromName(stageName);
-      const stageIdValue =
-        stage.stageId ??
-        stage.stageID ??
-        stage.StageId ??
-        stage.StageID ??
-        stage.id ??
-        null;
-      const rawOrder =
-        stage.stageOrder ??
-        stage.StageOrder ??
-        stage.order ??
-        stage.sequence ??
-        ordinal;
-      const numericOrder = Number(rawOrder);
-      const orderValue = Number.isFinite(numericOrder) ? numericOrder : ordinal;
-
-      phaseMatches.forEach((phaseId) => {
-        if (!map[phaseId]) {
-          map[phaseId] = {
-            order: orderValue,
-            name: stageName || labelOf(phaseId),
-            stageId: stageIdValue,
-          };
-        }
-      });
-    });
-
-    return Object.keys(map).length ? map : null;
-  };
-
-  useEffect(() => {
-    let cancelled = false;
-    async function loadStages() {
-      if (!resolvedTreeId) {
-        setPhaseStageMap(DEFAULT_PHASE_STAGE_MAP);
-        return;
-      }
-      try {
-        const stages = await TreeRepository.getStages(resolvedTreeId);
-        if (cancelled) return;
-        const derived = buildPhaseStageMap(stages);
-        setPhaseStageMap(derived ? { ...DEFAULT_PHASE_STAGE_MAP, ...derived } : DEFAULT_PHASE_STAGE_MAP);
-      } catch (err) {
-        console.error("Failed to load stage map", err);
-        if (!cancelled) setPhaseStageMap(DEFAULT_PHASE_STAGE_MAP);
-      }
-    }
-    loadStages();
-    return () => {
-      cancelled = true;
-    };
-  }, [resolvedTreeId]);
 
   // Lấy giá trị đầu tiên có thật (string hoặc object {name/label/...})
 const first = (...xs) => xs.find(Boolean) || "";
@@ -935,13 +791,11 @@ useEffect(() => {
   };
 
   async function persistTreePatch(partial) {
-    if (!resolvedTreeId) {
-      console.warn("LifecycleWidget: missing treeId, skip persist");
-      return;
-    }
+    if (!treeId) return;
 
 
     try {
+      // body gửi lên API – chỉ cần đúng key camelCase
       const payload = {
         // chuỗi
         treeName: partial.treeName ?? meta?.name ?? null,
@@ -961,27 +815,21 @@ useEffect(() => {
           ? toDateOnlyString(meta.expectedHarvestDate)
           : null,
 
-        // số
+        // int?
         stageId: partial.stageId ?? meta?.stageId ?? null,
         gardenSoilId:
           partial.gardenSoilId ??
-          partial.GardenSoilId ??
+          partial.GardenSoilId ?? 
           meta?.gardenSoilId ??
           null,
 
-        // bool
+        // bool?
         isFruiting:
           partial.isFruiting ??
           meta?.isFruiting ??
           null,
         isActive:
-          (partial.isActive === "stopped"
-            ? false
-            : partial.isActive === "active"
-            ? true
-            : typeof partial.isActive === "boolean"
-            ? partial.isActive
-            : null) ??
+          (partial.isActive === "stopped" ? false : partial.isActive === "active" ? true : null) ??
           (typeof meta?.isActive === "boolean"
             ? meta.isActive
             : meta?.status === "active"
@@ -998,12 +846,7 @@ useEffect(() => {
       };
 
 
-      const ownerId =
-        partial.userId ??
-        resolvedOwnerId ??
-        null;
-
-      await TreeRepository.updateTree(resolvedTreeId, payload, ownerId || undefined);
+      await TreeRepository.updateTree(treeId, payload);
     } catch (err) {
       console.error("Update tree failed", err);
       // TODO: show toast / message
@@ -1023,25 +866,26 @@ useEffect(() => {
 
     let nextPhaseId = to;
 
-    const stageMeta = phaseStageMap[nextPhaseId] || DEFAULT_PHASE_STAGE_MAP[nextPhaseId];
-    const hasExternalChangeHandler = typeof onChange === "function";
-    let resolvedStageId = null;
-    if (stageMeta) {
-      const fallback = DEFAULT_PHASE_STAGE_MAP[nextPhaseId] || {};
-      const stageIdValue =
-        stageMeta.stageId ??
-        fallback.stageId ??
-        stageMeta.order ??
-        fallback.order ??
-        null;
-
-      if (stageIdValue != null) {
-        resolvedStageId = stageIdValue;
-        if (!hasExternalChangeHandler) {
-          persistTreePatch({
-            stageId: stageIdValue,
-          });
-        }
+    switch(nextPhaseId) {
+      case "growth_development": {
+        persistTreePatch({ stageId: 1});
+        break;
+      }
+      case "flowering": {
+        persistTreePatch({ stageId: 2});
+        break;
+      }
+      case "fruiting": {
+        persistTreePatch({ stageId: 3});
+        break;
+      }
+      case "pre_harvest": {
+        persistTreePatch({ stageId: 4});
+        break;
+      }
+      case "post_harvest": {
+        persistTreePatch({ stageId: 5});
+        break;
       }
     }
 
@@ -1081,7 +925,6 @@ useEffect(() => {
       phaseId: nextPhaseId,
       cycleCount: nextCount,
       phase1Completed: nextP1,
-      stageId: resolvedStageId,
     });
   }
 
@@ -1091,7 +934,7 @@ useEffect(() => {
    const nameSource = (meta?.name ?? tree?.name ?? "").trim();
  const varietySource = meta?.variety ?? tree?.variety ?? "—";
  const treeData = {
-  id: (resolvedTreeId ?? "—"), // ⬅️ đồng bộ với mã cây (codeKey)
+  id: (treeId ?? tree?.id ?? "—"), // ⬅️ đồng bộ với mã cây (codeKey)
   type: nameSource.split(/\s+/)[0] || "Cây",
   variety: varietySource,
   currentPhase: activePhase,
@@ -1138,7 +981,7 @@ useEffect(() => {
           isPhase1Completed={isPhase1Completed}
           isSpinning={isSpinning}
           treeData={treeData}
-          treeId={resolvedTreeId}                 // 👈 mã cây chuẩn
+          treeId={treeId}                 // 👈 mã cây chuẩn
   treeType={displayType}          // 👈 loại chuẩn
   treeVariety={displayVariety}
           transitionFlow={transitionFlow}
