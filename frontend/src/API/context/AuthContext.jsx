@@ -1,4 +1,10 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 import AuthRepository from "../repositories/AuthRepository";
 
 const AuthContext = createContext(null);
@@ -7,7 +13,67 @@ const ROLE_CLAIM_KEYS = [
   "role",
   "roles",
   "http://schemas.microsoft.com/ws/2008/06/identity/claims/role",
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/role",
 ];
+
+const MAX_REMEMBERED_EMAILS = 5; // Giới hạn tối đa 5 email được ghi nhớ
+
+// Helper functions để quản lý danh sách email đã ghi nhớ
+const getRememberedEmails = () => {
+  try {
+    const stored = localStorage.getItem("rememberedEmails");
+    if (!stored) {
+      // Kiểm tra xem có email cũ (string) không để migrate
+      const oldEmail = localStorage.getItem("rememberedEmail");
+      if (oldEmail) {
+        const emails = [oldEmail];
+        localStorage.setItem("rememberedEmails", JSON.stringify(emails));
+        localStorage.removeItem("rememberedEmail"); // Xóa key cũ
+        return emails;
+      }
+      return [];
+    }
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const addRememberedEmail = (email) => {
+  if (!email || !email.trim()) return;
+  const trimmedEmail = email.trim();
+  const emails = getRememberedEmails();
+
+  // Xóa email nếu đã tồn tại (để đưa lên đầu)
+  const filtered = emails.filter((e) => e !== trimmedEmail);
+
+  // Thêm email vào đầu danh sách
+  const updated = [trimmedEmail, ...filtered];
+
+  // Giới hạn số lượng email
+  const limited = updated.slice(0, MAX_REMEMBERED_EMAILS);
+
+  localStorage.setItem("rememberedEmails", JSON.stringify(limited));
+};
+
+const removeRememberedEmail = (email) => {
+  if (!email) return;
+  const trimmedEmail = email.trim();
+  const emails = getRememberedEmails();
+  const filtered = emails.filter((e) => e !== trimmedEmail);
+
+  if (filtered.length === 0) {
+    localStorage.removeItem("rememberedEmails");
+  } else {
+    localStorage.setItem("rememberedEmails", JSON.stringify(filtered));
+  }
+};
+
+const clearRememberedEmails = () => {
+  localStorage.removeItem("rememberedEmails");
+  localStorage.removeItem("rememberedEmail"); // Xóa key cũ nếu còn
+};
 
 const decodeJwtPayload = (token) => {
   if (!token) return null;
@@ -16,7 +82,9 @@ const decodeJwtPayload = (token) => {
     if (!base64Url) return null;
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const padded =
-      base64.length % 4 === 0 ? base64 : base64.padEnd(base64.length + (4 - (base64.length % 4)), "=");
+      base64.length % 4 === 0
+        ? base64
+        : base64.padEnd(base64.length + (4 - (base64.length % 4)), "=");
     return JSON.parse(atob(padded));
   } catch (err) {
     console.warn("Failed to decode JWT payload", err);
@@ -26,19 +94,48 @@ const decodeJwtPayload = (token) => {
 
 const extractRolesFromToken = (token) => {
   const payload = decodeJwtPayload(token);
-  if (!payload) return { primaryRole: null, roles: [] };
+  if (!payload) {
+    console.warn("⚠️ JWT payload is null");
+    return { primaryRole: null, roles: [] };
+  }
 
+  // Log all keys in payload for debugging
+  console.log("🔍 JWT payload keys:", Object.keys(payload));
+  console.log("🔍 JWT payload:", payload);
+
+  // Try to find role in various claim keys
   for (const key of ROLE_CLAIM_KEYS) {
     const value = payload[key];
     if (!value) continue;
 
+    console.log(`✅ Found role claim with key "${key}":`, value);
+
     if (Array.isArray(value)) {
-      return { primaryRole: value[0], roles: value };
+      const result = { primaryRole: value[0], roles: value };
+      console.log("✅ Extracted roles (array):", result);
+      return result;
     }
 
-    return { primaryRole: value, roles: [value] };
+    const result = { primaryRole: value, roles: [value] };
+    console.log("✅ Extracted role (single):", result);
+    return result;
   }
 
+  // If no role found in standard keys, check all keys for role-like values
+  for (const key of Object.keys(payload)) {
+    if (key.toLowerCase().includes("role")) {
+      const value = payload[key];
+      console.log(`⚠️ Found potential role key "${key}":`, value);
+      if (Array.isArray(value)) {
+        return { primaryRole: value[0], roles: value };
+      }
+      if (typeof value === "string" && value) {
+        return { primaryRole: value, roles: [value] };
+      }
+    }
+  }
+
+  console.warn("⚠️ No role found in JWT token");
   return { primaryRole: null, roles: [] };
 };
 
@@ -59,7 +156,9 @@ export const AuthProvider = ({ children }) => {
     return parsed;
   });
   const [token, setToken] = useState(() => localStorage.getItem("token"));
-  const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem("refreshToken"));
+  const [refreshToken, setRefreshToken] = useState(() =>
+    localStorage.getItem("refreshToken")
+  );
   const [loading, setLoading] = useState(false);
 
   const login = async (email, password, remember = false) => {
@@ -79,6 +178,8 @@ export const AuthProvider = ({ children }) => {
 
       const { primaryRole, roles } = extractRolesFromToken(data.accessToken);
 
+      console.log("🔍 Extracted role from token:", { primaryRole, roles });
+
       const userData = {
         userId: data.userId,
         email: data.email,
@@ -86,24 +187,42 @@ export const AuthProvider = ({ children }) => {
         isEmailVerified: data.isEmailVerified,
         ProfileImageUrl: data.ProfileImageUrl,
         role: primaryRole,
+        roleId: data.roleId, // Add roleId from response
         roles,
       };
+
+      console.log("✅ User data to be saved:", userData);
 
       localStorage.setItem("token", data.accessToken);
       localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("user", JSON.stringify(userData));
 
       // Lưu email để ghi nhớ đăng nhập (KHÔNG lưu password vì lý do bảo mật)
+      // Hỗ trợ nhiều email: lưu vào danh sách thay vì ghi đè
       if (remember) {
-        localStorage.setItem("rememberedEmail", email);
+        addRememberedEmail(email);
       } else {
-        localStorage.removeItem("rememberedEmail");
+        // Nếu không tick "Ghi nhớ", chỉ xóa email hiện tại khỏi danh sách (nếu có)
+        // Không xóa toàn bộ danh sách để giữ lại các email khác
+        removeRememberedEmail(email);
       }
 
       setUser(userData);
       setToken(data.accessToken);
       setRefreshToken(data.refreshToken);
-      return { success: true, role: primaryRole, user: userData };
+
+      console.log(
+        "✅ Login successful, returning role:",
+        primaryRole,
+        "roleId:",
+        data.roleId
+      );
+      return {
+        success: true,
+        role: primaryRole,
+        roleId: data.roleId,
+        user: userData,
+      };
     } catch (err) {
       console.error("Login failed:", err);
       return { success: false, message: err.message };
@@ -125,17 +244,25 @@ export const AuthProvider = ({ children }) => {
       console.log("🔍 AuthContext register response:", response);
 
       if (response.success) {
-        return { 
-          success: true, 
-          message: response.message || "Đăng ký thành công! Vui lòng kiểm tra email để xác thực OTP.",
-          data: response.data
+        return {
+          success: true,
+          message:
+            response.message ||
+            "Đăng ký thành công! Vui lòng kiểm tra email để xác thực OTP.",
+          data: response.data,
         };
       } else {
-        return { success: false, message: response.message || "Đăng ký thất bại" };
+        return {
+          success: false,
+          message: response.message || "Đăng ký thất bại",
+        };
       }
     } catch (err) {
       console.error("Register failed:", err);
-      return { success: false, message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại." };
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
     } finally {
       setLoading(false);
     }
@@ -152,17 +279,23 @@ export const AuthProvider = ({ children }) => {
       console.log("🔍 AuthContext verifyOtp response:", response);
 
       if (response.success) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: response.message || "Xác thực OTP thành công!",
-          data: response.data
+          data: response.data,
         };
       } else {
-        return { success: false, message: response.message || "OTP không hợp lệ" };
+        return {
+          success: false,
+          message: response.message || "OTP không hợp lệ",
+        };
       }
     } catch (err) {
       console.error("Verify OTP failed:", err);
-      return { success: false, message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại." };
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
     } finally {
       setLoading(false);
     }
@@ -176,16 +309,22 @@ export const AuthProvider = ({ children }) => {
       console.log("🔍 AuthContext forgotPassword response:", response);
 
       if (response.success) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: response.message || "Đã gửi email reset mật khẩu!",
         };
       } else {
-        return { success: false, message: response.message || "Gửi email thất bại" };
+        return {
+          success: false,
+          message: response.message || "Gửi email thất bại",
+        };
       }
     } catch (err) {
       console.error("Forgot password failed:", err);
-      return { success: false, message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại." };
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
     } finally {
       setLoading(false);
     }
@@ -199,16 +338,22 @@ export const AuthProvider = ({ children }) => {
       console.log("🔍 AuthContext resendOtp response:", response);
 
       if (response.success) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: response.message || "Đã gửi lại OTP!",
         };
       } else {
-        return { success: false, message: response.message || "Gửi lại OTP thất bại" };
+        return {
+          success: false,
+          message: response.message || "Gửi lại OTP thất bại",
+        };
       }
     } catch (err) {
       console.error("Resend OTP failed:", err);
-      return { success: false, message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại." };
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
     } finally {
       setLoading(false);
     }
@@ -226,16 +371,22 @@ export const AuthProvider = ({ children }) => {
       console.log("🔍 AuthContext resetPassword response:", response);
 
       if (response.success) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: response.message || "Đổi mật khẩu thành công!",
         };
       } else {
-        return { success: false, message: response.message || "Đổi mật khẩu thất bại" };
+        return {
+          success: false,
+          message: response.message || "Đổi mật khẩu thất bại",
+        };
       }
     } catch (err) {
       console.error("Reset password failed:", err);
-      return { success: false, message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại." };
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
     } finally {
       setLoading(false);
     }
@@ -265,8 +416,12 @@ export const AuthProvider = ({ children }) => {
             userId: apiUser.userId ?? apiUser.UserId ?? prevSafe.userId,
             email: apiUser.email ?? apiUser.Email ?? prevSafe.email,
             fullName: apiUser.fullName ?? apiUser.name ?? prevSafe.fullName,
-            isEmailVerified: apiUser.isEmailVerified ?? prevSafe.isEmailVerified,
-            ProfileImageUrl: apiUser.profileImageUrl ?? apiUser.ProfileImageUrl ?? prevSafe.ProfileImageUrl,
+            isEmailVerified:
+              apiUser.isEmailVerified ?? prevSafe.isEmailVerified,
+            ProfileImageUrl:
+              apiUser.profileImageUrl ??
+              apiUser.ProfileImageUrl ??
+              prevSafe.ProfileImageUrl,
             role: apiUser.role ?? apiUser.Role ?? prevSafe.role,
           };
 
@@ -295,7 +450,21 @@ export const AuthProvider = ({ children }) => {
   }, [token, user, refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, token, refreshToken, login, register, verifyOtp, forgotPassword, resetPassword, resendOtp, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        refreshToken,
+        login,
+        register,
+        verifyOtp,
+        forgotPassword,
+        resetPassword,
+        resendOtp,
+        logout,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

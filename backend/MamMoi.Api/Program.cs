@@ -103,9 +103,7 @@ namespace MamMoi.Api
                 }
             });
 
-            app.UseHttpsRedirection();
             app.UseCors("AllowAll");
-
             app.UseHttpsRedirection();
 
             app.UseAuthentication();

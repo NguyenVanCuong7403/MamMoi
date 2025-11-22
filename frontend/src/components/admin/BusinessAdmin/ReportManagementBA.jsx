@@ -70,6 +70,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LivingBackground } from "@/components/background";
 import AdminLayout from "../layout/AdminLayout";
+import AdminReportRepository from "@/API/repositories/AdminReportRepository";
 
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
@@ -781,14 +782,12 @@ function ReportTypeDistributionChart({ data, timeFilter = "day", allReports = []
 }
 
 export default function ReportManagementBA() {
-  const [reports, setReports] = useState(MOCK_REPORTS);
-
-  // Hàm cập nhật report
-  const updateReport = (reportId, updates) => {
-    setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, ...updates } : r)));
-  };
-  
-  const [filters, setFilters] = useState(defaultFilters);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [selectedReport, setSelectedReport] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDetailOpen, setViewDetailOpen] = useState(false);
@@ -799,6 +798,96 @@ export default function ReportManagementBA() {
   const [pendingStatus, setPendingStatus] = useState("");
   const [hasSubmitAttempt, setHasSubmitAttempt] = useState(false);
   const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
+
+  // Hàm cập nhật report
+  const updateReport = async (reportId, updates) => {
+    try {
+      // Find the report to get requestId
+      const report = reports.find(r => r.id === reportId);
+      const requestId = report?.requestId || reportId;
+
+      const updateData = {
+        status: updates.status,
+        resolution: updates.internalNote || updates.resolution,
+        priority: updates.priority,
+        category: updates.category,
+      };
+
+      await AdminReportRepository.updateReport(requestId, updateData);
+      
+      // Refresh reports after update
+      await fetchReports();
+    } catch (err) {
+      console.error("Error updating report:", err);
+      throw err;
+    }
+  };
+
+  // Fetch reports from API
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Map filters to API parameters
+      const statusFilter = filters.status === "all" ? null : filters.status;
+      const priorityFilter = filters.priority === "all" ? null : filters.priority;
+      const categoryFilter = filters.type === "all" ? null : filters.type;
+
+      // Calculate date range based on time filter
+      const now = new Date();
+      let startDate = null;
+      let endDate = null;
+
+      if (filters.time === "day") {
+        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        endDate = now;
+      } else if (filters.time === "week") {
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        endDate = now;
+      } else if (filters.time === "month") {
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        endDate = now;
+      } else if (filters.time === "year") {
+        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        endDate = now;
+      }
+
+      const response = await AdminReportRepository.getReports(
+        page,
+        100, // Large page size to get all reports for filtering
+        statusFilter,
+        priorityFilter,
+        categoryFilter,
+        null,
+        startDate,
+        endDate
+      );
+
+      if (response.success) {
+        setReports(response.data || []);
+        setTotalCount(response.pagination?.totalCount || 0);
+        setTotalPages(response.pagination?.totalPages || 1);
+      }
+    } catch (err) {
+      console.error("Error fetching reports:", err);
+      setError(err.message || "Có lỗi xảy ra khi tải danh sách báo cáo");
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch and when filters change
+  useEffect(() => {
+    fetchReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.time, filters.status, filters.priority, filters.type, page]);
+
+  // Refresh button handler
+  const handleRefresh = () => {
+    fetchReports();
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -1123,14 +1212,22 @@ export default function ReportManagementBA() {
   const showEmailContentError = hasSubmitAttempt && !isEmailContentValid;
   const showStatusError = hasSubmitAttempt && !isStatusValid;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (selectedReport && statusUpdate && isAdminNotesValid && isEmailContentValid) {
-      // Cập nhật report status thông qua context
-      updateReport(selectedReport.id, {
-        status: statusUpdate,
-        internalNote: adminNotes.trim(),
-        emailContent: emailContent.trim(),
-      });
+      try {
+        // Cập nhật report status thông qua API
+        await updateReport(selectedReport.id, {
+          status: statusUpdate,
+          internalNote: adminNotes.trim(),
+          emailContent: emailContent.trim(),
+        });
+        
+        // Show success message (email sending would be handled by backend)
+        alert("Cập nhật báo cáo thành công!");
+      } catch (err) {
+        alert("Có lỗi xảy ra khi cập nhật báo cáo. Vui lòng thử lại.");
+        return;
+      }
     }
     setConfirmOpen(false);
     setDialogOpen(false);
@@ -1204,12 +1301,30 @@ export default function ReportManagementBA() {
             <Button
               variant="outline"
               className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+              onClick={handleRefresh}
+              disabled={loading}
             >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Đồng bộ dữ liệu
+              <RefreshCw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
+              {loading ? "Đang tải..." : "Đồng bộ dữ liệu"}
             </Button>
           </div>
         </div>
+
+        {error && (
+          <div className="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-rose-700 shadow-lg">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              <p>{error}</p>
+            </div>
+          </div>
+        )}
+
+        {loading && reports.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+            <span className="ml-3 text-slate-600">Đang tải dữ liệu...</span>
+          </div>
+        ) : null}
 
         {overdueAlert && (
           <div className="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-rose-700 shadow-lg shadow-rose-200/50">
