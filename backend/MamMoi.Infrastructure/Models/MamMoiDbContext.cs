@@ -24,6 +24,7 @@ public partial class MamMoiDbContext : DbContext
     public virtual DbSet<Role> Roles { get; set; }
     public virtual DbSet<SoilMaster> SoilMasters { get; set; }
     public virtual DbSet<Subscription> Subscriptions { get; set; }
+    public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
     public virtual DbSet<SupportRequest> SupportRequests { get; set; }
     public virtual DbSet<SystemSetting> SystemSettings { get; set; }
     public virtual DbSet<Tree> Trees { get; set; }
@@ -380,6 +381,24 @@ public partial class MamMoiDbContext : DbContext
                   .HasConstraintName("FK_Subscriptions_Users");
         });
 
+        // ===== SubscriptionPlan =====
+        modelBuilder.Entity<SubscriptionPlan>(entity =>
+        {
+            entity.HasKey(e => e.PlanId).HasName("PK__Subscrip__755C22D7A1B2C3D4");
+            entity.ToTable("SubscriptionPlans");
+
+            entity.HasIndex(e => e.PlanName, "UQ_SubscriptionPlans_PlanName").IsUnique();
+
+            entity.Property(e => e.PlanId).HasColumnName("PlanID");
+            entity.Property(e => e.PlanName).HasMaxLength(100);
+            entity.Property(e => e.PlanType).HasMaxLength(50);
+            entity.Property(e => e.Price).HasColumnType("decimal(10, 2)");
+            entity.Property(e => e.Currency).HasMaxLength(10).HasDefaultValue("VND");
+            entity.Property(e => e.Description).HasMaxLength(500);
+            entity.Property(e => e.Features).HasMaxLength(int.MaxValue);
+            entity.Property(e => e.IsActive).HasDefaultValue(true);
+        });
+
         // ===== SupportRequest =====
         modelBuilder.Entity<SupportRequest>(entity =>
         {
@@ -518,7 +537,8 @@ public partial class MamMoiDbContext : DbContext
                   .HasName("PK_TreeVariety");
 
             entity.Property(e => e.VarietyId)
-                  .HasColumnName("VarietyID");
+                  .HasColumnName("VarietyID")
+                  .ValueGeneratedOnAdd();
 
             // TreeTypeId (nullable FK)
             entity.Property(e => e.TreeTypeId)

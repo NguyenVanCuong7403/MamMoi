@@ -47,15 +47,25 @@ export default class ApiClient {
   static async handleResponse(res) {
     if (!res.ok) {
       let errorMessage = res.statusText;
+      // Clone the response so we can read it multiple times
+      const clonedRes = res.clone();
       try {
-        const errorData = await res.json();
+        const errorData = await clonedRes.json();
         console.log(errorData);
         errorMessage = errorData.message || errorData.Message || errorMessage;
       } catch {
-        // If not JSON, use text
-        errorMessage = await res.text() || errorMessage;
+        // If not JSON, try to read as text from the original response
+        try {
+          errorMessage = await res.text() || errorMessage;
+        } catch {
+          // If reading text also fails, use status text
+          errorMessage = res.statusText;
+        }
       }
-      throw new Error(errorMessage);
+      const error = new Error(errorMessage);
+      error.status = res.status;
+      error.statusText = res.statusText;
+      throw error;
     }
     if (res.status === 204) return null;
     return await res.json();

@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LivingBackground } from "@/components/background";
+import SupportRequestRepository from "@/API/repositories/SupportRequestRepository";
+import ApiClient from "@/API/ApiClient";
 
 /* =========================================================
    Theme & constants
@@ -159,10 +161,33 @@ export default function Report() {
 
     setIsSubmitting(true);
 
-    // Simulate API call
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Prepare description with email if provided
+      let description = form.content;
+      if (form.category === "auth" && form.email) {
+        description = `${form.content}\n\nEmail liên hệ: ${form.email}`;
+      }
+
+      // Prepare request data - API will auto-map category to priority
+      const requestData = {
+        subject: form.title,
+        description: description,
+        category: form.category || "other",
+        // Priority will be auto-mapped by backend based on category
+      };
+
+      // If there's an image, we'll store the URL in attachmentUrls
+      // For now, if you have a file upload service, implement it here
+      // For simplicity, we'll skip image upload for now
+      // You can add file upload functionality later
+      if (form.image) {
+        // TODO: Implement file upload to get URL
+        // For now, we'll proceed without image
+        console.warn("Image upload not yet implemented, proceeding without image");
+      }
+
+      // Create support request
+      const response = await SupportRequestRepository.createRequest(requestData);
 
       alert("Gửi yêu cầu thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất có thể.");
       
@@ -184,7 +209,9 @@ export default function Report() {
       setErrors({});
       removeImage();
     } catch (error) {
-      alert("Có lỗi xảy ra. Vui lòng thử lại sau.");
+      console.error("Error submitting report:", error);
+      const errorMessage = error.message || "Có lỗi xảy ra. Vui lòng thử lại sau.";
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
