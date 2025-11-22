@@ -1088,6 +1088,7 @@ export default function AddTreeNewScreen() {
   //const [soil, setSoil] = useState("");
   const [gardenSoils, setGardenSoils] = useState([]);     
   const [gardenSoilId, setGardenSoilId] = useState("");
+  const [treeLocation, setTreeLocation] = useState("");
   const [plantDate, setPlantDate] = useState("");
   const [preAge, setPreAge] = useState("");
   const [image, setImage] = useState("");
@@ -1336,6 +1337,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
     setVariety("");
     setStatus("");
     setGardenSoilId("");
+    setTreeLocation("");
     setPlantDate("");
     setPreAge("");
     setImage("");
@@ -1404,11 +1406,11 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
         TreeVarietyId: selectedVarietyId,
         TreeCode: code.trim() || null,
-        TreeName: [speciesLabel, variety].filter(Boolean).join(" ") || null,
+        TreeName: variety || null,
         PlantDate: plantDate || null, // dạng "yyyy-MM-dd" → DateOnly? bên C#
 
         GardenSoilId: gardenSoilId ? Number(gardenSoilId) : null,
-        Location: null, // hiện UI chưa có, sau này thêm field Location thì map vào đây
+        Location: treeLocation, 
 
         Notes: (note || userIntent || "").trim() || null,
         preMonths: preAgeNum,
@@ -1638,9 +1640,29 @@ const effectivePhase = phaseOverride || defaultPhase5;
   <SearchableSelect
     value={selectedVarietyId}
     onChange={(val) => {
-      setSelectedVarietyId(val);
-      setVariety(val);
+      const opts = treeTypeId ? (varietiesByType[String(treeTypeId)] || []).map((v) => ({ value: v.value, label: v.label })) : [];
+
+    // if the select returns an object like { value, label }
+    if (val && typeof val === "object" && "value" in val && "label" in val) {
+      setSelectedVarietyId(val.value);
+      setVariety(val.label);
       setErrors((x) => ({ ...x, variety: undefined }));
+      return;
+    }
+
+    // if the select returns just the value (id), look up the label
+    if (val != null) {
+      const found = opts.find((o) => String(o.value) === String(val));
+      setSelectedVarietyId(val);
+      setVariety(found ? found.label : ""); // set empty string if not found
+      setErrors((x) => ({ ...x, variety: undefined }));
+      return;
+    }
+
+    // cleared
+    setSelectedVarietyId(null);
+    setVariety("");
+    setErrors((x) => ({ ...x, variety: undefined }));
     }}
     options={
       treeTypeId
@@ -1739,8 +1761,12 @@ const effectivePhase = phaseOverride || defaultPhase5;
   <SearchableSelect
   value={gardenSoilId}
   onChange={(val) => {
+    const selected = gardenSoils.find((s) => String(s.gardenSoilId) === String(val));
     setGardenSoilId(val);
     setErrors((x) => ({ ...x, soil: undefined }));
+
+    // Set tree location using the label/customLabel
+    setTreeLocation(selected ? selected.customLabel || `Đất #${selected.gardenSoilId}` : "");
   }}
   options={gardenSoils.map((s) => ({
     value: String(s.gardenSoilId),
