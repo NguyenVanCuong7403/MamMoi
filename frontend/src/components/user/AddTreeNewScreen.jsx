@@ -1639,6 +1639,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
     value={selectedVarietyId}
     onChange={(val) => {
       setSelectedVarietyId(val);
+      setVariety(val);
       setErrors((x) => ({ ...x, variety: undefined }));
     }}
     options={

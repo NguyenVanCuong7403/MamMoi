@@ -3536,13 +3536,24 @@ useEffect(() => {
 }, [planned]);
 
 
-  const [aiSuggestions, setAiSuggestions] = useState(() =>
-  getAISuggestions(baseTree, initialPhaseId)
-);
+const [aiSuggestions, setAiSuggestions] = useState([]);
 
 useEffect(() => {
-  setAiSuggestions(getAISuggestions(baseTree, currentPhaseId));
-}, [currentPhaseId]);
+  let cancelled = false;
+
+  (async () => {
+    try {
+      const result = await getAISuggestions(baseTree, currentPhaseId);
+      if (!cancelled) setAiSuggestions(result ?? []);
+    } catch (err) {
+      console.error("Failed to update AI suggestions:", err);
+      if (!cancelled) setAiSuggestions([]);
+    }
+  })();
+
+  return () => { cancelled = true; };
+}, [baseTree.treeId]);
+
 
 
   // Loại đang xem
@@ -6715,137 +6726,119 @@ useEffect(() => {
 }
 
 
-/* =========================================================================
-   AI Suggestions (demo)
-   ========================================================================= */
-/* =========================================================================
-   AI Suggestions (demo)
-   ========================================================================= */
-function getAISuggestions(tree, phaseId) {
-  const pid = normalizePhaseId(
-    phaseId ||
-      tree?.lifecycle?.currentPhaseId ||
-      tree?.phenology?.currentPhase ||
-      tree?.phenology?.stage ||
-      tree?.phase
-  );
+function toYmd(dateStrOrDate) {
+  if (!dateStrOrDate) return null;
+  const d = dateStrOrDate instanceof Date ? dateStrOrDate : new Date(dateStrOrDate);
+  if (isNaN(d)) return null;
+  const yyyy = d.getUTCFullYear();
+  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(d.getUTCDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
 
-  // helper: ngày gợi ý luôn >= hôm nay
-  const dueIn = (days) => addDays(Math.max(0, days));
-
-  // Mỗi gợi ý: { type: 'water'|'fert'|'pest'|'other', title, due: 'YYYY-MM-DD', details: [..] }
-  switch (pid) {
-    case "growth_development": // Sinh trưởng & Phát triển
-      return [
-        {
-          type: "water",
-          title: "Tưới giữ ẩm 70–80%",
-          due: dueIn(0),
-          details: ["10–12L/cây (điều chỉnh theo ẩm đất 20–30cm)", "Tưới sáng sớm, tránh nắng gắt"],
-        },
-        {
-          type: "fert",
-          title: "Bón NPK cân đối 16-16-8",
-          due: dueIn(3),
-          details: ["200–300g/cây", "Rải theo mép tán + lấp đất nhẹ", "Tưới đẫm sau bón"],
-        },
-        {
-          type: "pest",
-          title: "Theo dõi rầy chổng cánh",
-          due: dueIn(1),
-          details: ["Đặt bẫy dính vàng", "Khảo sát lá non, chồi non", "Chụp ảnh mẫu nghi ngờ"],
-        },
-      ];
-
-    case "flowering": // Ra hoa
-      return [
-        {
-          type: "water",
-          title: "Điều tiết tưới nhẹ hỗ trợ ra hoa",
-          due: dueIn(0),
-          details: ["Giữ ẩm nền, tránh dư nước", "Không tưới chiều muộn"],
-        },
-        {
-          type: "fert",
-          title: "Phân bón lá vi lượng (Bo/Zn) hỗ trợ thụ phấn",
-          due: dueIn(2),
-          details: ["Pha đúng nồng độ khuyến cáo", "Phun sáng sớm/chiều mát"],
-        },
-        {
-          type: "pest",
-          title: "Theo dõi nấm bệnh trên hoa",
-          due: dueIn(1),
-          details: ["Quan sát rụng hoa bất thường", "Vệ sinh tán, thoáng khí"],
-        },
-      ];
-
-    case "fruiting": // Đậu/nuôi quả
-      return [
-        {
-          type: "other",
-          title: "Bao trái lứa 1",
-          due: dueIn(0),
-          details: ["Bao khi quả đạt kích thước chuẩn", "Dùng bao thoáng, sạch"],
-        },
-        {
-          type: "fert",
-          title: "Tăng K (ví dụ NPK 13-13-20 hoặc K₂O cao)",
-          due: dueIn(4),
-          details: ["Liều lượng theo tuổi/tán", "Chia nhỏ, bón xa gốc theo mép tán"],
-        },
-        {
-          type: "water",
-          title: "Tưới định kỳ giữ ẩm ổn định",
-          due: dueIn(1),
-          details: ["8–12L/cây/đợt", "Tránh thay đổi ẩm đột ngột gây nứt quả"],
-        },
-      ];
-
-    case "pre_harvest": // Trước thu hoạch
-      return [
-        {
-          type: "other",
-          title: "Khảo sát độ chín/độ brix",
-          due: dueIn(0),
-          details: ["Lấy mẫu đại diện", "Ghi brix/độ già quả để lên lịch cắt"],
-        },
-        {
-          type: "water",
-          title: "Điều tiết tưới trước thu hoạch",
-          due: dueIn(1),
-          details: ["Giữ ẩm vừa đủ", "Tránh tưới đẫm sát ngày cắt"],
-        },
-        {
-          type: "pest",
-          title: "Vệ sinh cỏ rác lối đi thu hoạch",
-          due: dueIn(2),
-          details: ["Dọn sạch, chống trơn trượt", "Chuẩn bị sọt/kệ sạch"],
-        },
-      ];
-
-    case "post_harvest": // Sau thu hoạch
-      return [
-        {
-          type: "other",
-          title: "Tỉa cành tạo tán sau thu",
-          due: dueIn(1),
-          details: ["Loại cành sâu bệnh, cành già", "Tạo thoáng, cân đối tán"],
-        },
-        {
-          type: "fert",
-          title: "Bón phục hồi hữu cơ + NPK nhẹ",
-          due: dueIn(3),
-          details: ["Bổ sung hữu cơ hoai mục", "NPK nhẹ thúc chồi lá mới"],
-        },
-        {
-          type: "pest",
-          title: "Vệ sinh vườn, thu gom phụ phẩm",
-          due: dueIn(0),
-          details: ["Thu gom quả rụng", "Đốt/chôn đúng quy trình tránh lây bệnh"],
-        },
-      ];
-
-    default:
-      return [];
+function safeParseActions(actionsJson) {
+  if (!actionsJson) return [];
+  try {
+    // if it's already an object/array
+    if (typeof actionsJson !== "string") return Array.isArray(actionsJson) ? actionsJson : [];
+    // try parse once
+    let parsed = JSON.parse(actionsJson);
+    // sometimes backend stores a JSON-encoded string: "\"[ ... ]\"" -> parsed is a string -> parse again
+    if (typeof parsed === "string") {
+      parsed = JSON.parse(parsed);
+    }
+    // final result should be array
+    if (Array.isArray(parsed)) return parsed;
+    // if object with actions field
+    if (parsed && Array.isArray(parsed.actions)) return parsed.actions;
+    return [];
+  } catch (err) {
+    // fallback: attempt to extract a JSON array substring (very defensive)
+    try {
+      const m = actionsJson.match(/\[.*\]/s);
+      if (m) return JSON.parse(m[0]);
+    } catch (e) { /* ignore */ }
+    return [];
   }
+}
+
+function todayUtcYmd() {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Bangkok",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+
+  const y = parts.find(p => p.type === "year").value;
+  const m = parts.find(p => p.type === "month").value;
+  const d = parts.find(p => p.type === "day").value;
+  return `${y}-${m}-${d}`;
+}
+
+/* =========================================================================
+   AI Suggestions (demo)
+   ========================================================================= */
+async function getAISuggestions(tree, phaseId) {
+    if (!tree || !tree.treeId) throw new Error("Missing tree or tree.treeId");
+
+  const forDate = todayUtcYmd();
+
+    // call backend
+  let resp;
+  try {
+    resp = await TreeRepository.getAiRecommendation(tree.treeId, forDate);
+  } catch (err) {
+    // rethrow or return empty
+    console.error("Failed to fetch AI recommendations:", err);
+    return [];
+  }
+
+  // support both axios-like (resp.data) or direct data
+  const dtos = resp?.data ?? resp ?? [];
+  if (!Array.isArray(dtos)) {
+    console.warn("Unexpected AI response shape, expected array of DTOs.", dtos);
+    return [];
+  }
+  console.log(dtos);
+
+  const suggestions = [];
+
+  for (const dto of dtos) {
+    // dto shape: { TreeId, ForDate, ActionsJson, CreatedAt }
+    // ForDate might be string "2025-11-22" or other; use it as fallback
+    const dtoForDate = dto?.ForDate ?? dto?.forDate ?? null;
+    const baseDate = toYmd(dtoForDate);
+
+    // parse actionsJson safely
+    const rawActions = dto?.ActionsJson ?? dto?.actionsJson ?? "[]";
+    const actions = safeParseActions(rawActions);
+
+    // if actions array is empty, skip or create a placeholder from dto
+    if (!actions || actions.length === 0) {
+      // optional: skip
+      continue;
+    }
+
+    for (const a of actions) {
+      // action can have fields: type, title, scheduledDate, timeOfDay, priority, estimatedDurationMinutes, details
+      const scheduled = a.scheduledDate ?? a.scheduled ?? baseDate ?? null;
+      const due = toYmd(scheduled) ?? baseDate ?? toYmd(new Date());
+
+      const details = Array.isArray(a.details) ? a.details : (a.details ? [String(a.details)] : []);
+
+      suggestions.push({
+        type: mapTaskTypeFromApi(a.type ?? a.actionType ?? a.typeName),
+        title: a.title ?? a.name ?? "Không rõ",
+        due,
+        details,
+        _sourceForDate: baseDate,
+        _createdAt: dto?.CreatedAt ?? dto?.createdAt ?? null
+      });
+    }
+  }
+
+  console.log(suggestions);
+  return suggestions;
+    
 }
