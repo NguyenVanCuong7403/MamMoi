@@ -13,15 +13,15 @@ public partial class Garden
 
     public string? Location { get; set; }
 
-    public DateTime CreatedAt { get; set; }
-
     public string? TimeZone { get; set; }
 
     public string? ClimateZone { get; set; }
 
-    public string Status { get; set; } = null!;
+    public string Status { get; set; } = "Đang hoạt động";
 
-    public string? CoverUrl { get; set; }
+    public string? CoverUrl { get; set; } = null;
+
+    public DateTime CreatedAt { get; set; }
 
     public virtual ICollection<GardenMember> GardenMembers { get; set; } = new List<GardenMember>();
 

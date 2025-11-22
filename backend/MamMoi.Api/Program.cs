@@ -6,7 +6,6 @@ using MamMoi.Infrastructure;
 using MamMoi.Infrastructure.External.Weather; // <-- để dùng AlertThresholds
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.FileProviders;
-using Microsoft.Extensions.Options;
 
 namespace MamMoi.Api
 {
@@ -81,7 +80,6 @@ namespace MamMoi.Api
                         Array.Empty<string>()
                     }
                 });
-                c.CustomSchemaIds(type => type.ToString());
             });
 
             var app = builder.Build();

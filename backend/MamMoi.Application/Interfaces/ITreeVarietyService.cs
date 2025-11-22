@@ -1,4 +1,4 @@
-﻿using MamMoi.Application.DTOs.BusinessAdmin;
+﻿using MamMoi.Application.DTOs;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,8 +7,8 @@ using System.Threading.Tasks;
 
 namespace MamMoi.Application.Interfaces
 {
-    public interface IAnalyticsService
+    public interface ITreeVarietyService
     {
-        Task<AnalyticsDashboardDto> GetRevenueAnalyticsAsync();
+        Task<IReadOnlyList<TreeVarietyDto>> GetAllAsync(CancellationToken ct = default);
     }
 }

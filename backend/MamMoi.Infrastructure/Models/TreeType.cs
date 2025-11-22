@@ -44,4 +44,5 @@ public partial class TreeType
     public virtual ICollection<TreeGrowthStage> TreeGrowthStages { get; set; } = new List<TreeGrowthStage>();
 
     public virtual ICollection<Tree> Trees { get; set; } = new List<Tree>();
+    public virtual ICollection<TreeVariety> TreeVarieties { get; set; } = new List<TreeVariety>();
 }

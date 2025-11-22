@@ -39,6 +39,7 @@ namespace MamMoi.Infrastructure.Services
                 GardenId = req.GardenId,
                 UserId = userId,
                 TreeTypeId = req.TreeTypeId,
+                VarietyId = req.TreeVarietyId,
                 StageId = req.StageId,
                 TreeCode = string.IsNullOrWhiteSpace(req.TreeCode) ? null : req.TreeCode,
                 TreeName = req.TreeName,
@@ -120,6 +121,7 @@ namespace MamMoi.Infrastructure.Services
             tree.IsActive = req.IsActive ?? tree.IsActive;
             tree.ExpectedHarvestDate = req.ExpectedHarvestDate ?? tree.ExpectedHarvestDate;
             tree.Notes = req.Notes ?? tree.Notes;
+            tree.preMonths = req.preMonths ?? tree.preMonths;
 
             // cập nhật 4 trạng thái nếu FE gửi
             tree.LeafStatus = req.LeafStatus ?? tree.LeafStatus;

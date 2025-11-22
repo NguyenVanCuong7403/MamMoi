@@ -58,6 +58,7 @@ public class GardenMemberService : IGardenMemberService
                     var farmerEntity = farmer as User;
                     var farmerName = farmerEntity?.FullName ?? "Unknown";
 
+                    // TODO: Tính total trees và pending tasks khi có TreeService và TaskService
                     var assignedGarden = new AssignedGardenDto
                     {
                         GardenId = gardenEntity.GardenId,

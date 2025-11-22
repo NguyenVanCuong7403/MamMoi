@@ -7,11 +7,13 @@ namespace MamMoi.Application.DTOs
         string? TreeName,
         string GardenName,
         string TreeTypeName,
+        string TreeVarietyName,
         string StageName,
         string HealthStatus,
         string LeafStatus,
         string BranchStatus,
         string? ImageUrl,
+        int? preMonths,
         DateTime CreatedAt,
         DateOnly? PlantDate
     );

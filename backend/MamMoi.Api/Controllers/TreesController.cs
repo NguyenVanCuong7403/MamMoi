@@ -12,17 +12,20 @@ public class TreesController : ControllerBase
 {
     private readonly ITreeQueryService _treeQuery;
     private readonly ITreeTypeService _treeType;
+    private readonly ITreeVarietyService _treeVariety;
     private readonly ITreeCommandService _treeCmd;
     private readonly ITreeImageService _treeImg;
 
     public TreesController(
         ITreeQueryService treeQuery,
         ITreeTypeService treeType,
+        ITreeVarietyService treeVariety,
         ITreeCommandService treeCmd,
         ITreeImageService treeImg)
     {
         _treeQuery = treeQuery;
         _treeType = treeType;
+        _treeVariety = treeVariety;
         _treeCmd = treeCmd;
         _treeImg = treeImg;
     }
@@ -81,6 +84,11 @@ public class TreesController : ControllerBase
     [HttpGet("types")]
     public async Task<IActionResult> GetTreeTypes(CancellationToken ct)
         => Ok(await _treeType.GetAllAsync(ct));
+
+    // ===================== 1) Tree Variety =====================
+    [HttpGet("varieties")]
+    public async Task<IActionResult> GetTreeVarieties(CancellationToken ct)
+        => Ok(await _treeVariety.GetAllAsync(ct));
 
     // ===================== 2) My Trees =====================
     [HttpGet("my")]
