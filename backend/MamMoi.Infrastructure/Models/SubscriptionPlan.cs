@@ -19,6 +19,12 @@ public partial class SubscriptionPlan
 
     public string? Features { get; set; }
 
+    public int? MaxGardens { get; set; }
+
+    public int? MaxTreesPerGarden { get; set; }
+
+    public int? DurationInMonths { get; set; }
+
     public bool IsActive { get; set; }
 }
 

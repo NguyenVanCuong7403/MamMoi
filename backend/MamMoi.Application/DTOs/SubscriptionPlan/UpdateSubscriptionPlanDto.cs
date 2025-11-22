@@ -4,47 +4,34 @@ namespace MamMoi.Application.DTOs.SubscriptionPlan;
 
 /// <summary>
 /// DTO for updating an existing subscription plan
+/// NOTE: For fixed subscription plans, only PlanName, Price, and DurationInMonths can be updated.
+/// Description and Features are read-only and cannot be modified.
+/// MaxGardens and MaxTreesPerGarden define the plan structure and cannot be changed.
 /// </summary>
 public class UpdateSubscriptionPlanDto
 {
     /// <summary>
     /// Plan name (optional, 3-100 characters, must be unique)
+    /// Only PlanName, Price, and DurationInMonths can be updated for fixed plans
     /// </summary>
     [StringLength(100, MinimumLength = 3, ErrorMessage = "Plan name must be between 3 and 100 characters")]
     public string? PlanName { get; set; }
 
     /// <summary>
-    /// Plan type (optional, max 50 characters)
-    /// </summary>
-    [StringLength(50, ErrorMessage = "Plan type cannot exceed 50 characters")]
-    public string? PlanType { get; set; }
-
-    /// <summary>
     /// Price (optional, must be >= 0)
+    /// Only PlanName, Price, and DurationInMonths can be updated for fixed plans
     /// </summary>
     [Range(0, double.MaxValue, ErrorMessage = "Price must be greater than or equal to 0")]
     public decimal? Price { get; set; }
 
     /// <summary>
-    /// Currency (optional, max 10 characters)
+    /// Duration in months (optional, must be >= 1)
+    /// Only PlanName, Price, and DurationInMonths can be updated for fixed plans
     /// </summary>
-    [StringLength(10, ErrorMessage = "Currency cannot exceed 10 characters")]
-    public string? Currency { get; set; }
+    [Range(1, int.MaxValue, ErrorMessage = "Duration must be at least 1 month")]
+    public int? DurationInMonths { get; set; }
 
-    /// <summary>
-    /// Description (optional, max 500 characters)
-    /// </summary>
-    [StringLength(500, ErrorMessage = "Description cannot exceed 500 characters")]
-    public string? Description { get; set; }
-
-    /// <summary>
-    /// Features (optional, JSON string or plain text)
-    /// </summary>
-    public string? Features { get; set; }
-
-    /// <summary>
-    /// Is active
-    /// </summary>
-    public bool? IsActive { get; set; }
+    // NOTE: Description and Features are intentionally NOT included in this DTO
+    // They are read-only fields and cannot be updated for fixed subscription plans
 }
 

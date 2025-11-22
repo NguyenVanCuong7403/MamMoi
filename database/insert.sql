@@ -418,49 +418,68 @@ GO
 PRINT 'Inserting SubscriptionPlans...'
 GO
 
--- Insert default subscription plans
-IF NOT EXISTS (SELECT 1 FROM [dbo].[SubscriptionPlans] WHERE [PlanName] = N'Gói Ươm Mầm')
+-- Insert fixed subscription plans (4 plans only)
+-- Free Plan: 1 month, 1 garden, 1 tree
+IF NOT EXISTS (SELECT 1 FROM [dbo].[SubscriptionPlans] WHERE [PlanName] = N'Gói Miễn Phí')
 BEGIN
-    INSERT INTO [dbo].[SubscriptionPlans] ([PlanName], [PlanType], [Price], [Currency], [Description], [Features], [IsActive])
-    VALUES (N'Gói Ươm Mầm', N'seedling', 490000.00, N'VND', 
-            N'Gói dịch vụ cơ bản dành cho người mới bắt đầu trồng cây', 
-            N'["Quản lý tối đa 10 cây", "Nhắc nhở chăm sóc cơ bản", "Theo dõi tăng trưởng", "Hỗ trợ qua email"]', 
-            1);
-    PRINT 'Inserted: Gói Ươm Mầm'
+    INSERT INTO [dbo].[SubscriptionPlans] ([PlanName], [PlanType], [Price], [Currency], [Description], [Features], [MaxGardens], [MaxTreesPerGarden], [DurationInMonths], [IsActive])
+    VALUES (N'Gói Miễn Phí', N'free', 0.00, N'VND', 
+            N'Gói miễn phí dùng thử: 1 tháng, 1 vườn, 1 cây', 
+            N'["Gói miễn phí dùng thử 1 tháng", "Quản lý 1 vườn", "Quản lý 1 cây trong vườn", "Nhắc nhở chăm sóc cơ bản"]', 
+            1, 1, 1, 1);
+    PRINT 'Inserted: Gói Miễn Phí'
 END
 ELSE
 BEGIN
-    PRINT 'Gói Ươm Mầm already exists, skipping...'
+    PRINT 'Gói Miễn Phí already exists, skipping...'
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM [dbo].[SubscriptionPlans] WHERE [PlanName] = N'Gói Vườn Xanh')
+-- Plan 1: 1 garden, 5 trees per garden, price 100
+IF NOT EXISTS (SELECT 1 FROM [dbo].[SubscriptionPlans] WHERE [PlanName] = N'Gói 1')
 BEGIN
-    INSERT INTO [dbo].[SubscriptionPlans] ([PlanName], [PlanType], [Price], [Currency], [Description], [Features], [IsActive])
-    VALUES (N'Gói Vườn Xanh', N'orchard', 1290000.00, N'VND', 
-            N'Gói dịch vụ nâng cao cho người có kinh nghiệm trồng cây', 
-            N'["Quản lý tối đa 50 cây", "Nhắc nhở chăm sóc thông minh", "Phân tích tăng trưởng chi tiết", "Tư vấn AI về chăm sóc cây", "Hỗ trợ 24/7", "Báo cáo thời tiết chi tiết"]', 
-            1);
-    PRINT 'Inserted: Gói Vườn Xanh'
+    INSERT INTO [dbo].[SubscriptionPlans] ([PlanName], [PlanType], [Price], [Currency], [Description], [Features], [MaxGardens], [MaxTreesPerGarden], [DurationInMonths], [IsActive])
+    VALUES (N'Gói 1', N'plan1', 100.00, N'VND', 
+            N'Gói 1: Tạo được 1 vườn và mỗi vườn 5 cây', 
+            N'["Quản lý 1 vườn", "Mỗi vườn tối đa 5 cây", "Nhắc nhở chăm sóc", "Theo dõi tăng trưởng"]', 
+            1, 5, NULL, 1);
+    PRINT 'Inserted: Gói 1'
 END
 ELSE
 BEGIN
-    PRINT 'Gói Vườn Xanh already exists, skipping...'
+    PRINT 'Gói 1 already exists, skipping...'
 END
 GO
 
-IF NOT EXISTS (SELECT 1 FROM [dbo].[SubscriptionPlans] WHERE [PlanName] = N'Gói Thu Hoạch')
+-- Plan 2: 5 gardens, 5 trees per garden, price 500
+IF NOT EXISTS (SELECT 1 FROM [dbo].[SubscriptionPlans] WHERE [PlanName] = N'Gói 2')
 BEGIN
-    INSERT INTO [dbo].[SubscriptionPlans] ([PlanName], [PlanType], [Price], [Currency], [Description], [Features], [IsActive])
-    VALUES (N'Gói Thu Hoạch', N'harvest', 3890000.00, N'VND', 
-            N'Gói dịch vụ cao cấp dành cho nông trại và vườn cây quy mô lớn', 
-            N'["Quản lý không giới hạn số cây", "Nhắc nhở chăm sóc thông minh với AI", "Phân tích tăng trưởng nâng cao", "Tư vấn AI chuyên sâu", "Hỗ trợ 24/7 ưu tiên", "Báo cáo thời tiết và cảnh báo chi tiết", "Quản lý nhân viên và phân quyền", "Xuất báo cáo chuyên nghiệp", "Tích hợp API"]', 
-            1);
-    PRINT 'Inserted: Gói Thu Hoạch'
+    INSERT INTO [dbo].[SubscriptionPlans] ([PlanName], [PlanType], [Price], [Currency], [Description], [Features], [MaxGardens], [MaxTreesPerGarden], [DurationInMonths], [IsActive])
+    VALUES (N'Gói 2', N'plan2', 500.00, N'VND', 
+            N'Gói 2: Tạo 5 vườn và mỗi vườn 5 cây', 
+            N'["Quản lý tối đa 5 vườn", "Mỗi vườn tối đa 5 cây", "Nhắc nhở chăm sóc thông minh", "Phân tích tăng trưởng chi tiết", "Tư vấn AI về chăm sóc cây"]', 
+            5, 5, NULL, 1);
+    PRINT 'Inserted: Gói 2'
 END
 ELSE
 BEGIN
-    PRINT 'Gói Thu Hoạch already exists, skipping...'
+    PRINT 'Gói 2 already exists, skipping...'
+END
+GO
+
+-- Plan 3: Unlimited gardens and trees, price 990
+IF NOT EXISTS (SELECT 1 FROM [dbo].[SubscriptionPlans] WHERE [PlanName] = N'Gói 3')
+BEGIN
+    INSERT INTO [dbo].[SubscriptionPlans] ([PlanName], [PlanType], [Price], [Currency], [Description], [Features], [MaxGardens], [MaxTreesPerGarden], [DurationInMonths], [IsActive])
+    VALUES (N'Gói 3', N'plan3', 990.00, N'VND', 
+            N'Gói 3: Không giới hạn vườn và cây trong vườn', 
+            N'["Quản lý không giới hạn số vườn", "Không giới hạn số cây trong mỗi vườn", "Nhắc nhở chăm sóc thông minh với AI", "Phân tích tăng trưởng nâng cao", "Tư vấn AI chuyên sâu", "Hỗ trợ 24/7 ưu tiên", "Báo cáo thời tiết chi tiết", "Xuất báo cáo chuyên nghiệp"]', 
+            NULL, NULL, NULL, 1);
+    PRINT 'Inserted: Gói 3'
+END
+ELSE
+BEGIN
+    PRINT 'Gói 3 already exists, skipping...'
 END
 GO
 
@@ -769,7 +788,7 @@ PRINT '  - TreeGrowthStages: 5 records'
 PRINT '  - Gardens: 5 records'
 PRINT '  - GardenSoils: 1 record'
 PRINT '  - Trees: 5 records'
-PRINT '  - SubscriptionPlans: 3 records'
+PRINT '  - SubscriptionPlans: 4 fixed plans (Gói Miễn Phí, Gói 1, Gói 2, Gói 3)'
 PRINT '  - Subscriptions: 5+ records'
 PRINT '  - Payments: 15+ records'
 PRINT ''

@@ -101,6 +101,23 @@ function formatCurrency(value, currency = "VND") {
   });
 }
 
+// Format features helper - parse JSON array and format nicely
+function formatFeatures(features) {
+  if (!features) return "";
+  
+  try {
+    // Try to parse as JSON array
+    const parsed = typeof features === "string" ? JSON.parse(features) : features;
+    if (Array.isArray(parsed)) {
+      return parsed.join(", ");
+    }
+    return features;
+  } catch {
+    // If not JSON, return as is
+    return features;
+  }
+}
+
 export default function SubscriptionPlanManagement() {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -865,11 +882,9 @@ export default function SubscriptionPlanManagement() {
                 Mô tả
               </label>
               <Textarea
-                value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
-                className="mt-1"
+                value={formData.description || ""}
+                disabled
+                className="mt-1 bg-slate-50 text-slate-600 cursor-not-allowed"
                 rows={3}
               />
             </div>
@@ -878,11 +893,9 @@ export default function SubscriptionPlanManagement() {
                 Tính năng
               </label>
               <Textarea
-                value={formData.features}
-                onChange={(e) =>
-                  setFormData({ ...formData, features: e.target.value })
-                }
-                className="mt-1"
+                value={formatFeatures(formData.features)}
+                disabled
+                className="mt-1 bg-slate-50 text-slate-600 cursor-not-allowed"
                 rows={4}
               />
             </div>

@@ -157,6 +157,8 @@ public class SubscriptionPlansController : ControllerBase
     /// <summary>
     /// Update an existing subscription plan
     /// PUT /api/subscriptionplans/{id}
+    /// NOTE: Only PlanName, Price, and DurationInMonths can be updated.
+    /// Description and Features are read-only and cannot be modified.
     /// </summary>
     [HttpPut("{id}")]
     [Authorize(Roles = "Admin")]
@@ -202,12 +204,13 @@ public class SubscriptionPlansController : ControllerBase
     }
 
     /// <summary>
-    /// Delete a subscription plan (soft delete)
+    /// Delete a subscription plan
     /// DELETE /api/subscriptionplans/{id}
+    /// NOTE: Subscription plans are fixed and cannot be deleted. Use deactivate endpoint instead.
     /// </summary>
     [HttpDelete("{id}")]
     [Authorize(Roles = "Admin")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeletePlan(int id)
@@ -221,6 +224,11 @@ public class SubscriptionPlansController : ControllerBase
             }
 
             return Ok(new { success = true, message = "Subscription plan deleted successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Subscription plans are fixed and cannot be deleted
+            return BadRequest(new { success = false, message = ex.Message });
         }
         catch (Exception ex)
         {

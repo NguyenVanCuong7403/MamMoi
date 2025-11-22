@@ -12,6 +12,9 @@ public class SubscriptionPlanDto
     public string Currency { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? Features { get; set; }
+    public int? MaxGardens { get; set; }
+    public int? MaxTreesPerGarden { get; set; }
+    public int? DurationInMonths { get; set; }
     public bool IsActive { get; set; }
 }
 

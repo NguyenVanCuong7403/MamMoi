@@ -1166,11 +1166,12 @@ public class AdminController : ControllerBase
     }
 
     /// <summary>
-    /// Delete a subscription plan (soft delete)
+    /// Delete a subscription plan
     /// DELETE /api/admin/subscription-plans/{id}
+    /// NOTE: Subscription plans are fixed and cannot be deleted. Use deactivate endpoint instead.
     /// </summary>
     [HttpDelete("subscription-plans/{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteSubscriptionPlan(int id)
     {
@@ -1181,6 +1182,11 @@ public class AdminController : ControllerBase
                 return NotFound(new { success = false, message = "Subscription plan not found" });
 
             return Ok(new { success = true, message = "Subscription plan deleted successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            // Subscription plans are fixed and cannot be deleted
+            return BadRequest(new { success = false, message = ex.Message });
         }
         catch (Exception ex)
         {

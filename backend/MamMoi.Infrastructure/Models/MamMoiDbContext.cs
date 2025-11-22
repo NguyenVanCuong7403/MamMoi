@@ -396,6 +396,9 @@ public partial class MamMoiDbContext : DbContext
             entity.Property(e => e.Currency).HasMaxLength(10).HasDefaultValue("VND");
             entity.Property(e => e.Description).HasMaxLength(500);
             entity.Property(e => e.Features).HasMaxLength(int.MaxValue);
+            entity.Property(e => e.MaxGardens).HasColumnName("MaxGardens");
+            entity.Property(e => e.MaxTreesPerGarden).HasColumnName("MaxTreesPerGarden");
+            entity.Property(e => e.DurationInMonths).HasColumnName("DurationInMonths");
             entity.Property(e => e.IsActive).HasDefaultValue(true);
         });
 
