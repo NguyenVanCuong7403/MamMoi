@@ -33,32 +33,106 @@ import { LivingBackground } from "@/components/background";
 const baseInputClass =
   "mm-plain-input h-11 w-full border-none bg-transparent p-0 text-[15px] text-slate-900 placeholder:text-slate-600 focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const MAX_REMEMBERED_EMAILS = 5; // Giới hạn tối đa 5 email được ghi nhớ
+
+// Helper functions để quản lý danh sách email đã ghi nhớ
+const getRememberedEmails = () => {
+  try {
+    const stored = localStorage.getItem("rememberedEmails");
+    if (!stored) {
+      // Kiểm tra xem có email cũ (string) không để migrate
+      const oldEmail = localStorage.getItem("rememberedEmail");
+      if (oldEmail) {
+        const emails = [oldEmail];
+        localStorage.setItem("rememberedEmails", JSON.stringify(emails));
+        localStorage.removeItem("rememberedEmail"); // Xóa key cũ
+        return emails;
+      }
+      return [];
+    }
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const addRememberedEmail = (email) => {
+  if (!email || !email.trim()) return;
+  const trimmedEmail = email.trim();
+  const emails = getRememberedEmails();
+  
+  // Xóa email nếu đã tồn tại (để đưa lên đầu)
+  const filtered = emails.filter(e => e !== trimmedEmail);
+  
+  // Thêm email vào đầu danh sách
+  const updated = [trimmedEmail, ...filtered];
+  
+  // Giới hạn số lượng email
+  const limited = updated.slice(0, MAX_REMEMBERED_EMAILS);
+  
+  localStorage.setItem("rememberedEmails", JSON.stringify(limited));
+};
+
+const removeRememberedEmail = (email) => {
+  if (!email) return;
+  const trimmedEmail = email.trim();
+  const emails = getRememberedEmails();
+  const filtered = emails.filter(e => e !== trimmedEmail);
+  
+  if (filtered.length === 0) {
+    localStorage.removeItem("rememberedEmails");
+  } else {
+    localStorage.setItem("rememberedEmails", JSON.stringify(filtered));
+  }
+};
+
+const clearRememberedEmails = () => {
+  localStorage.removeItem("rememberedEmails");
+  localStorage.removeItem("rememberedEmail"); // Xóa key cũ nếu còn
+};
+
 const normalizeRole = (role) => {
   if (!role) return null;
   return role.toString().toLowerCase().trim();
 };
 
-const getPostLoginPath = (role) => {
-  if (!role) {
-    console.warn("⚠️ No role provided, redirecting to home");
-    return "/";
+const getPostLoginPath = (role, roleId = null) => {
+  // Check by roleId first (more reliable)
+  if (roleId !== null && roleId !== undefined) {
+    console.log("🔍 Checking by roleId:", roleId);
+    // SystemAdmin (roleId: 1) redirect to user management
+    if (roleId === 1) {
+      console.log("✅ SystemAdmin detected by roleId, redirecting to /admin/users");
+      return "/admin/users";
+    }
+    // BusinessAdmin (roleId: 2) redirect to tree management
+    if (roleId === 2) {
+      console.log("✅ BusinessAdmin detected by roleId, redirecting to /admin/business/trees");
+      return "/admin/business/trees";
+    }
   }
   
-  const normalizedRole = normalizeRole(role);
-  console.log("🔍 Normalized role:", normalizedRole);
-  
-  // SystemAdmin redirect to user management
-  if (normalizedRole === "systemadmin") {
-    return "/admin/users";
-  }
-  
-  // BusinessAdmin redirect to tree management
-  if (normalizedRole === "businessadmin") {
-    return "/admin/business/trees";
+  // Fallback: check by role name
+  if (role) {
+    const normalizedRole = normalizeRole(role);
+    console.log("🔍 Checking by role name:", normalizedRole);
+    
+    // SystemAdmin redirect to user management
+    if (normalizedRole === "systemadmin") {
+      console.log("✅ SystemAdmin detected by role name, redirecting to /admin/users");
+      return "/admin/users";
+    }
+    
+    // BusinessAdmin redirect to tree management
+    if (normalizedRole === "businessadmin") {
+      console.log("✅ BusinessAdmin detected by role name, redirecting to /admin/business/trees");
+      return "/admin/business/trees";
+    }
   }
   
   // Default user redirect to home
-  console.log("⚠️ Unknown role, redirecting to home");
+  console.warn("⚠️ Unknown role/roleId, redirecting to home. Role:", role, "RoleId:", roleId);
   return "/";
 };
 
@@ -146,20 +220,31 @@ export default function AuthScreen({ defaultTab = "login" }) {
       // Đăng nhập thành công -> hiện overlay 0.8s rồi vào hệ thống
       setLoginSuccessOverlay(true);
 
-      const redirectPath = getPostLoginPath(res?.role);
-      console.log("✅ Login successful - Role:", res?.role, "Redirect to:", redirectPath);
+      const role = res?.role || res?.user?.role;
+      const roleId = res?.user?.roleId || res?.roleId || res?.data?.roleId;
+      const redirectPath = getPostLoginPath(role, roleId);
+      console.log("✅ Login successful - Role:", role, "RoleId:", roleId, "Redirect to:", redirectPath);
+      console.log("✅ Full login response:", res);
+      console.log("✅ User from response:", res?.user);
       
+      // Đảm bảo localStorage đã được cập nhật trước khi navigate
+      // Wait a bit for state to update, then navigate
       setTimeout(() => {
         try {
           setLoginSuccessOverlay(false);
           console.log("🚀 Navigating to:", redirectPath);
-          navigate(redirectPath, { replace: true });
+          console.log("🚀 Current token in localStorage:", localStorage.getItem("token") ? "exists" : "missing");
+          console.log("🚀 Current user in localStorage:", localStorage.getItem("user"));
+          
+          // Use window.location.href to force full page reload and ensure state is loaded
+          // This ensures AuthContext reads from localStorage on mount
+          window.location.href = redirectPath;
         } catch (navError) {
           console.error("❌ Navigation error:", navError);
           // Fallback: try window.location if navigate fails
           window.location.href = redirectPath;
         }
-      }, 800);
+      }, 1000);
     } catch (err) {
       setAuthDialog({
         title: "Đăng nhập không thành công",
@@ -300,8 +385,14 @@ export default function AuthScreen({ defaultTab = "login" }) {
             "Chào mừng bạn quay lại Mầm Mới! Đang chuyển tới bảng điều khiển.",
           tone: "success",
         });
-        const redirectPath = getPostLoginPath(res?.role);
-        navigate(redirectPath);
+        const role = res?.role || res?.user?.role;
+        const roleId = res?.user?.roleId || res?.roleId || res?.data?.roleId;
+        const redirectPath = getPostLoginPath(role, roleId);
+        console.log("✅ OTP Login successful - Role:", role, "RoleId:", roleId, "Redirect to:", redirectPath);
+        // Use window.location.href to force full page reload
+        setTimeout(() => {
+          window.location.href = redirectPath;
+        }, 500);
       } else if (pendingAction.type === "register") {
         // Xác thực OTP cho đăng ký tài khoản
         const payload = pendingAction.payload || {};
@@ -667,15 +758,16 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
   const [caps, setCaps] = useState(false);
 
   // Load email đã lưu từ localStorage khi component mount
+  // Lấy email đầu tiên trong danh sách (email được sử dụng gần nhất)
   const [acct, setAcct] = useState(() => {
-    const rememberedEmail = localStorage.getItem("rememberedEmail");
-    return rememberedEmail || "";
+    const emails = getRememberedEmails();
+    return emails.length > 0 ? emails[0] : "";
   });
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(() => {
     // Nếu có email đã lưu, tự động tick vào checkbox "Ghi nhớ đăng nhập"
-    const rememberedEmail = localStorage.getItem("rememberedEmail");
-    return !!rememberedEmail;
+    const emails = getRememberedEmails();
+    return emails.length > 0;
   });
 
   const [acctError, setAcctError] = useState("");
@@ -732,6 +824,12 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
     }
 
     setAcctError(message);
+    
+    // Nếu email hợp lệ và checkbox "Ghi nhớ đăng nhập" đang được tick, thêm email vào danh sách
+    if (!message && remember && value) {
+      addRememberedEmail(value);
+    }
+    
     return !message;
   };
 
@@ -886,9 +984,19 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
             onCheckedChange={(v) => {
               const newValue = Boolean(v);
               setRemember(newValue);
-              // Nếu bỏ tick, xóa email đã lưu
+              
               if (!newValue) {
-                localStorage.removeItem("rememberedEmail");
+                // Nếu bỏ tick, chỉ xóa email hiện tại khỏi danh sách (nếu có)
+                // Không xóa toàn bộ danh sách để giữ lại các email khác
+                if (acct.trim()) {
+                  removeRememberedEmail(acct.trim());
+                }
+              } else {
+                // Nếu tick lại và có email trong input, thêm email đó vào danh sách ngay
+                // (để đảm bảo email được lưu ngay cả khi user chưa submit form)
+                if (acct.trim()) {
+                  addRememberedEmail(acct.trim());
+                }
               }
             }}
           />

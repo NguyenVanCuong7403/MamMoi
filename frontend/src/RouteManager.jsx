@@ -22,6 +22,8 @@ import SystemAdminSubscriptionManagement from "./components/admin/SystemAdmin/Su
 import SystemAdminReportManagement from "./components/admin/SystemAdmin/ReportManagement";
 import BusinessAdminTreeManagement from "./components/admin/BusinessAdmin/TreeTypeManagement";
 import BusinessAdminReportManagement from "./components/admin/BusinessAdmin/ReportManagementBA";
+import PlantGallery from "./components/user/PlantGallery";
+import PlantDetail from "./components/user/PlantDetail";
 
 export default function RouteManager({ authTab }) {
   return (
@@ -110,6 +112,10 @@ export default function RouteManager({ authTab }) {
 
       <Route path="/profile" element={<UserProfile />} />
       <Route path="/report" element={<Report />} />
+
+      {/* Plant Showcase - Public View */}
+      <Route path="/plants" element={<PlantGallery />} />
+      <Route path="/plants/:id" element={<PlantDetail />} />
 
       {/* 404 */}
       <Route path="*" element={<h2>404 - Page Not Found</h2>} />
