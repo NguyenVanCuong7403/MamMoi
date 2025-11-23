@@ -821,9 +821,9 @@ export default function LifecycleDemo() {
 
 
   
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-emerald-50 p-4 md:p-8 pt-24 md:pt-28">
-      <div className="max-w-4xl mx-auto">
+    return (
+     <div className="mm-fluid-page min-h-screen bg-gradient-to-b from-white to-emerald-50 p-4 md:p-8 pt-24 md:pt-28">
+       <div className="mm-fluid-shell max-w-4xl mx-auto">
         <div className="relative bg-white/90 backdrop-blur rounded-[24px] shadow-xl ring-1 ring-black/5 p-4 md:p-6 overflow-visible">
           <div className="flex items-center justify-center">
             <h2 className="text-base md:text-lg font-bold text-gray-900 text-center">

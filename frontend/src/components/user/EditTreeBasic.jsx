@@ -103,23 +103,23 @@ export default function EditTreeBasic() {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="mm-fluid-page min-h-screen bg-neutral-50">
       <header className="bg-emerald-900 text-white">
-        <div className="mx-auto max-w-7xl px-6 py-5 flex items-center justify-between">
+        <div className="mm-fluid-shell mx-auto max-w-7xl px-6 py-5 flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Sửa thông tin cây</h1>
           <StatusBadge status={form.status} />
         </div>
       </header>
 
       {banner && (
-        <div className="mx-auto max-w-7xl px-6 pt-3">
+        <div className="mm-fluid-shell mx-auto max-w-7xl px-6 pt-3">
           <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800 px-4 py-2 text-sm" aria-live="polite">
             {banner}
           </div>
         </div>
       )}
 
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-3 gap-6 relative isolate">
+      <main className="mm-fluid-shell mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 grid lg:grid-cols-3 gap-6 relative isolate">
         {/* LEFT */}
         <div className="lg:col-span-2 space-y-6">
           <Card className="rounded-2xl">

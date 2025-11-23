@@ -1,11 +1,6 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -33,9 +28,121 @@ import { LivingBackground } from "@/components/background";
 const baseInputClass =
   "mm-plain-input h-11 w-full border-none bg-transparent p-0 text-[15px] text-slate-900 placeholder:text-slate-600 focus-visible:ring-0 focus-visible:outline-none focus-visible:ring-offset-0";
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const ADMIN_ROLES = ["SystemAdmin", "BusinessAdmin"];
-const getPostLoginPath = (role) =>
-  role && ADMIN_ROLES.includes(role) ? "/admin/users" : "/";
+const MAX_REMEMBERED_EMAILS = 5; // Giới hạn tối đa 5 email được ghi nhớ
+
+// Helper functions để quản lý danh sách email đã ghi nhớ
+const getRememberedEmails = () => {
+  try {
+    const stored = localStorage.getItem("rememberedEmails");
+    if (!stored) {
+      // Kiểm tra xem có email cũ (string) không để migrate
+      const oldEmail = localStorage.getItem("rememberedEmail");
+      if (oldEmail) {
+        const emails = [oldEmail];
+        localStorage.setItem("rememberedEmails", JSON.stringify(emails));
+        localStorage.removeItem("rememberedEmail"); // Xóa key cũ
+        return emails;
+      }
+      return [];
+    }
+    const parsed = JSON.parse(stored);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const addRememberedEmail = (email) => {
+  if (!email || !email.trim()) return;
+  const trimmedEmail = email.trim();
+  const emails = getRememberedEmails();
+
+  // Xóa email nếu đã tồn tại (để đưa lên đầu)
+  const filtered = emails.filter((e) => e !== trimmedEmail);
+
+  // Thêm email vào đầu danh sách
+  const updated = [trimmedEmail, ...filtered];
+
+  // Giới hạn số lượng email
+  const limited = updated.slice(0, MAX_REMEMBERED_EMAILS);
+
+  localStorage.setItem("rememberedEmails", JSON.stringify(limited));
+};
+
+const removeRememberedEmail = (email) => {
+  if (!email) return;
+  const trimmedEmail = email.trim();
+  const emails = getRememberedEmails();
+  const filtered = emails.filter((e) => e !== trimmedEmail);
+
+  if (filtered.length === 0) {
+    localStorage.removeItem("rememberedEmails");
+  } else {
+    localStorage.setItem("rememberedEmails", JSON.stringify(filtered));
+  }
+};
+
+const clearRememberedEmails = () => {
+  localStorage.removeItem("rememberedEmails");
+  localStorage.removeItem("rememberedEmail"); // Xóa key cũ nếu còn
+};
+
+const normalizeRole = (role) => {
+  if (!role) return null;
+  return role.toString().toLowerCase().trim();
+};
+
+const getPostLoginPath = (role, roleId = null) => {
+  // Check by roleId first (more reliable)
+  if (roleId !== null && roleId !== undefined) {
+    console.log("🔍 Checking by roleId:", roleId);
+    // SystemAdmin (roleId: 1) redirect to user management
+    if (roleId === 1) {
+      console.log(
+        "✅ SystemAdmin detected by roleId, redirecting to /admin/users"
+      );
+      return "/admin/users";
+    }
+    // BusinessAdmin (roleId: 2) redirect to tree management
+    if (roleId === 2) {
+      console.log(
+        "✅ BusinessAdmin detected by roleId, redirecting to /admin/business/trees"
+      );
+      return "/admin/business/trees";
+    }
+  }
+
+  // Fallback: check by role name
+  if (role) {
+    const normalizedRole = normalizeRole(role);
+    console.log("🔍 Checking by role name:", normalizedRole);
+
+    // SystemAdmin redirect to user management
+    if (normalizedRole === "systemadmin") {
+      console.log(
+        "✅ SystemAdmin detected by role name, redirecting to /admin/users"
+      );
+      return "/admin/users";
+    }
+
+    // BusinessAdmin redirect to tree management
+    if (normalizedRole === "businessadmin") {
+      console.log(
+        "✅ BusinessAdmin detected by role name, redirecting to /admin/business/trees"
+      );
+      return "/admin/business/trees";
+    }
+  }
+
+  // Default user redirect to home
+  console.warn(
+    "⚠️ Unknown role/roleId, redirecting to home. Role:",
+    role,
+    "RoleId:",
+    roleId
+  );
+  return "/";
+};
 
 export default function AuthScreen({ defaultTab = "login" }) {
   const [tab, setTab] = useState(defaultTab);
@@ -82,11 +189,7 @@ export default function AuthScreen({ defaultTab = "login" }) {
   const openOtpFor = (type, payload) => {
     const channel = payload.mode || (payload.email ? "email" : "phone");
     const value =
-      payload.contact ||
-      payload.acct ||
-      payload.email ||
-      payload.phone ||
-      "";
+      payload.contact || payload.acct || payload.email || payload.phone || "";
 
     setPendingAction({ type, payload });
     setOtpTarget({ channel, value });
@@ -101,11 +204,7 @@ export default function AuthScreen({ defaultTab = "login" }) {
   // ====== LOGIN: dùng tài khoản + mật khẩu ======
   const handleLoginCredentials = async (data) => {
     try {
-      const res = await login(
-        data.acct?.trim(),
-        data.password,
-        data.remember
-      );
+      const res = await login(data.acct?.trim(), data.password, data.remember);
 
       if (!res || res.success === false) {
         setAuthDialog({
@@ -121,11 +220,44 @@ export default function AuthScreen({ defaultTab = "login" }) {
       // Đăng nhập thành công -> hiện overlay 0.8s rồi vào hệ thống
       setLoginSuccessOverlay(true);
 
-      const redirectPath = getPostLoginPath(res?.role);
+      const role = res?.role || res?.user?.role;
+      const roleId = res?.user?.roleId || res?.roleId || res?.data?.roleId;
+      const redirectPath = getPostLoginPath(role, roleId);
+      console.log(
+        "✅ Login successful - Role:",
+        role,
+        "RoleId:",
+        roleId,
+        "Redirect to:",
+        redirectPath
+      );
+      console.log("✅ Full login response:", res);
+      console.log("✅ User from response:", res?.user);
+
+      // Đảm bảo localStorage đã được cập nhật trước khi navigate
+      // Wait a bit for state to update, then navigate
       setTimeout(() => {
-        setLoginSuccessOverlay(false);
-        navigate(redirectPath);
-      }, 800);
+        try {
+          setLoginSuccessOverlay(false);
+          console.log("🚀 Navigating to:", redirectPath);
+          console.log(
+            "🚀 Current token in localStorage:",
+            localStorage.getItem("token") ? "exists" : "missing"
+          );
+          console.log(
+            "🚀 Current user in localStorage:",
+            localStorage.getItem("user")
+          );
+
+          // Use window.location.href to force full page reload and ensure state is loaded
+          // This ensures AuthContext reads from localStorage on mount
+          window.location.href = redirectPath;
+        } catch (navError) {
+          console.error("❌ Navigation error:", navError);
+          // Fallback: try window.location if navigate fails
+          window.location.href = redirectPath;
+        }
+      }, 1000);
     } catch (err) {
       setAuthDialog({
         title: "Đăng nhập không thành công",
@@ -214,8 +346,7 @@ export default function AuthScreen({ defaultTab = "login" }) {
         const res = await resendOtp(otpTarget.value);
         if (!res || res.success === false) {
           setOtpError(
-            res?.message ||
-              "Không thể gửi lại mã OTP. Vui lòng thử lại sau."
+            res?.message || "Không thể gửi lại mã OTP. Vui lòng thử lại sau."
           );
           return;
         }
@@ -236,8 +367,7 @@ export default function AuthScreen({ defaultTab = "login" }) {
     try {
       if (pendingAction.type === "login") {
         // Nhánh login bằng OTP giờ không dùng tới
-        const { acct, password, remember } =
-          pendingAction.payload || {};
+        const { acct, password, remember } = pendingAction.payload || {};
         const res = await login(acct, password, remember, code);
 
         if (res && res.success === false && res.otpError) {
@@ -266,8 +396,21 @@ export default function AuthScreen({ defaultTab = "login" }) {
             "Chào mừng bạn quay lại Mầm Mới! Đang chuyển tới bảng điều khiển.",
           tone: "success",
         });
-        const redirectPath = getPostLoginPath(res?.role);
-        navigate(redirectPath);
+        const role = res?.role || res?.user?.role;
+        const roleId = res?.user?.roleId || res?.roleId || res?.data?.roleId;
+        const redirectPath = getPostLoginPath(role, roleId);
+        console.log(
+          "✅ OTP Login successful - Role:",
+          role,
+          "RoleId:",
+          roleId,
+          "Redirect to:",
+          redirectPath
+        );
+        // Use window.location.href to force full page reload
+        setTimeout(() => {
+          window.location.href = redirectPath;
+        }, 500);
       } else if (pendingAction.type === "register") {
         // Xác thực OTP cho đăng ký tài khoản
         const payload = pendingAction.payload || {};
@@ -312,10 +455,7 @@ export default function AuthScreen({ defaultTab = "login" }) {
             payload.acct ||
             (otpTarget && otpTarget.value) ||
             "",
-          mode:
-            payload.mode ||
-            (otpTarget && otpTarget.channel) ||
-            "unknown",
+          mode: payload.mode || (otpTarget && otpTarget.channel) || "unknown",
           otpCode: code,
         };
 
@@ -454,8 +594,8 @@ export default function AuthScreen({ defaultTab = "login" }) {
                         Đăng ký tài khoản thành công 🎉
                       </p>
                       <p className="mt-0.5">
-                        Hãy đăng nhập lại bằng email/SĐT và mật khẩu
-                        vừa tạo để chắc chắn bạn nhớ thông tin.
+                        Hãy đăng nhập lại bằng email/SĐT và mật khẩu vừa tạo để
+                        chắc chắn bạn nhớ thông tin.
                       </p>
                     </div>
                   </div>
@@ -632,9 +772,18 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
   const [show, setShow] = useState(false);
   const [caps, setCaps] = useState(false);
 
-  const [acct, setAcct] = useState("");
+  // Load email đã lưu từ localStorage khi component mount
+  // Lấy email đầu tiên trong danh sách (email được sử dụng gần nhất)
+  const [acct, setAcct] = useState(() => {
+    const emails = getRememberedEmails();
+    return emails.length > 0 ? emails[0] : "";
+  });
   const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
+  const [remember, setRemember] = useState(() => {
+    // Nếu có email đã lưu, tự động tick vào checkbox "Ghi nhớ đăng nhập"
+    const emails = getRememberedEmails();
+    return emails.length > 0;
+  });
 
   const [acctError, setAcctError] = useState("");
   const [pwError, setPwError] = useState("");
@@ -681,8 +830,7 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
     } else if (/^\d+$/.test(value)) {
       const digits = value.replace(/\D/g, "");
       if (!/^0\d{9}$/.test(digits)) {
-        message =
-          "SĐT không hợp lệ (bắt đầu bằng số 0 và đủ 10 số).";
+        message = "SĐT không hợp lệ (bắt đầu bằng số 0 và đủ 10 số).";
       }
     } else {
       message =
@@ -690,6 +838,12 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
     }
 
     setAcctError(message);
+
+    // Nếu email hợp lệ và checkbox "Ghi nhớ đăng nhập" đang được tick, thêm email vào danh sách
+    if (!message && remember && value) {
+      addRememberedEmail(value);
+    }
+
     return !message;
   };
 
@@ -753,11 +907,7 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
   };
 
   return (
-    <form
-      className="grid gap-5"
-      onSubmit={handleSubmit}
-      autoComplete="on"
-    >
+    <form className="grid gap-5" onSubmit={handleSubmit} autoComplete="on">
       <Field
         label="Email hoặc SĐT"
         icon={
@@ -804,10 +954,7 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
               setPwError("");
             }}
             onKeyUp={(e) =>
-              setCaps(
-                e.getModifierState &&
-                  e.getModifierState("CapsLock")
-              )
+              setCaps(e.getModifierState && e.getModifierState("CapsLock"))
             }
             onKeyDown={handlePwKeyDown}
             onBlur={validatePw}
@@ -841,7 +988,24 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
         <label className="flex items-center gap-2 text-xs sm:text-sm">
           <Checkbox
             checked={remember}
-            onCheckedChange={(v) => setRemember(Boolean(v))}
+            onCheckedChange={(v) => {
+              const newValue = Boolean(v);
+              setRemember(newValue);
+
+              if (!newValue) {
+                // Nếu bỏ tick, chỉ xóa email hiện tại khỏi danh sách (nếu có)
+                // Không xóa toàn bộ danh sách để giữ lại các email khác
+                if (acct.trim()) {
+                  removeRememberedEmail(acct.trim());
+                }
+              } else {
+                // Nếu tick lại và có email trong input, thêm email đó vào danh sách ngay
+                // (để đảm bảo email được lưu ngay cả khi user chưa submit form)
+                if (acct.trim()) {
+                  addRememberedEmail(acct.trim());
+                }
+              }
+            }}
           />
           Ghi nhớ đăng nhập
         </label>
@@ -863,9 +1027,7 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
         </button>
       </div>
 
-      {formError && (
-        <p className="text-xs text-red-500">{formError}</p>
-      )}
+      {formError && <p className="text-xs text-red-500">{formError}</p>}
 
       <Button
         type="submit"
@@ -1019,9 +1181,7 @@ function RegisterForm({ onSubmitRegister }) {
     }
     const digits = trimmedPhone.replace(/\D/g, "");
     if (!/^0\d{9}$/.test(digits)) {
-      setPhoneError(
-        "SĐT không hợp lệ (bắt đầu bằng số 0 và đủ 10 số)."
-      );
+      setPhoneError("SĐT không hợp lệ (bắt đầu bằng số 0 và đủ 10 số).");
       return false;
     }
     setPhoneError("");
@@ -1069,9 +1229,7 @@ function RegisterForm({ onSubmitRegister }) {
     if (!emailOk || !phoneOk) hasError = true;
 
     if (!hasEmail && !hasPhone) {
-      setContactRequiredError(
-        "Vui lòng nhập ít nhất email hoặc SĐT."
-      );
+      setContactRequiredError("Vui lòng nhập ít nhất email hoặc SĐT.");
       hasError = true;
     }
 
@@ -1149,11 +1307,7 @@ function RegisterForm({ onSubmitRegister }) {
   const handlePw2PressUp = () => setShow2(false);
 
   return (
-    <form
-      className="grid gap-4"
-      onSubmit={handleSubmit}
-      autoComplete="off"
-    >
+    <form className="grid gap-4" onSubmit={handleSubmit} autoComplete="off">
       <Field
         label="Họ và tên"
         icon={<UserRound className="h-4 w-4" />}
@@ -1175,9 +1329,7 @@ function RegisterForm({ onSubmitRegister }) {
           label="Email (tuỳ chọn)"
           icon={<Mail className="h-4 w-4" />}
           error={emailError}
-          isErrorBorder={
-            !!contactRequiredError && !email && !phoneValue
-          }
+          isErrorBorder={!!contactRequiredError && !email && !phoneValue}
         >
           <Input
             ref={emailRef}
@@ -1195,9 +1347,7 @@ function RegisterForm({ onSubmitRegister }) {
           label="Số điện thoại (tuỳ chọn)"
           icon={<Phone className="h-4 w-4" />}
           error={phoneError}
-          isErrorBorder={
-            !!contactRequiredError && !email && !phoneValue
-          }
+          isErrorBorder={!!contactRequiredError && !email && !phoneValue}
         >
           <Input
             ref={phoneRef}
@@ -1299,9 +1449,7 @@ function RegisterForm({ onSubmitRegister }) {
         </div>
       </Field>
 
-      {formError && (
-        <p className="text-xs text-red-500">{formError}</p>
-      )}
+      {formError && <p className="text-xs text-red-500">{formError}</p>}
 
       <Button
         type="submit"
@@ -1323,13 +1471,7 @@ function RegisterForm({ onSubmitRegister }) {
 
 /* ------------------------ FORGOT PASSWORD --------------------- */
 
-function ForgotDialog({
-  open,
-  initialAcct,
-  initialMode,
-  onClose,
-  onSubmit,
-}) {
+function ForgotDialog({ open, initialAcct, initialMode, onClose, onSubmit }) {
   const [acct, setAcct] = useState(initialAcct || "");
   const [error, setError] = useState("");
 
@@ -1369,9 +1511,7 @@ function ForgotDialog({
     } else if (mode === "phone") {
       const digits = value.replace(/\D/g, "");
       if (!/^0\d{9}$/.test(digits)) {
-        setError(
-          "SĐT không hợp lệ (bắt đầu bằng số 0 và đủ 10 số)."
-        );
+        setError("SĐT không hợp lệ (bắt đầu bằng số 0 và đủ 10 số).");
         return false;
       }
     } else {
@@ -1417,10 +1557,8 @@ function ForgotDialog({
           className="bg-gradient-to-b from-emerald-50/60 to-white px-6 pb-5 pt-4"
         >
           <p className="text-xs text-slate-500">
-            Nhập{" "}
-            <span className="font-semibold">email hoặc SĐT</span> bạn
-            đã dùng để đăng ký. Chúng tôi sẽ gửi mã OTP để bạn đặt lại
-            mật khẩu.
+            Nhập <span className="font-semibold">email hoặc SĐT</span> bạn đã
+            dùng để đăng ký. Chúng tôi sẽ gửi mã OTP để bạn đặt lại mật khẩu.
           </p>
 
           <div className="mt-4">
@@ -1505,10 +1643,7 @@ function OtpDialog({
   useEffect(() => {
     if (!open) return;
     if (secondsLeft <= 0) return;
-    const id = setInterval(
-      () => setSecondsLeft((s) => s - 1),
-      1000
-    );
+    const id = setInterval(() => setSecondsLeft((s) => s - 1), 1000);
     return () => clearInterval(id);
   }, [open, secondsLeft]);
 
@@ -1634,10 +1769,7 @@ function OtpDialog({
         >
           <p className="text-xs text-slate-500">
             Đã gửi mã gồm{" "}
-            <span className="font-semibold text-slate-800">
-              6 chữ số
-            </span>{" "}
-            tới{" "}
+            <span className="font-semibold text-slate-800">6 chữ số</span> tới{" "}
             <span className="font-semibold text-slate-800">
               {maskedContact || channelLabel}
             </span>
@@ -1663,9 +1795,7 @@ function OtpDialog({
                 }`}
                 maxLength={1}
                 value={digit}
-                onChange={(e) =>
-                  handleChange(index, e.target.value)
-                }
+                onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 onPaste={index === 0 ? handlePaste : undefined}
                 disabled={success}
@@ -1678,10 +1808,8 @@ function OtpDialog({
               {successMessage ||
                 "Bạn đã xác minh OTP thành công. Đang chuyển sang bước tiếp theo..."}
             </p>
-          ) : (localError || error) ? (
-            <p className="mt-3 text-xs text-red-500">
-              {localError || error}
-            </p>
+          ) : localError || error ? (
+            <p className="mt-3 text-xs text-red-500">{localError || error}</p>
           ) : null}
 
           <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
@@ -1760,10 +1888,7 @@ function ResetPasswordDialog({
 
   if (!open) return null;
 
-  const masked = maskContact(
-    contact,
-    mode === "phone" ? "phone" : "email"
-  );
+  const masked = maskContact(contact, mode === "phone" ? "phone" : "email");
 
   const validatePw = (force = false) => {
     const shouldValidate = force || submitted;
@@ -1793,7 +1918,7 @@ function ResetPasswordDialog({
     if (!ok1 || !ok2) return;
     setSubmitting(true);
     try {
-      await onSubmit && onSubmit({ newPassword: pw, otpCode });
+      (await onSubmit) && onSubmit({ newPassword: pw, otpCode });
     } finally {
       setSubmitting(false);
     }
@@ -1841,12 +1966,9 @@ function ResetPasswordDialog({
         >
           <p className="text-xs text-slate-500">
             OTP đã được xác minh thành công cho {channelLabel}{" "}
-            <span className="font-semibold text-slate-800">
-              {masked}
-            </span>
-            . Vui lòng đặt{" "}
-            <span className="font-semibold">mật khẩu mới</span>{" "}
-            để bảo vệ tài khoản của bạn.
+            <span className="font-semibold text-slate-800">{masked}</span>. Vui
+            lòng đặt <span className="font-semibold">mật khẩu mới</span> để bảo
+            vệ tài khoản của bạn.
           </p>
 
           <div className="mt-4 space-y-3">
@@ -1960,9 +2082,7 @@ function Field({ label, icon, error, isErrorBorder, children }) {
 
   return (
     <div className="grid gap-1.5">
-      <Label className="text-xs font-semibold text-neutral-700">
-        {label}
-      </Label>
+      <Label className="text-xs font-semibold text-neutral-700">{label}</Label>
 
       <div
         className={`
@@ -2093,9 +2213,7 @@ function AuthMessageDialog({
             className={`
               font-semibold
               ${
-                isSuccess
-                  ? "text-lg text-emerald-800"
-                  : "text-sm text-rose-800"
+                isSuccess ? "text-lg text-emerald-800" : "text-sm text-rose-800"
               }
             `}
           >
@@ -2174,3 +2292,4 @@ function maskContact(value, channel) {
   const visible = name.slice(0, 3) || name;
   return `${visible}***@${domain}`;
 }
+//

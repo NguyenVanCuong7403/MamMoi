@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search,
   Plus,
@@ -212,8 +212,7 @@ function SafeImage({ src, alt = "", className = "", hideOnError = false }) {
 }
 
 function ImagePicker({ value, onChange }) {
-  const [urlInput, setUrlInput] = useState("");
-  const [useLink, setUseLink] = useState(false);
+  const fileInputRef = useRef(null);
 
   function handleFile(e) {
     const f = e.target.files?.[0];
@@ -221,64 +220,33 @@ function ImagePicker({ value, onChange }) {
     const objectUrl = URL.createObjectURL(f);
     onChange(objectUrl, f);
   }
-  function applyUrl() {
-    const n = normalizeImageUrl(urlInput || "");
-    const finalUrl = looksBlockedHost(n)
-      ? `/api/image-proxy?u=${encodeURIComponent(n)}`
-      : n;
-    if (finalUrl) onChange(finalUrl, null);
-    setUrlInput("");
-    setUseLink(false);
+
+  function handleImageClick() {
+    fileInputRef.current?.click();
   }
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-3">
-        <label className="flex h-10 items-center gap-2 rounded-xl border bg-white px-3 text-sm cursor-pointer hover:bg-neutral-50">
-          <Upload className="w-4 h-4" />
-          <span>Chọn ảnh (tải lên)</span>
-          <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
-        </label>
-        <Button
-          type="button"
-          className="rounded-2xl h-10 px-4"
-          onClick={() => setUseLink((v) => !v)}
-        >
-          Dùng link
-        </Button>
-      </div>
-      {useLink && (
-        <div className="flex gap-2">
-          <Input
-            placeholder="Dán link ảnh (https://...)"
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            className="rounded-xl bg-white"
-          />
-          <Button
-            className="rounded-2xl h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white"
-            type="button"
-            onClick={applyUrl}
-          >
-            Áp dụng
-          </Button>
-          <Button
-            className="rounded-2xl h-10 px-4 bg-white border border-neutral-300 hover:bg-neutral-100 text-slate-900"
-            type="button"
-            onClick={() => {
-              setUseLink(false);
-              setUrlInput("");
-            }}
-          >
-            Huỷ
-          </Button>
-        </div>
-      )}
-      {value ? (
-        <div className="rounded-2xl overflow-hidden border">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFile}
+      />
+      <div 
+        className="rounded-2xl overflow-hidden border cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={handleImageClick}
+      >
+        {value ? (
           <SafeImage src={value} alt="preview" className="w-full h-40 object-cover" />
-        </div>
-      ) : null}
+        ) : (
+          <div className="w-full h-40 bg-neutral-100 flex flex-col items-center justify-center text-neutral-400">
+            <Upload className="w-8 h-8 mb-2" />
+            <span className="text-sm">Click để chọn ảnh</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -918,8 +886,8 @@ export default function GardenManagement() {
       />
 
       {/* UI trên nền sống */}
-      <div className="relative min-h-screen pt-[64px] z-10">
-        <main className="mx-auto max-w-[1760px] px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-6 space-y-6 text-[16px] md:text-[17px]">
+      <div className="mm-fluid-page relative min-h-screen pt-[64px] z-10">
+        <main className="mm-fluid-shell px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-6 space-y-6 text-[16px] md:text-[17px]">
           {/* Header */}
           <section className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="max-w-[820px]">
@@ -980,7 +948,7 @@ export default function GardenManagement() {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="h-12 rounded-full border bg-white px-3 text-[15px]"
+                  className="h-12 rounded-full border bg-white px-3 text-[15px] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer"
                   title="Lọc trạng thái"
                 >
                   <option value="all">Tất cả trạng thái</option>
@@ -991,7 +959,7 @@ export default function GardenManagement() {
                 <select
                   value={provinceFilter}
                   onChange={(e) => setProvinceFilter(e.target.value)}
-                  className="h-12 rounded-full border bg-white px-3 text-[15px]"
+                  className="h-12 rounded-full border bg-white px-3 text-[15px] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer"
                   title="Lọc theo tỉnh/thành"
                 >
                   <option value="">Tất cả tỉnh/thành</option>
@@ -1005,7 +973,7 @@ export default function GardenManagement() {
                 {q || status !== "all" || provinceFilter ? (
                   <Button
                     variant="outline"
-                    className="h-12 rounded-full text-[14px]"
+                    className="h-12 rounded-full text-[14px] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700"
                     onClick={() => {
                       setQ("");
                       setStatus("all");
@@ -1052,10 +1020,9 @@ export default function GardenManagement() {
               return (
                 <Card
                   key={g.id}
-                  className="group rounded-3xl overflow-hidden shadow-sm transition-all duration-200 h-full flex flex-col hover:-translate-y-0.5 hover:shadow-md cursor-pointer text-[16px]"
+                  className="group rounded-3xl overflow-hidden shadow-sm transition-all duration-500 ease-out h-full flex flex-col cursor-pointer text-[16px] border border-[rgba(255,255,165,0.25)] hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-500/30 hover:border-emerald-500 hover:border-[4px] hover:ring-4 hover:ring-emerald-400/60 animate-pulse-on-hover"
                   style={{
                     background: "#FFFFFFF2",
-                    borderColor: "rgba(255,255,165,0.25)",
                   }}
                   role="button"
                   tabIndex={0}
@@ -1136,7 +1103,7 @@ export default function GardenManagement() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-10 rounded-xl px-4 text-[14px]"
+                          className="h-10 rounded-xl px-4 text-[14px] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (idx >= 0) openEdit(idx);
@@ -1166,10 +1133,10 @@ export default function GardenManagement() {
                           e.stopPropagation();
                           if (idx >= 0) askToggleStatus(idx);
                         }}
-                        className={`inline-flex items-center justify-center h-10 px-4 rounded-full text-[13px] font-semibold shadow-sm transition-transform transition-colors ${
+                        className={`inline-flex items-center justify-center h-10 px-4 rounded-full text-[13px] font-semibold shadow-sm transition-all duration-200 hover:scale-110 hover:shadow-lg active:scale-[0.95] ${
                           isActive
-                            ? "bg-rose-500 text-white hover:bg-rose-600 active:scale-[0.98] shadow-[0_8px_18px_rgba(244,63,94,0.28)]"
-                            : "bg-emerald-500 text-white hover:bg-emerald-600 active:scale-[0.98] shadow-[0_8px_18px_rgba(16,185,129,0.28)]"
+                            ? "bg-rose-500 text-white hover:bg-rose-600 shadow-[0_8px_18px_rgba(244,63,94,0.28)] hover:shadow-[0_12px_28px_rgba(244,63,94,0.40)]"
+                            : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_8px_18px_rgba(16,185,129,0.28)] hover:shadow-[0_12px_28px_rgba(16,185,129,0.40)]"
                         }`}
                       >
                         {isActive ? "Dừng hoạt động" : "Khởi động lại"}

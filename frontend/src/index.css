@@ -95,4 +95,40 @@
     box-shadow: 0 0 0 1000px #ffffff inset;
     -webkit-text-fill-color: #0f172a;
   }
+
+  .mm-fluid-page {
+    width: 100%;
+    min-height: 100vh;
+    margin: 0 auto;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  .mm-fluid-shell {
+    width: 100%;
+    max-width: none !important;
+    margin-inline: auto;
+    box-sizing: border-box;
+  }
+
+  .mm-fluid-text {
+    text-wrap: pretty;
+    word-break: break-word;
+    hyphens: auto;
+  }
+
+  .mm-fluid-cluster {
+    display: flex;
+    flex-wrap: wrap;
+    gap: clamp(12px, 1.5vw, 32px);
+  }
+
+  .mm-fluid-grid {
+    display: grid;
+    gap: clamp(16px, 2vw, 32px);
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(min(320px, 100%), 1fr)
+    );
+  }
 }

@@ -3,22 +3,30 @@ import {
   AlertTriangle,
   CreditCard,
   DollarSign,
-  FileDown,
-  History,
   LineChart,
   Loader2,
-  Package,
-  Percent,
   ShieldCheck,
+  Calendar as CalendarIcon,
 } from "lucide-react";
 import { LivingBackground } from "@/components/background";
 import AdminLayout from "../layout/AdminLayout";
-import { InsightAreaChart, SegmentDistributionCard } from "../components/AnalyticsCharts";
 import { cn } from "@/lib/utils";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+  Cell,
+} from "recharts";
+import { TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -35,31 +43,23 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
+import AdminRevenueRepository from "@/API/repositories/AdminRevenueRepository";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 
 const TIME_WINDOWS = [
+  { value: "day", label: "Ngày" },
   { value: "week", label: "Tuần" },
   { value: "month", label: "Tháng" },
   { value: "year", label: "Năm" },
@@ -98,229 +98,64 @@ const PLAN_COLORS = {
   harvest: "#064e3b",
 };
 
-const DASHBOARD_DATA = {
-  week: {
-    label: "so với tuần trước",
-    stats: {
-      revenue: { value: 82450000, change: 0.18, icon: DollarSign },
-      success: { value: 142, change: 0.11, icon: CreditCard },
-      failed: { value: 9, change: -0.06, icon: Loader2 },
-      activeUsers: { value: 312, change: 0.23, icon: ShieldCheck },
-    },
-    revenueTrend: {
-      change: 0.16,
-      series: [
-        { label: "T2", value: 8.2 },
-        { label: "T3", value: 9.5 },
-        { label: "T4", value: 10.3 },
-        { label: "T5", value: 11.8 },
-        { label: "T6", value: 13.1 },
-        { label: "T7", value: 12.4 },
-        { label: "CN", value: 10.7 },
-      ],
-    },
-    breakdown: {
-      byPlan: [
-        { key: "seedling", label: "Gói Ươm Mầm", value: 46 },
-        { key: "orchard", label: "Gói Vườn Xanh", value: 34 },
-        { key: "harvest", label: "Gói Thu Hoạch", value: 20 },
-      ],
-      byStatus: [
-        { key: "success", label: "Thành công", value: 142 },
-        { key: "pending", label: "Đang xử lý", value: 12 },
-        { key: "failed", label: "Thất bại", value: 9 },
-      ],
-      change: 0.07,
-    },
-  },
-  month: {
-    label: "so với tháng trước",
-    stats: {
-      revenue: { value: 324_500_000, change: 0.22, icon: DollarSign },
-      success: { value: 612, change: 0.17, icon: CreditCard },
-      failed: { value: 34, change: -0.04, icon: Loader2 },
-      activeUsers: { value: 1280, change: 0.29, icon: ShieldCheck },
-    },
-    revenueTrend: {
-      change: 0.21,
-      series: Array.from({ length: 30 }).map((_, idx) => ({
-        label: `Ngày ${idx + 1}`,
-        value: 7 + Math.round(Math.sin(idx / 3) * 2 + (idx % 5) * 0.8),
-      })),
-    },
-    breakdown: {
-      byPlan: [
-        { key: "seedling", label: "Gói Ươm Mầm", value: 41 },
-        { key: "orchard", label: "Gói Vườn Xanh", value: 37 },
-        { key: "harvest", label: "Gói Thu Hoạch", value: 22 },
-      ],
-      byStatus: [
-        { key: "success", label: "Thành công", value: 612 },
-        { key: "pending", label: "Đang xử lý", value: 54 },
-        { key: "failed", label: "Thất bại", value: 34 },
-      ],
-      change: 0.09,
-    },
-  },
-  year: {
-    label: "so với năm trước",
-    stats: {
-      revenue: { value: 3_742_800_000, change: 0.35, icon: DollarSign },
-      success: { value: 7312, change: 0.27, icon: CreditCard },
-      failed: { value: 412, change: -0.08, icon: Loader2 },
-      activeUsers: { value: 4423, change: 0.41, icon: ShieldCheck },
-    },
-    revenueTrend: {
-      change: 0.31,
-      series: Array.from({ length: 12 }).map((_, idx) => ({
-        label: `T${idx + 1}`,
-        value: 210 + Math.round(Math.cos(idx / 2.3) * 28 + idx * 11),
-      })),
-    },
-    breakdown: {
-      byPlan: [
-        { key: "seedling", label: "Gói Ươm Mầm", value: 38 },
-        { key: "orchard", label: "Gói Vườn Xanh", value: 36 },
-        { key: "harvest", label: "Gói Thu Hoạch", value: 26 },
-      ],
-      byStatus: [
-        { key: "success", label: "Thành công", value: 7312 },
-        { key: "pending", label: "Đang xử lý", value: 684 },
-        { key: "failed", label: "Thất bại", value: 412 },
-      ],
-      change: 0.04,
-    },
-  },
-};
-
-const MOCK_TRANSACTIONS = [
-  {
-    id: "TX-20251118-0001",
-    userId: "USR-000245",
-    userName: "Nguyễn Minh Hoàng",
-    amount: 1290000,
-    plan: "orchard",
-    status: "success",
-    time: "2025-11-18T09:24:00",
-  },
-  {
-    id: "TX-20251117-0007",
-    userId: "USR-000874",
-    userName: "Trần Thị Mai",
-    amount: 490000,
-    plan: "seedling",
-    status: "success",
-    time: "2025-11-17T14:05:00",
-  },
-  {
-    id: "TX-20251117-0012",
-    userId: "USR-000421",
-    userName: "Phạm Anh Tuấn",
-    amount: 3890000,
-    plan: "harvest",
-    status: "pending",
-    time: "2025-11-17T16:15:00",
-  },
-  {
-    id: "TX-20251116-0003",
-    userId: "USR-000912",
-    userName: "Võ Thảo Nhi",
-    amount: 1290000,
-    plan: "orchard",
-    status: "failed",
-    time: "2025-11-16T19:22:00",
-  },
-  {
-    id: "TX-20251115-0008",
-    userId: "USR-000533",
-    userName: "Lê Quang Khải",
-    amount: 490000,
-    plan: "seedling",
-    status: "success",
-    time: "2025-11-15T12:13:00",
-  },
-  {
-    id: "TX-20251112-0010",
-    userId: "USR-000278",
-    userName: "Đỗ Thanh Vân",
-    amount: 1290000,
-    plan: "orchard",
-    status: "success",
-    time: "2025-11-12T07:55:00",
-  },
-];
-
-const PAGE_SIZE = 8;
-
-function escapeCsvValue(value) {
-  if (value === undefined || value === null) return '""';
-  const str = String(value).replace(/"/g, '""');
-  return `"${str}"`;
+// Hàm format số tiền linh động (k, triệu, tỷ)
+function formatCurrency(value) {
+  if (value < 1_000_000) {
+    // Dưới 1 triệu: hiển thị theo trăm nghìn (k)
+    const thousands = value / 1_000;
+    return `${thousands.toLocaleString("vi-VN", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    })}k`;
+  } else if (value < 1_000_000_000) {
+    // Từ 1 triệu đến dưới 1 tỷ: hiển thị theo triệu
+    const millions = value / 1_000_000;
+    return `${millions.toLocaleString("vi-VN", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 2,
+    })} triệu`;
+  } else {
+    // Từ 1 tỷ trở lên: hiển thị theo tỷ
+    const billions = value / 1_000_000_000;
+    return `${billions.toLocaleString("vi-VN", {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 2,
+    })} tỷ`;
+  }
 }
 
-function exportTransactionsToCSV(rows) {
-  if (!rows || rows.length === 0) return;
-  const headers = [
-    "transaction_id",
-    "user_id",
-    "user_name",
-    "plan",
-    "amount",
-    "status",
-    "time",
-  ];
-
-  const csvRows = rows.map((row) =>
-    [
-      escapeCsvValue(row.id),
-      escapeCsvValue(row.userId),
-      escapeCsvValue(row.userName),
-      escapeCsvValue(PLAN_OPTIONS.find((plan) => plan.value === row.plan)?.label ?? row.plan),
-      escapeCsvValue(
-        row.amount.toLocaleString("vi-VN", {
-          style: "currency",
-          currency: "VND",
-        })
-      ),
-      escapeCsvValue(STATUS_META[row.status]?.label ?? row.status),
-      escapeCsvValue(new Date(row.time).toLocaleString("vi-VN", { hour12: false })),
-    ].join(",")
-  );
-
-  const csvContent = [headers.join(","), ...csvRows].join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", `transactions-${Date.now()}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
-}
-
-const defaultFilters = {
-  search: "",
-  status: "all",
-  plan: "all",
-  from: null,
-  to: null,
-};
-
-function StatCard({ label, value, change, icon: Icon, isCurrency }) {
+function StatCard({
+  label,
+  value,
+  change,
+  icon: Icon,
+  isCurrency,
+  variant = "default",
+}) {
   const isPositive = change >= 0;
+  const isDanger = variant === "danger";
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-emerald-200/60">
+    <div
+      className={cn(
+        "group relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-emerald-200/60",
+        isDanger ? "border-rose-200" : "border-emerald-100"
+      )}
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-slate-500">{label}</p>
           <p className="mt-1 text-3xl font-semibold text-slate-900">
-            {isCurrency
-              ? value.toLocaleString("vi-VN", { style: "currency", currency: "VND" })
-              : value.toLocaleString("vi-VN")}
+            {isCurrency ? formatCurrency(value) : value.toLocaleString("vi-VN")}
           </p>
         </div>
-        <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600 shadow-inner shadow-emerald-100 group-hover:bg-emerald-100">
+        <div
+          className={cn(
+            "rounded-2xl p-3 shadow-inner group-hover:bg-emerald-100",
+            isDanger
+              ? "bg-rose-50 text-rose-600 shadow-rose-100 group-hover:bg-rose-100"
+              : "bg-emerald-50 text-emerald-600 shadow-emerald-100"
+          )}
+        >
           <Icon className="h-5 w-5" />
         </div>
       </div>
@@ -328,78 +163,486 @@ function StatCard({ label, value, change, icon: Icon, isCurrency }) {
         <Badge
           className={cn(
             "border-0 px-2.5 py-0.5",
-            isPositive ? "bg-emerald-100 text-emerald-700" : "bg-rose-50 text-rose-600"
+            isDanger
+              ? "bg-rose-100 text-rose-700"
+              : isPositive
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-rose-50 text-rose-600"
           )}
         >
           {isPositive ? (
-            <Percent className="mr-1 h-3 w-3" />
+            <TrendingUp className="mr-1 h-3 w-3" />
           ) : (
-            <Percent className="mr-1 h-3 w-3 rotate-180" />
+            <TrendingDown className="mr-1 h-3 w-3" />
           )}
           {`${isPositive ? "+" : ""}${Math.round(change * 100)}%`}
         </Badge>
         <span className="text-slate-500">so với kỳ trước</span>
       </div>
-      <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-emerald-400/90 via-emerald-500/70 to-lime-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+      <div
+        className={cn(
+          "absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r opacity-0 transition-opacity duration-200 group-hover:opacity-100",
+          isDanger
+            ? "from-rose-400/90 via-rose-500/80 to-orange-400/80"
+            : "from-emerald-400/90 via-emerald-500/70 to-lime-400"
+        )}
+      />
     </div>
   );
 }
 
+function RevenueGrowthChart({ data, change, timeframeLabel, valueFormatter }) {
+  const isPositive = change >= 0;
+  const changeLabel = `${isPositive ? "+" : ""}${Math.round(change * 100)}%`;
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    const value = payload[0].value;
+    return (
+      <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2 text-xs shadow-md">
+        <p className="font-medium text-slate-900">{label}</p>
+        <p className="mt-1 text-emerald-600">
+          {valueFormatter ? valueFormatter(value) : formatCurrency(value)}
+        </p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex h-full flex-col gap-4 rounded-2xl border border-emerald-50 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 p-5 text-emerald-50 shadow-lg">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-200">
+            Doanh thu theo thời gian
+          </p>
+          <h3 className="mt-1 text-lg font-semibold text-white">
+            Doanh thu theo {timeframeLabel.toLowerCase()}
+          </h3>
+          <p className="mt-1 text-xs text-emerald-100/80">
+            Quan sát xu hướng doanh thu để tối ưu chiến lược kinh doanh.
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-emerald-100/80">Biến động</p>
+          <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-950/60 px-3 py-1 text-xs font-semibold">
+            {isPositive ? (
+              <TrendingUp className="h-3 w-3 text-emerald-300" />
+            ) : (
+              <TrendingDown className="h-3 w-3 text-rose-300" />
+            )}
+            <span>{changeLabel}</span>
+          </div>
+          <p className="mt-1 text-[11px] text-emerald-100/70">
+            so với kỳ trước
+          </p>
+        </div>
+      </div>
+      <div className="flex-1 min-h-[260px]">
+        {data && data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart
+              data={data}
+              margin={{
+                left: 0,
+                right: 4,
+                top: 10,
+                bottom: 0,
+              }}
+            >
+              <defs>
+                <linearGradient
+                  id="revenueGrowthGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="0%" stopColor="#bbf7d0" stopOpacity={0.95} />
+                  <stop offset="60%" stopColor="#4ade80" stopOpacity={0.4} />
+                  <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                stroke="#064e3b"
+                strokeDasharray="3 3"
+                opacity={0.35}
+              />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fill: "#d1fae5", fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fill: "#a7f3d0", fontSize: 11 }}
+                width={60}
+                domain={[0, "auto"]}
+                allowDecimals={true}
+                tickFormatter={(value) => formatCurrency(value)}
+              />
+              <RechartsTooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="value"
+                stroke="#bbf7d0"
+                strokeWidth={2.4}
+                fill="url(#revenueGrowthGradient)"
+                dot={{
+                  r: 3,
+                  strokeWidth: 1.5,
+                  stroke: "#dcfce7",
+                  fill: "#22c55e",
+                }}
+                activeDot={{ r: 5, strokeWidth: 0, fill: "#22c55e" }}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full items-center justify-center text-emerald-200/60">
+            <p className="text-sm">
+              Chưa có dữ liệu doanh thu trong khoảng thời gian này
+            </p>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-[11px]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-950/40 px-3 py-1">
+          <span className="h-2 w-2 rounded-full bg-emerald-300" />
+          <span className="font-medium text-emerald-100">Doanh thu</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatusDistributionChart({
+  data,
+  change,
+  allTransactions = [],
+  timeframe = "month",
+}) {
+  // Remove dependency on allTransactions for revenue calculation
+  const chartData = data.map((item) => ({
+    ...item,
+    label: item.label ?? STATUS_META[item.key]?.label ?? item.key,
+    color:
+      item.key === "success"
+        ? "#22c55e"
+        : item.key === "pending"
+        ? "#f59e0b"
+        : "#ef4444",
+  }));
+
+  // Tính change cho từng status item
+  const calculateChange = (current, previous) => {
+    if (previous === 0) return current > 0 ? current * 100 : 0;
+    return ((current - previous) / previous) * 100;
+  };
+
+  const getPeriodLabel = () => {
+    if (timeframe === "day") return "ngày";
+    if (timeframe === "week") return "tuần";
+    if (timeframe === "month") return "tháng";
+    return "năm";
+  };
+
+  const periodLabel = getPeriodLabel();
+
+  // Tính toán comparison data từ dữ liệu thực tế
+  const getComparisonData = () => {
+    const now = new Date();
+    let currentPeriodStart, previousPeriodStart, previousPeriodEnd;
+
+    if (timeframe === "day") {
+      currentPeriodStart = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
+      previousPeriodStart = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+      previousPeriodEnd = currentPeriodStart;
+    } else if (timeframe === "week") {
+      currentPeriodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      previousPeriodStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+      previousPeriodEnd = currentPeriodStart;
+    } else if (timeframe === "month") {
+      currentPeriodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      previousPeriodStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      previousPeriodEnd = currentPeriodStart;
+    } else {
+      currentPeriodStart = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+      previousPeriodStart = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000);
+      previousPeriodEnd = currentPeriodStart;
+    }
+
+    const previousCounts = { success: 0, pending: 0, failed: 0 };
+
+    allTransactions.forEach((tx) => {
+      const txDate = new Date(tx.time);
+      if (txDate >= previousPeriodStart && txDate < previousPeriodEnd) {
+        previousCounts[tx.status] = (previousCounts[tx.status] || 0) + 1;
+      }
+    });
+
+    return previousCounts;
+  };
+
+  const previousData = getComparisonData();
+
+  // Tính change cho từng loại status
+  const chartDataWithChange = chartData.map((item) => {
+    const previousValue = previousData[item.key] || 0;
+    const changeValue = calculateChange(item.value, previousValue);
+    return { ...item, change: changeValue };
+  });
+
+  const total = chartData.reduce((sum, item) => sum + item.value, 0);
+  const peakValue = chartData.reduce(
+    (max, item) => Math.max(max, item.value),
+    0
+  );
+
+  // Calculate total revenue from successful transactions
+  const totalRevenue = data
+    .filter((item) => item.key === "success")
+    .reduce((sum, item) => sum + (item.revenue || 0), 0);
+
+  const isPositive = change >= 0;
+  const changeLabel = `${isPositive ? "+" : ""}${Math.round(change * 100)}%`;
+
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0].payload;
+    return (
+      <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2 text-xs shadow-md">
+        <p className="font-medium text-slate-900">{label}</p>
+        <p className="mt-1 text-emerald-600">
+          {item.value.toLocaleString("vi-VN")} giao dịch
+        </p>
+      </div>
+    );
+  };
+
+  return (
+    <div className="flex h-full flex-col gap-4 rounded-2xl border border-emerald-50 bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-600">
+            Phân bổ trạng thái giao dịch
+          </p>
+          <h3 className="mt-1 text-lg font-semibold text-slate-900">
+            Tỷ lệ giao dịch
+          </h3>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <Badge
+            className={cn(
+              "border-0 px-2.5 py-1 text-xs font-semibold",
+              isPositive
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-rose-50 text-rose-600"
+            )}
+          >
+            {isPositive ? (
+              <TrendingUp className="mr-1 h-3 w-3" />
+            ) : (
+              <TrendingDown className="mr-1 h-3 w-3" />
+            )}
+            {changeLabel}
+          </Badge>
+          <span className="text-[11px] text-slate-500">
+            Tổng doanh thu:{" "}
+            <span className="font-semibold">
+              {formatCurrency(totalRevenue)}
+            </span>
+          </span>
+        </div>
+      </div>
+
+      <div className="flex flex-1 flex-col gap-4 md:flex-row md:items-center">
+        <div className="flex-1 w-full md:min-h-[260px]">
+          <ResponsiveContainer width="100%" height={260}>
+            <BarChart
+              data={chartData}
+              margin={{ top: 10, right: 8, left: -10, bottom: 0 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fill: "#6b7280", fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fill: "#6b7280", fontSize: 11 }}
+                width={50}
+                domain={[0, peakValue ? peakValue * 1.2 : 1]}
+                allowDecimals={false}
+              />
+              <RechartsTooltip content={<CustomTooltip />} />
+              <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={40}>
+                {chartData.map((item) => (
+                  <Cell key={item.key} fill={item.color} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="space-y-3 md:w-52">
+          <div className="space-y-2">
+            {chartDataWithChange.map((item) => (
+              <div
+                key={item.key}
+                className="flex items-center justify-between gap-3 rounded-xl bg-white/80 px-3 py-2 text-sm shadow-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-2.5 w-2.5 rounded-full"
+                    style={{ backgroundColor: item.color }}
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-medium text-slate-800">
+                      {item.label}
+                    </span>
+                    {item.change > -100 && Math.abs(item.change) > 0.5 && (
+                      <Badge
+                        className={cn(
+                          "mt-0.5 w-fit border-0 px-1.5 py-0 text-[10px]",
+                          item.change >= 0
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-rose-100 text-rose-700"
+                        )}
+                      >
+                        {item.change >= 0 ? "+" : ""}
+                        {Math.round(item.change)}% so với {periodLabel} trước
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <span className="font-semibold text-slate-900">
+                  {item.value.toLocaleString("vi-VN")}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const PERIOD_TYPES = {
+  day: "daily",
+  week: "weekly",
+  month: "monthly",
+  year: "yearly",
+};
+
+const REVENUE_PAGE_SIZE = 10;
 
 function SubscriptionManagement() {
   const [timeframe, setTimeframe] = useState("month");
-  const [filters, setFilters] = useState(defaultFilters);
-  const [page, setPage] = useState(1);
-  const [transactions, setTransactions] = useState(MOCK_TRANSACTIONS);
-  const [selectedTransaction, setSelectedTransaction] = useState(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [renewOpen, setRenewOpen] = useState(false);
-  const [renewTarget, setRenewTarget] = useState(null);
-  const [renewDraft, setRenewDraft] = useState({ action: "extend", duration: "30" });
   const [banner, setBanner] = useState(null);
-  const [historyOpen, setHistoryOpen] = useState(false);
-  const [historyUser, setHistoryUser] = useState(null);
-  const [historyRecords, setHistoryRecords] = useState([]);
-  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
-  const [statusTarget, setStatusTarget] = useState(null);
-  const [statusDraft, setStatusDraft] = useState("");
-  const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
 
-  const dashboard = DASHBOARD_DATA[timeframe];
+  // Revenue management states
+  const [revenueLoading, setRevenueLoading] = useState(true);
+  const [revenueError, setRevenueError] = useState(null);
+  const [revenueStartDate, setRevenueStartDate] = useState(null);
+  const [revenueEndDate, setRevenueEndDate] = useState(null);
+  const [revenuePage, setRevenuePage] = useState(1);
+  const [revenueTotalPages, setRevenueTotalPages] = useState(1);
+  const [revenueTotalCount, setRevenueTotalCount] = useState(0);
+  const [revenueStatistics, setRevenueStatistics] = useState(null);
+  const [revenueByPeriod, setRevenueByPeriod] = useState([]);
+  const [revenueByPlan, setRevenueByPlan] = useState([]);
+  const [revenuePayments, setRevenuePayments] = useState([]);
+  const [revenueUserIdFilter, setRevenueUserIdFilter] = useState(null);
+  const [revenueStatusFilter, setRevenueStatusFilter] = useState(null);
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((tx) => {
-      const matchesSearch =
-        !filters.search ||
-        tx.id.toLowerCase().includes(filters.search.toLowerCase()) ||
-        tx.userName.toLowerCase().includes(filters.search.toLowerCase());
+  // Revenue management functions
+  const fetchRevenueStatistics = async () => {
+    try {
+      const stats = await AdminRevenueRepository.getRevenueStatistics(
+        revenueStartDate || null,
+        revenueEndDate || null
+      );
+      setRevenueStatistics(stats);
+    } catch (err) {
+      console.error("Error fetching revenue statistics:", err);
+    }
+  };
 
-      const matchesStatus = filters.status === "all" || tx.status === filters.status;
-      const matchesPlan = filters.plan === "all" || tx.plan === filters.plan;
+  const fetchRevenueByPeriod = async () => {
+    try {
+      const periodType = PERIOD_TYPES[timeframe] || "monthly";
+      const data = await AdminRevenueRepository.getRevenueByPeriod(
+        periodType,
+        revenueStartDate || null,
+        revenueEndDate || null
+      );
+      setRevenueByPeriod(data || []);
+    } catch (err) {
+      console.error("Error fetching revenue by period:", err);
+    }
+  };
 
-      let matchesDate = true;
-      if (filters.from) {
-        matchesDate = matchesDate && new Date(tx.time) >= new Date(filters.from);
+  const fetchRevenueByPlan = async () => {
+    try {
+      const data = await AdminRevenueRepository.getRevenueByPlan(
+        revenueStartDate || null,
+        revenueEndDate || null
+      );
+      setRevenueByPlan(data || []);
+    } catch (err) {
+      console.error("Error fetching revenue by plan:", err);
+    }
+  };
+
+  const fetchRevenuePayments = async () => {
+    try {
+      setRevenueLoading(true);
+      const response = await AdminRevenueRepository.getPayments(
+        revenuePage,
+        REVENUE_PAGE_SIZE,
+        revenueStartDate || null,
+        revenueEndDate || null,
+        revenueUserIdFilter || null,
+        revenueStatusFilter || null
+      );
+
+      if (response.success) {
+        setRevenuePayments(response.data || []);
+        setRevenueTotalCount(response.pagination?.totalCount || 0);
+        setRevenueTotalPages(response.pagination?.totalPages || 1);
       }
-      if (filters.to) {
-        matchesDate = matchesDate && new Date(tx.time) <= new Date(filters.to);
-      }
-
-      return matchesSearch && matchesStatus && matchesPlan && matchesDate;
-    });
-  }, [filters, transactions]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredTransactions.length / PAGE_SIZE));
-  const paginatedTransactions = filteredTransactions.slice(
-    (page - 1) * PAGE_SIZE,
-    page * PAGE_SIZE
-  );
+    } catch (err) {
+      console.error("Error fetching revenue payments:", err);
+      const errorMsg =
+        err.message || "Có lỗi xảy ra khi tải dữ liệu thanh toán";
+      setRevenueError(errorMsg);
+    } finally {
+      setRevenueLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (page > totalPages) {
-      setPage(totalPages);
-    }
-  }, [page, totalPages]);
+    fetchRevenueStatistics();
+    fetchRevenueByPeriod();
+    fetchRevenueByPlan();
+    fetchRevenuePayments();
+  }, [
+    timeframe,
+    revenueStartDate,
+    revenueEndDate,
+    revenuePage,
+    revenueUserIdFilter,
+    revenueStatusFilter,
+  ]);
 
   useEffect(() => {
     if (!banner) return;
@@ -407,795 +650,513 @@ function SubscriptionManagement() {
     return () => clearTimeout(timeout);
   }, [banner]);
 
-  const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
-    setPage(1);
-  };
+  // Calculate revenue stats for display
+  const revenueStats = useMemo(() => {
+    if (!revenueStatistics) return null;
 
-  const handleResetFilters = () => {
-    setFilters(defaultFilters);
-    setPage(1);
-  };
+    const totalRevenue = revenueStatistics.totalRevenue || 0;
+    const totalRefunded = revenueStatistics.totalRefunded || 0;
+    const netRevenue = revenueStatistics.netRevenue || 0;
+    const totalTransactions = revenueStatistics.totalTransactions || 0;
+    const successfulTransactions =
+      revenueStatistics.successfulTransactions || 0;
 
-  const openDetail = (tx) => {
-    setSelectedTransaction(tx);
-    setDetailOpen(true);
-  };
+    // Calculate change percentage - placeholder for now, would need historical data
+    const revenueChange = 0.15;
+    const transactionsChange = 0.1;
+    const successRateChange = 0.05;
 
-  const closeDetail = () => {
-    setDetailOpen(false);
-    setSelectedTransaction(null);
-  };
+    return {
+      revenue: {
+        value: totalRevenue,
+        change: revenueChange,
+        icon: DollarSign,
+        isCurrency: true,
+      },
+      transactions: {
+        value: totalTransactions,
+        change: transactionsChange,
+        icon: CreditCard,
+        isCurrency: false,
+      },
+      success: {
+        value: successfulTransactions,
+        change: successRateChange,
+        icon: LineChart,
+        isCurrency: false,
+      },
+      net: {
+        value: netRevenue,
+        change: revenueChange,
+        icon: DollarSign,
+        isCurrency: true,
+      },
+    };
+  }, [revenueStatistics]);
 
-  const openRenewDialog = (tx) => {
-    setRenewTarget(tx);
-    setRenewDraft({
-      action: tx.status === "success" ? "extend" : "activate",
-      duration: "30",
-    });
-    setRenewOpen(true);
-  };
+  // Calculate revenue growth change from API data
+  const revenueGrowthChange = useMemo(() => {
+    if (!revenueByPeriod || revenueByPeriod.length < 2) return 0;
 
-  const closeRenewDialog = () => {
-    setRenewOpen(false);
-    setRenewTarget(null);
-  };
+    const currentPeriod = revenueByPeriod[revenueByPeriod.length - 1];
+    const previousPeriod = revenueByPeriod[revenueByPeriod.length - 2];
 
-  const handleRenewConfirm = () => {
-    if (!renewTarget) return;
-    const planLabel = PLAN_OPTIONS.find((plan) => plan.value === renewTarget.plan)?.label ?? renewTarget.plan;
-    const actionLabel = renewDraft.action === "extend" ? "gia hạn" : "kích hoạt";
-    setBanner({
-      tone: "success",
-      message: `Đã ${actionLabel} gói ${planLabel} cho ${renewTarget.userName} (${renewTarget.userId}) trong ${renewDraft.duration} ngày.`,
-    });
-    closeRenewDialog();
-  };
+    const currentRevenue = currentPeriod.revenue || 0;
+    const previousRevenue = previousPeriod.revenue || 0;
 
-  const handleExportTransactions = () => {
-    exportTransactionsToCSV(filteredTransactions);
-  };
+    if (previousRevenue === 0) return currentRevenue > 0 ? 1 : 0;
+    return (currentRevenue - previousRevenue) / previousRevenue;
+  }, [revenueByPeriod]);
 
-  const openHistoryDialog = (tx) => {
-    const records = transactions
-      .filter((item) => item.userId === tx.userId)
-      .sort((a, b) => new Date(b.time) - new Date(a.time));
-    setHistoryUser({ id: tx.userId, name: tx.userName });
-    setHistoryRecords(records);
-    setHistoryOpen(true);
-  };
+  // Calculate status distribution from API payments
+  const statusDistributionData = useMemo(() => {
+    if (!revenuePayments || revenuePayments.length === 0) {
+      return [
+        { key: "success", label: "Thành công", value: 0 },
+        { key: "pending", label: "Đang xử lý", value: 0 },
+        { key: "failed", label: "Thất bại", value: 0 },
+      ];
+    }
 
-  const closeHistoryDialog = () => {
-    setHistoryOpen(false);
-    setHistoryUser(null);
-    setHistoryRecords([]);
-  };
+    const counts = revenuePayments.reduce((acc, payment) => {
+      const status = payment.transactionStatus?.toLowerCase() || "pending";
+      if (status === "success" || status === "completed") {
+        acc.success = (acc.success || 0) + 1;
+      } else if (status === "failed") {
+        acc.failed = (acc.failed || 0) + 1;
+      } else {
+        acc.pending = (acc.pending || 0) + 1;
+      }
+      return acc;
+    }, {});
 
-  const openStatusDialog = (tx) => {
-    setStatusTarget(tx);
-    setStatusDraft(tx.status);
-    setStatusDialogOpen(true);
-  };
+    return [
+      { key: "success", label: "Thành công", value: counts.success || 0 },
+      { key: "pending", label: "Đang xử lý", value: counts.pending || 0 },
+      { key: "failed", label: "Thất bại", value: counts.failed || 0 },
+    ];
+  }, [revenuePayments]);
 
-  const closeStatusDialog = () => {
-    setStatusDialogOpen(false);
-    setStatusTarget(null);
-    setStatusDraft("");
-    setStatusConfirmOpen(false);
-  };
+  // Calculate status distribution change
+  const statusDistributionChange = useMemo(() => {
+    // Placeholder - would need to fetch previous period data for accurate calculation
+    return 0;
+  }, []);
 
-  const requestStatusConfirm = () => {
-    if (!statusTarget || !statusDraft || statusDraft === statusTarget.status) return;
-    setStatusConfirmOpen(true);
-  };
+  // Prepare revenue chart data for growth chart
+  const revenueGrowthData = useMemo(() => {
+    if (!revenueByPeriod || revenueByPeriod.length === 0) return [];
 
-  const applyStatusUpdate = () => {
-    if (!statusTarget || !statusDraft) return;
-    setTransactions((prev) =>
-      prev.map((tx) => (tx.id === statusTarget.id ? { ...tx, status: statusDraft } : tx))
-    );
-    setBanner({
-      tone: "info",
-      message: `Đã cập nhật trạng thái ${statusTarget.id} thành ${
-        STATUS_META[statusDraft]?.label ?? statusDraft
-      }.`,
-    });
-    setStatusConfirmOpen(false);
-    closeStatusDialog();
-  };
-
-  const startIndex = (page - 1) * PAGE_SIZE + 1;
-  const endIndex = Math.min(page * PAGE_SIZE, filteredTransactions.length);
-  const canSaveStatus =
-    !!statusTarget && !!statusDraft && statusTarget.status !== statusDraft;
+    return (revenueByPeriod || []).map((item) => ({
+      label: item.period || item.periodStart || "",
+      value: item.revenue || 0,
+    }));
+  }, [revenueByPeriod]);
 
   return (
     <>
       <LivingBackground
         baseColor={BACKGROUND_PALETTE.bg}
-        palette={[BACKGROUND_PALETTE.leaf, BACKGROUND_PALETTE.ivory, BACKGROUND_PALETTE.accent]}
+        palette={[
+          BACKGROUND_PALETTE.leaf,
+          BACKGROUND_PALETTE.ivory,
+          BACKGROUND_PALETTE.accent,
+        ]}
         density={28}
       />
       <div className="relative min-h-screen z-10">
         <AdminLayout>
           <div className="space-y-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
-              <ShieldCheck className="h-4 w-4" />
-                Quản trị hệ thống
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold text-white">
-              Quản lý thanh toán & gói dịch vụ
-            </h1>
-            <p className="text-emerald-100/80">
-              Theo dõi doanh thu, trạng thái giao dịch và phân bổ gói trong hệ sinh thái Mầm Mới.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
-              {TIME_WINDOWS.map((option) => {
-                const isActive = timeframe === option.value;
-                return (
-                  <button
-                    key={option.value}
-                    onClick={() => setTimeframe(option.value)}
-                    className={cn(
-                      "rounded-full px-4 py-2 text-sm font-semibold transition-all",
-                      isActive
-                        ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/30"
-                        : "text-white/70 hover:text-white"
-                    )}
-                  >
-                    {option.label}
-                  </button>
-                );
-              })}
-            </div>
-            <Button
-              variant="outline"
-              className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-            >
-              <LineChart className="mr-2 h-4 w-4" />
-              Đồng bộ dữ liệu
-            </Button>
-          </div>
-        </div>
-
-        {banner && (
-          <div
-            className={cn(
-              "rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm",
-              banner.tone === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-slate-200 bg-slate-50 text-slate-700"
-            )}
-          >
-            {banner.message}
-          </div>
-        )}
-
-        <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-          <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <CardTitle className="text-2xl text-slate-900">Tổng quan doanh thu</CardTitle>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
-              <LineChart className="h-4 w-4 text-emerald-600" />
-              Dữ liệu {TIME_WINDOWS.find((t) => t.value === timeframe)?.label?.toLowerCase()}{" "}
-              hiện tại{" "}
-              <span className="font-semibold text-emerald-600">
-                {dashboard.label}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {Object.entries(dashboard.stats).map(([key, config]) => (
-                <StatCard
-                  key={key}
-                  label={
-                    {
-                      revenue: "Tổng doanh thu",
-                      success: "Giao dịch thành công",
-                      failed: "Giao dịch thất bại",
-                      activeUsers: "Người dùng đang sử dụng gói",
-                    }[key]
-                  }
-                  value={config.value}
-                  change={config.change}
-                  icon={config.icon}
-                  isCurrency={key === "revenue"}
-                />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none bg-transparent text-slate-900 shadow-none">
-          <CardContent className="grid gap-6 grid-cols-1 xl:grid-cols-2 p-0">
-            <InsightAreaChart
-              data={dashboard.revenueTrend.series}
-              change={dashboard.revenueTrend.change}
-              title="Doanh thu theo thời gian"
-              subtitle="Doanh thu"
-              valueFormatter={(value) =>
-                `${value.toLocaleString("vi-VN", {
-                  minimumFractionDigits: 0,
-                  maximumFractionDigits: 1,
-                })} tỷ`
-              }
-            />
-            <SegmentDistributionCard
-              data={dashboard.breakdown.byStatus}
-              change={dashboard.breakdown.change}
-              title="Phân bổ trạng thái giao dịch"
-              subtitle="Tỷ lệ giao dịch"
-            />
-          </CardContent>
-        </Card>
-
-        <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-          <CardHeader>
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <CardTitle className="text-2xl text-slate-900">Danh sách thanh toán</CardTitle>
-                <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
-                  <Package className="h-4 w-4 text-emerald-600" />
-                  {filteredTransactions.length} giao dịch khớp bộ lọc
-                </div>
+                <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
+                  <ShieldCheck className="h-4 w-4" />
+                  Quản trị hệ thống
+                </p>
+                <h1 className="mt-2 text-3xl font-semibold text-white">
+                  Quản lý thanh toán
+                </h1>
+                <p className="text-emerald-100/80">
+                  Theo dõi doanh thu, trạng thái giao dịch và phân bổ gói trong
+                  hệ sinh thái Mầm Mới.
+                </p>
               </div>
-              <Button
-                className="gap-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
-                onClick={handleExportTransactions}
-                disabled={filteredTransactions.length === 0}
-              >
-                <FileDown className="h-4 w-4" />
-                Xuất CSV
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid gap-4 lg:grid-cols-12">
-              <div className="lg:col-span-4">
-                <div className="relative">
-                  <Input
-                    placeholder="Tìm mã giao dịch hoặc tên khách hàng..."
-                    value={filters.search}
-                    onChange={(event) => handleFilterChange("search", event.target.value)}
-                    className="rounded-xl border-slate-200 bg-white pl-10 text-slate-900 shadow-inner shadow-emerald-50 placeholder:text-slate-400"
-                  />
-                  <CreditCard className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                </div>
-              </div>
-              <div className="lg:col-span-2">
-                <Select
-                  value={filters.status}
-                  onValueChange={(value) => handleFilterChange("status", value)}
-                >
-                  <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                    <SelectValue placeholder="Trạng thái" className="text-slate-500" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TRANSACTION_STATUS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
+                  {TIME_WINDOWS.map((option) => {
+                    const isActive = timeframe === option.value;
+                    return (
+                      <button
+                        key={option.value}
+                        onClick={() => setTimeframe(option.value)}
+                        className={cn(
+                          "rounded-full px-4 py-2 text-sm font-semibold transition-all",
+                          isActive
+                            ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/30"
+                            : "text-white/70 hover:text-white"
+                        )}
+                      >
                         {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="lg:col-span-2">
-                <Select
-                  value={filters.plan}
-                  onValueChange={(value) => handleFilterChange("plan", value)}
-                >
-                  <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                    <SelectValue placeholder="Loại gói" className="text-slate-500" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PLAN_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="lg:col-span-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="flex w-full items-center justify-between rounded-xl border-slate-200 bg-white text-left font-normal text-slate-700 hover:bg-slate-50"
-                    >
-                      <span className="truncate">
-                        {filters.from
-                          ? `Từ: ${new Date(filters.from).toLocaleDateString("vi-VN")}`
-                          : "Từ ngày"}
-                      </span>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={filters.from}
-                      onSelect={(date) => handleFilterChange("from", date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="lg:col-span-2">
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="flex w-full items-center justify-between rounded-xl border-slate-200 bg-white text-left font-normal text-slate-700 hover:bg-slate-50"
-                    >
-                      <span className="truncate">
-                        {filters.to
-                          ? `Đến: ${new Date(filters.to).toLocaleDateString("vi-VN")}`
-                          : "Đến ngày"}
-                      </span>
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={filters.to}
-                      onSelect={(date) => handleFilterChange("to", date)}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <div className="lg:col-span-2">
+                      </button>
+                    );
+                  })}
+                </div>
                 <Button
                   variant="outline"
-                  size="lg"
-                  className="h-12 w-full rounded-xl border-emerald-100 bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100"
-                  onClick={handleResetFilters}
+                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
                 >
-                  Đặt lại bộ lọc
+                  <LineChart className="mr-2 h-4 w-4" />
+                  Đồng bộ dữ liệu
                 </Button>
               </div>
             </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="text-sm text-slate-500">
-                Hiển thị {filteredTransactions.length === 0 ? 0 : `${startIndex}–${endIndex}`} /{" "}
-                {filteredTransactions.length} giao dịch
-              </p>
-              <div className="flex items-center gap-2 text-sm">
-                <span className="text-slate-500">
-                  Trang {page} / {totalPages}
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page === 1}
-                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                  >
-                    Trước
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page === totalPages}
-                    onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-                  >
-                    Sau
-                  </Button>
-                </div>
+            {banner && (
+              <div
+                className={cn(
+                  "rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm",
+                  banner.tone === "success"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-slate-200 bg-slate-50 text-slate-700"
+                )}
+              >
+                {banner.message}
               </div>
-            </div>
+            )}
+            {/* Revenue Section */}
+            {revenueError && (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800 shadow-sm">
+                {revenueError}
+              </div>
+            )}
+            {/* Revenue Statistics Cards */}
+            {revenueStats && (
+              <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
+                <CardHeader>
+                  <CardTitle className="text-2xl text-slate-900">
+                    Tổng quan doanh thu
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {Object.entries(revenueStats).map(([key, config]) => (
+                      <StatCard
+                        key={key}
+                        label={
+                          {
+                            revenue: "Tổng doanh thu",
+                            transactions: "Tổng giao dịch",
+                            success: "Giao dịch thành công",
+                            net: "Doanh thu ròng",
+                          }[key] ?? key
+                        }
+                        value={config.value}
+                        change={config.change}
+                        icon={config.icon}
+                        isCurrency={config.isCurrency}
+                      />
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {/* Revenue Chart */}
 
-            <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
-              <Table>
-                <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
-                  <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
-                    <TableHead>Mã giao dịch</TableHead>
-                    <TableHead>Khách hàng</TableHead>
-                    <TableHead>Số tiền</TableHead>
-                    <TableHead>Loại gói</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Thời gian</TableHead>
-                    <TableHead className="text-right">Hành động</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedTransactions.map((tx) => (
-                    <TableRow
-                      key={tx.id}
-                      className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
-                    >
-                      <TableCell className="font-semibold text-slate-900">
-                        {tx.id}
-                      </TableCell>
-                      <TableCell className="text-slate-800">
-                        <button
-                          type="button"
-                          className="font-semibold text-slate-900 transition hover:text-emerald-600"
-                          onClick={() => openHistoryDialog(tx)}
+            {/* Revenue by Plan */}
+            {revenueByPlan.length > 0 && (
+              <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
+                <CardHeader>
+                  <CardTitle className="text-2xl text-slate-900">
+                    Doanh thu theo gói dịch vụ
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-[300px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={revenueByPlan}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis
+                          dataKey="planName"
+                          tick={{ fill: "#6b7280", fontSize: 11 }}
+                        />
+                        <YAxis
+                          tick={{ fill: "#6b7280", fontSize: 11 }}
+                          tickFormatter={formatCurrency}
+                        />
+                        <RechartsTooltip
+                          formatter={(value) => formatCurrency(value)}
+                        />
+                        <Bar
+                          dataKey="totalRevenue"
+                          fill="#22c55e"
+                          radius={[8, 8, 0, 0]}
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {/* Charts Section */}
+            <Card className="border-none bg-transparent text-slate-900 shadow-none">
+              <CardContent className="grid gap-6 grid-cols-1 xl:grid-cols-2 p-0 lg:min-h-[360px]">
+                <div className="xl:col-span-1 h-full">
+                  <RevenueGrowthChart
+                    data={revenueGrowthData}
+                    change={revenueGrowthChange}
+                    timeframeLabel={
+                      TIME_WINDOWS.find((t) => t.value === timeframe)?.label ??
+                      "Kỳ"
+                    }
+                    valueFormatter={formatCurrency}
+                  />
+                </div>
+                <div className="xl:col-span-1 h-full">
+                  <StatusDistributionChart
+                    data={statusDistributionData}
+                    change={statusDistributionChange}
+                    allTransactions={[]}
+                    timeframe={timeframe}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+            {/* Revenue Payments Table */}
+            <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
+              <CardHeader>
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                  <CardTitle className="text-2xl text-slate-900">
+                    Danh sách thanh toán
+                  </CardTitle>
+                  <div className="flex items-center gap-2 text-sm text-slate-500">
+                    <CreditCard className="h-4 w-4 text-emerald-600" />
+                    {revenueTotalCount} giao dịch
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Filters */}
+                <div className="mb-6 grid gap-4 lg:grid-cols-12">
+                  <div className="lg:col-span-3">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
                         >
-                          {tx.userName}
-                        </button>
-                        <p className="text-xs font-mono text-slate-500">{tx.userId}</p>
-                      </TableCell>
-                      <TableCell className="font-medium text-slate-800">
-                        {tx.amount.toLocaleString("vi-VN", {
-                          style: "currency",
-                          currency: "VND",
-                        })}
-                      </TableCell>
-                      <TableCell className="font-medium text-slate-800">
-                        {PLAN_OPTIONS.find((p) => p.value === tx.plan)?.label}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={cn("border-0", STATUS_META[tx.status]?.className)}>
-                          {STATUS_META[tx.status]?.label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-slate-500">
-                        {new Date(tx.time).toLocaleString("vi-VN", { hour12: false })}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-emerald-700 hover:bg-emerald-50"
-                            onClick={() => openDetail(tx)}
-                          >
-                            Xem chi tiết
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="text-slate-500 hover:bg-slate-100"
-                            onClick={() => openStatusDialog(tx)}
-                          >
-                            Cập nhật trạng thái
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                            onClick={() => openRenewDialog(tx)}
-                          >
-                            Gia hạn / kích hoạt
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {paginatedTransactions.length === 0 && (
-                    <TableRow>
-                      <TableCell
-                        colSpan={7}
-                        className="py-8 text-center text-sm text-slate-500"
-                      >
-                        Không có giao dịch nào khớp bộ lọc.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Dialog open={detailOpen} onOpenChange={(open) => !open && closeDetail()}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Chi tiết giao dịch</DialogTitle>
-              <DialogDescription>
-                Thông tin chi tiết của giao dịch được chọn.
-              </DialogDescription>
-            </DialogHeader>
-            {selectedTransaction && (
-              <div className="space-y-4 text-sm text-slate-700">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">
-                      Mã giao dịch
-                    </p>
-                    <p className="mt-1 font-mono text-slate-900">{selectedTransaction.id}</p>
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {revenueStartDate
+                            ? new Date(revenueStartDate).toLocaleDateString(
+                                "vi-VN"
+                              )
+                            : "Từ ngày"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={revenueStartDate}
+                          onSelect={setRevenueStartDate}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">Khách hàng</p>
-                    <p className="mt-1 text-slate-900">{selectedTransaction.userName}</p>
-                    <p className="text-xs font-mono text-slate-500">{selectedTransaction.userId}</p>
+                  <div className="lg:col-span-3">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {revenueEndDate
+                            ? new Date(revenueEndDate).toLocaleDateString(
+                                "vi-VN"
+                              )
+                            : "Đến ngày"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0">
+                        <Calendar
+                          mode="single"
+                          selected={revenueEndDate}
+                          onSelect={setRevenueEndDate}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">
-                      Số tiền
-                    </p>
-                    <p className="mt-1 font-semibold text-emerald-700">
-                      {selectedTransaction.amount.toLocaleString("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      })}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">
-                      Gói
-                    </p>
-                    <p className="mt-1 text-slate-900">
-                      {PLAN_OPTIONS.find((p) => p.value === selectedTransaction.plan)?.label}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">
-                      Trạng thái
-                    </p>
-                    <p className="mt-1">
-                      <Badge
-                        className={cn(
-                          "border-0",
-                          STATUS_META[selectedTransaction.status]?.className
-                        )}
-                      >
-                        {STATUS_META[selectedTransaction.status]?.label}
-                      </Badge>
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase text-slate-400">
-                      Thời gian
-                    </p>
-                    <p className="mt-1 text-slate-900">
-                      {new Date(selectedTransaction.time).toLocaleString("vi-VN", {
-                        hour12: false,
-                      })}
-                    </p>
+                  <div className="lg:col-span-3">
+                    <Select
+                      value={revenueStatusFilter || "all"}
+                      onValueChange={(value) => {
+                        setRevenueStatusFilter(value === "all" ? null : value);
+                        setRevenuePage(1);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Trạng thái" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả trạng thái</SelectItem>
+                        <SelectItem value="Success">Thành công</SelectItem>
+                        <SelectItem value="Failed">Thất bại</SelectItem>
+                        <SelectItem value="Pending">Đang xử lý</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-3 text-xs text-slate-500">
-                  Các hành động như hoàn tiền, gia hạn hoặc kích hoạt gói sẽ được
-                  tích hợp trực tiếp với cổng thanh toán trong bản triển khai chính thức.
-                </div>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
 
-        <Dialog
-          open={historyOpen}
-          onOpenChange={(open) => {
-            if (!open) {
-              closeHistoryDialog();
-            } else {
-              setHistoryOpen(true);
-            }
-          }}
-        >
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>Lịch sử thanh toán</DialogTitle>
-              <DialogDescription>
-                {historyUser
-                  ? `Danh sách giao dịch của ${historyUser.name} (${historyUser.id}).`
-                  : "Không có dữ liệu người dùng."}
-              </DialogDescription>
-            </DialogHeader>
-            {historyRecords.length > 0 ? (
-              <div className="space-y-4">
-                {historyRecords.map((record) => (
-                  <div
-                    key={record.id}
-                    className="rounded-2xl border border-slate-100 bg-slate-50/80 p-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <p className="font-mono text-sm text-slate-700">{record.id}</p>
-                      <Badge className={cn("border-0", STATUS_META[record.status]?.className)}>
-                        {STATUS_META[record.status]?.label}
-                      </Badge>
+                {revenueLoading && revenuePayments.length === 0 ? (
+                  <div className="flex items-center justify-center p-12">
+                    <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                    <span className="ml-3 text-slate-600">
+                      Đang tải dữ liệu...
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                      <Table>
+                        <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
+                          <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
+                            <TableHead>ID</TableHead>
+                            <TableHead>Khách hàng</TableHead>
+                            <TableHead>Gói dịch vụ</TableHead>
+                            <TableHead>Số tiền</TableHead>
+                            <TableHead>Ngày thanh toán</TableHead>
+                            <TableHead>Trạng thái</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {revenuePayments.length === 0 ? (
+                            <TableRow>
+                              <TableCell
+                                colSpan={6}
+                                className="py-8 text-center text-slate-500"
+                              >
+                                Không có giao dịch nào.
+                              </TableCell>
+                            </TableRow>
+                          ) : (
+                            revenuePayments.map((payment) => (
+                              <TableRow
+                                key={payment.paymentId}
+                                className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
+                              >
+                                <TableCell className="font-semibold text-slate-900">
+                                  #{payment.paymentId}
+                                </TableCell>
+                                <TableCell>
+                                  <div>
+                                    <p className="font-medium text-slate-900">
+                                      {payment.userName}
+                                    </p>
+                                    <p className="text-xs text-slate-500">
+                                      {payment.userEmail}
+                                    </p>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-slate-800">
+                                  {payment.planName}
+                                </TableCell>
+                                <TableCell className="font-semibold text-emerald-700">
+                                  {payment.amount.toLocaleString("vi-VN", {
+                                    style: "currency",
+                                    currency: payment.currency || "VND",
+                                  })}
+                                </TableCell>
+                                <TableCell className="text-slate-500">
+                                  {new Date(
+                                    payment.paymentDate
+                                  ).toLocaleDateString("vi-VN")}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge
+                                    className={cn(
+                                      "border-0",
+                                      payment.transactionStatus === "Success"
+                                        ? "bg-emerald-50 text-emerald-700"
+                                        : payment.transactionStatus === "Failed"
+                                        ? "bg-rose-50 text-rose-700"
+                                        : "bg-amber-50 text-amber-700"
+                                    )}
+                                  >
+                                    {payment.transactionStatus === "Success"
+                                      ? "Thành công"
+                                      : payment.transactionStatus === "Failed"
+                                      ? "Thất bại"
+                                      : "Đang xử lý"}
+                                  </Badge>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
                     </div>
-                    <p className="mt-2 text-sm font-semibold text-slate-900">
-                      {PLAN_OPTIONS.find((plan) => plan.value === record.plan)?.label}
-                    </p>
-                    <p className="text-sm text-emerald-700">
-                      {record.amount.toLocaleString("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      })}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {new Date(record.time).toLocaleString("vi-VN", { hour12: false })}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="rounded-xl bg-slate-50 p-4 text-center text-sm text-slate-500">
-                Chưa có giao dịch nào cho người dùng này.
-              </p>
-            )}
-          </DialogContent>
-        </Dialog>
 
-      <Dialog
-        open={renewOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            closeRenewDialog();
-          } else {
-            setRenewOpen(true);
-          }
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Gia hạn / kích hoạt gói</DialogTitle>
-            <DialogDescription>
-              Xác nhận thao tác cho giao dịch của khách hàng {renewTarget?.userName}.
-            </DialogDescription>
-          </DialogHeader>
-          {renewTarget && (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Khách hàng</p>
-                <p className="mt-1 font-semibold text-slate-900">{renewTarget.userName}</p>
-                <p className="text-xs font-mono text-slate-500">{renewTarget.userId}</p>
-                <p className="text-sm text-slate-600">
-                  Gói hiện tại:{" "}
-                  {PLAN_OPTIONS.find((plan) => plan.value === renewTarget.plan)?.label}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600">Hành động</label>
-                <Select
-                  value={renewDraft.action}
-                  onValueChange={(value) => setRenewDraft((prev) => ({ ...prev, action: value }))}
-                >
-                  <SelectTrigger className="rounded-xl border-slate-200 bg-white">
-                    <SelectValue placeholder="Chọn hành động" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="extend">Gia hạn thêm thời gian</SelectItem>
-                    <SelectItem value="activate">Kích hoạt ngay gói</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-600">
-                  Thời lượng gia hạn (ngày)
-                </label>
-                <Select
-                  value={renewDraft.duration}
-                  onValueChange={(value) => setRenewDraft((prev) => ({ ...prev, duration: value }))}
-                >
-                  <SelectTrigger className="rounded-xl border-slate-200 bg-white">
-                    <SelectValue placeholder="Chọn thời lượng" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {["30", "90", "180"].map((day) => (
-                      <SelectItem key={day} value={day}>
-                        {day} ngày
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="ghost" onClick={closeRenewDialog}>
-              Huỷ
-            </Button>
-            <Button className="bg-emerald-600 text-white hover:bg-emerald-700" onClick={handleRenewConfirm}>
-              Xác nhận thao tác
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={statusDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            closeStatusDialog();
-          } else {
-            setStatusDialogOpen(true);
-          }
-        }}
-      >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Cập nhật trạng thái giao dịch</DialogTitle>
-            <DialogDescription>
-              Sau khi cập nhật, hệ thống sẽ ghi lại log audit và thông báo cho đội tài chính.
-            </DialogDescription>
-          </DialogHeader>
-          {statusTarget && (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Giao dịch</p>
-                <p className="mt-1 font-mono text-slate-900">{statusTarget.id}</p>
-                <p className="text-sm text-slate-600">
-                  {statusTarget.userName} · {statusTarget.userId}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {PLAN_OPTIONS.find((plan) => plan.value === statusTarget.plan)?.label}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Trạng thái mới</label>
-                <Select value={statusDraft} onValueChange={setStatusDraft}>
-                  <SelectTrigger className="rounded-xl border-slate-200 bg-white">
-                    <SelectValue placeholder="Chọn trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {TRANSACTION_STATUS.filter((option) => option.value !== "all").map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50/80 p-3 text-sm text-amber-800">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <div>
-                  <p className="font-semibold">Xác nhận trước khi cập nhật</p>
-                  <p className="text-xs text-amber-700">
-                    Thao tác này có thể ảnh hưởng tới SLA với khách hàng. Vui lòng chắc chắn trước khi lưu.
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="ghost" onClick={closeStatusDialog}>
-              Huỷ
-            </Button>
-            <Button
-              className="bg-emerald-600 text-white hover:bg-emerald-700"
-              disabled={!canSaveStatus}
-              onClick={requestStatusConfirm}
-            >
-              Lưu trạng thái
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog
-        open={statusConfirmOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setStatusConfirmOpen(false);
-          } else if (canSaveStatus) {
-            setStatusConfirmOpen(true);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận cập nhật trạng thái</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bạn sắp cập nhật giao dịch {statusTarget?.id} sang trạng thái{" "}
-              <strong>{STATUS_META[statusDraft]?.label ?? statusDraft}</strong>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-sm text-slate-600">
-            <p>Mọi thay đổi sẽ được lưu trong lịch sử và gửi cảnh báo nếu trạng thái là "Thất bại".</p>
+                    {/* Pagination */}
+                    {revenueTotalPages > 1 && (
+                      <Pagination className="mt-6">
+                        <PaginationContent>
+                          <PaginationItem>
+                            <PaginationPrevious
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setRevenuePage((prev) => Math.max(1, prev - 1));
+                              }}
+                              className={
+                                revenuePage === 1
+                                  ? "pointer-events-none opacity-50"
+                                  : ""
+                              }
+                            />
+                          </PaginationItem>
+                          {Array.from(
+                            { length: revenueTotalPages },
+                            (_, i) => i + 1
+                          ).map((p) => (
+                            <PaginationItem key={p}>
+                              <PaginationLink
+                                href="#"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setRevenuePage(p);
+                                }}
+                                isActive={revenuePage === p}
+                              >
+                                {p}
+                              </PaginationLink>
+                            </PaginationItem>
+                          ))}
+                          <PaginationItem>
+                            <PaginationNext
+                              href="#"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setRevenuePage((prev) =>
+                                  Math.min(revenueTotalPages, prev + 1)
+                                );
+                              }}
+                              className={
+                                revenuePage === revenueTotalPages
+                                  ? "pointer-events-none opacity-50"
+                                  : ""
+                              }
+                            />
+                          </PaginationItem>
+                        </PaginationContent>
+                      </Pagination>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Huỷ</AlertDialogCancel>
-            <AlertDialogAction onClick={applyStatusUpdate}>Xác nhận</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-        </div>
-      </AdminLayout>
-    </div>
-  </>
+        </AdminLayout>
+      </div>
+    </>
   );
 }
 
 export default SubscriptionManagement;
-
-

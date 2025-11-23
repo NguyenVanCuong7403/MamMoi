@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  # SQL Server Database
+  database:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: mammoi-database
+    environment:
+      - ACCEPT_EULA=Y
+      # Note: SQL Server requires SA_PASSWORD to be at least 8 characters
+      # You can override this by creating a .env file with SA_PASSWORD=your_password
+      - SA_PASSWORD=${SA_PASSWORD:-MamMoi123!}
+      - MSSQL_PID=Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver_data:/var/opt/mssql
+      - ./database:/docker-entrypoint-initdb.d
+    networks:
+      - mammoi-network
+    healthcheck:
+      test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${SA_PASSWORD:-MamMoi123!}" -C -Q "SELECT 1" || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Backend API (.NET)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mammoi-backend
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80
+      - ConnectionStrings__DefaultConnection=Server=database;Database=MamMoi;User Id=sa;Password=${SA_PASSWORD:-MamMoi123!};TrustServerCertificate=True
+    ports:
+      - "5262:80"
+    volumes:
+      - ./backend/MamMoi.Api/wwwroot/uploads:/app/wwwroot/uploads
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - mammoi-network
+    restart: unless-stopped
+
+  # Frontend (React/Vite)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mammoi-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - mammoi-network
+    restart: unless-stopped
+
+networks:
+  mammoi-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:

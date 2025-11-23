@@ -1,18 +1,96 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Menu } from "lucide-react";
+import { Search, Menu, Bell, Calendar, CloudRain, User as UserIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/API/context/AuthContext"
 
 
 const DEFAULT_MENU = [
   { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
-  { id: "quan-ly", label: "Quản lý cây", href: "/garden" },
+  { id: "quan-ly", label: "Quản lý vườn & cây", href: "/garden" },
   { id: "dang-ky", label: "Đăng ký dịch vụ", href: "#register" },
   { id: "lien-he", label: "Liên hệ & Hỗ trợ", href: "/report" },
 ];
 
 const DEFAULT_AVATAR =
   "https://ui-avatars.com/api/?name=User&background=D1DFB6&color=1F302F";
+
+/* ===== Helper functions ===== */
+const normalizeRole = (role) => {
+  if (!role) return null;
+  return role.toString().toLowerCase().trim();
+};
+
+const isAdmin = (user) => {
+  if (!user) return false;
+  const role = normalizeRole(user.role);
+  return role === "systemadmin" || role === "businessadmin";
+};
+
+const getAdminPath = (user) => {
+  if (!user) return null;
+  const role = normalizeRole(user.role);
+  if (role === "systemadmin") return "/admin/users";
+  if (role === "businessadmin") return "/admin/business/trees";
+  return null;
+};
+
+/* ===== Safe Image Component (đồng bộ với UserProfile) ===== */
+function normalizeImageUrl(raw = "") {
+  if (!raw) return "";
+  let u = String(raw).trim();
+  if (u.startsWith("http://")) u = "https://" + u.slice(7);
+  let m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
+  m = u.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
+  m = u.match(/drive\.google\.com\/uc\?(?:export=[^&]+&)?id=([^&]+)/);
+  if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
+  if (/dropbox\.com/.test(u)) {
+    u = u
+      .replace("www.dropbox.com", "dl.dropboxusercontent.com")
+      .replace(/\?dl=0$/, "?dl=1");
+  }
+  return u;
+}
+
+function SafeImage({ src, alt = "", className = "" }) {
+  const [url, setUrl] = useState("");
+  const [failed, setFailed] = useState(false);
+  const [tried, setTried] = useState(false);
+
+  useEffect(() => {
+    setUrl(normalizeImageUrl(src || ""));
+    setFailed(false);
+    setTried(false);
+  }, [src]);
+
+  function onError() {
+    if (tried) return setFailed(true);
+    setTried(true);
+    if (/drive\.google\.com\/uc\?/.test(url)) {
+      setUrl(url.replace("export=view", "export=download"));
+    } else setFailed(true);
+  }
+
+  if (!url || failed) {
+    return (
+      <div className="w-full h-full grid place-items-center">
+        <UserIcon className="h-6 w-6 text-neutral-500" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      crossOrigin="anonymous"
+      referrerPolicy="no-referrer"
+      onError={onError}
+    />
+  );
+}
 
 export default function MMHeader({
   menuItems = DEFAULT_MENU,
@@ -25,6 +103,45 @@ export default function MMHeader({
   const [menuAnimOpen, setMenuAnimOpen] = useState(false);
   const { user, logout } = useAuth();
   const [avatarMenu, setAvatarMenu] = useState(false);
+  const [notificationMenu, setNotificationMenu] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  
+  // Tính số thông báo chưa đọc
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  
+  // Đọc avatar từ localStorage profile nếu user.ProfileImageUrl không có
+  const [profileAvatar, setProfileAvatar] = useState(() => {
+    try {
+      const profile = localStorage.getItem("mm_user_profile_v3");
+      if (profile) {
+        const parsed = JSON.parse(profile);
+        return parsed?.avatarUrl || "";
+      }
+    } catch {}
+    return "";
+  });
+  
+  // Lắng nghe thay đổi trong localStorage profile
+  useEffect(() => {
+    function handleStorageChange() {
+      try {
+        const profile = localStorage.getItem("mm_user_profile_v3");
+        if (profile) {
+          const parsed = JSON.parse(profile);
+          setProfileAvatar(parsed?.avatarUrl || "");
+        }
+      } catch {}
+    }
+    
+    // Lắng nghe storage event (từ tab khác) và custom event (từ cùng tab)
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("userProfileUpdated", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("userProfileUpdated", handleStorageChange);
+    };
+  }, []);
 
 
 
@@ -36,6 +153,7 @@ export default function MMHeader({
 
   const searchInputRef = useRef(null);
   const openedAtRef = useRef(0);
+  const menuCloseTimeoutRef = useRef(null);
   const navigate = useNavigate();
 
   const handleLoginClick = () => {
@@ -79,8 +197,12 @@ export default function MMHeader({
       // không bật search của header
       const dateOpen = document.querySelector('[data-mm-date-open="1"]');
 
+      // Kiểm tra xem có đang ở màn hình AddTreeNewScreen không
+      const addTreeScreen = document.querySelector('[data-mm-screen="add-tree"]');
+
       if (e.key === "Enter") {
         if (dateOpen) return; // khung lịch đang mở → không làm gì
+        if (addTreeScreen && !typing) return; // đang ở màn hình thêm cây và không focus input → không mở search
 
         if (!typing && !searchOpen) {
           setSearchOpen(true);
@@ -122,16 +244,45 @@ export default function MMHeader({
 
   // Drawer open/close (chậm & mượt hơn)
   const openMenu = () => {
-    if (menuVisible) return;
+    // Nếu đang trong quá trình đóng (có timeout hoặc menuVisible=true nhưng menuAnimOpen=false), cancel và mở lại ngay
+    if (menuCloseTimeoutRef.current || (menuVisible && !menuAnimOpen)) {
+      if (menuCloseTimeoutRef.current) {
+        clearTimeout(menuCloseTimeoutRef.current);
+        menuCloseTimeoutRef.current = null;
+      }
+      // Mở lại ngay lập tức, không cần đợi animation frame
+      setMenuOpen(true);
+      setMenuAnimOpen(true);
+      // Đảm bảo menuVisible vẫn là true
+      if (!menuVisible) {
+        setMenuVisible(true);
+      }
+      return;
+    }
+    // Nếu đã mở rồi thì không làm gì
+    if (menuVisible && menuAnimOpen) return;
+    // Mở sidebar mới
     setMenuVisible(true);
-    requestAnimationFrame(() => setMenuAnimOpen(true));
     setMenuOpen(true);
+    // Đảm bảo animation chạy mượt bằng cách đợi DOM render xong
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setMenuAnimOpen(true);
+      });
+    });
   };
   const closeMenu = () => {
     if (!menuVisible) return;
+    // Clear timeout cũ nếu có
+    if (menuCloseTimeoutRef.current) {
+      clearTimeout(menuCloseTimeoutRef.current);
+    }
     setMenuAnimOpen(false);
     setMenuOpen(false);
-    setTimeout(() => setMenuVisible(false), 820); // khớp overlay/panel
+    menuCloseTimeoutRef.current = setTimeout(() => {
+      setMenuVisible(false);
+      menuCloseTimeoutRef.current = null;
+    }, 820); // khớp overlay/panel
   };
 
   return (
@@ -152,7 +303,7 @@ export default function MMHeader({
         style={!isTop ? { background: `#1F302FE6` } : undefined}
         data-testid="mmheader"
       >
-        <div className="w-full px-5 md:px-[90px] h-[80px] flex items-center gap-5">
+        <div className="w-full px-4 md:px-6 h-[80px] flex items-center gap-5">
           {/* Logo */}
           <a
             href="#"
@@ -194,7 +345,10 @@ export default function MMHeader({
                 pointerEvents: searchOpen ? "auto" : "none",
               }}
               onMouseLeave={() => {
-                if (!searchQuery.trim() && Date.now() - openedAtRef.current > 250) {
+                if (
+                  !searchQuery.trim() &&
+                  Date.now() - openedAtRef.current > 250
+                ) {
                   setSearchOpen(false);
                 }
               }}
@@ -274,32 +428,192 @@ export default function MMHeader({
               <Search className="w-[22px] h-[22px]" />
             </button>
 
-            {/* If logged in → avatar dropdown. If not → login/register */}
-{user ? (
-  <div className="hidden md:block relative  avatar-menu-area">
-    <button
-      onClick={() => setAvatarMenu((prev) => !prev)}
-      className="w-11 h-11 rounded-full overflow-hidden border border-white/40 shadow focus:outline-none"
-    >
-      <img
-        src={user.ProfileImageUrl || DEFAULT_AVATAR}
-        alt="avatar"
-        className="w-full h-full object-cover"
-      />
-    </button>
+            {/* Notification bell */}
+            {user && (
+              <div className="hidden sm:block relative notification-menu-area">
+                <button
+                  onClick={() => setNotificationMenu((prev) => !prev)}
+                  className="w-11 h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none relative"
+                  style={{ background: palette.ivory, color: palette.bg }}
+                  aria-label="Thông báo"
+                  title="Thông báo"
+                >
+                  <Bell className="w-[22px] h-[22px]" />
+                  {unreadCount > 0 && (
+                    <span
+                      className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white shadow"
+                      style={{ background: "#EF4444" }}
+                    >
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
+                </button>
 
-    {/* Dropdown */}
-    {avatarMenu && (
-      <div className="absolute right-0 mt-3 w-40 bg-white text-[#1F302F] rounded-xl shadow-lg py-2 z-[999]">
-        <button
-          className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-          onClick={() => {
-            navigate("/garden");
-            setAvatarMenu((prev) => !prev)
-          }}
-        >
-          Vườn của tôi
-        </button>
+                {/* Notification dropdown */}
+                {notificationMenu && (
+                  <div className="absolute right-0 mt-3 w-[380px] max-w-[90vw] bg-white text-[#1F302F] rounded-xl shadow-2xl z-[999] max-h-[500px] overflow-hidden flex flex-col">
+                    {/* Header */}
+                    <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                      <h3 className="font-semibold text-lg">Thông báo</h3>
+                      {unreadCount > 0 && (
+                        <span className="text-xs text-gray-500">
+                          {unreadCount} chưa đọc
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Notifications list */}
+                    <div className="overflow-y-auto max-h-[400px]">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-gray-500">
+                          Không có thông báo
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-gray-100">
+                          {notifications.map((notification) => (
+                            <div
+                              key={notification.id}
+                              className={[
+                                "px-4 py-3 hover:bg-gray-50 transition cursor-pointer",
+                                !notification.read && "bg-blue-50/50",
+                              ].join(" ")}
+                              onClick={() => {
+                                // Có thể thêm logic đánh dấu đã đọc hoặc điều hướng
+                                console.log(
+                                  "Notification clicked:",
+                                  notification
+                                );
+                              }}
+                            >
+                              <div className="flex gap-3">
+                                {/* Icon */}
+                                <div
+                                  className={[
+                                    "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+                                    notification.type === "schedule"
+                                      ? "bg-blue-100"
+                                      : "bg-orange-100",
+                                  ].join(" ")}
+                                >
+                                  {notification.type === "schedule" ? (
+                                    <Calendar
+                                      className={[
+                                        "w-5 h-5",
+                                        notification.type === "schedule"
+                                          ? "text-blue-600"
+                                          : "text-orange-600",
+                                      ].join(" ")}
+                                    />
+                                  ) : (
+                                    <CloudRain className="w-5 h-5 text-orange-600" />
+                                  )}
+                                </div>
+
+                                {/* Content */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <h4
+                                      className={[
+                                        "font-medium text-sm",
+                                        !notification.read && "font-semibold",
+                                      ].join(" ")}
+                                    >
+                                      {notification.title}
+                                    </h4>
+                                    {!notification.read && (
+                                      <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                    {notification.message}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-1.5">
+                                    {notification.time}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer - Xem tất cả */}
+                    {notifications.length > 0 && (
+                      <div className="px-4 py-3 border-t border-gray-200">
+                        <button
+                          className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
+                          onClick={() => {
+                            setNotificationMenu(false);
+                            // Có thể điều hướng đến trang thông báo đầy đủ
+                            console.log("View all notifications");
+                          }}
+                        >
+                          Xem tất cả thông báo
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* If logged in → avatar dropdown. If not → login/register */}
+            {user ? (
+              <div className="hidden md:block relative avatar-menu-area">
+                {(user.ProfileImageUrl || profileAvatar) ? (
+                  <button
+                    onClick={() => setAvatarMenu((prev) => !prev)}
+                    className="w-11 h-11 rounded-full overflow-hidden border border-white/40 shadow focus:outline-none transition hover:scale-[1.03] grid place-items-center"
+                    style={{ background: palette.ivory }}
+                    aria-label="Tài khoản"
+                    title="Tài khoản"
+                  >
+                    <SafeImage
+                      src={user.ProfileImageUrl || profileAvatar}
+                      alt="avatar"
+                      className="w-full h-full object-cover object-center"
+                    />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setAvatarMenu((prev) => !prev)}
+                    className="w-11 h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none"
+                    style={{ background: palette.ivory, color: palette.bg }}
+                    aria-label="Tài khoản"
+                    title="Tài khoản"
+                  >
+                    <UserIcon className="w-[22px] h-[22px]" />
+                  </button>
+                )}
+
+                {/* Dropdown */}
+                {avatarMenu && (
+                  <div className="absolute right-0 mt-3 w-40 bg-white text-[#1F302F] rounded-xl shadow-lg py-2 z-[999]">
+                    {isAdmin(user) ? (
+                      <button
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                        onClick={() => {
+                          const adminPath = getAdminPath(user);
+                          if (adminPath) {
+                            navigate(adminPath);
+                          }
+                          setAvatarMenu((prev) => !prev);
+                        }}
+                      >
+                        Quản lý Admin
+                      </button>
+                    ) : (
+                      <button
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                        onClick={() => {
+                          navigate("/garden");
+                          setAvatarMenu((prev) => !prev);
+                        }}
+                      >
+                        Vườn của tôi
+                      </button>
+                    )}
 
         <button
           className="block w-full text-left px-4 py-2 hover:bg-gray-100"
@@ -387,67 +701,108 @@ export default function MMHeader({
             <div className="flex-1 min-h-0 grid place-content-center px-8 sm:px-10">
               <nav className="w-full max-w-[360px]">
                 <ul className="flex flex-col gap-3">
-                  {menuItems.map((item, idx) => {
-                    const active = activeMenu === item.id;
-                    const isReportLink = item.href === "/report";
-                    return (
-                      <li key={item.id}>
-                        {isReportLink ? (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setActiveMenu(item.id);
-                              closeMenu();
-                              navigate(item.href);
-                            }}
-                            className={[
-                              "group relative block w-fit px-1 py-2 rounded-md",
-                              "text-[28px] sm:text-[32px] leading-snug font-bold",
-                              active ? "text-[#FFFFDD]" : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
-                            ].join(" ")}
-                            style={{
-                              animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${200 + idx * 140}ms both`,
-                            }}
-                          >
-                            <span className="relative z-10">{item.label}</span>
-                            {/* underline chậm hơn */}
-                            <span
-                              aria-hidden
-                              className="mm-underline"
-                              data-active={active ? "1" : undefined}
-                              style={{
-                                backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                  {isAdmin(user) ? (
+                    <li>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const adminPath = getAdminPath(user);
+                          if (adminPath) {
+                            closeMenu();
+                            navigate(adminPath);
+                          }
+                        }}
+                        className={[
+                          "group relative block w-fit px-1 py-2 rounded-md",
+                          "text-[28px] sm:text-[32px] leading-snug font-bold",
+                          "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
+                        ].join(" ")}
+                        style={{
+                          animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) 200ms both`,
+                        }}
+                      >
+                        <span className="relative z-10">Quản lý hệ thống</span>
+                        {/* underline chậm hơn */}
+                        <span
+                          aria-hidden
+                          className="mm-underline"
+                          style={{
+                            backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                          }}
+                        />
+                      </button>
+                    </li>
+                  ) : (
+                    menuItems.map((item, idx) => {
+                      const active = activeMenu === item.id;
+                      const isReportLink = item.href === "/report";
+                      return (
+                        <li key={item.id}>
+                          {isReportLink ? (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setActiveMenu(item.id);
+                                closeMenu();
+                                navigate(item.href);
                               }}
-                            />
-                          </button>
-                        ) : (
-                          <a
-                            href={item.href}
-                            onClick={() => setActiveMenu(item.id)}
-                            className={[
-                              "group relative block w-fit px-1 py-2 rounded-md",
-                              "text-[28px] sm:text-[32px] leading-snug font-bold",
-                              active ? "text-[#FFFFDD]" : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
-                            ].join(" ")}
-                            style={{
-                              animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${200 + idx * 140}ms both`,
-                            }}
-                          >
-                            <span className="relative z-10">{item.label}</span>
-                            {/* underline chậm hơn */}
-                            <span
-                              aria-hidden
-                              className="mm-underline"
-                              data-active={active ? "1" : undefined}
+                              className={[
+                                "group relative block w-fit px-1 py-2 rounded-md",
+                                "text-[28px] sm:text-[32px] leading-snug font-bold",
+                                active
+                                  ? "text-[#FFFFDD]"
+                                  : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
+                              ].join(" ")}
                               style={{
-                                backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                                animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${
+                                  200 + idx * 140
+                                }ms both`,
                               }}
-                            />
-                          </a>
-                        )}
-                      </li>
-                    );
-                  })}
+                            >
+                              <span className="relative z-10">{item.label}</span>
+                              {/* underline chậm hơn */}
+                              <span
+                                aria-hidden
+                                className="mm-underline"
+                                data-active={active ? "1" : undefined}
+                                style={{
+                                  backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                                }}
+                              />
+                            </button>
+                          ) : (
+                            <a
+                              href={item.href}
+                              onClick={() => setActiveMenu(item.id)}
+                              className={[
+                                "group relative block w-fit px-1 py-2 rounded-md",
+                                "text-[28px] sm:text-[32px] leading-snug font-bold",
+                                active
+                                  ? "text-[#FFFFDD]"
+                                  : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
+                              ].join(" ")}
+                              style={{
+                                animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${
+                                  200 + idx * 140
+                                }ms both`,
+                              }}
+                            >
+                              <span className="relative z-10">{item.label}</span>
+                              {/* underline chậm hơn */}
+                              <span
+                                aria-hidden
+                                className="mm-underline"
+                                data-active={active ? "1" : undefined}
+                                style={{
+                                  backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                                }}
+                              />
+                            </a>
+                          )}
+                        </li>
+                      );
+                    })
+                  )}
                 </ul>
               </nav>
             </div>
