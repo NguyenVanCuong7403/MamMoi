@@ -558,6 +558,11 @@ public partial class MamMoiDbContext : DbContext
                   .HasColumnName("VarietyDescription")
                   .HasColumnType("nvarchar(max)");
 
+            // ImageUrl nvarchar(500) nullable
+            entity.Property(e => e.ImageUrl)
+                  .HasColumnName("ImageUrl")
+                  .HasMaxLength(500);
+
             // Relationship: TreeVariety -> TreeTypes (optional)
             entity.HasOne(d => d.TreeType)              // navigation property on TreeVariety
                   .WithMany(p => p.TreeVarieties)          // navigation collection on TreeType (adjust name if different)
@@ -649,6 +654,12 @@ public partial class MamMoiDbContext : DbContext
             entity.Property(e => e.FrostTolerance).HasMaxLength(20);
             entity.Property(e => e.ImageUrl).HasMaxLength(500);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+            // New fields for PlantDetail page
+            entity.Property(e => e.CareGuide).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.LightRequirement).HasMaxLength(500);
+            entity.Property(e => e.WaterRequirement).HasMaxLength(500);
+            entity.Property(e => e.Pests).HasColumnType("nvarchar(max)");
+            entity.Property(e => e.SeasonalRoadmap).HasColumnType("nvarchar(max)");
             entity.Property(e => e.OptimalHumidityMax).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.OptimalHumidityMin).HasColumnType("decimal(5, 2)");
             entity.Property(e => e.OptimalTemperatureMax).HasColumnType("decimal(5, 2)");

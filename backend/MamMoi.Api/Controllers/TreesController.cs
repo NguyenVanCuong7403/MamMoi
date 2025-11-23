@@ -87,8 +87,10 @@ public class TreesController : ControllerBase
 
     // ===================== 1) Tree Variety =====================
     [HttpGet("varieties")]
-    public async Task<IActionResult> GetTreeVarieties(CancellationToken ct)
-        => Ok(await _treeVariety.GetAllAsync(ct));
+    public async Task<IActionResult> GetTreeVarieties(
+        [FromQuery] int? treeTypeId = null,
+        CancellationToken ct = default)
+        => Ok(await _treeVariety.GetAllAsync(treeTypeId, ct));
 
     // ===================== 2) My Trees =====================
     [HttpGet("my")]

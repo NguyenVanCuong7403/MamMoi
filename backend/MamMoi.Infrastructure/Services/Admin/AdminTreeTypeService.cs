@@ -76,11 +76,16 @@ public class AdminTreeTypeService : IAdminTreeTypeService
                 FloodTolerance = t.FloodTolerance,
                 FrostTolerance = t.FrostTolerance,
                 WindTolerance = t.WindTolerance,
-                ImageUrl = t.ImageUrl,
-                IsActive = t.IsActive,
-                VarietiesCount = t.TreeVarieties.Count,
-                TreesCount = t.Trees.Count,
-                GrowthStagesCount = t.TreeGrowthStages.Count
+            ImageUrl = t.ImageUrl,
+            IsActive = t.IsActive,
+            CareGuide = t.CareGuide,
+            LightRequirement = t.LightRequirement,
+            WaterRequirement = t.WaterRequirement,
+            Pests = t.Pests,
+            SeasonalRoadmap = t.SeasonalRoadmap,
+            VarietiesCount = t.TreeVarieties.Count,
+            TreesCount = t.Trees.Count,
+            GrowthStagesCount = t.TreeGrowthStages.Count
             })
             .ToListAsync();
 
@@ -116,6 +121,11 @@ public class AdminTreeTypeService : IAdminTreeTypeService
             WindTolerance = treeType.WindTolerance,
             ImageUrl = treeType.ImageUrl,
             IsActive = treeType.IsActive,
+            CareGuide = treeType.CareGuide,
+            LightRequirement = treeType.LightRequirement,
+            WaterRequirement = treeType.WaterRequirement,
+            Pests = treeType.Pests,
+            SeasonalRoadmap = treeType.SeasonalRoadmap,
             VarietiesCount = await _dbContext.TreeVarietys.CountAsync(v => v.TreeTypeId == treeTypeId),
             TreesCount = await _dbContext.Trees.CountAsync(t => t.TreeTypeId == treeTypeId),
             GrowthStagesCount = await _dbContext.TreeGrowthStages.CountAsync(s => s.TreeTypeId == treeTypeId)
@@ -152,7 +162,12 @@ public class AdminTreeTypeService : IAdminTreeTypeService
             FrostTolerance = dto.FrostTolerance,
             WindTolerance = dto.WindTolerance,
             ImageUrl = dto.ImageUrl,
-            IsActive = dto.IsActive
+            IsActive = dto.IsActive,
+            CareGuide = dto.CareGuide,
+            LightRequirement = dto.LightRequirement,
+            WaterRequirement = dto.WaterRequirement,
+            Pests = dto.Pests,
+            SeasonalRoadmap = dto.SeasonalRoadmap
         };
 
         _dbContext.TreeTypes.Add(treeType);
@@ -237,6 +252,22 @@ public class AdminTreeTypeService : IAdminTreeTypeService
 
         if (dto.IsActive.HasValue)
             treeType.IsActive = dto.IsActive.Value;
+
+        // Update new fields for PlantDetail page
+        if (dto.CareGuide != null)
+            treeType.CareGuide = dto.CareGuide;
+
+        if (dto.LightRequirement != null)
+            treeType.LightRequirement = dto.LightRequirement;
+
+        if (dto.WaterRequirement != null)
+            treeType.WaterRequirement = dto.WaterRequirement;
+
+        if (dto.Pests != null)
+            treeType.Pests = dto.Pests;
+
+        if (dto.SeasonalRoadmap != null)
+            treeType.SeasonalRoadmap = dto.SeasonalRoadmap;
 
         await _dbContext.SaveChangesAsync();
 

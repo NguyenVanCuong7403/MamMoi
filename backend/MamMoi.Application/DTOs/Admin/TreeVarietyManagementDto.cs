@@ -17,6 +17,9 @@ public class CreateTreeVarietyDto
 
     [StringLength(int.MaxValue)]
     public string? VarietyDescription { get; set; }
+
+    [StringLength(500)]
+    public string? ImageUrl { get; set; }
 }
 
 /// <summary>
@@ -32,6 +35,9 @@ public class UpdateTreeVarietyDto
 
     [StringLength(int.MaxValue)]
     public string? VarietyDescription { get; set; }
+
+    [StringLength(500)]
+    public string? ImageUrl { get; set; }
 }
 
 /// <summary>
@@ -44,6 +50,7 @@ public class TreeVarietyDetailDto
     public string TreeTypeName { get; set; } = null!;
     public string? VarietyName { get; set; }
     public string? VarietyDescription { get; set; }
+    public string? ImageUrl { get; set; }
     public int TreesCount { get; set; }
 }
 

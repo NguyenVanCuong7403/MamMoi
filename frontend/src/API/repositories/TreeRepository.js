@@ -9,6 +9,42 @@ export default class TreeRepository {
   }
 
   /**
+   * Get tree varieties
+   * @param {number} [treeTypeId] - Optional tree type ID to filter varieties
+   */
+  static async getTreeVarieties(treeTypeId = null) {
+    const url = treeTypeId
+      ? `/api/trees/varieties?treeTypeId=${treeTypeId}`
+      : "/api/trees/varieties";
+    return ApiClient.get(url);
+  }
+
+  /**
+   * Get tree type detail by id (for public PlantDetail page)
+   * Falls back to admin API if available
+   */
+  static async getTreeTypeById(id) {
+    try {
+      // Try admin API first (if user is authenticated)
+      const response = await ApiClient.get(`/api/admin/tree-types/${id}`);
+      if (response?.data) {
+        return response;
+      }
+    } catch (err) {
+      // If admin API fails (no auth), fall back to getting from list
+      console.log("Admin API not available, using public API");
+    }
+
+    // Fallback: get from list and find by id
+    const treeTypes = await ApiClient.get("/api/trees/types");
+    const found = Array.isArray(treeTypes)
+      ? treeTypes.find((t) => t.treeTypeId === parseInt(id))
+      : null;
+
+    return found ? { data: found } : null;
+  }
+
+  /**
    * Get my trees (with optional filters, pagination, and sort)
    * @param {Object} options
    * @param {number} options.userId - optional, fallback to JWT
@@ -19,7 +55,15 @@ export default class TreeRepository {
    * @param {number} options.treeTypeId
    * @param {boolean} options.isActive
    */
-  static async getMyTrees({ userId, page = 1, pageSize = 20, sort = "createdAt_desc", gardenId, treeTypeId, isActive } = {}) {
+  static async getMyTrees({
+    userId,
+    page = 1,
+    pageSize = 20,
+    sort = "createdAt_desc",
+    gardenId,
+    treeTypeId,
+    isActive,
+  } = {}) {
     //console.log("getMyTrees");
     const params = new URLSearchParams();
     if (userId) params.append("userId", userId);
@@ -36,7 +80,13 @@ export default class TreeRepository {
   /**
    * Search trees
    */
-  static async searchTrees({ q = "", gardenId, treeTypeId, page = 1, pageSize = 20 } = {}) {
+  static async searchTrees({
+    q = "",
+    gardenId,
+    treeTypeId,
+    page = 1,
+    pageSize = 20,
+  } = {}) {
     const params = new URLSearchParams();
     params.append("q", q);
     params.append("page", page);

@@ -56,6 +56,19 @@ public class CreateTreeTypeDto
     public string? ImageUrl { get; set; }
 
     public bool IsActive { get; set; } = true;
+
+    // New fields for PlantDetail page
+    public string? CareGuide { get; set; } // JSON array of care instruction strings
+
+    [StringLength(500)]
+    public string? LightRequirement { get; set; }
+
+    [StringLength(500)]
+    public string? WaterRequirement { get; set; }
+
+    public string? Pests { get; set; } // JSON array of pest objects
+
+    public string? SeasonalRoadmap { get; set; } // JSON array of roadmap objects
 }
 
 /// <summary>
@@ -109,6 +122,19 @@ public class UpdateTreeTypeDto
     public string? ImageUrl { get; set; }
 
     public bool? IsActive { get; set; }
+
+    // New fields for PlantDetail page
+    public string? CareGuide { get; set; } // JSON array of care instruction strings
+
+    [StringLength(500)]
+    public string? LightRequirement { get; set; }
+
+    [StringLength(500)]
+    public string? WaterRequirement { get; set; }
+
+    public string? Pests { get; set; } // JSON array of pest objects
+
+    public string? SeasonalRoadmap { get; set; } // JSON array of roadmap objects
 }
 
 /// <summary>
@@ -134,6 +160,12 @@ public class TreeTypeDetailDto
     public string? WindTolerance { get; set; }
     public string? ImageUrl { get; set; }
     public bool IsActive { get; set; }
+    // New fields for PlantDetail page
+    public string? CareGuide { get; set; } // JSON array of care instruction strings
+    public string? LightRequirement { get; set; }
+    public string? WaterRequirement { get; set; }
+    public string? Pests { get; set; } // JSON array of pest objects
+    public string? SeasonalRoadmap { get; set; } // JSON array of roadmap objects
     public int VarietiesCount { get; set; }
     public int TreesCount { get; set; }
     public int GrowthStagesCount { get; set; }
@@ -162,6 +194,12 @@ public class TreeTypeListItemDto
     public string? WindTolerance { get; set; }
     public string? ImageUrl { get; set; }
     public bool IsActive { get; set; }
+    // New fields for PlantDetail page (optional in list view)
+    public string? CareGuide { get; set; } // JSON array of care instruction strings
+    public string? LightRequirement { get; set; }
+    public string? WaterRequirement { get; set; }
+    public string? Pests { get; set; } // JSON array of pest objects
+    public string? SeasonalRoadmap { get; set; } // JSON array of roadmap objects
     public int VarietiesCount { get; set; }
     public int TreesCount { get; set; }
     public int GrowthStagesCount { get; set; }

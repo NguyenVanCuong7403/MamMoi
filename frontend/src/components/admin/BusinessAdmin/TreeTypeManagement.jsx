@@ -194,9 +194,33 @@ const mapTreeTypeFromApi = (apiTreeType) => {
     Varieties: apiTreeType.varieties || apiTreeType.Varieties || [],
     VarietiesCount:
       apiTreeType.varietiesCount || apiTreeType.VarietiesCount || 0,
-    CareGuide: apiTreeType.careGuide || apiTreeType.CareGuide || [],
-    Pests: apiTreeType.pests || apiTreeType.Pests || [],
+    CareGuide: parseJsonArray(
+      apiTreeType.careGuide || apiTreeType.CareGuide,
+      []
+    ),
+    Pests: parseJsonArray(apiTreeType.pests || apiTreeType.Pests, []),
+    LightRequirement:
+      apiTreeType.lightRequirement || apiTreeType.LightRequirement || "",
+    WaterRequirement:
+      apiTreeType.waterRequirement || apiTreeType.WaterRequirement || "",
+    SeasonalRoadmap: parseJsonArray(
+      apiTreeType.seasonalRoadmap || apiTreeType.SeasonalRoadmap,
+      []
+    ),
   };
+};
+
+// Helper function to parse JSON fields
+const parseJsonArray = (field, defaultValue = []) => {
+  if (!field) return defaultValue;
+  if (Array.isArray(field)) return field;
+  try {
+    const parsed = typeof field === "string" ? JSON.parse(field) : field;
+    return Array.isArray(parsed) ? parsed : defaultValue;
+  } catch (e) {
+    console.warn("Failed to parse JSON field:", e);
+    return defaultValue;
+  }
 };
 
 const mapVarietyFromApi = (apiVariety) => {
@@ -209,6 +233,7 @@ const mapVarietyFromApi = (apiVariety) => {
     VarietyName: apiVariety.varietyName || apiVariety.VarietyName || "",
     VarietyDescription:
       apiVariety.varietyDescription || apiVariety.VarietyDescription || "",
+    ImageUrl: apiVariety.imageUrl || apiVariety.ImageUrl || "",
   };
 };
 
@@ -324,6 +349,58 @@ const mapTreeTypeToApi = (componentTreeType) => {
   if (componentTreeType.WindTolerance || componentTreeType.windTolerance) {
     result.windTolerance =
       componentTreeType.WindTolerance || componentTreeType.windTolerance;
+  }
+
+  // Handle JSON fields - convert arrays to JSON strings
+  if (componentTreeType.CareGuide || componentTreeType.careGuide) {
+    const careGuide =
+      componentTreeType.CareGuide || componentTreeType.careGuide;
+    result.careGuide =
+      Array.isArray(careGuide) && careGuide.length > 0
+        ? JSON.stringify(careGuide.filter((item) => item && item.trim()))
+        : null;
+  }
+
+  if (componentTreeType.Pests || componentTreeType.pests) {
+    const pests = componentTreeType.Pests || componentTreeType.pests;
+    result.pests =
+      Array.isArray(pests) && pests.length > 0
+        ? JSON.stringify(
+            pests.filter((item) => item && Object.keys(item).length > 0)
+          )
+        : null;
+  }
+
+  if (componentTreeType.SeasonalRoadmap || componentTreeType.seasonalRoadmap) {
+    const roadmap =
+      componentTreeType.SeasonalRoadmap || componentTreeType.seasonalRoadmap;
+    result.seasonalRoadmap =
+      Array.isArray(roadmap) && roadmap.length > 0
+        ? JSON.stringify(
+            roadmap.filter((item) => item && Object.keys(item).length > 0)
+          )
+        : null;
+  }
+
+  // Handle string fields
+  if (
+    componentTreeType.LightRequirement ||
+    componentTreeType.lightRequirement
+  ) {
+    const lightReq =
+      componentTreeType.LightRequirement || componentTreeType.lightRequirement;
+    result.lightRequirement =
+      typeof lightReq === "string" && lightReq.trim() ? lightReq.trim() : null;
+  }
+
+  if (
+    componentTreeType.WaterRequirement ||
+    componentTreeType.waterRequirement
+  ) {
+    const waterReq =
+      componentTreeType.WaterRequirement || componentTreeType.waterRequirement;
+    result.waterRequirement =
+      typeof waterReq === "string" && waterReq.trim() ? waterReq.trim() : null;
   }
 
   return result;
@@ -489,6 +566,7 @@ const varietySchema = z.object({
   VarietyID: z.string().optional(),
   VarietyName: z.string().min(1, "Tên giống là bắt buộc"),
   VarietyDescription: z.string().optional(),
+  ImageUrl: z.string().optional(),
 });
 
 const pestSchema = z
@@ -548,6 +626,17 @@ const formSchema = z
     IsActive: z.boolean().default(true),
     CareGuide: z.array(z.string()).default([]),
     Pests: z.array(pestSchema).default([]),
+    LightRequirement: z.string().optional(),
+    WaterRequirement: z.string().optional(),
+    SeasonalRoadmap: z
+      .array(
+        z.object({
+          stage: z.string(),
+          timing: z.string(),
+          action: z.string(),
+        })
+      )
+      .default([]),
   })
   .refine(
     ({ OptimalTemperatureMin, OptimalTemperatureMax }) =>
@@ -588,6 +677,9 @@ const defaultFormValues = {
   IsActive: true,
   CareGuide: [],
   Pests: [],
+  LightRequirement: "",
+  WaterRequirement: "",
+  SeasonalRoadmap: [],
 };
 
 const soilFormSchema = z.object({
@@ -1069,6 +1161,7 @@ export default function TreeTypeManagement() {
       VarietyID: "",
       VarietyName: "",
       VarietyDescription: "",
+      ImageUrl: "",
     },
     mode: "onChange",
   });
@@ -1078,6 +1171,7 @@ export default function TreeTypeManagement() {
       VarietyID: "",
       VarietyName: "",
       VarietyDescription: "",
+      ImageUrl: "",
     },
     mode: "onChange",
   });
@@ -1243,6 +1337,9 @@ export default function TreeTypeManagement() {
       IsActive: tree.IsActive ?? true,
       CareGuide: tree.CareGuide || [],
       Pests: tree.Pests || [],
+      LightRequirement: tree.LightRequirement || "",
+      WaterRequirement: tree.WaterRequirement || "",
+      SeasonalRoadmap: tree.SeasonalRoadmap || [],
     });
     setEditingTree(tree);
     setSheetOpen(true);
@@ -1550,11 +1647,13 @@ export default function TreeTypeManagement() {
           VarietyID: variety.VarietyID ?? "",
           VarietyName: variety.VarietyName ?? "",
           VarietyDescription: variety.VarietyDescription ?? "",
+          ImageUrl: variety.ImageUrl ?? "",
         }
       : {
           VarietyID: "",
           VarietyName: "",
           VarietyDescription: "",
+          ImageUrl: "",
         };
 
   const handleOpenVarietyDialog = (tree) => {
@@ -1574,6 +1673,7 @@ export default function TreeTypeManagement() {
       VarietyID: "",
       VarietyName: "",
       VarietyDescription: "",
+      ImageUrl: "",
     });
     varietyDetailForm.reset(
       mapVarietyToFormValues(tree.Varieties?.[0] ?? null)
@@ -1759,6 +1859,7 @@ export default function TreeTypeManagement() {
           VarietyID: values.VarietyID,
           VarietyName: values.VarietyName,
           VarietyDescription: values.VarietyDescription ?? "",
+          ImageUrl: values.ImageUrl ?? "",
         },
       ];
       const updated = await updateTreeType(activeVarietyTree.TreeTypeID, {
@@ -1794,6 +1895,7 @@ export default function TreeTypeManagement() {
               ...item,
               VarietyName: values.VarietyName,
               VarietyDescription: values.VarietyDescription ?? "",
+              ImageUrl: values.ImageUrl ?? "",
             }
           : item
       );
@@ -2479,6 +2581,148 @@ export default function TreeTypeManagement() {
                     />
                   </ScrollArea>
                 </div>
+              </div>
+
+              {/* Light Requirement */}
+              <div className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name="LightRequirement"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Yêu cầu ánh sáng</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ví dụ: Ánh sáng đầy đủ (6-8 giờ/ngày)"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Water Requirement */}
+              <div className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name="WaterRequirement"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Yêu cầu nước</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Ví dụ: Tưới đều đặn, 2-3 lần/tuần"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              {/* Seasonal Roadmap */}
+              <div className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name="SeasonalRoadmap"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Lộ trình theo mùa</FormLabel>
+                      <FormControl>
+                        <div className="space-y-3">
+                          {(field.value || []).map((item, index) => (
+                            <div
+                              key={index}
+                              className="rounded-xl border border-slate-200 bg-slate-50/50 p-3 space-y-2"
+                            >
+                              <div className="grid grid-cols-3 gap-2">
+                                <Input
+                                  placeholder="Giai đoạn (VD: Gieo trồng)"
+                                  value={item.stage || ""}
+                                  onChange={(e) => {
+                                    const newRoadmap = [...(field.value || [])];
+                                    newRoadmap[index] = {
+                                      ...newRoadmap[index],
+                                      stage: e.target.value,
+                                    };
+                                    field.onChange(newRoadmap);
+                                  }}
+                                />
+                                <Input
+                                  placeholder="Thời gian (VD: Tháng 5-6)"
+                                  value={item.timing || ""}
+                                  onChange={(e) => {
+                                    const newRoadmap = [...(field.value || [])];
+                                    newRoadmap[index] = {
+                                      ...newRoadmap[index],
+                                      timing: e.target.value,
+                                    };
+                                    field.onChange(newRoadmap);
+                                  }}
+                                />
+                                <div className="flex gap-2">
+                                  <Input
+                                    placeholder="Hành động"
+                                    value={item.action || ""}
+                                    onChange={(e) => {
+                                      const newRoadmap = [
+                                        ...(field.value || []),
+                                      ];
+                                      newRoadmap[index] = {
+                                        ...newRoadmap[index],
+                                        action: e.target.value,
+                                      };
+                                      field.onChange(newRoadmap);
+                                    }}
+                                    className="flex-1"
+                                  />
+                                  <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-9 w-9 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                                    onClick={() => {
+                                      const newRoadmap = (
+                                        field.value || []
+                                      ).filter((_, i) => i !== index);
+                                      field.onChange(newRoadmap);
+                                    }}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full"
+                            onClick={() => {
+                              field.onChange([
+                                ...(field.value || []),
+                                { stage: "", timing: "", action: "" },
+                              ]);
+                            }}
+                          >
+                            + Thêm giai đoạn
+                          </Button>
+                          {(!field.value || field.value.length === 0) && (
+                            <p className="text-sm text-slate-500 text-center py-4">
+                              Chưa có giai đoạn nào. Bấm "Thêm giai đoạn" để bắt
+                              đầu.
+                            </p>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
             <DialogFooter className="mt-4 pt-4 border-t shrink-0">
@@ -3206,6 +3450,22 @@ export default function TreeTypeManagement() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={varietyForm.control}
+                name="ImageUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ảnh giống</FormLabel>
+                    <FormControl>
+                      <ImageDropzone
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               <div className="flex flex-wrap justify-end gap-3 pt-2">
                 <Button
                   type="button"
@@ -3482,6 +3742,25 @@ export default function TreeTypeManagement() {
                                     "bg-slate-50 text-slate-500"
                                 )}
                                 placeholder="Đặc điểm nổi bật, vùng canh tác phù hợp..."
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={varietyDetailForm.control}
+                        name="ImageUrl"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Ảnh giống</FormLabel>
+                            <FormControl>
+                              <ImageDropzone
+                                value={field.value}
+                                onChange={field.onChange}
+                                disabled={
+                                  !varietyDetailEditMode || varietySaving
+                                }
                               />
                             </FormControl>
                             <FormMessage />

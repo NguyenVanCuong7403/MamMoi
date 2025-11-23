@@ -14,6 +14,7 @@ public class TreeTypeService : ITreeTypeService
     {
         return await _db.Set<TreeType>()
             .AsNoTracking()
+            .Where(t => t.IsActive)
             .OrderBy(t => t.TreeTypeName)
             .Select(t => new TreeTypeDto(
                 t.TreeTypeId,
@@ -21,7 +22,23 @@ public class TreeTypeService : ITreeTypeService
                 t.ScientificName,
                 t.Category,
                 t.SoilMasterId,
-                t.IsActive
+                t.IsActive,
+                t.Description,
+                t.ImageUrl,
+                t.AverageLifespanYears,
+                t.OptimalTemperatureMin,
+                t.OptimalTemperatureMax,
+                t.OptimalHumidityMin,
+                t.OptimalHumidityMax,
+                t.DroughtTolerance,
+                t.FloodTolerance,
+                t.FrostTolerance,
+                t.WindTolerance,
+                t.CareGuide,
+                t.LightRequirement,
+                t.WaterRequirement,
+                t.Pests,
+                t.SeasonalRoadmap
             ))
             .ToListAsync(ct);
     }
