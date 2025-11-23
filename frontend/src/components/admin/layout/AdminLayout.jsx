@@ -54,12 +54,6 @@ const ROLE_NAV_ITEMS = {
       path: "/admin/business/tree-types",
     },
     {
-      key: "trees",
-      label: "Quản lý cây trồng",
-      icon: Leaf,
-      path: "/admin/business/trees",
-    },
-    {
       key: "tree-varieties",
       label: "Quản lý giống cây",
       icon: Flower2,

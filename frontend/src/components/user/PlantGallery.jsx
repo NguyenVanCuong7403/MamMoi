@@ -1,7 +1,20 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Thermometer, Droplets, Leaf, Sparkles, CornerDownRight, CornerUpLeft, Trees, Sprout, Flower2, Flower, Info } from "lucide-react";
+import {
+  Search,
+  Thermometer,
+  Droplets,
+  Leaf,
+  Sparkles,
+  CornerDownRight,
+  CornerUpLeft,
+  Trees,
+  Sprout,
+  Flower2,
+  Flower,
+  Info,
+} from "lucide-react";
 import TreeRepository from "@/API/repositories/TreeRepository";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,11 +26,11 @@ function PlantCard({ tree, index, onClick }) {
     <motion.div
       initial={{ opacity: 0, y: 30, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ 
-        duration: 0.5, 
+      transition={{
+        duration: 0.5,
         delay: index * 0.05,
         type: "spring",
-        stiffness: 100
+        stiffness: 100,
       }}
       onClick={onClick}
       className="group relative h-full w-full cursor-pointer overflow-visible rounded-2xl transition-all duration-500"
@@ -93,86 +106,91 @@ function PlantCard({ tree, index, onClick }) {
             }}
           />
         </div>
-      
+
         {/* Image Section with modern effects */}
         <div className="relative h-[320px] w-full overflow-hidden rounded-t-2xl sm:h-[360px] md:h-[380px] lg:h-[400px]">
-        <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-        <img
-          src={tree.imageUrl || "https://images.unsplash.com/photo-1437750769465-301382cdf094?w=400"}
-          alt={tree.treeTypeName}
-          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.15]"
-        />
-        
-        {/* Animated overlay gradient with emerald tint */}
-        <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/40 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-        
-        {/* Animated shimmer effect */}
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100"
-          animate={{
-            x: ["-100%", "100%"],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            repeatDelay: 2,
-            ease: "easeInOut",
-          }}
-        />
-        
-        {/* Floating particles effect with emerald theme */}
-        <div className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+          <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <img
+            src={
+              tree.imageUrl ||
+              "https://images.unsplash.com/photo-1437750769465-301382cdf094?w=400"
+            }
+            alt={tree.treeTypeName}
+            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.15]"
+          />
+
+          {/* Animated overlay gradient with emerald tint */}
+          <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/40 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
+          {/* Animated shimmer effect */}
           <motion.div
-            className="absolute top-4 right-4 h-2 w-2 rounded-full bg-emerald-400/80 shadow-lg shadow-emerald-400/50"
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100"
             animate={{
-              y: [0, -10, 0],
-              scale: [1, 1.2, 1],
+              x: ["-100%", "100%"],
             }}
             transition={{
-              duration: 2,
+              duration: 1.5,
               repeat: Infinity,
+              repeatDelay: 2,
               ease: "easeInOut",
             }}
           />
-          <motion.div
-            className="absolute top-12 right-8 h-1.5 w-1.5 rounded-full bg-green-400/80 shadow-lg shadow-green-400/50"
-            animate={{
-              y: [0, -8, 0],
-              scale: [1, 1.3, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.3,
-            }}
-          />
-          <motion.div
-            className="absolute top-20 right-6 h-1 w-1 rounded-full bg-emerald-500/80 shadow-lg shadow-emerald-500/50"
-            animate={{
-              y: [0, -12, 0],
-              scale: [1, 1.4, 1],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 0.6,
-            }}
-          />
+
+          {/* Floating particles effect with emerald theme */}
+          <div className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
+            <motion.div
+              className="absolute top-4 right-4 h-2 w-2 rounded-full bg-emerald-400/80 shadow-lg shadow-emerald-400/50"
+              animate={{
+                y: [0, -10, 0],
+                scale: [1, 1.2, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            />
+            <motion.div
+              className="absolute top-12 right-8 h-1.5 w-1.5 rounded-full bg-green-400/80 shadow-lg shadow-green-400/50"
+              animate={{
+                y: [0, -8, 0],
+                scale: [1, 1.3, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.3,
+              }}
+            />
+            <motion.div
+              className="absolute top-20 right-6 h-1 w-1 rounded-full bg-emerald-500/80 shadow-lg shadow-emerald-500/50"
+              animate={{
+                y: [0, -12, 0],
+                scale: [1, 1.4, 1],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.6,
+              }}
+            />
+          </div>
         </div>
-      </div>
 
         {/* Content Section - Modern and clean */}
         <div className="relative z-10 flex min-h-[140px] flex-col justify-center space-y-2 bg-gradient-to-b from-white/95 to-white p-4 sm:p-5">
           {/* Tree Name with gradient text effect */}
           <h3 className="line-clamp-2 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-lg font-bold text-transparent transition-all duration-300 group-hover:from-emerald-700 group-hover:via-emerald-600 group-hover:to-emerald-700 sm:text-xl md:text-2xl">
-            {tree.treeTypeName?.startsWith("Cây ") ? tree.treeTypeName : `Cây ${tree.treeTypeName || ""}`}
+            {tree.treeTypeName?.startsWith("Cây ")
+              ? tree.treeTypeName
+              : `Cây ${tree.treeTypeName || ""}`}
           </h3>
 
           {/* Average Lifespan */}
           {tree.averageLifespanYears && (
-            <motion.p 
+            <motion.p
               className="text-sm font-medium text-emerald-600/80 sm:text-base"
               whileHover={{ x: 2 }}
             >
@@ -198,8 +216,10 @@ export default function PlantGallery() {
       setLoading(true);
       try {
         const treeTypesResponse = await TreeRepository.getTreeTypes();
-        const treeTypes = Array.isArray(treeTypesResponse) ? treeTypesResponse : [];
-        
+        const treeTypes = Array.isArray(treeTypesResponse)
+          ? treeTypesResponse
+          : [];
+
         // Map tree types from API response to component format
         const treesFromDatabase = treeTypes
           .filter((tree) => tree.isActive !== false) // Only active trees
@@ -211,7 +231,9 @@ export default function PlantGallery() {
             soilMasterId: tree.soilMasterId,
             isActive: tree.isActive,
             description: tree.description || null,
-            imageUrl: tree.imageUrl || "https://images.unsplash.com/photo-1437750769465-301382cdf094?w=400", // Default fallback image
+            imageUrl:
+              tree.imageUrl ||
+              "https://images.unsplash.com/photo-1437750769465-301382cdf094?w=400", // Default fallback image
             optimalTemperatureMin: tree.optimalTemperatureMin || null,
             optimalTemperatureMax: tree.optimalTemperatureMax || null,
             optimalHumidityMin: tree.optimalHumidityMin || null,
@@ -312,13 +334,13 @@ export default function PlantGallery() {
             </motion.div>
 
             {/* Main Title - More compact */}
-            <motion.h1 
+            <motion.h1
               className="mb-4 text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.5, delay: 0.2 }}
             >
-              <span className="block bg-gradient-to-r from-white via-emerald-50 to-white bg-clip-text text-transparent drop-shadow-2xl">
+              <span className="block text-white drop-shadow-2xl [text-shadow:_0_2px_20px_rgba(255,255,255,0.9),_0_4px_40px_rgba(34,197,94,0.5)]">
                 Thư viện Cây ăn quả
               </span>
             </motion.h1>
@@ -330,7 +352,8 @@ export default function PlantGallery() {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="mb-8 text-base text-white/90 sm:text-lg lg:text-xl"
             >
-              Khám phá hàng trăm loại cây trồng với thông tin chi tiết và hướng dẫn chăm sóc
+              Khám phá hàng trăm loại cây trồng với thông tin chi tiết và hướng
+              dẫn chăm sóc
             </motion.p>
 
             {/* Search Bar - More compact */}
@@ -343,7 +366,7 @@ export default function PlantGallery() {
               <div className="relative">
                 {/* Glow effect */}
                 <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400 opacity-25 blur-xl" />
-                
+
                 <div className="relative">
                   <div className="absolute left-5 top-1/2 -translate-y-1/2">
                     <Search className="h-5 w-5 text-emerald-600/70" />
@@ -367,7 +390,7 @@ export default function PlantGallery() {
                   )}
                 </div>
               </div>
-              
+
               {/* Quick stats - More compact */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -397,7 +420,6 @@ export default function PlantGallery() {
 
       {/* Plant Grid Section - Full width with natural decorative elements */}
       <section className="relative z-10 w-full bg-transparent py-20">
-
         <div className="w-full">
           {loading ? (
             <div className="flex min-h-[500px] items-center justify-center">
@@ -412,7 +434,7 @@ export default function PlantGallery() {
               </motion.div>
             </div>
           ) : filteredTrees.length === 0 ? (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="flex min-h-[500px] flex-col items-center justify-center gap-6 text-center"
@@ -435,7 +457,7 @@ export default function PlantGallery() {
                   @media (min-width: 1024px) {
                     ${Array.from({ length: firstRowItems }, (_, i) => {
                       // Calculate starting column to center the items
-                      // For n items in 5 columns: 
+                      // For n items in 5 columns:
                       // - 1 item: column 3 (center)
                       // - 2 items: columns 2, 3
                       // - 3 items: columns 2, 3, 4
@@ -446,24 +468,26 @@ export default function PlantGallery() {
                       return `.plant-grid-item-first-row-${firstRowItems}-${i} {
                         grid-column-start: ${startCol} !important;
                       }`;
-                    }).join('\n')}
+                    }).join("\n")}
                   }
                 `}</style>
               )}
-              
+
               {/* Grid: 5 columns on large screens for vertical portrait cards */}
               <div className="grid w-full grid-cols-1 gap-x-6 gap-y-10 px-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-x-8 sm:gap-y-14 md:gap-x-10 md:gap-y-18 lg:gap-x-12 lg:gap-y-24 sm:px-3">
                 <AnimatePresence mode="wait">
                   {paginatedTrees.map((tree, index) => {
                     const isFirstRow = index < 5;
-                    const shouldCenter = firstRowItems > 0 && firstRowItems < 5 && isFirstRow;
+                    const shouldCenter =
+                      firstRowItems > 0 && firstRowItems < 5 && isFirstRow;
                     const itemIndexInFirstRow = shouldCenter ? index : -1;
-                    
+
                     return (
                       <div
                         key={tree.treeTypeId}
                         className={cn(
-                          shouldCenter && `plant-grid-item-first-row-${firstRowItems}-${itemIndexInFirstRow}`
+                          shouldCenter &&
+                            `plant-grid-item-first-row-${firstRowItems}-${itemIndexInFirstRow}`
                         )}
                       >
                         <PlantCard
@@ -479,7 +503,7 @@ export default function PlantGallery() {
 
               {/* Modern Pagination */}
               {totalPages > 1 && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
@@ -487,37 +511,45 @@ export default function PlantGallery() {
                 >
                   <Button
                     variant="outline"
-                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
                     disabled={currentPage === 1}
                     className="rounded-xl border-2 bg-white/80 backdrop-blur-sm transition-all hover:scale-105 hover:shadow-lg disabled:opacity-50"
                   >
                     Trước
                   </Button>
                   <div className="flex items-center gap-2">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                      <motion.div
-                        key={page}
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <Button
-                          variant={currentPage === page ? "default" : "outline"}
-                          onClick={() => setCurrentPage(page)}
-                          className={cn(
-                            "h-11 w-11 rounded-xl border-2 font-semibold transition-all",
-                            currentPage === page 
-                              ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/50 ring-2 ring-emerald-400/50 hover:from-emerald-700 hover:to-teal-700" 
-                              : "bg-white/80 backdrop-blur-sm hover:bg-emerald-50 hover:border-emerald-300"
-                          )}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (page) => (
+                        <motion.div
+                          key={page}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.95 }}
                         >
-                          {page}
-                        </Button>
-                      </motion.div>
-                    ))}
+                          <Button
+                            variant={
+                              currentPage === page ? "default" : "outline"
+                            }
+                            onClick={() => setCurrentPage(page)}
+                            className={cn(
+                              "h-11 w-11 rounded-xl border-2 font-semibold transition-all",
+                              currentPage === page
+                                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/50 ring-2 ring-emerald-400/50 hover:from-emerald-700 hover:to-teal-700"
+                                : "bg-white/80 backdrop-blur-sm hover:bg-emerald-50 hover:border-emerald-300"
+                            )}
+                          >
+                            {page}
+                          </Button>
+                        </motion.div>
+                      )
+                    )}
                   </div>
                   <Button
                     variant="outline"
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                    }
                     disabled={currentPage === totalPages}
                     className="rounded-xl border-2 bg-white/80 backdrop-blur-sm transition-all hover:scale-105 hover:shadow-lg disabled:opacity-50"
                   >
@@ -532,4 +564,3 @@ export default function PlantGallery() {
     </div>
   );
 }
-
