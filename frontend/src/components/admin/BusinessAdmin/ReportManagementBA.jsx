@@ -798,6 +798,7 @@ export default function ReportManagementBA() {
   const [pendingStatus, setPendingStatus] = useState("");
   const [hasSubmitAttempt, setHasSubmitAttempt] = useState(false);
   const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
+  const [filters, setFilters] = useState(defaultFilters);
 
   // Hàm cập nhật report
   const updateReport = async (reportId, updates) => {
