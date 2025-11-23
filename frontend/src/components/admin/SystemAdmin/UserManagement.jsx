@@ -1835,7 +1835,7 @@ export default function SystemAdminUserManagement() {
                               Quy mô vận hành
                             </p>
                             <p className="text-lg font-semibold text-slate-900">
-                              {selectedUser.gardens?.length ?? 0} vườn
+                              {selectedUser.gardensCount ?? 0} vườn
                             </p>
                           </div>
                           <div className="text-right">
@@ -1843,37 +1843,24 @@ export default function SystemAdminUserManagement() {
                               Tổng cây đang quản lý
                             </p>
                             <p className="text-lg font-semibold text-emerald-600">
-                              {(
-                                selectedUser.totalTreesManaged ?? 0
-                              ).toLocaleString("vi-VN")}
+                              {(selectedUser.treesCount ?? 0).toLocaleString(
+                                "vi-VN"
+                              )}
                             </p>
                           </div>
                         </div>
                         <div className="mt-4 space-y-3">
-                          {selectedUser.gardens?.length ? (
-                            selectedUser.gardens.map((garden) => (
-                              <div
-                                key={garden.id}
-                                className="flex items-center justify-between rounded-xl border border-emerald-100 bg-emerald-50/80 px-3 py-2 text-sm"
-                              >
-                                <div>
-                                  <p className="font-semibold text-emerald-900">
-                                    {garden.name}
-                                  </p>
-                                  <p className="text-xs text-emerald-700">
-                                    Mã: {garden.id}
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-xs text-slate-500">
-                                    Cây đang chăm sóc
-                                  </p>
-                                  <p className="text-base font-semibold text-emerald-700">
-                                    {garden.treeCount.toLocaleString("vi-VN")}
-                                  </p>
-                                </div>
-                              </div>
-                            ))
+                          {selectedUser.gardensCount > 0 ? (
+                            <p className="text-sm text-slate-500">
+                              Người dùng đang quản lý{" "}
+                              {selectedUser.gardensCount} vườn với tổng cộng{" "}
+                              <span className="font-semibold text-emerald-600">
+                                {(selectedUser.treesCount ?? 0).toLocaleString(
+                                  "vi-VN"
+                                )}
+                              </span>{" "}
+                              cây.
+                            </p>
                           ) : (
                             <p className="text-sm text-slate-500">
                               Người dùng chưa quản lý vườn nào.
