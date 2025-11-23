@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Menu, Bell, Calendar, CloudRain } from "lucide-react";
+import { Search, Menu, Bell, Calendar, CloudRain, User as UserIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/API/context/AuthContext";
+import { useAuth } from "@/API/context/AuthContext"
+
 
 const DEFAULT_MENU = [
   { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
@@ -12,6 +13,84 @@ const DEFAULT_MENU = [
 
 const DEFAULT_AVATAR =
   "https://ui-avatars.com/api/?name=User&background=D1DFB6&color=1F302F";
+
+/* ===== Helper functions ===== */
+const normalizeRole = (role) => {
+  if (!role) return null;
+  return role.toString().toLowerCase().trim();
+};
+
+const isAdmin = (user) => {
+  if (!user) return false;
+  const role = normalizeRole(user.role);
+  return role === "systemadmin" || role === "businessadmin";
+};
+
+const getAdminPath = (user) => {
+  if (!user) return null;
+  const role = normalizeRole(user.role);
+  if (role === "systemadmin") return "/admin/users";
+  if (role === "businessadmin") return "/admin/business/trees";
+  return null;
+};
+
+/* ===== Safe Image Component (đồng bộ với UserProfile) ===== */
+function normalizeImageUrl(raw = "") {
+  if (!raw) return "";
+  let u = String(raw).trim();
+  if (u.startsWith("http://")) u = "https://" + u.slice(7);
+  let m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+  if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
+  m = u.match(/drive\.google\.com\/open\?id=([^&]+)/);
+  if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
+  m = u.match(/drive\.google\.com\/uc\?(?:export=[^&]+&)?id=([^&]+)/);
+  if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
+  if (/dropbox\.com/.test(u)) {
+    u = u
+      .replace("www.dropbox.com", "dl.dropboxusercontent.com")
+      .replace(/\?dl=0$/, "?dl=1");
+  }
+  return u;
+}
+
+function SafeImage({ src, alt = "", className = "" }) {
+  const [url, setUrl] = useState("");
+  const [failed, setFailed] = useState(false);
+  const [tried, setTried] = useState(false);
+
+  useEffect(() => {
+    setUrl(normalizeImageUrl(src || ""));
+    setFailed(false);
+    setTried(false);
+  }, [src]);
+
+  function onError() {
+    if (tried) return setFailed(true);
+    setTried(true);
+    if (/drive\.google\.com\/uc\?/.test(url)) {
+      setUrl(url.replace("export=view", "export=download"));
+    } else setFailed(true);
+  }
+
+  if (!url || failed) {
+    return (
+      <div className="w-full h-full grid place-items-center">
+        <UserIcon className="h-6 w-6 text-neutral-500" />
+      </div>
+    );
+  }
+  return (
+    <img
+      src={url}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      crossOrigin="anonymous"
+      referrerPolicy="no-referrer"
+      onError={onError}
+    />
+  );
+}
 
 export default function MMHeader({
   menuItems = DEFAULT_MENU,
@@ -25,44 +104,46 @@ export default function MMHeader({
   const { user, logout } = useAuth();
   const [avatarMenu, setAvatarMenu] = useState(false);
   const [notificationMenu, setNotificationMenu] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  
+  // Tính số thông báo chưa đọc
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  
+  // Đọc avatar từ localStorage profile nếu user.ProfileImageUrl không có
+  const [profileAvatar, setProfileAvatar] = useState(() => {
+    try {
+      const profile = localStorage.getItem("mm_user_profile_v3");
+      if (profile) {
+        const parsed = JSON.parse(profile);
+        return parsed?.avatarUrl || "";
+      }
+    } catch {}
+    return "";
+  });
+  
+  // Lắng nghe thay đổi trong localStorage profile
+  useEffect(() => {
+    function handleStorageChange() {
+      try {
+        const profile = localStorage.getItem("mm_user_profile_v3");
+        if (profile) {
+          const parsed = JSON.parse(profile);
+          setProfileAvatar(parsed?.avatarUrl || "");
+        }
+      } catch {}
+    }
+    
+    // Lắng nghe storage event (từ tab khác) và custom event (từ cùng tab)
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("userProfileUpdated", handleStorageChange);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("userProfileUpdated", handleStorageChange);
+    };
+  }, []);
 
-  // Mock notifications data - có thể thay thế bằng API call sau
-  const [notifications] = useState([
-    {
-      id: 1,
-      type: "schedule",
-      title: "Lịch làm việc hôm nay",
-      message:
-        "Bạn có 2 công việc cần thực hiện: Tưới cây vào 8h sáng và Bón phân cho vườn rau",
-      time: "Hôm nay, 08:00",
-      read: false,
-    },
-    {
-      id: 2,
-      type: "weather",
-      title: "Cảnh báo thời tiết",
-      message:
-        "Dự báo có mưa lớn vào chiều nay. Hãy che chắn cây trồng và kiểm tra hệ thống thoát nước.",
-      time: "Hôm nay, 14:30",
-      read: false,
-    },
-    {
-      id: 3,
-      type: "schedule",
-      title: "Nhắc nhở lịch làm việc",
-      message: "Ngày mai: Kiểm tra sâu bệnh cho vườn cây ăn trái",
-      time: "Ngày mai, 09:00",
-      read: true,
-    },
-    {
-      id: 4,
-      type: "weather",
-      title: "Cảnh báo nhiệt độ",
-      message: "Nhiệt độ cao dự kiến 35°C. Tăng cường tưới nước cho cây trồng.",
-      time: "2 ngày trước",
-      read: true,
-    },
-  ]);
+
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -72,12 +153,8 @@ export default function MMHeader({
 
   const searchInputRef = useRef(null);
   const openedAtRef = useRef(0);
+  const menuCloseTimeoutRef = useRef(null);
   const navigate = useNavigate();
-
-  // Tính số thông báo chưa đọc
-  const unreadCount = useMemo(() => {
-    return notifications.filter((n) => !n.read).length;
-  }, [notifications]);
 
   const handleLoginClick = () => {
     onLogin();
@@ -90,24 +167,17 @@ export default function MMHeader({
   };
 
   const palette = useMemo(
-    () => ({
-      bg: "#1F302F",
-      leaf: "#D1DFB6",
-      ivory: "#FBFFDF",
-      accent: "#FFFFA5",
-    }),
+    () => ({ bg: "#1F302F", leaf: "#D1DFB6", ivory: "#FBFFDF", accent: "#FFFFA5" }),
     []
   );
 
   useEffect(() => {
-    const close = (e) => {
-      if (!e.target.closest(".avatar-menu-area")) setAvatarMenu(false);
-      if (!e.target.closest(".notification-menu-area"))
-        setNotificationMenu(false);
-    };
-    document.addEventListener("click", close);
-    return () => document.removeEventListener("click", close);
-  }, []);
+  const close = (e) => {
+    if (!e.target.closest(".avatar-menu-area")) setAvatarMenu(false);
+  };
+  document.addEventListener("click", close);
+  return () => document.removeEventListener("click", close);
+}, []);
 
   useEffect(() => {
     const onScroll = () => setIsTop(window.scrollY < 60);
@@ -116,7 +186,7 @@ export default function MMHeader({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  useEffect(() => {
+    useEffect(() => {
     const onKey = (e) => {
       const tag = (document.activeElement?.tagName || "").toLowerCase();
       const typing =
@@ -128,9 +198,7 @@ export default function MMHeader({
       const dateOpen = document.querySelector('[data-mm-date-open="1"]');
 
       // Kiểm tra xem có đang ở màn hình AddTreeNewScreen không
-      const addTreeScreen = document.querySelector(
-        '[data-mm-screen="add-tree"]'
-      );
+      const addTreeScreen = document.querySelector('[data-mm-screen="add-tree"]');
 
       if (e.key === "Enter") {
         if (dateOpen) return; // khung lịch đang mở → không làm gì
@@ -150,6 +218,8 @@ export default function MMHeader({
     return () => window.removeEventListener("keydown", onKey);
   }, [searchOpen]);
 
+
+
   useEffect(() => {
     if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 60);
   }, [searchOpen]);
@@ -160,10 +230,7 @@ export default function MMHeader({
     if (!q) {
       setShowValidationError(true);
       searchInputRef.current?.classList.add("mm-shake");
-      setTimeout(
-        () => searchInputRef.current?.classList.remove("mm-shake"),
-        350
-      );
+      setTimeout(() => searchInputRef.current?.classList.remove("mm-shake"), 350);
       setTimeout(() => setShowValidationError(false), 2500);
       return;
     }
@@ -177,16 +244,45 @@ export default function MMHeader({
 
   // Drawer open/close (chậm & mượt hơn)
   const openMenu = () => {
-    if (menuVisible) return;
+    // Nếu đang trong quá trình đóng (có timeout hoặc menuVisible=true nhưng menuAnimOpen=false), cancel và mở lại ngay
+    if (menuCloseTimeoutRef.current || (menuVisible && !menuAnimOpen)) {
+      if (menuCloseTimeoutRef.current) {
+        clearTimeout(menuCloseTimeoutRef.current);
+        menuCloseTimeoutRef.current = null;
+      }
+      // Mở lại ngay lập tức, không cần đợi animation frame
+      setMenuOpen(true);
+      setMenuAnimOpen(true);
+      // Đảm bảo menuVisible vẫn là true
+      if (!menuVisible) {
+        setMenuVisible(true);
+      }
+      return;
+    }
+    // Nếu đã mở rồi thì không làm gì
+    if (menuVisible && menuAnimOpen) return;
+    // Mở sidebar mới
     setMenuVisible(true);
-    requestAnimationFrame(() => setMenuAnimOpen(true));
     setMenuOpen(true);
+    // Đảm bảo animation chạy mượt bằng cách đợi DOM render xong
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        setMenuAnimOpen(true);
+      });
+    });
   };
   const closeMenu = () => {
     if (!menuVisible) return;
+    // Clear timeout cũ nếu có
+    if (menuCloseTimeoutRef.current) {
+      clearTimeout(menuCloseTimeoutRef.current);
+    }
     setMenuAnimOpen(false);
     setMenuOpen(false);
-    setTimeout(() => setMenuVisible(false), 820); // khớp overlay/panel
+    menuCloseTimeoutRef.current = setTimeout(() => {
+      setMenuVisible(false);
+      menuCloseTimeoutRef.current = null;
+    }, 820); // khớp overlay/panel
   };
 
   return (
@@ -207,36 +303,21 @@ export default function MMHeader({
         style={!isTop ? { background: `#1F302FE6` } : undefined}
         data-testid="mmheader"
       >
-        <div className="w-full px-5 md:px-[90px] h-[80px] flex items-center gap-5">
+        <div className="w-full px-4 md:px-6 h-[80px] flex items-center gap-5">
           {/* Logo */}
           <a
             href="#"
             className="inline-flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-white/50 rounded flex-shrink-0"
-            onClick={(e) => {
-              navigate("/");
-            }}
+            onClick={(e) => { navigate("/")} 
+        } 
           >
             <div
               className="w-11 h-11 rounded-full grid place-items-center shadow"
               style={{ background: palette.ivory, color: palette.bg }}
             >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 40 40"
-                fill="none"
-                aria-hidden
-              >
-                <path
-                  d="M20 5C20 5 8 8 8 20C8 32 20 35 20 35C20 35 32 32 32 20C32 8 20 5 20 5Z"
-                  fill={palette.bg}
-                />
-                <path
-                  d="M20 8C20 8 20 15 20 25C20 28 20 32 20 32"
-                  stroke={palette.ivory}
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
+              <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden>
+                <path d="M20 5C20 5 8 8 8 20C8 32 20 35 20 35C20 35 32 32 32 20C32 8 20 5 20 5Z" fill={palette.bg} />
+                <path d="M20 8C20 8 20 15 20 25C20 28 20 32 20 32" stroke={palette.ivory} strokeWidth="1.6" strokeLinecap="round" />
               </svg>
             </div>
             <span
@@ -251,6 +332,102 @@ export default function MMHeader({
 
           {/* Right cluster */}
           <div className="flex items-center gap-3 flex-shrink-0 ml-auto">
+            {/* Search inline */}
+            <form
+              onSubmit={submitSearch}
+              className={[
+                "relative overflow-hidden transition-[max-width,opacity] duration-300",
+                "hidden sm:block",
+              ].join(" ")}
+              style={{
+                maxWidth: searchOpen ? 600 : 0,
+                opacity: searchOpen ? 1 : 0,
+                pointerEvents: searchOpen ? "auto" : "none",
+              }}
+              onMouseLeave={() => {
+                if (
+                  !searchQuery.trim() &&
+                  Date.now() - openedAtRef.current > 250
+                ) {
+                  setSearchOpen(false);
+                }
+              }}
+              data-testid="mm-search-form-inline"
+            >
+              <input
+                ref={searchInputRef}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm kiếm cây, quy trình, gợi ý chăm sóc…"
+                className="
+                  h-12 w-[600px] max-w-[600px]
+                  rounded-full pl-6 pr-36
+                  bg-white/95 text-[#1F302F]
+                  placeholder:text-neutral-500
+                  border border-white/30
+                  shadow-[0_10px_28px_rgba(0,0,0,0.10)]
+                  focus:outline-none focus:ring-2 focus:ring-[#FFFFA5]
+                  text-[15px]
+                "
+                data-testid="mm-search-input"
+                aria-invalid={showValidationError ? "true" : "false"}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-28 top-1/2 -translate-y-1/2 h-9 w-9 grid place-items-center rounded-full hover:bg-black/5 focus:outline-none"
+                  aria-label="Xóa từ khóa"
+                >
+                  ✕
+                </button>
+              )}
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-5 rounded-full shadow hover:scale-[1.02] transition text-[15px] font-medium focus:outline-none"
+                style={{ background: palette.accent, color: "#1F302F" }}
+                aria-label="Tìm kiếm"
+              >
+                Tìm
+              </button>
+              {showValidationError && (
+                <div
+                  role="alert"
+                  aria-live="polite"
+                  className="absolute right-0 top-full mt-1 text-xs px-3 py-1.5 rounded-full shadow border z-[80] animate-[mm-pop_.18s_ease-out]"
+                  style={{
+                    background: palette.accent,
+                    color: "#1F302F",
+                    borderColor: "#EAB30855",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  Vui lòng nhập nội dung
+                </div>
+              )}
+            </form>
+
+            {/* Toggle search */}
+            <button
+              onClick={() => {
+                if (!searchOpen) {
+                  setSearchOpen(true);
+                  openedAtRef.current = Date.now();
+                  setTimeout(() => searchInputRef.current?.focus(), 80);
+                } else {
+                  setSearchOpen(false);
+                  setShowValidationError(false);
+                }
+              }}
+              className="w-11 h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none"
+              style={{ background: palette.ivory, color: palette.bg }}
+              aria-label="Mở/đóng tìm kiếm"
+              title="Tìm kiếm"
+              data-testid="mm-search-btn"
+            >
+              <Search className="w-[22px] h-[22px]" />
+            </button>
+
             {/* Notification bell */}
             {user && (
               <div className="hidden sm:block relative notification-menu-area">
@@ -381,169 +558,103 @@ export default function MMHeader({
               </div>
             )}
 
-            {/* Search inline */}
-            <form
-              onSubmit={submitSearch}
-              className={[
-                "relative overflow-hidden transition-[max-width,opacity] duration-300",
-                "hidden sm:block",
-              ].join(" ")}
-              style={{
-                maxWidth: searchOpen ? 600 : 0,
-                opacity: searchOpen ? 1 : 0,
-                pointerEvents: searchOpen ? "auto" : "none",
-              }}
-              onMouseLeave={() => {
-                if (
-                  !searchQuery.trim() &&
-                  Date.now() - openedAtRef.current > 250
-                ) {
-                  setSearchOpen(false);
-                }
-              }}
-              data-testid="mm-search-form-inline"
-            >
-              <input
-                ref={searchInputRef}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm cây, quy trình, gợi ý chăm sóc…"
-                className="
-                  h-12 w-[600px] max-w-[600px]
-                  rounded-full pl-6 pr-36
-                  bg-white/95 text-[#1F302F]
-                  placeholder:text-neutral-500
-                  border border-white/30
-                  shadow-[0_10px_28px_rgba(0,0,0,0.10)]
-                  focus:outline-none focus:ring-2 focus:ring-[#FFFFA5]
-                  text-[15px]
-                "
-                data-testid="mm-search-input"
-                aria-invalid={showValidationError ? "true" : "false"}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-28 top-1/2 -translate-y-1/2 h-9 w-9 grid place-items-center rounded-full hover:bg-black/5 focus:outline-none"
-                  aria-label="Xóa từ khóa"
-                >
-                  ✕
-                </button>
-              )}
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-10 px-5 rounded-full shadow hover:scale-[1.02] transition text-[15px] font-medium focus:outline-none"
-                style={{ background: palette.accent, color: "#1F302F" }}
-                aria-label="Tìm kiếm"
-              >
-                Tìm
-              </button>
-              {showValidationError && (
-                <div
-                  role="alert"
-                  aria-live="polite"
-                  className="absolute right-0 top-full mt-1 text-xs px-3 py-1.5 rounded-full shadow border z-[80] animate-[mm-pop_.18s_ease-out]"
-                  style={{
-                    background: palette.accent,
-                    color: "#1F302F",
-                    borderColor: "#EAB30855",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Vui lòng nhập nội dung
-                </div>
-              )}
-            </form>
-
-            {/* Toggle search */}
-            <button
-              onClick={() => {
-                if (!searchOpen) {
-                  setSearchOpen(true);
-                  openedAtRef.current = Date.now();
-                  setTimeout(() => searchInputRef.current?.focus(), 80);
-                } else {
-                  setSearchOpen(false);
-                  setShowValidationError(false);
-                }
-              }}
-              className="w-11 h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none"
-              style={{ background: palette.ivory, color: palette.bg }}
-              aria-label="Mở/đóng tìm kiếm"
-              title="Tìm kiếm"
-              data-testid="mm-search-btn"
-            >
-              <Search className="w-[22px] h-[22px]" />
-            </button>
-
             {/* If logged in → avatar dropdown. If not → login/register */}
             {user ? (
-              <div className="hidden md:block relative  avatar-menu-area">
-                <button
-                  onClick={() => setAvatarMenu((prev) => !prev)}
-                  className="w-11 h-11 rounded-full overflow-hidden border border-white/40 shadow focus:outline-none"
-                >
-                  <img
-                    src={user.ProfileImageUrl || DEFAULT_AVATAR}
-                    alt="avatar"
-                    className="w-full h-full object-cover"
-                  />
-                </button>
+              <div className="hidden md:block relative avatar-menu-area">
+                {(user.ProfileImageUrl || profileAvatar) ? (
+                  <button
+                    onClick={() => setAvatarMenu((prev) => !prev)}
+                    className="w-11 h-11 rounded-full overflow-hidden border border-white/40 shadow focus:outline-none transition hover:scale-[1.03] grid place-items-center"
+                    style={{ background: palette.ivory }}
+                    aria-label="Tài khoản"
+                    title="Tài khoản"
+                  >
+                    <SafeImage
+                      src={user.ProfileImageUrl || profileAvatar}
+                      alt="avatar"
+                      className="w-full h-full object-cover object-center"
+                    />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setAvatarMenu((prev) => !prev)}
+                    className="w-11 h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none"
+                    style={{ background: palette.ivory, color: palette.bg }}
+                    aria-label="Tài khoản"
+                    title="Tài khoản"
+                  >
+                    <UserIcon className="w-[22px] h-[22px]" />
+                  </button>
+                )}
 
                 {/* Dropdown */}
                 {avatarMenu && (
                   <div className="absolute right-0 mt-3 w-40 bg-white text-[#1F302F] rounded-xl shadow-lg py-2 z-[999]">
-                    <button
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                      onClick={() => {
-                        navigate("/garden");
-                        setAvatarMenu((prev) => !prev);
-                      }}
-                    >
-                      Vườn của tôi
-                    </button>
+                    {isAdmin(user) ? (
+                      <button
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                        onClick={() => {
+                          const adminPath = getAdminPath(user);
+                          if (adminPath) {
+                            navigate(adminPath);
+                          }
+                          setAvatarMenu((prev) => !prev);
+                        }}
+                      >
+                        Quản lý Admin
+                      </button>
+                    ) : (
+                      <button
+                        className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                        onClick={() => {
+                          navigate("/garden");
+                          setAvatarMenu((prev) => !prev);
+                        }}
+                      >
+                        Vườn của tôi
+                      </button>
+                    )}
 
-                    <button
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                      onClick={() => {
-                        navigate("/profile");
-                        setAvatarMenu((prev) => !prev);
-                      }}
-                    >
-                      Hồ sơ
-                    </button>
+        <button
+          className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+          onClick={() => {
+            navigate("/profile");
+            setAvatarMenu((prev) => !prev)
+          }}
+        >
+          Hồ sơ
+        </button>
 
-                    <button
-                      className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
-                      onClick={logout}
-                    >
-                      Đăng xuất
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div
-                className="hidden md:flex items-stretch rounded-xl overflow-hidden shadow border"
-                style={{ borderColor: palette.ivory }}
-              >
-                <button
-                  onClick={handleLoginClick}
-                  className="px-5 py-2.5 text-base bg-white/0 text-white hover:bg-white/10 focus:outline-none"
-                >
-                  Đăng nhập
-                </button>
-                <div className="w-px bg-white/20" />
-                <button
-                  onClick={handleRegisterClick}
-                  className="px-5 py-2.5 text-base font-medium focus:outline-none"
-                  style={{ background: palette.accent, color: "#1F302F" }}
-                >
-                  Đăng ký
-                </button>
-              </div>
-            )}
+        <button
+          className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
+          onClick={logout}
+        >
+          Đăng xuất
+        </button>
+      </div>
+    )}
+  </div>
+) : (
+  <div
+    className="hidden md:flex items-stretch rounded-xl overflow-hidden shadow border"
+    style={{ borderColor: palette.ivory }}
+  >
+    <button
+      onClick={handleLoginClick}
+      className="px-5 py-2.5 text-base bg-white/0 text-white hover:bg-white/10 focus:outline-none"
+    >
+      Đăng nhập
+    </button>
+    <div className="w-px bg-white/20" />
+    <button
+      onClick={handleRegisterClick}
+      className="px-5 py-2.5 text-base font-medium focus:outline-none"
+      style={{ background: palette.accent, color: "#1F302F" }}
+    >
+      Đăng ký
+    </button>
+  </div>
+)}
 
             {/* Menu button */}
             <button
@@ -565,14 +676,14 @@ export default function MMHeader({
         <div className="fixed inset-0 z-[70]">
           {/* Overlay (fade 800ms) */}
           <div
-            className="absolute inset-0 bg-black/50"
-            style={{
-              opacity: menuAnimOpen ? 1 : 0, // chỉ fade
-              transition: "opacity var(--mm-uline-dur) var(--mm-uline-ease)",
-              pointerEvents: menuAnimOpen ? "auto" : "none", // tránh bắt click khi ẩn
-            }}
-            onClick={closeMenu}
-          />
+  className="absolute inset-0 bg-black/50"
+  style={{
+    opacity: menuAnimOpen ? 1 : 0,                                // chỉ fade
+    transition: "opacity var(--mm-uline-dur) var(--mm-uline-ease)",
+    pointerEvents: menuAnimOpen ? "auto" : "none",                 // tránh bắt click khi ẩn
+  }}
+  onClick={closeMenu}
+/>
 
           {/* Panel (rộng vừa; slide 780ms bezier mượt) */}
           <aside
@@ -590,75 +701,108 @@ export default function MMHeader({
             <div className="flex-1 min-h-0 grid place-content-center px-8 sm:px-10">
               <nav className="w-full max-w-[360px]">
                 <ul className="flex flex-col gap-3">
-                  {menuItems.map((item, idx) => {
-                    const active = activeMenu === item.id;
-                    const isReportLink = item.href === "/report";
-                    return (
-                      <li key={item.id}>
-                        {isReportLink ? (
-                          <button
-                            onClick={(e) => {
-                              e.preventDefault();
-                              setActiveMenu(item.id);
-                              closeMenu();
-                              navigate(item.href);
-                            }}
-                            className={[
-                              "group relative block w-fit px-1 py-2 rounded-md",
-                              "text-[28px] sm:text-[32px] leading-snug font-bold",
-                              active
-                                ? "text-[#FFFFDD]"
-                                : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
-                            ].join(" ")}
-                            style={{
-                              animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${
-                                200 + idx * 140
-                              }ms both`,
-                            }}
-                          >
-                            <span className="relative z-10">{item.label}</span>
-                            {/* underline chậm hơn */}
-                            <span
-                              aria-hidden
-                              className="mm-underline"
-                              data-active={active ? "1" : undefined}
-                              style={{
-                                backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                  {isAdmin(user) ? (
+                    <li>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          const adminPath = getAdminPath(user);
+                          if (adminPath) {
+                            closeMenu();
+                            navigate(adminPath);
+                          }
+                        }}
+                        className={[
+                          "group relative block w-fit px-1 py-2 rounded-md",
+                          "text-[28px] sm:text-[32px] leading-snug font-bold",
+                          "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
+                        ].join(" ")}
+                        style={{
+                          animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) 200ms both`,
+                        }}
+                      >
+                        <span className="relative z-10">Quản lý hệ thống</span>
+                        {/* underline chậm hơn */}
+                        <span
+                          aria-hidden
+                          className="mm-underline"
+                          style={{
+                            backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                          }}
+                        />
+                      </button>
+                    </li>
+                  ) : (
+                    menuItems.map((item, idx) => {
+                      const active = activeMenu === item.id;
+                      const isReportLink = item.href === "/report";
+                      return (
+                        <li key={item.id}>
+                          {isReportLink ? (
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                setActiveMenu(item.id);
+                                closeMenu();
+                                navigate(item.href);
                               }}
-                            />
-                          </button>
-                        ) : (
-                          <a
-                            href={item.href}
-                            onClick={() => setActiveMenu(item.id)}
-                            className={[
-                              "group relative block w-fit px-1 py-2 rounded-md",
-                              "text-[28px] sm:text-[32px] leading-snug font-bold",
-                              active
-                                ? "text-[#FFFFDD]"
-                                : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
-                            ].join(" ")}
-                            style={{
-                              animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${
-                                200 + idx * 140
-                              }ms both`,
-                            }}
-                          >
-                            <span className="relative z-10">{item.label}</span>
-                            {/* underline chậm hơn */}
-                            <span
-                              aria-hidden
-                              className="mm-underline"
-                              data-active={active ? "1" : undefined}
+                              className={[
+                                "group relative block w-fit px-1 py-2 rounded-md",
+                                "text-[28px] sm:text-[32px] leading-snug font-bold",
+                                active
+                                  ? "text-[#FFFFDD]"
+                                  : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
+                              ].join(" ")}
                               style={{
-                                backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                                animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${
+                                  200 + idx * 140
+                                }ms both`,
                               }}
-                            />
-                          </a>
-                        )}
-                      </li>
-                    );
-                  })}
+                            >
+                              <span className="relative z-10">{item.label}</span>
+                              {/* underline chậm hơn */}
+                              <span
+                                aria-hidden
+                                className="mm-underline"
+                                data-active={active ? "1" : undefined}
+                                style={{
+                                  backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                                }}
+                              />
+                            </button>
+                          ) : (
+                            <a
+                              href={item.href}
+                              onClick={() => setActiveMenu(item.id)}
+                              className={[
+                                "group relative block w-fit px-1 py-2 rounded-md",
+                                "text-[28px] sm:text-[32px] leading-snug font-bold",
+                                active
+                                  ? "text-[#FFFFDD]"
+                                  : "text-[#EAF5C8]/90 hover:text-[#FFFFDD]",
+                              ].join(" ")}
+                              style={{
+                                animation: `mm-stagger-up 520ms cubic-bezier(.2,.8,.2,1) ${
+                                  200 + idx * 140
+                                }ms both`,
+                              }}
+                            >
+                              <span className="relative z-10">{item.label}</span>
+                              {/* underline chậm hơn */}
+                              <span
+                                aria-hidden
+                                className="mm-underline"
+                                data-active={active ? "1" : undefined}
+                                style={{
+                                  backgroundImage: `linear-gradient(90deg, ${palette.accent}, ${palette.accent})`,
+                                }}
+                              />
+                            </a>
+                          )}
+                        </li>
+                      );
+                    })
+                  )}
                 </ul>
               </nav>
             </div>
@@ -666,34 +810,31 @@ export default function MMHeader({
             {/* Bottom Auth — không viền, không ring xanh */}
             <div className="sticky bottom-0 left-0 right-0 p-6 bg-[#1A3433]/90 backdrop-blur-sm">
               {user ? (
-                <div className="flex flex-col gap-3">
-                  <button
-                    onClick={logout}
-                    className="h-11 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30"
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-3">
-                  <button
-                    onClick={handleLoginClick}
-                    className="flex-1 h-11 rounded-full text-[#EAF5C8] bg-white/5 border border-white/20"
-                  >
-                    Đăng nhập
-                  </button>
-                  <button
-                    onClick={handleRegisterClick}
-                    className="flex-1 h-11 rounded-full font-semibold"
-                    style={{
-                      background: `linear-gradient(180deg, ${palette.accent}, #F4F39A)`,
-                      color: "#1F302F",
-                    }}
-                  >
-                    Đăng ký
-                  </button>
-                </div>
-              )}
+    <div className="flex flex-col gap-3">
+      <button
+        onClick={logout}
+        className="h-11 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30"
+      >
+        Đăng xuất
+      </button>
+    </div>
+  ) : (
+    <div className="flex gap-3">
+      <button
+        onClick={handleLoginClick}
+        className="flex-1 h-11 rounded-full text-[#EAF5C8] bg-white/5 border border-white/20"
+      >
+        Đăng nhập
+      </button>
+      <button
+        onClick={handleRegisterClick}
+        className="flex-1 h-11 rounded-full font-semibold"
+        style={{ background: `linear-gradient(180deg, ${palette.accent}, #F4F39A)`, color: "#1F302F" }}
+      >
+        Đăng ký
+      </button>
+    </div>
+  )}
             </div>
           </aside>
         </div>

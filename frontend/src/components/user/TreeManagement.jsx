@@ -1365,7 +1365,7 @@ export default function TreeManagement() {
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="gap-2 bg-white/95 h-11 rounded-full"
+                    className="gap-2 bg-white/95 h-11 rounded-full transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-emerald-50 hover:border-emerald-400 hover:text-emerald-700"
                   >
                     <FilterIcon className="h-4 w-4" /> Bộ lọc
                   </Button>
@@ -1406,10 +1406,10 @@ export default function TreeManagement() {
                           key={opt.key}
                           onClick={() => setStatus(opt.key)}
                           className={
-                            "flex items-center justify-between gap-3 py-2 rounded-none cursor-pointer " +
+                            "flex items-center justify-between gap-3 py-2 rounded-none cursor-pointer transition-all duration-200 " +
                             (active
-                              ? "bg-neutral-100"
-                              : "hover:bg-neutral-50")
+                              ? "bg-emerald-50 border-l-2 border-emerald-500"
+                              : "hover:bg-emerald-50/50 hover:scale-[1.02]")
                           }
                         >
                           <span className="inline-flex items-center gap-2">
@@ -1431,7 +1431,7 @@ export default function TreeManagement() {
 
                     {/* Theo khu vườn / vị trí */}
                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="gap-2">
+                      <DropdownMenuSubTrigger className="gap-2 transition-all duration-200 hover:bg-emerald-50/50">
                         <MapPin className="h-4 w-4" /> Theo khu /
                         vị trí
                       </DropdownMenuSubTrigger>
@@ -1447,7 +1447,7 @@ export default function TreeManagement() {
                                 g
                               )
                             }
-                            className="cursor-pointer"
+                            className="cursor-pointer transition-all duration-200 hover:bg-emerald-50/50 hover:scale-[1.01]"
                           >
                             {g}
                           </DropdownMenuCheckboxItem>
@@ -1457,7 +1457,7 @@ export default function TreeManagement() {
                           onClick={() =>
                             setGardenFilter(new Set())
                           }
-                          className="text-neutral-600"
+                          className="text-neutral-600 transition-all duration-200 hover:bg-rose-50/50 hover:scale-[1.01]"
                         >
                           Xóa lựa chọn
                         </DropdownMenuItem>
@@ -1466,7 +1466,7 @@ export default function TreeManagement() {
 
                     {/* Theo giống */}
                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="gap-2">
+                      <DropdownMenuSubTrigger className="gap-2 transition-all duration-200 hover:bg-emerald-50/50">
                         <Sprout className="h-4 w-4" /> Theo giống
                       </DropdownMenuSubTrigger>
                       <DropdownMenuSubContent className="min-w-[220px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
@@ -1481,7 +1481,7 @@ export default function TreeManagement() {
                                 v
                               )
                             }
-                            className="cursor-pointer"
+                            className="cursor-pointer transition-all duration-200 hover:bg-emerald-50/50 hover:scale-[1.01]"
                           >
                             {v}
                           </DropdownMenuCheckboxItem>
@@ -1491,7 +1491,7 @@ export default function TreeManagement() {
                           onClick={() =>
                             setVarieties(new Set())
                           }
-                          className="text-neutral-600"
+                          className="text-neutral-600 transition-all duration-200 hover:bg-rose-50/50 hover:scale-[1.01]"
                         >
                           Xóa lựa chọn
                         </DropdownMenuItem>
@@ -1536,7 +1536,7 @@ export default function TreeManagement() {
 
                     {/* Theo giai đoạn */}
                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="gap-2">
+                      <DropdownMenuSubTrigger className="gap-2 transition-all duration-200 hover:bg-emerald-50/50">
                         <Sprout className="h-4 w-4" /> Theo giai
                         đoạn
                       </DropdownMenuSubTrigger>
@@ -1552,7 +1552,7 @@ export default function TreeManagement() {
                                 opt.id
                               )
                             }
-                            className="cursor-pointer"
+                            className="cursor-pointer transition-all duration-200 hover:bg-emerald-50/50 hover:scale-[1.01]"
                           >
                             <span className="inline-flex items-center gap-2">
                               <span className="text-sm leading-none">
@@ -1567,7 +1567,7 @@ export default function TreeManagement() {
                           onClick={() =>
                             setPhases(new Set())
                           }
-                          className="text-neutral-600"
+                          className="text-neutral-600 transition-all duration-200 hover:bg-rose-50/50 hover:scale-[1.01]"
                         >
                           Xóa lựa chọn
                         </DropdownMenuItem>
@@ -1576,7 +1576,7 @@ export default function TreeManagement() {
 
                     {/* Theo ngày thêm */}
                     <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="gap-2">
+                      <DropdownMenuSubTrigger className="gap-2 transition-all duration-200 hover:bg-emerald-50/50">
                         <Calendar className="h-4 w-4" /> Theo ngày
                         thêm
                       </DropdownMenuSubTrigger>
@@ -1588,10 +1588,10 @@ export default function TreeManagement() {
                           value={dateOrder}
                           onValueChange={setDateOrder}
                         >
-                          <DropdownMenuRadioItem value="desc">
+                          <DropdownMenuRadioItem value="desc" className="transition-all duration-200 hover:bg-emerald-50/50">
                             Mới nhất → Cũ nhất
                           </DropdownMenuRadioItem>
-                          <DropdownMenuRadioItem value="asc">
+                          <DropdownMenuRadioItem value="asc" className="transition-all duration-200 hover:bg-emerald-50/50">
                             Cũ nhất → Mới nhất
                           </DropdownMenuRadioItem>
                         </DropdownMenuRadioGroup>
@@ -1628,7 +1628,7 @@ export default function TreeManagement() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8"
+                              className="h-8 transition-all duration-200 hover:scale-105 hover:bg-rose-50 hover:text-rose-700"
                               onClick={() => {
                                 setDateFrom("");
                                 setDateTo("");
@@ -1638,7 +1638,7 @@ export default function TreeManagement() {
                             </Button>
                             <Button
                               size="sm"
-                              className="h-8"
+                              className="h-8 transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-emerald-600"
                             >
                               Áp dụng
                             </Button>
@@ -1655,7 +1655,7 @@ export default function TreeManagement() {
                       onCheckedChange={() =>
                         setOnlyOverdue((v) => !v)
                       }
-                      className="cursor-pointer"
+                      className="cursor-pointer transition-all duration-200 hover:bg-amber-50/50 hover:scale-[1.01]"
                     >
                       Chỉ hiển thị cây có việc quá hạn
                     </DropdownMenuCheckboxItem>
@@ -1663,7 +1663,7 @@ export default function TreeManagement() {
                     <div className="px-3 py-3">
                       <Button
                         variant="outline"
-                        className="w-full"
+                        className="w-full transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700"
                         onClick={clearAllFilters}
                       >
                         Xóa tất cả bộ lọc
@@ -1775,15 +1775,13 @@ export default function TreeManagement() {
                   <Card
                     key={t.id}
                     className={
-                      "group rounded-3xl overflow-hidden shadow-sm transition-all duration-200 h-full flex flex-col " +
+                      "group rounded-3xl overflow-hidden shadow-sm transition-all duration-500 ease-out h-full flex flex-col border border-[rgba(255,255,165,0.25)] " +
                       (stopped
                         ? "opacity-90"
-                        : "hover:-translate-y-0.5 hover:shadow-md")
+                        : "hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-500/30 hover:border-emerald-500 hover:border-[4px] hover:ring-4 hover:ring-emerald-400/60 animate-pulse-on-hover")
                     }
                     style={{
                       background: "#FFFFFFF2",
-                      borderColor:
-                        "rgba(255,255,165,0.25)",
                     }}
                     role="button"
                     tabIndex={0}

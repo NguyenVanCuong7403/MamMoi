@@ -1,20 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  Search,
-  Thermometer,
-  Droplets,
-  Leaf,
-  Sparkles,
-  CornerDownRight,
-  CornerUpLeft,
-  Trees,
-  Sprout,
-  Flower2,
-  Flower,
-  Info,
-} from "lucide-react";
+import { Search, Thermometer, Droplets, Leaf, Sparkles, CornerDownRight, CornerUpLeft, Trees, Sprout, Flower2, Flower, Info } from "lucide-react";
 import TreeRepository from "@/API/repositories/TreeRepository";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -26,11 +13,11 @@ function PlantCard({ tree, index, onClick }) {
     <motion.div
       initial={{ opacity: 0, y: 30, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        duration: 0.5,
+      transition={{ 
+        duration: 0.5, 
         delay: index * 0.05,
         type: "spring",
-        stiffness: 100,
+        stiffness: 100
       }}
       onClick={onClick}
       className="group relative h-full w-full cursor-pointer overflow-visible rounded-2xl transition-all duration-500"
@@ -106,89 +93,86 @@ function PlantCard({ tree, index, onClick }) {
             }}
           />
         </div>
-
+      
         {/* Image Section with modern effects */}
         <div className="relative h-[320px] w-full overflow-hidden rounded-t-2xl sm:h-[360px] md:h-[380px] lg:h-[400px]">
-          <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-          <img
-            src={
-              tree.imageUrl ||
-              "https://images.unsplash.com/photo-1437750769465-301382cdf094?w=400"
-            }
-            alt={tree.treeTypeName}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.15]"
-          />
-
-          {/* Animated overlay gradient with emerald tint */}
-          <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/40 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-
-          {/* Animated shimmer effect */}
+        <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+        <img
+          src={tree.imageUrl || "https://images.unsplash.com/photo-1437750769465-301382cdf094?w=400"}
+          alt={tree.treeTypeName}
+          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.15]"
+        />
+        
+        {/* Animated overlay gradient with emerald tint */}
+        <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/40 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+        
+        {/* Animated shimmer effect */}
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100"
+          animate={{
+            x: ["-100%", "100%"],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            repeatDelay: 2,
+            ease: "easeInOut",
+          }}
+        />
+        
+        {/* Floating particles effect with emerald theme */}
+        <div className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
           <motion.div
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-0 group-hover:opacity-100"
+            className="absolute top-4 right-4 h-2 w-2 rounded-full bg-emerald-400/80 shadow-lg shadow-emerald-400/50"
             animate={{
-              x: ["-100%", "100%"],
+              y: [0, -10, 0],
+              scale: [1, 1.2, 1],
             }}
             transition={{
-              duration: 1.5,
+              duration: 2,
               repeat: Infinity,
-              repeatDelay: 2,
               ease: "easeInOut",
             }}
           />
-
-          {/* Floating particles effect with emerald theme */}
-          <div className="absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
-            <motion.div
-              className="absolute top-4 right-4 h-2 w-2 rounded-full bg-emerald-400/80 shadow-lg shadow-emerald-400/50"
-              animate={{
-                y: [0, -10, 0],
-                scale: [1, 1.2, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-              }}
-            />
-            <motion.div
-              className="absolute top-12 right-8 h-1.5 w-1.5 rounded-full bg-green-400/80 shadow-lg shadow-green-400/50"
-              animate={{
-                y: [0, -8, 0],
-                scale: [1, 1.3, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 0.3,
-              }}
-            />
-            <motion.div
-              className="absolute top-20 right-6 h-1 w-1 rounded-full bg-emerald-500/80 shadow-lg shadow-emerald-500/50"
-              animate={{
-                y: [0, -12, 0],
-                scale: [1, 1.4, 1],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: 0.6,
-              }}
-            />
-          </div>
+          <motion.div
+            className="absolute top-12 right-8 h-1.5 w-1.5 rounded-full bg-green-400/80 shadow-lg shadow-green-400/50"
+            animate={{
+              y: [0, -8, 0],
+              scale: [1, 1.3, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.3,
+            }}
+          />
+          <motion.div
+            className="absolute top-20 right-6 h-1 w-1 rounded-full bg-emerald-500/80 shadow-lg shadow-emerald-500/50"
+            animate={{
+              y: [0, -12, 0],
+              scale: [1, 1.4, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.6,
+            }}
+          />
         </div>
+      </div>
 
         {/* Content Section - Modern and clean */}
         <div className="relative z-10 flex min-h-[140px] flex-col justify-center space-y-2 bg-gradient-to-b from-white/95 to-white p-4 sm:p-5">
           {/* Tree Name with gradient text effect */}
           <h3 className="line-clamp-2 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 bg-clip-text text-lg font-bold text-transparent transition-all duration-300 group-hover:from-emerald-700 group-hover:via-emerald-600 group-hover:to-emerald-700 sm:text-xl md:text-2xl">
-            {tree.treeTypeName}
+            {tree.treeTypeName?.startsWith("Cây ") ? tree.treeTypeName : `Cây ${tree.treeTypeName || ""}`}
           </h3>
 
           {/* Average Lifespan */}
           {tree.averageLifespanYears && (
-            <motion.p
+            <motion.p 
               className="text-sm font-medium text-emerald-600/80 sm:text-base"
               whileHover={{ x: 2 }}
             >
@@ -214,10 +198,8 @@ export default function PlantGallery() {
       setLoading(true);
       try {
         const treeTypesResponse = await TreeRepository.getTreeTypes();
-        const treeTypes = Array.isArray(treeTypesResponse)
-          ? treeTypesResponse
-          : [];
-
+        const treeTypes = Array.isArray(treeTypesResponse) ? treeTypesResponse : [];
+        
         // Map tree types to enhanced format
         // Note: Current API only returns basic fields. Backend needs enhancement for full details.
         const treesWithDetails = treeTypes
@@ -252,10 +234,8 @@ export default function PlantGallery() {
             scientificName: "Mangifera indica",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây xoài là loại cây ăn quả nhiệt đới phổ biến, cho quả ngọt và thơm.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây xoài là loại cây ăn quả nhiệt đới phổ biến, cho quả ngọt và thơm.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 20,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 60,
@@ -269,8 +249,7 @@ export default function PlantGallery() {
             category: "Cây ăn quả",
             isActive: true,
             description: "Cây ổi dễ trồng, cho quả quanh năm, giàu vitamin C.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 18,
             optimalTemperatureMax: 32,
             optimalHumidityMin: 55,
@@ -283,10 +262,8 @@ export default function PlantGallery() {
             scientificName: "Musa acuminata",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây chuối phát triển nhanh, cho quả giàu kali và chất dinh dưỡng.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây chuối phát triển nhanh, cho quả giàu kali và chất dinh dưỡng.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 22,
             optimalTemperatureMax: 30,
             optimalHumidityMin: 65,
@@ -299,10 +276,8 @@ export default function PlantGallery() {
             scientificName: "Citrus sinensis",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây cam cho quả mọng nước, giàu vitamin C, thích hợp khí hậu nhiệt đới.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây cam cho quả mọng nước, giàu vitamin C, thích hợp khí hậu nhiệt đới.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 15,
             optimalTemperatureMax: 30,
             optimalHumidityMin: 50,
@@ -315,10 +290,8 @@ export default function PlantGallery() {
             scientificName: "Citrus maxima",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây bưởi cho quả to, mọng nước, có nhiều giống khác nhau.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây bưởi cho quả to, mọng nước, có nhiều giống khác nhau.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 18,
             optimalTemperatureMax: 32,
             optimalHumidityMin: 55,
@@ -331,10 +304,8 @@ export default function PlantGallery() {
             scientificName: "Dimocarpus longan",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây nhãn cho quả ngọt, thơm, thích hợp khí hậu nhiệt đới và cận nhiệt đới.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây nhãn cho quả ngọt, thơm, thích hợp khí hậu nhiệt đới và cận nhiệt đới.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 20,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 60,
@@ -348,8 +319,7 @@ export default function PlantGallery() {
             category: "Cây ăn quả",
             isActive: true,
             description: "Cây vải cho quả ngọt, thơm, vỏ đỏ đẹp mắt.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 20,
             optimalTemperatureMax: 32,
             optimalHumidityMin: 60,
@@ -362,10 +332,8 @@ export default function PlantGallery() {
             scientificName: "Artocarpus heterophyllus",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây mít cho quả to, thơm, nhiều múi, thích hợp khí hậu nhiệt đới.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây mít cho quả to, thơm, nhiều múi, thích hợp khí hậu nhiệt đới.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 22,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 65,
@@ -378,10 +346,8 @@ export default function PlantGallery() {
             scientificName: "Durio zibethinus",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây sầu riêng cho quả đặc trưng, thơm nồng, được mệnh danh là vua của các loại trái cây.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây sầu riêng cho quả đặc trưng, thơm nồng, được mệnh danh là vua của các loại trái cây.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 24,
             optimalTemperatureMax: 32,
             optimalHumidityMin: 70,
@@ -395,8 +361,7 @@ export default function PlantGallery() {
             category: "Cây ăn quả",
             isActive: true,
             description: "Cây chôm chôm cho quả có vỏ gai đỏ, thịt trắng ngọt.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 22,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 65,
@@ -409,10 +374,8 @@ export default function PlantGallery() {
             scientificName: "Garcinia mangostana",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây măng cụt cho quả có vỏ tím, thịt trắng ngọt thanh, được mệnh danh là nữ hoàng trái cây.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây măng cụt cho quả có vỏ tím, thịt trắng ngọt thanh, được mệnh danh là nữ hoàng trái cây.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 20,
             optimalTemperatureMax: 32,
             optimalHumidityMin: 70,
@@ -425,10 +388,8 @@ export default function PlantGallery() {
             scientificName: "Cocos nucifera",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây dừa cho quả nhiều nước, thơm mát, thích hợp vùng ven biển.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây dừa cho quả nhiều nước, thơm mát, thích hợp vùng ven biển.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 25,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 70,
@@ -441,10 +402,8 @@ export default function PlantGallery() {
             scientificName: "Hylocereus undatus",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây thanh long cho quả có vỏ đỏ hoặc vàng, thịt trắng hoặc đỏ, ngọt mát.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây thanh long cho quả có vỏ đỏ hoặc vàng, thịt trắng hoặc đỏ, ngọt mát.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 20,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 60,
@@ -453,8 +412,55 @@ export default function PlantGallery() {
           },
         ];
 
-        // Combine API data with demo data
-        const allTrees = [...treesWithDetails, ...demoTrees];
+        // Create a map of demo data by treeTypeName for easy lookup
+        const demoDataMap = new Map();
+        demoTrees.forEach((demoTree) => {
+          // Normalize tree name for matching (remove "Cây " prefix if exists)
+          const normalizedName = demoTree.treeTypeName.replace(/^Cây\s+/i, "").trim();
+          demoDataMap.set(normalizedName.toLowerCase(), demoTree);
+        });
+
+        // Merge demo data into API data where API data is missing fields
+        const enrichedTrees = treesWithDetails.map((apiTree) => {
+          // Normalize tree name for matching
+          const normalizedName = apiTree.treeTypeName.replace(/^Cây\s+/i, "").trim();
+          const demoTree = demoDataMap.get(normalizedName.toLowerCase());
+
+          if (demoTree) {
+            // Merge demo data into API data, prioritizing API data but filling missing fields
+            return {
+              ...apiTree,
+              description: apiTree.description || demoTree.description || null,
+              imageUrl: apiTree.imageUrl || demoTree.imageUrl || null,
+              optimalTemperatureMin: apiTree.optimalTemperatureMin ?? demoTree.optimalTemperatureMin ?? null,
+              optimalTemperatureMax: apiTree.optimalTemperatureMax ?? demoTree.optimalTemperatureMax ?? null,
+              optimalHumidityMin: apiTree.optimalHumidityMin ?? demoTree.optimalHumidityMin ?? null,
+              optimalHumidityMax: apiTree.optimalHumidityMax ?? demoTree.optimalHumidityMax ?? null,
+              droughtTolerance: apiTree.droughtTolerance ?? demoTree.droughtTolerance ?? null,
+              floodTolerance: apiTree.floodTolerance ?? demoTree.floodTolerance ?? null,
+              frostTolerance: apiTree.frostTolerance ?? demoTree.frostTolerance ?? null,
+              windTolerance: apiTree.windTolerance ?? demoTree.windTolerance ?? null,
+              averageLifespanYears: apiTree.averageLifespanYears ?? demoTree.averageLifespanYears ?? null,
+            };
+          }
+          return apiTree;
+        });
+
+        // Add demo trees that don't exist in API data
+        const existingTreeNames = new Set(
+          treesWithDetails.map((tree) =>
+            tree.treeTypeName.replace(/^Cây\s+/i, "").trim().toLowerCase()
+          )
+        );
+        const newDemoTrees = demoTrees.filter(
+          (demoTree) =>
+            !existingTreeNames.has(
+              demoTree.treeTypeName.replace(/^Cây\s+/i, "").trim().toLowerCase()
+            )
+        );
+
+        // Combine enriched API data with new demo trees
+        const allTrees = [...enrichedTrees, ...newDemoTrees];
         setTrees(allTrees);
       } catch (error) {
         console.error("Error fetching tree types:", error);
@@ -466,10 +472,8 @@ export default function PlantGallery() {
             scientificName: "Mangifera indica",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây xoài là loại cây ăn quả nhiệt đới phổ biến, cho quả ngọt và thơm.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây xoài là loại cây ăn quả nhiệt đới phổ biến, cho quả ngọt và thơm.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 20,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 60,
@@ -483,8 +487,7 @@ export default function PlantGallery() {
             category: "Cây ăn quả",
             isActive: true,
             description: "Cây ổi dễ trồng, cho quả quanh năm, giàu vitamin C.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 18,
             optimalTemperatureMax: 32,
             optimalHumidityMin: 55,
@@ -497,10 +500,8 @@ export default function PlantGallery() {
             scientificName: "Musa acuminata",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây chuối phát triển nhanh, cho quả giàu kali và chất dinh dưỡng.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây chuối phát triển nhanh, cho quả giàu kali và chất dinh dưỡng.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 22,
             optimalTemperatureMax: 30,
             optimalHumidityMin: 65,
@@ -513,10 +514,8 @@ export default function PlantGallery() {
             scientificName: "Citrus sinensis",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây cam cho quả mọng nước, giàu vitamin C, thích hợp khí hậu nhiệt đới.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây cam cho quả mọng nước, giàu vitamin C, thích hợp khí hậu nhiệt đới.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 15,
             optimalTemperatureMax: 30,
             optimalHumidityMin: 50,
@@ -529,10 +528,8 @@ export default function PlantGallery() {
             scientificName: "Citrus maxima",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây bưởi cho quả to, mọng nước, có nhiều giống khác nhau.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây bưởi cho quả to, mọng nước, có nhiều giống khác nhau.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 18,
             optimalTemperatureMax: 32,
             optimalHumidityMin: 55,
@@ -545,10 +542,8 @@ export default function PlantGallery() {
             scientificName: "Dimocarpus longan",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây nhãn cho quả ngọt, thơm, thích hợp khí hậu nhiệt đới và cận nhiệt đới.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây nhãn cho quả ngọt, thơm, thích hợp khí hậu nhiệt đới và cận nhiệt đới.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 20,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 60,
@@ -562,8 +557,7 @@ export default function PlantGallery() {
             category: "Cây ăn quả",
             isActive: true,
             description: "Cây vải cho quả ngọt, thơm, vỏ đỏ đẹp mắt.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 20,
             optimalTemperatureMax: 32,
             optimalHumidityMin: 60,
@@ -576,10 +570,8 @@ export default function PlantGallery() {
             scientificName: "Artocarpus heterophyllus",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây mít cho quả to, thơm, nhiều múi, thích hợp khí hậu nhiệt đới.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây mít cho quả to, thơm, nhiều múi, thích hợp khí hậu nhiệt đới.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 22,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 65,
@@ -592,10 +584,8 @@ export default function PlantGallery() {
             scientificName: "Durio zibethinus",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây sầu riêng cho quả đặc trưng, thơm nồng, được mệnh danh là vua của các loại trái cây.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây sầu riêng cho quả đặc trưng, thơm nồng, được mệnh danh là vua của các loại trái cây.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 24,
             optimalTemperatureMax: 32,
             optimalHumidityMin: 70,
@@ -609,8 +599,7 @@ export default function PlantGallery() {
             category: "Cây ăn quả",
             isActive: true,
             description: "Cây chôm chôm cho quả có vỏ gai đỏ, thịt trắng ngọt.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 22,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 65,
@@ -623,10 +612,8 @@ export default function PlantGallery() {
             scientificName: "Garcinia mangostana",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây măng cụt cho quả có vỏ tím, thịt trắng ngọt thanh, được mệnh danh là nữ hoàng trái cây.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây măng cụt cho quả có vỏ tím, thịt trắng ngọt thanh, được mệnh danh là nữ hoàng trái cây.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 20,
             optimalTemperatureMax: 32,
             optimalHumidityMin: 70,
@@ -639,10 +626,8 @@ export default function PlantGallery() {
             scientificName: "Cocos nucifera",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây dừa cho quả nhiều nước, thơm mát, thích hợp vùng ven biển.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây dừa cho quả nhiều nước, thơm mát, thích hợp vùng ven biển.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 25,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 70,
@@ -655,10 +640,8 @@ export default function PlantGallery() {
             scientificName: "Hylocereus undatus",
             category: "Cây ăn quả",
             isActive: true,
-            description:
-              "Cây thanh long cho quả có vỏ đỏ hoặc vàng, thịt trắng hoặc đỏ, ngọt mát.",
-            imageUrl:
-              "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
+            description: "Cây thanh long cho quả có vỏ đỏ hoặc vàng, thịt trắng hoặc đỏ, ngọt mát.",
+            imageUrl: "https://images.unsplash.com/photo-1605027990121-cbae48b8c473?w=400",
             optimalTemperatureMin: 20,
             optimalTemperatureMax: 35,
             optimalHumidityMin: 60,
@@ -745,7 +728,7 @@ export default function PlantGallery() {
             </motion.div>
 
             {/* Main Title - More compact */}
-            <motion.h1
+            <motion.h1 
               className="mb-4 text-3xl font-extrabold leading-tight sm:text-4xl lg:text-5xl"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -763,8 +746,7 @@ export default function PlantGallery() {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="mb-8 text-base text-white/90 sm:text-lg lg:text-xl"
             >
-              Khám phá hàng trăm loại cây trồng với thông tin chi tiết và hướng
-              dẫn chăm sóc
+              Khám phá hàng trăm loại cây trồng với thông tin chi tiết và hướng dẫn chăm sóc
             </motion.p>
 
             {/* Search Bar - More compact */}
@@ -777,7 +759,7 @@ export default function PlantGallery() {
               <div className="relative">
                 {/* Glow effect */}
                 <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400 opacity-25 blur-xl" />
-
+                
                 <div className="relative">
                   <div className="absolute left-5 top-1/2 -translate-y-1/2">
                     <Search className="h-5 w-5 text-emerald-600/70" />
@@ -801,7 +783,7 @@ export default function PlantGallery() {
                   )}
                 </div>
               </div>
-
+              
               {/* Quick stats - More compact */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -831,6 +813,7 @@ export default function PlantGallery() {
 
       {/* Plant Grid Section - Full width with natural decorative elements */}
       <section className="relative z-10 w-full bg-transparent py-20">
+
         <div className="w-full">
           {loading ? (
             <div className="flex min-h-[500px] items-center justify-center">
@@ -845,7 +828,7 @@ export default function PlantGallery() {
               </motion.div>
             </div>
           ) : filteredTrees.length === 0 ? (
-            <motion.div
+            <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="flex min-h-[500px] flex-col items-center justify-center gap-6 text-center"
@@ -868,7 +851,7 @@ export default function PlantGallery() {
                   @media (min-width: 1024px) {
                     ${Array.from({ length: firstRowItems }, (_, i) => {
                       // Calculate starting column to center the items
-                      // For n items in 5 columns:
+                      // For n items in 5 columns: 
                       // - 1 item: column 3 (center)
                       // - 2 items: columns 2, 3
                       // - 3 items: columns 2, 3, 4
@@ -879,26 +862,24 @@ export default function PlantGallery() {
                       return `.plant-grid-item-first-row-${firstRowItems}-${i} {
                         grid-column-start: ${startCol} !important;
                       }`;
-                    }).join("\n")}
+                    }).join('\n')}
                   }
                 `}</style>
               )}
-
+              
               {/* Grid: 5 columns on large screens for vertical portrait cards */}
               <div className="grid w-full grid-cols-1 gap-x-6 gap-y-10 px-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-x-8 sm:gap-y-14 md:gap-x-10 md:gap-y-18 lg:gap-x-12 lg:gap-y-24 sm:px-3">
                 <AnimatePresence mode="wait">
                   {paginatedTrees.map((tree, index) => {
                     const isFirstRow = index < 5;
-                    const shouldCenter =
-                      firstRowItems > 0 && firstRowItems < 5 && isFirstRow;
+                    const shouldCenter = firstRowItems > 0 && firstRowItems < 5 && isFirstRow;
                     const itemIndexInFirstRow = shouldCenter ? index : -1;
-
+                    
                     return (
                       <div
                         key={tree.treeTypeId}
                         className={cn(
-                          shouldCenter &&
-                            `plant-grid-item-first-row-${firstRowItems}-${itemIndexInFirstRow}`
+                          shouldCenter && `plant-grid-item-first-row-${firstRowItems}-${itemIndexInFirstRow}`
                         )}
                       >
                         <PlantCard
@@ -914,7 +895,7 @@ export default function PlantGallery() {
 
               {/* Modern Pagination */}
               {totalPages > 1 && (
-                <motion.div
+                <motion.div 
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 }}
@@ -922,45 +903,37 @@ export default function PlantGallery() {
                 >
                   <Button
                     variant="outline"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
+                    onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                     disabled={currentPage === 1}
                     className="rounded-xl border-2 bg-white/80 backdrop-blur-sm transition-all hover:scale-105 hover:shadow-lg disabled:opacity-50"
                   >
                     Trước
                   </Button>
                   <div className="flex items-center gap-2">
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                      (page) => (
-                        <motion.div
-                          key={page}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                      <motion.div
+                        key={page}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Button
+                          variant={currentPage === page ? "default" : "outline"}
+                          onClick={() => setCurrentPage(page)}
+                          className={cn(
+                            "h-11 w-11 rounded-xl border-2 font-semibold transition-all",
+                            currentPage === page 
+                              ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/50 ring-2 ring-emerald-400/50 hover:from-emerald-700 hover:to-teal-700" 
+                              : "bg-white/80 backdrop-blur-sm hover:bg-emerald-50 hover:border-emerald-300"
+                          )}
                         >
-                          <Button
-                            variant={
-                              currentPage === page ? "default" : "outline"
-                            }
-                            onClick={() => setCurrentPage(page)}
-                            className={cn(
-                              "h-11 w-11 rounded-xl border-2 font-semibold transition-all",
-                              currentPage === page
-                                ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-500/50 ring-2 ring-emerald-400/50 hover:from-emerald-700 hover:to-teal-700"
-                                : "bg-white/80 backdrop-blur-sm hover:bg-emerald-50 hover:border-emerald-300"
-                            )}
-                          >
-                            {page}
-                          </Button>
-                        </motion.div>
-                      )
-                    )}
+                          {page}
+                        </Button>
+                      </motion.div>
+                    ))}
                   </div>
                   <Button
                     variant="outline"
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
+                    onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                     disabled={currentPage === totalPages}
                     className="rounded-xl border-2 bg-white/80 backdrop-blur-sm transition-all hover:scale-105 hover:shadow-lg disabled:opacity-50"
                   >
@@ -975,3 +948,4 @@ export default function PlantGallery() {
     </div>
   );
 }
+
