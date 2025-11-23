@@ -190,4 +190,24 @@ export default class TreeRepository {
   static async getStages(id) {
     return ApiClient.get(`/api/trees/${id}/stages`);
   }
+
+  /**
+   * Get tree lifecycle information (phase, stage, cycle count)
+   * @param {number} id - Tree ID
+   */
+  static async getLifecycle(id) {
+    return ApiClient.get(`/api/trees/${id}/lifecycle`);
+  }
+
+  /**
+   * Update tree lifecycle phase
+   * @param {number} id - Tree ID
+   * @param {Object} data - UpdateTreeLifecycleRequest
+   * @param {string} data.phaseId - Phase ID: "growth_development", "flowering", "fruiting", "pre_harvest", "post_harvest"
+   * @param {number} [data.cycleCount] - Optional cycle count
+   * @param {boolean} [data.phase1Completed] - Optional phase 1 completed flag
+   */
+  static async updateLifecycle(id, data) {
+    return ApiClient.patch(`/api/trees/${id}/lifecycle`, data);
+  }
 }

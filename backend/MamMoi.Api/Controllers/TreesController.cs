@@ -137,6 +137,20 @@ public class TreesController : ControllerBase
         return Ok(dto);
     }
 
+    // ===================== 4.5) Get Lifecycle =====================
+    /// <summary>
+    /// Get tree lifecycle information (phase, stage, cycle count)
+    /// </summary>
+    [HttpGet("{id:int}/lifecycle")]
+    public async Task<IActionResult> GetLifecycle([FromRoute] int id, CancellationToken ct)
+    {
+        // Allow viewing any tree (similar to GetDetail)
+        // If you want to restrict to owner only, use: var currentUserId = GetCurrentUserId();
+        var dto = await _treeQuery.GetLifecycleAsync(id, currentUserId: null, ct);
+        if (dto is null) return NotFound();
+        return Ok(dto);
+    }
+
     // ===================== 5) Create =====================
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateTreeRequest req, CancellationToken ct)
@@ -163,6 +177,34 @@ public class TreesController : ControllerBase
         if (!TryResolveUserId(out var userId, out var error)) return error!;
         var ok = await _treeCmd.UpdateStatusAsync(userId, id, req, ct);
         return ok ? NoContent() : NotFound();
+    }
+
+    // ===================== 7.5) Update Lifecycle =====================
+    /// <summary>
+    /// Update tree lifecycle phase (growth_development, flowering, fruiting, pre_harvest, post_harvest)
+    /// </summary>
+    [HttpPatch("{id:int}/lifecycle")]
+    public async Task<IActionResult> UpdateLifecycle([FromRoute] int id, [FromBody] UpdateTreeLifecycleRequest req, CancellationToken ct)
+    {
+        if (!TryResolveUserId(out var userId, out var error)) return error!;
+        try
+        {
+            var dto = await _treeCmd.UpdateLifecycleAsync(userId, id, req, ct);
+            if (dto is null) return NotFound();
+            return Ok(dto);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized(new { message = "You are not authorized to update this tree." });
+        }
     }
 
     // ===================== 8) Delete =====================

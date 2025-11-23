@@ -100,37 +100,43 @@ namespace MamMoi.Infrastructure.Services
 
         public async Task<IReadOnlyList<GrowthHistoryItemDto>> GetGrowthHistoryAsync(int treeId, CancellationToken ct)
         {
-            var acts = _db.ActivityLogs.AsNoTracking()
+            // Materialize each query separately to avoid EF Core translation issues with Concat after Select
+            var acts = await _db.ActivityLogs.AsNoTracking()
                 .Where(a => a.TreeId == treeId)
                 .Select(a => new GrowthHistoryItemDto(
-                    a.CreatedAt, "Activity", a.ActivityType, a.ActivityDescription));
+                    a.CreatedAt, "Activity", a.ActivityType, a.ActivityDescription))
+                .ToListAsync(ct);
 
-            var cares = _db.CareSchedules.AsNoTracking()
+            var cares = await _db.CareSchedules.AsNoTracking()
                 .Where(c => c.TreeId == treeId && c.CompletedAt != null)
                 .Select(c => new GrowthHistoryItemDto(
                     c.CompletedAt!.Value, "CareSchedule",
                     c.TaskName ?? c.TaskType ?? "Task",
-                    c.CompletionNotes ?? c.Description));
+                    c.CompletionNotes ?? c.Description))
+                .ToListAsync(ct);
 
-            var weathers = _db.WeatherHistories.AsNoTracking()
-    .Where(w => w.TreeId == treeId && w.ApirespondedAt != null) // <-- r thường
-    .Select(w => new GrowthHistoryItemDto(
-        w.ApirespondedAt!.Value,                                  // <-- r thường
-        "Weather",
-        w.DataSource ?? "WeatherAPI",
-        w.DataQuality));
+            var weathers = await _db.WeatherHistories.AsNoTracking()
+                .Where(w => w.TreeId == treeId && w.ApirespondedAt != null)
+                .Select(w => new GrowthHistoryItemDto(
+                    w.ApirespondedAt!.Value,
+                    "Weather",
+                    w.DataSource ?? "WeatherAPI",
+                    w.DataQuality))
+                .ToListAsync(ct);
 
-            var images = _db.TreeImages.AsNoTracking()
+            var images = await _db.TreeImages.AsNoTracking()
                 .Where(i => i.TreeId == treeId && i.UploadedAt != null)
                 .Select(i => new GrowthHistoryItemDto(
-                    i.UploadedAt!.Value, "Image", "Upload", i.Description));
+                    i.UploadedAt!.Value, "Image", "Upload", i.Description))
+                .ToListAsync(ct);
 
-            return await acts
+            // Concat in memory after materialization
+            return acts
                 .Concat(cares)
                 .Concat(weathers)
                 .Concat(images)
                 .OrderByDescending(x => x.When)
-                .ToListAsync(ct);
+                .ToList();
         }
 
         public async Task<IReadOnlyList<GrowthChartPointDto>> GetGrowthChartAsync(
@@ -145,29 +151,34 @@ namespace MamMoi.Infrastructure.Services
             if (to.HasValue)
                 pointsFromImages = pointsFromImages.Where(i => (i.CapturedAt ?? i.UploadedAt) <= to.Value);
 
-            var imagesProjected = pointsFromImages
+            // Materialize images query first
+            var imagesProjected = await pointsFromImages
                 .Select(i => new GrowthChartPointDto(
                     (i.CapturedAt ?? i.UploadedAt)!.Value,  // thời điểm đo
                     null,                                   // HeightMeters — đã bỏ
                     i.HealthScore,                          // từ ảnh
                     null                                    // sản lượng — không còn trong Tree
-                ));
+                ))
+                .ToListAsync(ct);
 
             // ---- Điểm hiện tại (chỉ thời gian) ----
-            var latestPoint = _db.Trees.AsNoTracking()
+            // Materialize latest point query first
+            var latestPoint = await _db.Trees.AsNoTracking()
                 .Where(t => t.TreeId == treeId)
                 .Select(t => new GrowthChartPointDto(
                     (DateTime?)(t.UpdatedAt ?? t.CreatedAt) ?? DateTime.UtcNow,
                     null,  // HeightMeters
                     null,  // HealthScore
                     null   // sản lượng (đã bỏ)
-                ));
+                ))
+                .ToListAsync(ct);
 
             // ---- Tổng hợp ----
-            return await imagesProjected
+            // Concat in memory after materialization
+            return imagesProjected
                 .Concat(latestPoint)
                 .OrderBy(p => p.When)
-                .ToListAsync(ct);
+                .ToList();
         }
 
 
