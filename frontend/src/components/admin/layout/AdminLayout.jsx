@@ -9,6 +9,7 @@ import {
   Flower2,
   Package,
   Layers,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/API/context/AuthContext";
@@ -38,6 +39,12 @@ const ROLE_NAV_ITEMS = {
       label: "Report",
       icon: BarChart3,
       path: "/admin/reports",
+    },
+    {
+      key: "notifications",
+      label: "Quản lý thông báo",
+      icon: Bell,
+      path: "/admin/notifications",
     },
   ],
   businessadmin: [
