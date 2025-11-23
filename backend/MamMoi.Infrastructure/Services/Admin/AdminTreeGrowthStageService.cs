@@ -1,4 +1,5 @@
 using MamMoi.Application.DTOs.Admin;
+using MamMoi.Application.Interfaces;
 using MamMoi.Application.Interfaces.Admin;
 using MamMoi.Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
@@ -13,13 +14,16 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
 {
     private readonly MamMoiDbContext _dbContext;
     private readonly ILogger<AdminTreeGrowthStageService> _logger;
+    private readonly IImageUploadService _imageUploadService;
 
     public AdminTreeGrowthStageService(
         MamMoiDbContext dbContext,
-        ILogger<AdminTreeGrowthStageService> logger)
+        ILogger<AdminTreeGrowthStageService> logger,
+        IImageUploadService imageUploadService)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _imageUploadService = imageUploadService;
     }
 
     public async Task<(List<TreeGrowthStageListItemDto> stages, int totalCount)> GetAllTreeGrowthStagesAsync(
@@ -237,8 +241,19 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
         if (dto.VulnerabilityLevel.HasValue)
             stage.VulnerabilityLevel = dto.VulnerabilityLevel.Value;
 
+        // Handle ImageUrl update - allow setting to null/empty to remove image
         if (dto.ImageUrl != null)
-            stage.ImageUrl = dto.ImageUrl;
+        {
+            var newImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl;
+            
+            // Delete old image if exists and is being changed or removed
+            if (!string.IsNullOrEmpty(stage.ImageUrl) && stage.ImageUrl != newImageUrl)
+            {
+                await _imageUploadService.DeleteImageAsync(stage.ImageUrl);
+            }
+            
+            stage.ImageUrl = newImageUrl;
+        }
 
         await _dbContext.SaveChangesAsync();
 
@@ -255,6 +270,12 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
         var isUsed = await _dbContext.Trees.AnyAsync(t => t.StageId == stageId);
         if (isUsed)
             throw new InvalidOperationException("Cannot delete stage that is used by trees");
+
+        // Delete image file if exists
+        if (!string.IsNullOrEmpty(stage.ImageUrl))
+        {
+            await _imageUploadService.DeleteImageAsync(stage.ImageUrl);
+        }
 
         _dbContext.TreeGrowthStages.Remove(stage);
         await _dbContext.SaveChangesAsync();

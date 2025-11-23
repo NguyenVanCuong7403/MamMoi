@@ -45,7 +45,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -87,13 +94,30 @@ const BACKGROUND_PALETTE = {
 const SOIL_PAGE_SIZE = 5;
 const TREE_PAGE_SIZE = 8;
 const VARIETY_PAGE_SIZE = 5;
-const environmentLabelClass = "text-[13px] font-semibold text-slate-600 leading-tight min-h-[32px]";
+const environmentLabelClass =
+  "text-[13px] font-semibold text-slate-600 leading-tight min-h-[32px]";
 
 const toleranceLevels = [
-  { value: "Low", label: "Thấp", color: "text-rose-700 bg-rose-50 border-rose-200" },
-  { value: "Medium", label: "Trung bình", color: "text-amber-700 bg-amber-50 border-amber-200" },
-  { value: "High", label: "Cao", color: "text-emerald-700 bg-emerald-50 border-emerald-200" },
-  { value: "None", label: "Không xác định", color: "text-slate-600 bg-slate-50 border-slate-200" },
+  {
+    value: "Low",
+    label: "Thấp",
+    color: "text-rose-700 bg-rose-50 border-rose-200",
+  },
+  {
+    value: "Medium",
+    label: "Trung bình",
+    color: "text-amber-700 bg-amber-50 border-amber-200",
+  },
+  {
+    value: "High",
+    label: "Cao",
+    color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+  },
+  {
+    value: "None",
+    label: "Không xác định",
+    color: "text-slate-600 bg-slate-50 border-slate-200",
+  },
 ];
 
 // Màu sắc cho mức độ bệnh (đồng bộ với PlantDetail.jsx)
@@ -212,7 +236,6 @@ const mapTreeTypeToApi = (componentTreeType) => {
       componentTreeType.ScientificName || componentTreeType.scientificName,
     description: componentTreeType.Description || componentTreeType.description,
     category: componentTreeType.Category || componentTreeType.category,
-    imageUrl: componentTreeType.ImageUrl || componentTreeType.imageUrl,
     isActive: componentTreeType.IsActive ?? componentTreeType.isActive ?? true,
   };
 
@@ -224,6 +247,15 @@ const mapTreeTypeToApi = (componentTreeType) => {
     if (!isNaN(soilMasterId)) {
       result.soilMasterId = soilMasterId;
     }
+  }
+
+  // Handle imageUrl - convert empty strings to null to avoid validation errors
+  const imageUrl = componentTreeType.ImageUrl ?? componentTreeType.imageUrl;
+  if (imageUrl !== undefined) {
+    // Convert empty string to null (to clear image), otherwise use the trimmed value
+    const trimmedUrl =
+      typeof imageUrl === "string" ? imageUrl.trim() : imageUrl;
+    result.imageUrl = trimmedUrl === "" ? null : trimmedUrl;
   }
 
   if (
@@ -446,14 +478,12 @@ async function deleteSoil(soilId) {
 }
 
 const numberField = () =>
-  z.preprocess(
-    (val) => {
-      if (val === "" || val === null || typeof val === "undefined") return undefined;
-      const parsed = Number(val);
-      return Number.isNaN(parsed) ? undefined : parsed;
-    },
-    z.number().optional(),
-  );
+  z.preprocess((val) => {
+    if (val === "" || val === null || typeof val === "undefined")
+      return undefined;
+    const parsed = Number(val);
+    return Number.isNaN(parsed) ? undefined : parsed;
+  }, z.number().optional());
 
 const varietySchema = z.object({
   VarietyID: z.string().optional(),
@@ -461,41 +491,43 @@ const varietySchema = z.object({
   VarietyDescription: z.string().optional(),
 });
 
-const pestSchema = z.object({
-  name: z.string().optional(),
-  description: z.string().optional(),
-  severity: z.enum(["Low", "Medium", "High"]).optional().or(z.literal("")),
-}).refine(
-  (data) => {
-    const hasName = data.name?.trim();
-    const hasDescription = data.description?.trim();
-    const hasSeverity = data.severity;
-    
-    // Nếu không có gì thì OK (trường trống)
-    if (!hasName && !hasDescription && !hasSeverity) {
+const pestSchema = z
+  .object({
+    name: z.string().optional(),
+    description: z.string().optional(),
+    severity: z.enum(["Low", "Medium", "High"]).optional().or(z.literal("")),
+  })
+  .refine(
+    (data) => {
+      const hasName = data.name?.trim();
+      const hasDescription = data.description?.trim();
+      const hasSeverity = data.severity;
+
+      // Nếu không có gì thì OK (trường trống)
+      if (!hasName && !hasDescription && !hasSeverity) {
+        return true;
+      }
+
+      // Nếu có name hoặc description thì cả hai phải có
+      if (hasName && !hasDescription) {
+        return false;
+      }
+
+      if (hasDescription && !hasName) {
+        return false;
+      }
+
+      // Nếu có cả name và description thì phải có severity
+      if (hasName && hasDescription && !hasSeverity) {
+        return false;
+      }
+
       return true;
+    },
+    {
+      message: "Vui lòng điền đầy đủ thông tin bệnh",
     }
-    
-    // Nếu có name hoặc description thì cả hai phải có
-    if (hasName && !hasDescription) {
-      return false;
-    }
-    
-    if (hasDescription && !hasName) {
-      return false;
-    }
-    
-    // Nếu có cả name và description thì phải có severity
-    if (hasName && hasDescription && !hasSeverity) {
-      return false;
-    }
-    
-    return true;
-  },
-  {
-    message: "Vui lòng điền đầy đủ thông tin bệnh",
-  }
-);
+  );
 
 const formSchema = z
   .object({
@@ -509,10 +541,10 @@ const formSchema = z
     OptimalTemperatureMax: numberField(),
     OptimalHumidityMin: numberField(),
     OptimalHumidityMax: numberField(),
-    DroughtTolerance: z.string().min(1),
-    FloodTolerance: z.string().min(1),
-    FrostTolerance: z.string().min(1),
-    WindTolerance: z.string().min(1),
+    DroughtTolerance: z.string().optional(),
+    FloodTolerance: z.string().optional(),
+    FrostTolerance: z.string().optional(),
+    WindTolerance: z.string().optional(),
     IsActive: z.boolean().default(true),
     CareGuide: z.array(z.string()).default([]),
     Pests: z.array(pestSchema).default([]),
@@ -525,15 +557,17 @@ const formSchema = z
     {
       message: "Nhiệt độ tối đa phải lớn hơn tối thiểu",
       path: ["OptimalTemperatureMax"],
-    },
+    }
   )
   .refine(
     ({ OptimalHumidityMin, OptimalHumidityMax }) =>
-      !OptimalHumidityMin || !OptimalHumidityMax || OptimalHumidityMax > OptimalHumidityMin,
+      !OptimalHumidityMin ||
+      !OptimalHumidityMax ||
+      OptimalHumidityMax > OptimalHumidityMin,
     {
       message: "Độ ẩm tối đa phải lớn hơn tối thiểu",
       path: ["OptimalHumidityMax"],
-    },
+    }
   );
 
 const defaultFormValues = {
@@ -588,16 +622,36 @@ const mapSoilToFormValues = (soil) =>
 
 function ImageDropzone({ value, onChange }) {
   const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const inputRef = React.useRef(null);
 
-  const handleFiles = (fileList) => {
+  const handleFiles = async (fileList) => {
     const file = fileList?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      onChange(reader.result);
-    };
-    reader.readAsDataURL(file);
+
+    // Show preview immediately with object URL
+    const previewUrl = URL.createObjectURL(file);
+    onChange(previewUrl);
+
+    // Upload to server
+    try {
+      setUploading(true);
+      const response = await AdminTreeRepository.uploadTreeTypeImage(file);
+      const uploadedUrl = response?.url || response?.data?.url;
+
+      if (uploadedUrl) {
+        // Replace preview URL with server URL
+        URL.revokeObjectURL(previewUrl); // Clean up preview URL
+        onChange(uploadedUrl);
+      } else {
+        console.error("No URL returned from upload");
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      // Keep the preview URL if upload fails
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleDrop = (event) => {
@@ -610,7 +664,7 @@ function ImageDropzone({ value, onChange }) {
     <div
       className={cn(
         "relative flex items-center gap-4 rounded-2xl border border-dashed bg-slate-50 px-4 py-4 transition-all",
-        isDragging ? "border-emerald-500 bg-emerald-50/40" : "border-slate-200",
+        isDragging ? "border-emerald-500 bg-emerald-50/40" : "border-slate-200"
       )}
       onDragOver={(e) => {
         e.preventDefault();
@@ -630,23 +684,34 @@ function ImageDropzone({ value, onChange }) {
     >
       <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border bg-white">
         {value ? (
-          <img src={value} alt="Tree preview" className="h-full w-full object-cover" />
+          <img
+            src={value}
+            alt="Tree preview"
+            className="h-full w-full object-cover"
+          />
         ) : (
           <ImageIcon className="h-8 w-8 text-slate-300" />
         )}
       </div>
       <div>
-        <p className="text-sm font-semibold text-slate-900">Tải ảnh giống cây</p>
-        <p className="text-xs text-slate-500">
-          Kéo thả hoặc bấm để chọn. Hỗ trợ PNG, JPG (max 2MB).
+        <p className="text-sm font-semibold text-slate-900">
+          Tải ảnh giống cây
         </p>
-        {value && (
+        <p className="text-xs text-slate-500">
+          {uploading
+            ? "Đang tải lên..."
+            : "Kéo thả hoặc bấm để chọn. Hỗ trợ PNG, JPG (max 2MB)."}
+        </p>
+        {value && !uploading && (
           <Button
             size="sm"
             variant="link"
             className="px-0 text-emerald-600"
             onClick={(e) => {
               e.stopPropagation();
+              if (value.startsWith("blob:")) {
+                URL.revokeObjectURL(value);
+              }
               onChange("");
             }}
           >
@@ -707,24 +772,37 @@ function SpecsSummary({ tree }) {
     <div className="flex flex-col gap-2 text-sm text-slate-600">
       <div className="flex items-center gap-2">
         <Thermometer className="h-4 w-4 text-amber-500" />
-        <span className="font-medium">{tree.OptimalTemperatureMin ?? "?"} - {tree.OptimalTemperatureMax ?? "?"}°C</span>
+        <span className="font-medium">
+          {tree.OptimalTemperatureMin ?? "?"} -{" "}
+          {tree.OptimalTemperatureMax ?? "?"}°C
+        </span>
       </div>
       <div className="flex items-center gap-2">
         <Droplets className="h-4 w-4 text-sky-500" />
-        <span className="font-medium">{tree.OptimalHumidityMin ?? "?"} - {tree.OptimalHumidityMax ?? "?"}%</span>
+        <span className="font-medium">
+          {tree.OptimalHumidityMin ?? "?"} - {tree.OptimalHumidityMax ?? "?"}%
+        </span>
       </div>
     </div>
   );
 }
 
-function TreeTable({ trees, soils, onEdit, onDelete, onToggleStatus, onManageVarieties, pagination }) {
+function TreeTable({
+  trees,
+  soils,
+  onEdit,
+  onDelete,
+  onToggleStatus,
+  onManageVarieties,
+  pagination,
+}) {
   const soilLookup = useMemo(
     () =>
       soils.reduce((acc, soil) => {
         acc[soil.SoilMasterID] = soil.SoilName;
         return acc;
       }, {}),
-    [soils],
+    [soils]
   );
 
   return (
@@ -733,17 +811,32 @@ function TreeTable({ trees, soils, onEdit, onDelete, onToggleStatus, onManageVar
         <Table className="text-base">
           <TableHeader className="bg-slate-50 text-base text-slate-600">
             <TableRow>
-              <TableHead className="text-base font-semibold">Loại cây</TableHead>
-              <TableHead className="hidden text-base font-semibold text-center md:table-cell">Đất gợi ý</TableHead>
-              <TableHead className="hidden text-base font-semibold text-center md:table-cell">Giống</TableHead>
-              <TableHead className="hidden text-base font-semibold lg:table-cell">Thông số</TableHead>
-              <TableHead className="text-base font-semibold">Trạng thái</TableHead>
-              <TableHead className="text-right text-base font-semibold">Thao tác</TableHead>
+              <TableHead className="text-base font-semibold">
+                Loại cây
+              </TableHead>
+              <TableHead className="hidden text-base font-semibold text-center md:table-cell">
+                Đất gợi ý
+              </TableHead>
+              <TableHead className="hidden text-base font-semibold text-center md:table-cell">
+                Giống
+              </TableHead>
+              <TableHead className="hidden text-base font-semibold lg:table-cell">
+                Thông số
+              </TableHead>
+              <TableHead className="text-base font-semibold">
+                Trạng thái
+              </TableHead>
+              <TableHead className="text-right text-base font-semibold">
+                Thao tác
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {trees.map((tree) => (
-              <TableRow key={tree.TreeTypeID} className="text-[16px] hover:bg-emerald-50/40">
+              <TableRow
+                key={tree.TreeTypeID}
+                className="text-[16px] hover:bg-emerald-50/40"
+              >
                 <TableCell>
                   <div className="flex gap-4">
                     <img
@@ -753,7 +846,9 @@ function TreeTable({ trees, soils, onEdit, onDelete, onToggleStatus, onManageVar
                     />
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="text-lg font-semibold text-slate-900">{tree.TreeTypeName}</p>
+                        <p className="text-lg font-semibold text-slate-900">
+                          {tree.TreeTypeName}
+                        </p>
                       </div>
                       <p className="text-sm italic text-slate-500 line-clamp-1 md:line-clamp-none">
                         {tree.ScientificName || "—"}
@@ -766,7 +861,10 @@ function TreeTable({ trees, soils, onEdit, onDelete, onToggleStatus, onManageVar
                 </TableCell>
                 <TableCell className="hidden text-center align-middle md:table-cell">
                   <div className="flex justify-center">
-                    <Badge variant="secondary" className="rounded-full bg-amber-50 px-4 py-1 text-sm text-amber-600">
+                    <Badge
+                      variant="secondary"
+                      className="rounded-full bg-amber-50 px-4 py-1 text-sm text-amber-600"
+                    >
                       {soilLookup[tree.SoilMasterID] || "Chưa gán"}
                     </Badge>
                   </div>
@@ -781,7 +879,9 @@ function TreeTable({ trees, soils, onEdit, onDelete, onToggleStatus, onManageVar
                           </Badge>
                         </TooltipTrigger>
                         <TooltipContent className="max-w-xs">
-                          <p className="text-sm font-semibold text-slate-900">Giống hiện có</p>
+                          <p className="text-sm font-semibold text-slate-900">
+                            Giống hiện có
+                          </p>
                           <ul className="mt-2 space-y-1 text-xs text-slate-600">
                             {tree.Varieties.map((item) => (
                               <li key={item.VarietyID}>{item.VarietyName}</li>
@@ -806,7 +906,9 @@ function TreeTable({ trees, soils, onEdit, onDelete, onToggleStatus, onManageVar
                       variant={tree.IsActive ? "default" : "secondary"}
                       className={cn(
                         "rounded-full px-4 py-1 text-sm",
-                        tree.IsActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500",
+                        tree.IsActive
+                          ? "bg-emerald-100 text-emerald-700"
+                          : "bg-slate-100 text-slate-500"
                       )}
                     >
                       {tree.IsActive ? "Active" : "Inactive"}
@@ -848,15 +950,25 @@ function TreeTable({ trees, soils, onEdit, onDelete, onToggleStatus, onManageVar
       {trees.length === 0 && (
         <div className="flex flex-col items-center gap-2 py-12 text-center">
           <Leaf className="h-8 w-8 text-slate-300" />
-          <p className="text-sm text-slate-500">Chưa có loại cây nào trùng khớp bộ lọc.</p>
+          <p className="text-sm text-slate-500">
+            Chưa có loại cây nào trùng khớp bộ lọc.
+          </p>
         </div>
       )}
       {pagination && pagination.totalItems > 0 && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-4 text-sm text-slate-600">
           <p>
             Hiển thị{" "}
-            {Math.min((pagination.page - 1) * pagination.pageSize + 1, pagination.totalItems)}-
-            {Math.min(pagination.page * pagination.pageSize, pagination.totalItems)} trên {pagination.totalItems} loại cây
+            {Math.min(
+              (pagination.page - 1) * pagination.pageSize + 1,
+              pagination.totalItems
+            )}
+            -
+            {Math.min(
+              pagination.page * pagination.pageSize,
+              pagination.totalItems
+            )}{" "}
+            trên {pagination.totalItems} loại cây
           </p>
           <div className="flex items-center gap-2">
             <Button
@@ -919,15 +1031,21 @@ export default function TreeTypeManagement() {
   const [varietyPage, setVarietyPage] = useState(1);
   const [varietySaving, setVarietySaving] = useState(false);
   const [varietyDeleting, setVarietyDeleting] = useState(false);
-  const [varietyDeleteConfirmOpen, setVarietyDeleteConfirmOpen] = useState(false);
-  const [createVarietyOverlayOpen, setCreateVarietyOverlayOpen] = useState(false);
-  const [varietyCreateConfirmOpen, setVarietyCreateConfirmOpen] = useState(false);
+  const [varietyDeleteConfirmOpen, setVarietyDeleteConfirmOpen] =
+    useState(false);
+  const [createVarietyOverlayOpen, setCreateVarietyOverlayOpen] =
+    useState(false);
+  const [varietyCreateConfirmOpen, setVarietyCreateConfirmOpen] =
+    useState(false);
   const [pendingVarietyCreate, setPendingVarietyCreate] = useState(null);
   const [varietyDetailEditMode, setVarietyDetailEditMode] = useState(false);
-  const [varietyUpdateConfirmOpen, setVarietyUpdateConfirmOpen] = useState(false);
+  const [varietyUpdateConfirmOpen, setVarietyUpdateConfirmOpen] =
+    useState(false);
   const [pendingVarietyUpdate, setPendingVarietyUpdate] = useState(null);
-  const [varietyCancelEditConfirmOpen, setVarietyCancelEditConfirmOpen] = useState(false);
-  const [varietyRevertConfirmOpen, setVarietyRevertConfirmOpen] = useState(false);
+  const [varietyCancelEditConfirmOpen, setVarietyCancelEditConfirmOpen] =
+    useState(false);
+  const [varietyRevertConfirmOpen, setVarietyRevertConfirmOpen] =
+    useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -966,7 +1084,7 @@ export default function TreeTypeManagement() {
 
   const selectedSoil = useMemo(
     () => soils.find((soil) => soil.SoilMasterID === selectedSoilId) ?? null,
-    [selectedSoilId, soils],
+    [selectedSoilId, soils]
   );
 
   const filteredSoils = useMemo(() => {
@@ -979,13 +1097,18 @@ export default function TreeTypeManagement() {
     });
   }, [soils, soilSearch]);
 
-  const totalSoilPages = Math.max(1, Math.ceil(filteredSoils.length / SOIL_PAGE_SIZE));
+  const totalSoilPages = Math.max(
+    1,
+    Math.ceil(filteredSoils.length / SOIL_PAGE_SIZE)
+  );
   const paginatedSoils = useMemo(() => {
     const start = (soilPage - 1) * SOIL_PAGE_SIZE;
     return filteredSoils.slice(start, start + SOIL_PAGE_SIZE);
   }, [soilPage, filteredSoils]);
 
-  const soilRangeStart = filteredSoils.length ? (soilPage - 1) * SOIL_PAGE_SIZE + 1 : 0;
+  const soilRangeStart = filteredSoils.length
+    ? (soilPage - 1) * SOIL_PAGE_SIZE + 1
+    : 0;
   const soilRangeEnd = filteredSoils.length
     ? Math.min(filteredSoils.length, soilRangeStart + paginatedSoils.length - 1)
     : 0;
@@ -993,7 +1116,10 @@ export default function TreeTypeManagement() {
 
   const handleRefresh = useCallback(async () => {
     setLoading(true);
-    const [treeData, soilData] = await Promise.all([fetchTreeTypes(), fetchSoils()]);
+    const [treeData, soilData] = await Promise.all([
+      fetchTreeTypes(),
+      fetchSoils(),
+    ]);
     setTrees(treeData);
     setSoils(soilData);
     setSoilPage(1);
@@ -1005,7 +1131,10 @@ export default function TreeTypeManagement() {
   }, [handleRefresh]);
 
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(filteredSoils.length / SOIL_PAGE_SIZE));
+    const totalPages = Math.max(
+      1,
+      Math.ceil(filteredSoils.length / SOIL_PAGE_SIZE)
+    );
     setSoilPage((prev) => Math.min(prev, totalPages));
   }, [filteredSoils]);
 
@@ -1056,9 +1185,14 @@ export default function TreeTypeManagement() {
     return trees.filter((tree) => {
       const searchMatch =
         filters.search.trim().length === 0 ||
-        tree.TreeTypeName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        (tree.Description ?? "").toLowerCase().includes(filters.search.toLowerCase());
-      const soilMatch = filters.soil === "all" || tree.SoilMasterID === filters.soil;
+        tree.TreeTypeName.toLowerCase().includes(
+          filters.search.toLowerCase()
+        ) ||
+        (tree.Description ?? "")
+          .toLowerCase()
+          .includes(filters.search.toLowerCase());
+      const soilMatch =
+        filters.soil === "all" || tree.SoilMasterID === filters.soil;
       const statusMatch =
         filters.status === "all" ||
         (filters.status === "active" ? tree.IsActive : !tree.IsActive);
@@ -1066,7 +1200,10 @@ export default function TreeTypeManagement() {
     });
   }, [trees, filters]);
 
-  const totalTreePages = Math.max(1, Math.ceil(filteredTrees.length / TREE_PAGE_SIZE));
+  const totalTreePages = Math.max(
+    1,
+    Math.ceil(filteredTrees.length / TREE_PAGE_SIZE)
+  );
 
   useEffect(() => {
     setTreePage((prev) => Math.min(prev, totalTreePages));
@@ -1120,7 +1257,7 @@ export default function TreeTypeManagement() {
 
     // Remove empty pests (pests with no name, description, and severity)
     const filteredPests = (values.Pests || []).filter(
-      (pest) => 
+      (pest) =>
         (pest.name?.trim() && pest.name.trim().length > 0) ||
         (pest.description?.trim() && pest.description.trim().length > 0) ||
         pest.severity
@@ -1135,7 +1272,7 @@ export default function TreeTypeManagement() {
     const duplicateTreeName = trees.some(
       (tree) =>
         tree.TreeTypeID !== editingTree?.TreeTypeID &&
-        normalizeText(tree.TreeTypeName ?? "") === normalizeText(trimmedName),
+        normalizeText(tree.TreeTypeName ?? "") === normalizeText(trimmedName)
     );
 
     if (duplicateTreeName) {
@@ -1148,7 +1285,7 @@ export default function TreeTypeManagement() {
 
     // Validate required fields and show errors
     let hasErrors = false;
-    
+
     if (!trimmedName) {
       form.setError("TreeTypeName", {
         type: "manual",
@@ -1156,7 +1293,7 @@ export default function TreeTypeManagement() {
       });
       hasErrors = true;
     }
-    
+
     if (!values.SoilMasterID) {
       form.setError("SoilMasterID", {
         type: "manual",
@@ -1171,7 +1308,7 @@ export default function TreeTypeManagement() {
         const hasName = pest.name?.trim();
         const hasDescription = pest.description?.trim();
         const hasSeverity = pest.severity;
-        
+
         if (hasName && !hasDescription) {
           form.setError(`Pests.${index}.description`, {
             type: "manual",
@@ -1179,7 +1316,7 @@ export default function TreeTypeManagement() {
           });
           hasErrors = true;
         }
-        
+
         if (hasDescription && !hasName) {
           form.setError(`Pests.${index}.name`, {
             type: "manual",
@@ -1187,7 +1324,7 @@ export default function TreeTypeManagement() {
           });
           hasErrors = true;
         }
-        
+
         if (hasName && hasDescription && !hasSeverity) {
           form.setError(`Pests.${index}.severity`, {
             type: "manual",
@@ -1209,7 +1346,11 @@ export default function TreeTypeManagement() {
           ...editingTree,
           ...values,
         });
-        setTrees((prev) => prev.map((tree) => (tree.TreeTypeID === updated.TreeTypeID ? updated : tree)));
+        setTrees((prev) =>
+          prev.map((tree) =>
+            tree.TreeTypeID === updated.TreeTypeID ? updated : tree
+          )
+        );
       } else {
         const created = await createTreeType({
           ...values,
@@ -1226,7 +1367,8 @@ export default function TreeTypeManagement() {
   const handlePrepareCreateSoil = (values) => {
     const trimmedName = values.SoilName?.trim() ?? "";
     const duplicateSoilName = soils.some(
-      (soil) => normalizeText(soil.SoilName ?? "") === normalizeText(trimmedName),
+      (soil) =>
+        normalizeText(soil.SoilName ?? "") === normalizeText(trimmedName)
     );
 
     if (duplicateSoilName) {
@@ -1247,7 +1389,10 @@ export default function TreeTypeManagement() {
     setSoilSaving(true);
     try {
       const created = await createSoil(payload);
-      setSoils((prev) => [created, ...prev.filter((soil) => soil.SoilMasterID !== created.SoilMasterID)]);
+      setSoils((prev) => [
+        created,
+        ...prev.filter((soil) => soil.SoilMasterID !== created.SoilMasterID),
+      ]);
       setSoilPage(1);
       form.setValue("SoilMasterID", created.SoilMasterID);
       setCreateSoilOverlayOpen(false);
@@ -1300,7 +1445,7 @@ export default function TreeTypeManagement() {
     const duplicateSoilName = soils.some(
       (soil) =>
         soil.SoilMasterID !== selectedSoilId &&
-        normalizeText(soil.SoilName ?? "") === normalizeText(trimmedName),
+        normalizeText(soil.SoilName ?? "") === normalizeText(trimmedName)
     );
 
     if (duplicateSoilName) {
@@ -1323,7 +1468,7 @@ export default function TreeTypeManagement() {
     const duplicateSoilName = soils.some(
       (soil) =>
         soil.SoilMasterID !== selectedSoilId &&
-        normalizeText(soil.SoilName ?? "") === normalizeText(trimmedName),
+        normalizeText(soil.SoilName ?? "") === normalizeText(trimmedName)
     );
 
     if (duplicateSoilName) {
@@ -1340,7 +1485,9 @@ export default function TreeTypeManagement() {
     try {
       const updated = await updateSoil(selectedSoilId, values);
       setSoils((prev) =>
-        prev.map((soil) => (soil.SoilMasterID === updated.SoilMasterID ? updated : soil)),
+        prev.map((soil) =>
+          soil.SoilMasterID === updated.SoilMasterID ? updated : soil
+        )
       );
       soilDetailForm.reset(mapSoilToFormValues(updated));
       setPendingSoilUpdate(null);
@@ -1357,7 +1504,9 @@ export default function TreeTypeManagement() {
     try {
       await deleteSoil(selectedSoilId);
       setSoils((prev) => {
-        const next = prev.filter((soil) => soil.SoilMasterID !== selectedSoilId);
+        const next = prev.filter(
+          (soil) => soil.SoilMasterID !== selectedSoilId
+        );
         setSelectedSoilId(next[0]?.SoilMasterID ?? null);
         return next;
       });
@@ -1376,14 +1525,22 @@ export default function TreeTypeManagement() {
   };
 
   const handleToggleStatus = async (tree) => {
-    const updated = await updateTreeType(tree.TreeTypeID, { IsActive: !tree.IsActive });
-    setTrees((prev) => prev.map((item) => (item.TreeTypeID === updated.TreeTypeID ? updated : item)));
+    const updated = await updateTreeType(tree.TreeTypeID, {
+      IsActive: !tree.IsActive,
+    });
+    setTrees((prev) =>
+      prev.map((item) =>
+        item.TreeTypeID === updated.TreeTypeID ? updated : item
+      )
+    );
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
     await deleteTreeType(deleteTarget.TreeTypeID);
-    setTrees((prev) => prev.filter((tree) => tree.TreeTypeID !== deleteTarget.TreeTypeID));
+    setTrees((prev) =>
+      prev.filter((tree) => tree.TreeTypeID !== deleteTarget.TreeTypeID)
+    );
     setDeleteTarget(null);
   };
 
@@ -1418,7 +1575,9 @@ export default function TreeTypeManagement() {
       VarietyName: "",
       VarietyDescription: "",
     });
-    varietyDetailForm.reset(mapVarietyToFormValues(tree.Varieties?.[0] ?? null));
+    varietyDetailForm.reset(
+      mapVarietyToFormValues(tree.Varieties?.[0] ?? null)
+    );
     setVarietyDialogOpen(true);
   };
 
@@ -1434,7 +1593,10 @@ export default function TreeTypeManagement() {
     });
   }, [activeVarietyTree, varietySearch]);
 
-  const totalVarietyPages = Math.max(1, Math.ceil(filteredVarieties.length / VARIETY_PAGE_SIZE));
+  const totalVarietyPages = Math.max(
+    1,
+    Math.ceil(filteredVarieties.length / VARIETY_PAGE_SIZE)
+  );
 
   const paginatedVarieties = useMemo(() => {
     if (!filteredVarieties.length) return [];
@@ -1453,7 +1615,10 @@ export default function TreeTypeManagement() {
       }
       return;
     }
-    const maxPage = Math.max(1, Math.ceil(filteredVarieties.length / VARIETY_PAGE_SIZE));
+    const maxPage = Math.max(
+      1,
+      Math.ceil(filteredVarieties.length / VARIETY_PAGE_SIZE)
+    );
     if (varietyPage > maxPage) {
       setVarietyPage(maxPage);
     }
@@ -1463,13 +1628,21 @@ export default function TreeTypeManagement() {
     ? (varietyPage - 1) * VARIETY_PAGE_SIZE + 1
     : 0;
   const varietyRangeEnd = filteredVarieties.length
-    ? Math.min(filteredVarieties.length, varietyRangeStart + paginatedVarieties.length - 1)
+    ? Math.min(
+        filteredVarieties.length,
+        varietyRangeStart + paginatedVarieties.length - 1
+      )
     : 0;
-  const shouldShowVarietyPagination = filteredVarieties.length > VARIETY_PAGE_SIZE;
+  const shouldShowVarietyPagination =
+    filteredVarieties.length > VARIETY_PAGE_SIZE;
 
   const selectedVariety = useMemo(() => {
     if (!activeVarietyTree) return null;
-    return activeVarietyTree.Varieties?.find((item) => item.VarietyID === selectedVarietyId) ?? null;
+    return (
+      activeVarietyTree.Varieties?.find(
+        (item) => item.VarietyID === selectedVarietyId
+      ) ?? null
+    );
   }, [activeVarietyTree, selectedVarietyId]);
 
   const resetVarietyDetailToSelected = () => {
@@ -1531,7 +1704,13 @@ export default function TreeTypeManagement() {
         VarietyDescription: "",
       });
     }
-  }, [varietyDialogOpen, activeVarietyTree, selectedVarietyId, varietyDetailForm, varietyForm]);
+  }, [
+    varietyDialogOpen,
+    activeVarietyTree,
+    selectedVarietyId,
+    varietyDetailForm,
+    varietyForm,
+  ]);
 
   const handleSelectVariety = (varietyId) => {
     setSelectedVarietyId(varietyId);
@@ -1540,7 +1719,9 @@ export default function TreeTypeManagement() {
 
   const syncUpdatedTreeVarieties = (updatedTree) => {
     setTrees((prev) =>
-      prev.map((tree) => (tree.TreeTypeID === updatedTree.TreeTypeID ? updatedTree : tree)),
+      prev.map((tree) =>
+        tree.TreeTypeID === updatedTree.TreeTypeID ? updatedTree : tree
+      )
     );
     setActiveVarietyTree(updatedTree);
   };
@@ -1550,7 +1731,8 @@ export default function TreeTypeManagement() {
 
     const trimmedName = values.VarietyName?.trim() ?? "";
     const duplicateVarietyName = (activeVarietyTree.Varieties || []).some(
-      (item) => normalizeText(item.VarietyName ?? "") === normalizeText(trimmedName),
+      (item) =>
+        normalizeText(item.VarietyName ?? "") === normalizeText(trimmedName)
     );
 
     if (duplicateVarietyName) {
@@ -1590,7 +1772,7 @@ export default function TreeTypeManagement() {
         VarietyDescription: "",
       });
       setSelectedVarietyId(
-        updated.Varieties?.[updated.Varieties.length - 1]?.VarietyID ?? null,
+        updated.Varieties?.[updated.Varieties.length - 1]?.VarietyID ?? null
       );
       setVarietyDetailEditMode(false);
       setCreateVarietyOverlayOpen(false);
@@ -1613,7 +1795,7 @@ export default function TreeTypeManagement() {
               VarietyName: values.VarietyName,
               VarietyDescription: values.VarietyDescription ?? "",
             }
-          : item,
+          : item
       );
       const updated = await updateTreeType(activeVarietyTree.TreeTypeID, {
         ...activeVarietyTree,
@@ -1635,7 +1817,7 @@ export default function TreeTypeManagement() {
     const duplicateVarietyName = (activeVarietyTree?.Varieties || []).some(
       (item) =>
         item.VarietyID !== selectedVarietyId &&
-        normalizeText(item.VarietyName ?? "") === normalizeText(trimmedName),
+        normalizeText(item.VarietyName ?? "") === normalizeText(trimmedName)
     );
 
     if (duplicateVarietyName) {
@@ -1674,7 +1856,7 @@ export default function TreeTypeManagement() {
     setVarietyDeleting(true);
     try {
       const newList = (activeVarietyTree.Varieties || []).filter(
-        (item) => item.VarietyID !== selectedVarietyId,
+        (item) => item.VarietyID !== selectedVarietyId
       );
       const updated = await updateTreeType(activeVarietyTree.TreeTypeID, {
         ...activeVarietyTree,
@@ -1698,7 +1880,6 @@ export default function TreeTypeManagement() {
           <DialogTitle>
             {editingTree ? "Chỉnh sửa loại cây" : "Thêm loại cây mới"}
           </DialogTitle>
-          
         </DialogHeader>
         <Separator className="my-4" />
         <Form {...form}>
@@ -1709,249 +1890,112 @@ export default function TreeTypeManagement() {
             <div className="grid grid-cols-[1fr_400px] gap-6 flex-1 min-h-0 overflow-hidden">
               {/* Cột trái: Form chỉnh sửa/thêm loại cây */}
               <ScrollArea className="h-full pr-4">
-              <section className="space-y-4">
-                <p className="inline-flex items-center rounded-full bg-emerald-600/90 px-4 py-1 text-sm font-semibold uppercase tracking-[0.3em] text-white">
-                  Thông tin chung
-                </p>
-                <FormField
-                  control={form.control}
-                  name="ImageUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Ảnh đại diện</FormLabel>
-                      <FormControl>
-                        <ImageDropzone value={field.value} onChange={field.onChange} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid gap-4 sm:grid-cols-2">
+                <section className="space-y-4">
+                  <p className="inline-flex items-center rounded-full bg-emerald-600/90 px-4 py-1 text-sm font-semibold uppercase tracking-[0.3em] text-white">
+                    Thông tin chung
+                  </p>
                   <FormField
                     control={form.control}
-                    name="TreeTypeName"
-                    render={({ field, fieldState }) => (
-                      <FormItem>
-                        <FormLabel>Tên loại cây</FormLabel>
-                        <FormControl>
-                          <Input
-                            placeholder="Ví dụ: Xoài,Bưởi,Thanh Long,.."
-                            {...field}
-                            className={cn(
-                              form.formState.isSubmitted && fieldState.error && "border-red-500 focus-visible:ring-red-500"
-                            )}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="ScientificName"
+                    name="ImageUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Tên khoa học</FormLabel>
+                        <FormLabel>Ảnh đại diện</FormLabel>
                         <FormControl>
-                          <Input placeholder="Ví dụ: Mangifera indica" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="AverageLifespanYears"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tuổi thọ trung bình (năm)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            placeholder="Ví dụ: 25"
-                            value={field.value ?? ""}
-                            onChange={(e) => field.onChange(e.target.value)}
-                            min={0}
+                          <ImageDropzone
+                            value={field.value}
+                            onChange={field.onChange}
                           />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={form.control}
-                    name="SoilMasterID"
-                    render={({ field, fieldState }) => (
-                      <FormItem>
-                        <FormLabel>Loại đất phù hợp</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger 
-                              className={cn(
-                                "h-12 w-full",
-                                form.formState.isSubmitted && fieldState.error && "border-red-500 focus-visible:ring-red-500"
-                              )}
-                            >
-                              <SelectValue placeholder="Chọn loại đất" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {soils.map((soil) => (
-                              <SelectItem key={soil.SoilMasterID} value={soil.SoilMasterID}>
-                                {soil.SoilName}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="Description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Mô tả</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Thông tin mô tả, lợi thế, quy trình canh tác..."
-                          className="min-h-[120px]"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </section>
-
-              <section className="space-y-4 mt-6">
-                <p className="inline-flex items-center rounded-full bg-emerald-600/90 px-4 py-1 text-sm font-semibold uppercase tracking-[0.3em] text-white">
-                  Thông số môi trường
-                </p>
-                <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <FormField
-                    control={form.control}
-                    name="OptimalTemperatureMin"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <FormLabel className={environmentLabelClass}>Nhiệt độ tối thiểu (°C)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            value={field.value ?? ""}
-                            onChange={(e) => field.onChange(e.target.value)}
-                            className="h-12"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="OptimalTemperatureMax"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <FormLabel className={environmentLabelClass}>Nhiệt độ tối đa (°C)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            value={field.value ?? ""}
-                            onChange={(e) => field.onChange(e.target.value)}
-                            className="h-12"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="OptimalHumidityMin"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <FormLabel className={environmentLabelClass}>Độ ẩm tối thiểu (%)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            value={field.value ?? ""}
-                            onChange={(e) => field.onChange(e.target.value)}
-                            className="h-12"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="OptimalHumidityMax"
-                    render={({ field }) => (
-                      <FormItem className="space-y-2">
-                        <FormLabel className={environmentLabelClass}>Độ ẩm tối đa (%)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            value={field.value ?? ""}
-                            onChange={(e) => field.onChange(e.target.value)}
-                            className="h-12"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  {[
-                    "DroughtTolerance",
-                    "FloodTolerance",
-                    "FrostTolerance",
-                    "WindTolerance",
-                  ].map((fieldName) => (
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <FormField
-                      key={fieldName}
                       control={form.control}
-                      name={fieldName}
+                      name="TreeTypeName"
+                      render={({ field, fieldState }) => (
+                        <FormItem>
+                          <FormLabel>Tên loại cây</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Ví dụ: Xoài,Bưởi,Thanh Long,.."
+                              {...field}
+                              className={cn(
+                                form.formState.isSubmitted &&
+                                  fieldState.error &&
+                                  "border-red-500 focus-visible:ring-red-500"
+                              )}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="ScientificName"
                       render={({ field }) => (
-                        <FormItem className="space-y-2">
-                          <FormLabel className={environmentLabelClass}>
-                            {fieldName === "DroughtTolerance" && "Khả năng chịu hạn"}
-                            {fieldName === "FloodTolerance" && "Khả năng chịu ngập"}
-                            {fieldName === "FrostTolerance" &&
-                              "Khả năng chịu sương giá"}
-                            {fieldName === "WindTolerance" &&
-                              "Khả năng chịu gió mạnh"}
-                          </FormLabel>
+                        <FormItem>
+                          <FormLabel>Tên khoa học</FormLabel>
+                          <FormControl>
+                            <Input
+                              placeholder="Ví dụ: Mangifera indica"
+                              {...field}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="AverageLifespanYears"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Tuổi thọ trung bình (năm)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Ví dụ: 25"
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value)}
+                              min={0}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="SoilMasterID"
+                      render={({ field, fieldState }) => (
+                        <FormItem>
+                          <FormLabel>Loại đất phù hợp</FormLabel>
                           <Select
                             onValueChange={field.onChange}
-                            value={field.value || ""}
+                            value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger 
+                              <SelectTrigger
                                 className={cn(
-                                  "h-12",
-                                  field.value && toleranceLevels.find(t => t.value === field.value)?.color,
-                                  form.formState.isSubmitted && form.formState.errors[fieldName] && "border-red-500 focus-visible:ring-red-500"
+                                  "h-12 w-full",
+                                  form.formState.isSubmitted &&
+                                    fieldState.error &&
+                                    "border-red-500 focus-visible:ring-red-500"
                                 )}
                               >
-                                <SelectValue placeholder="Chọn mức độ" />
+                                <SelectValue placeholder="Chọn loại đất" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {toleranceLevels.map((option) => (
+                              {soils.map((soil) => (
                                 <SelectItem
-                                  key={option.value}
-                                  value={option.value}
-                                  className={cn(
-                                    "focus:bg-opacity-50",
-                                    option.color
-                                  )}
+                                  key={soil.SoilMasterID}
+                                  value={soil.SoilMasterID}
                                 >
-                                  {option.label}
+                                  {soil.SoilName}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -1960,9 +2004,177 @@ export default function TreeTypeManagement() {
                         </FormItem>
                       )}
                     />
-                  ))}
-                </div>
-              </section>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="Description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Mô tả</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Thông tin mô tả, lợi thế, quy trình canh tác..."
+                            className="min-h-[120px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </section>
+
+                <section className="space-y-4 mt-6">
+                  <p className="inline-flex items-center rounded-full bg-emerald-600/90 px-4 py-1 text-sm font-semibold uppercase tracking-[0.3em] text-white">
+                    Thông số môi trường
+                  </p>
+                  <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <FormField
+                      control={form.control}
+                      name="OptimalTemperatureMin"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className={environmentLabelClass}>
+                            Nhiệt độ tối thiểu (°C)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value)}
+                              className="h-12"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="OptimalTemperatureMax"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className={environmentLabelClass}>
+                            Nhiệt độ tối đa (°C)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value)}
+                              className="h-12"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="OptimalHumidityMin"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className={environmentLabelClass}>
+                            Độ ẩm tối thiểu (%)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value)}
+                              className="h-12"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="OptimalHumidityMax"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2">
+                          <FormLabel className={environmentLabelClass}>
+                            Độ ẩm tối đa (%)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              value={field.value ?? ""}
+                              onChange={(e) => field.onChange(e.target.value)}
+                              className="h-12"
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <div className="grid items-start gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {[
+                      "DroughtTolerance",
+                      "FloodTolerance",
+                      "FrostTolerance",
+                      "WindTolerance",
+                    ].map((fieldName) => (
+                      <FormField
+                        key={fieldName}
+                        control={form.control}
+                        name={fieldName}
+                        render={({ field }) => (
+                          <FormItem className="space-y-2">
+                            <FormLabel className={environmentLabelClass}>
+                              {fieldName === "DroughtTolerance" &&
+                                "Khả năng chịu hạn"}
+                              {fieldName === "FloodTolerance" &&
+                                "Khả năng chịu ngập"}
+                              {fieldName === "FrostTolerance" &&
+                                "Khả năng chịu sương giá"}
+                              {fieldName === "WindTolerance" &&
+                                "Khả năng chịu gió mạnh"}
+                            </FormLabel>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger
+                                  className={cn(
+                                    "h-12",
+                                    field.value &&
+                                      toleranceLevels.find(
+                                        (t) => t.value === field.value
+                                      )?.color,
+                                    form.formState.isSubmitted &&
+                                      form.formState.errors[fieldName] &&
+                                      "border-red-500 focus-visible:ring-red-500"
+                                  )}
+                                >
+                                  <SelectValue placeholder="Chọn mức độ" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {toleranceLevels.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                    className={cn(
+                                      "focus:bg-opacity-50",
+                                      option.color
+                                    )}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ))}
+                  </div>
+                </section>
               </ScrollArea>
 
               {/* Cột phải: Hướng dẫn chăm sóc và Bệnh thường gặp */}
@@ -2011,10 +2223,14 @@ export default function TreeTypeManagement() {
                                   </div>
                                   <div className="flex-1 space-y-2">
                                     <Textarea
-                                      placeholder={`Bước ${index + 1}: Mô tả hướng dẫn chăm sóc...`}
+                                      placeholder={`Bước ${
+                                        index + 1
+                                      }: Mô tả hướng dẫn chăm sóc...`}
                                       value={step}
                                       onChange={(e) => {
-                                        const newSteps = [...(field.value || [])];
+                                        const newSteps = [
+                                          ...(field.value || []),
+                                        ];
                                         newSteps[index] = e.target.value;
                                         field.onChange(newSteps);
                                       }}
@@ -2027,9 +2243,9 @@ export default function TreeTypeManagement() {
                                     variant="ghost"
                                     className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
                                     onClick={() => {
-                                      const newSteps = (field.value || []).filter(
-                                        (_, i) => i !== index
-                                      );
+                                      const newSteps = (
+                                        field.value || []
+                                      ).filter((_, i) => i !== index);
                                       field.onChange(newSteps);
                                     }}
                                   >
@@ -2091,12 +2307,26 @@ export default function TreeTypeManagement() {
                           <FormControl>
                             <div className="space-y-3 pb-4">
                               {(field.value || []).map((pest, index) => {
-                                const nameError = form.formState.isSubmitted ? form.formState.errors?.Pests?.[index]?.name : null;
-                                const descriptionError = form.formState.isSubmitted ? form.formState.errors?.Pests?.[index]?.description : null;
-                                const severityError = form.formState.isSubmitted ? form.formState.errors?.Pests?.[index]?.severity : null;
-                                const hasError = nameError || descriptionError || severityError;
-                                const severityColor = pest.severity ? severityColors[pest.severity] : null;
-                                
+                                const nameError = form.formState.isSubmitted
+                                  ? form.formState.errors?.Pests?.[index]?.name
+                                  : null;
+                                const descriptionError = form.formState
+                                  .isSubmitted
+                                  ? form.formState.errors?.Pests?.[index]
+                                      ?.description
+                                  : null;
+                                const severityError = form.formState.isSubmitted
+                                  ? form.formState.errors?.Pests?.[index]
+                                      ?.severity
+                                  : null;
+                                const hasError =
+                                  nameError ||
+                                  descriptionError ||
+                                  severityError;
+                                const severityColor = pest.severity
+                                  ? severityColors[pest.severity]
+                                  : null;
+
                                 return (
                                   <div
                                     key={index}
@@ -2107,115 +2337,132 @@ export default function TreeTypeManagement() {
                                         : "border-slate-200"
                                     )}
                                   >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="flex-1 space-y-2">
-                                      <div>
-                                        <Input
-                                          placeholder="Tên bệnh..."
-                                          value={pest.name || ""}
-                                          onChange={(e) => {
-                                            const newPests = [
-                                              ...(field.value || []),
-                                            ];
-                                            newPests[index] = {
-                                              ...newPests[index],
-                                              name: e.target.value,
-                                            };
-                                            field.onChange(newPests);
-                                          }}
-                                          className={cn(
-                                            "h-9",
-                                            nameError && "border-red-500 focus-visible:ring-red-500"
-                                          )}
-                                        />
-                                        {nameError && (
-                                          <p className="text-xs text-red-600 mt-1">
-                                            {nameError.message}
-                                          </p>
-                                        )}
-                                      </div>
-                                      <div>
-                                        <Textarea
-                                          placeholder="Mô tả bệnh và cách phòng trừ..."
-                                          value={pest.description || ""}
-                                          onChange={(e) => {
-                                            const newPests = [
-                                              ...(field.value || []),
-                                            ];
-                                            newPests[index] = {
-                                              ...newPests[index],
-                                              description: e.target.value,
-                                            };
-                                            field.onChange(newPests);
-                                          }}
-                                          className={cn(
-                                            "min-h-[60px] text-sm",
-                                            descriptionError && "border-red-500 focus-visible:ring-red-500"
-                                          )}
-                                        />
-                                        {descriptionError && (
-                                          <p className="text-xs text-red-600 mt-1">
-                                            {descriptionError.message}
-                                          </p>
-                                        )}
-                                      </div>
-                                      <div>
-                                        <Select
-                                          value={pest.severity || ""}
-                                          onValueChange={(value) => {
-                                            const newPests = [
-                                              ...(field.value || []),
-                                            ];
-                                            newPests[index] = {
-                                              ...newPests[index],
-                                              severity: value,
-                                            };
-                                            field.onChange(newPests);
-                                          }}
-                                        >
-                                          <SelectTrigger 
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1 space-y-2">
+                                        <div>
+                                          <Input
+                                            placeholder="Tên bệnh..."
+                                            value={pest.name || ""}
+                                            onChange={(e) => {
+                                              const newPests = [
+                                                ...(field.value || []),
+                                              ];
+                                              newPests[index] = {
+                                                ...newPests[index],
+                                                name: e.target.value,
+                                              };
+                                              field.onChange(newPests);
+                                            }}
                                             className={cn(
                                               "h-9",
-                                              severityError && "border-red-500 focus-visible:ring-red-500",
-                                              severityColor && cn(severityColor.bg, severityColor.text, severityColor.border)
+                                              nameError &&
+                                                "border-red-500 focus-visible:ring-red-500"
                                             )}
+                                          />
+                                          {nameError && (
+                                            <p className="text-xs text-red-600 mt-1">
+                                              {nameError.message}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <div>
+                                          <Textarea
+                                            placeholder="Mô tả bệnh và cách phòng trừ..."
+                                            value={pest.description || ""}
+                                            onChange={(e) => {
+                                              const newPests = [
+                                                ...(field.value || []),
+                                              ];
+                                              newPests[index] = {
+                                                ...newPests[index],
+                                                description: e.target.value,
+                                              };
+                                              field.onChange(newPests);
+                                            }}
+                                            className={cn(
+                                              "min-h-[60px] text-sm",
+                                              descriptionError &&
+                                                "border-red-500 focus-visible:ring-red-500"
+                                            )}
+                                          />
+                                          {descriptionError && (
+                                            <p className="text-xs text-red-600 mt-1">
+                                              {descriptionError.message}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <div>
+                                          <Select
+                                            value={pest.severity || ""}
+                                            onValueChange={(value) => {
+                                              const newPests = [
+                                                ...(field.value || []),
+                                              ];
+                                              newPests[index] = {
+                                                ...newPests[index],
+                                                severity: value,
+                                              };
+                                              field.onChange(newPests);
+                                            }}
                                           >
-                                            <SelectValue placeholder="Chọn mức độ" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            <SelectItem value="High" className="text-red-700 focus:bg-red-50">
-                                              Cao
-                                            </SelectItem>
-                                            <SelectItem value="Medium" className="text-orange-700 focus:bg-orange-50">
-                                              Trung bình
-                                            </SelectItem>
-                                            <SelectItem value="Low" className="text-yellow-700 focus:bg-yellow-50">
-                                              Thấp
-                                            </SelectItem>
-                                          </SelectContent>
-                                        </Select>
-                                        {severityError && (
-                                          <p className="text-xs text-red-600 mt-1">
-                                            {severityError.message}
-                                          </p>
-                                        )}
+                                            <SelectTrigger
+                                              className={cn(
+                                                "h-9",
+                                                severityError &&
+                                                  "border-red-500 focus-visible:ring-red-500",
+                                                severityColor &&
+                                                  cn(
+                                                    severityColor.bg,
+                                                    severityColor.text,
+                                                    severityColor.border
+                                                  )
+                                              )}
+                                            >
+                                              <SelectValue placeholder="Chọn mức độ" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem
+                                                value="High"
+                                                className="text-red-700 focus:bg-red-50"
+                                              >
+                                                Cao
+                                              </SelectItem>
+                                              <SelectItem
+                                                value="Medium"
+                                                className="text-orange-700 focus:bg-orange-50"
+                                              >
+                                                Trung bình
+                                              </SelectItem>
+                                              <SelectItem
+                                                value="Low"
+                                                className="text-yellow-700 focus:bg-yellow-50"
+                                              >
+                                                Thấp
+                                              </SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                          {severityError && (
+                                            <p className="text-xs text-red-600 mt-1">
+                                              {severityError.message}
+                                            </p>
+                                          )}
+                                        </div>
                                       </div>
+                                      <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                                        onClick={() => {
+                                          const newPests = (
+                                            field.value || []
+                                          ).filter((_, i) => i !== index);
+                                          field.onChange(newPests);
+                                        }}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
                                     </div>
-                                    <Button
-                                      type="button"
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
-                                      onClick={() => {
-                                        const newPests = (field.value || []).filter(
-                                          (_, i) => i !== index
-                                        );
-                                        field.onChange(newPests);
-                                      }}
-                                    >
-                                      <X className="h-4 w-4" />
-                                    </Button>
-                                  </div>
                                   </div>
                                 );
                               })}
@@ -2265,13 +2512,13 @@ export default function TreeTypeManagement() {
         <DialogHeader>
           <DialogTitle>Quản lý loại đất</DialogTitle>
           <DialogDescription>
-            Xem danh sách loại đất, chỉnh sửa thông tin chi tiết và bổ sung loại đất mới.
+            Xem danh sách loại đất, chỉnh sửa thông tin chi tiết và bổ sung loại
+            đất mới.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-           
             <div className="flex w-full flex-col gap-2 sm:max-w-md sm:flex-row sm:items-center">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -2282,7 +2529,9 @@ export default function TreeTypeManagement() {
                   className="pl-9"
                 />
               </div>
-              <Button onClick={() => setCreateSoilOverlayOpen(true)}>Thêm đất</Button>
+              <Button onClick={() => setCreateSoilOverlayOpen(true)}>
+                Thêm đất
+              </Button>
             </div>
           </div>
 
@@ -2294,7 +2543,8 @@ export default function TreeTypeManagement() {
                     {soils.length === 0 ? (
                       <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
                         <Layers className="h-5 w-5 text-emerald-300" />
-                        Chưa có loại đất nào. Bấm &quot;Thêm đất&quot; để bắt đầu.
+                        Chưa có loại đất nào. Bấm &quot;Thêm đất&quot; để bắt
+                        đầu.
                       </div>
                     ) : filteredSoils.length === 0 ? (
                       <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
@@ -2312,7 +2562,7 @@ export default function TreeTypeManagement() {
                               "group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
                               isActive
                                 ? "border-emerald-500 shadow-sm shadow-emerald-100"
-                                : "border-slate-200 hover:border-emerald-200",
+                                : "border-slate-200 hover:border-emerald-200"
                             )}
                             onClick={() => handleSelectSoil(soil.SoilMasterID)}
                             onKeyDown={(event) => {
@@ -2331,7 +2581,9 @@ export default function TreeTypeManagement() {
                               <p className="text-sm font-semibold leading-snug text-slate-900 line-clamp-2">
                                 {soil.SoilName}
                               </p>
-                              <p className="text-xs text-slate-500">{soil.SoilMasterID}</p>
+                              <p className="text-xs text-slate-500">
+                                {soil.SoilMasterID}
+                              </p>
                             </div>
                             <Badge
                               variant="outline"
@@ -2339,7 +2591,7 @@ export default function TreeTypeManagement() {
                                 "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide",
                                 isActive
                                   ? "border-emerald-200 bg-emerald-50 text-emerald-600"
-                                  : "border-slate-300 bg-white text-slate-600",
+                                  : "border-slate-300 bg-white text-slate-600"
                               )}
                             >
                               {isActive ? "Đang chọn" : "Chọn"}
@@ -2358,7 +2610,9 @@ export default function TreeTypeManagement() {
                           size="sm"
                           variant="outline"
                           className="h-8 rounded-full px-3 text-xs"
-                          onClick={() => setSoilPage((prev) => Math.max(1, prev - 1))}
+                          onClick={() =>
+                            setSoilPage((prev) => Math.max(1, prev - 1))
+                          }
                           disabled={soilPage === 1}
                         >
                           Trước
@@ -2371,7 +2625,9 @@ export default function TreeTypeManagement() {
                           variant="outline"
                           className="h-8 rounded-full px-3 text-xs"
                           onClick={() =>
-                            setSoilPage((prev) => Math.min(totalSoilPages, prev + 1))
+                            setSoilPage((prev) =>
+                              Math.min(totalSoilPages, prev + 1)
+                            )
                           }
                           disabled={soilPage === totalSoilPages}
                         >
@@ -2391,13 +2647,19 @@ export default function TreeTypeManagement() {
                     <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                       {selectedSoil.SoilMasterID}
                     </p>
-                    <h3 className="text-xl font-semibold text-slate-900">{selectedSoil.SoilName}</h3>
-                    <p className="text-sm text-slate-500">Cập nhật thông tin chi tiết cho loại đất này.</p>
+                    <h3 className="text-xl font-semibold text-slate-900">
+                      {selectedSoil.SoilName}
+                    </h3>
+                    <p className="text-sm text-slate-500">
+                      Cập nhật thông tin chi tiết cho loại đất này.
+                    </p>
                   </div>
                   <Form {...soilDetailForm}>
                     <form
                       className="space-y-4"
-                      onSubmit={soilDetailForm.handleSubmit(handlePrepareUpdateSoil)}
+                      onSubmit={soilDetailForm.handleSubmit(
+                        handlePrepareUpdateSoil
+                      )}
                     >
                       <FormField
                         control={soilDetailForm.control}
@@ -2408,7 +2670,9 @@ export default function TreeTypeManagement() {
                             <FormControl>
                               <Input
                                 placeholder="Ví dụ: Đất phù sa ngọt"
-                                disabled={!soilDetailEditMode || soilDetailSaving}
+                                disabled={
+                                  !soilDetailEditMode || soilDetailSaving
+                                }
                                 {...field}
                               />
                             </FormControl>
@@ -2426,7 +2690,9 @@ export default function TreeTypeManagement() {
                               <FormControl>
                                 <Input
                                   placeholder="Thịt nhẹ, cát pha..."
-                                  disabled={!soilDetailEditMode || soilDetailSaving}
+                                  disabled={
+                                    !soilDetailEditMode || soilDetailSaving
+                                  }
                                   {...field}
                                 />
                               </FormControl>
@@ -2443,7 +2709,9 @@ export default function TreeTypeManagement() {
                               <FormControl>
                                 <Input
                                   placeholder="Tốt/Trung bình/Kém"
-                                  disabled={!soilDetailEditMode || soilDetailSaving}
+                                  disabled={
+                                    !soilDetailEditMode || soilDetailSaving
+                                  }
                                   {...field}
                                 />
                               </FormControl>
@@ -2463,9 +2731,13 @@ export default function TreeTypeManagement() {
                                 <Input
                                   type="number"
                                   step="0.1"
-                                  disabled={!soilDetailEditMode || soilDetailSaving}
+                                  disabled={
+                                    !soilDetailEditMode || soilDetailSaving
+                                  }
                                   value={field.value ?? ""}
-                                  onChange={(e) => field.onChange(e.target.value)}
+                                  onChange={(e) =>
+                                    field.onChange(e.target.value)
+                                  }
                                   placeholder="Ví dụ: 2.5"
                                 />
                               </FormControl>
@@ -2483,9 +2755,13 @@ export default function TreeTypeManagement() {
                                 <Input
                                   type="number"
                                   step="0.1"
-                                  disabled={!soilDetailEditMode || soilDetailSaving}
+                                  disabled={
+                                    !soilDetailEditMode || soilDetailSaving
+                                  }
                                   value={field.value ?? ""}
-                                  onChange={(e) => field.onChange(e.target.value)}
+                                  onChange={(e) =>
+                                    field.onChange(e.target.value)
+                                  }
                                   placeholder="Ví dụ: 1.2"
                                 />
                               </FormControl>
@@ -2503,7 +2779,9 @@ export default function TreeTypeManagement() {
                             <FormControl>
                               <Textarea
                                 placeholder="Ghi chú thêm..."
-                                disabled={!soilDetailEditMode || soilDetailSaving}
+                                disabled={
+                                  !soilDetailEditMode || soilDetailSaving
+                                }
                                 {...field}
                               />
                             </FormControl>
@@ -2535,7 +2813,11 @@ export default function TreeTypeManagement() {
                         </div>
                       ) : (
                         <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
-                          <Button type="button" onClick={handleStartEditSoil} disabled={!selectedSoil}>
+                          <Button
+                            type="button"
+                            onClick={handleStartEditSoil}
+                            disabled={!selectedSoil}
+                          >
                             Chỉnh sửa
                           </Button>
                         </div>
@@ -2574,7 +2856,8 @@ export default function TreeTypeManagement() {
             <AlertDialogHeader>
               <AlertDialogTitle>Xác nhận hoàn tác</AlertDialogTitle>
               <AlertDialogDescription>
-                Hoàn tác sẽ đưa tất cả trường về dữ liệu hiện tại của loại đất&nbsp;
+                Hoàn tác sẽ đưa tất cả trường về dữ liệu hiện tại của loại
+                đất&nbsp;
                 <span className="font-semibold text-slate-900">
                   {selectedSoil?.SoilName || "đang chọn"}
                 </span>
@@ -2582,8 +2865,13 @@ export default function TreeTypeManagement() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={soilDetailSaving}>Huỷ</AlertDialogCancel>
-              <AlertDialogAction onClick={handleRevertSoilEdit} disabled={soilDetailSaving}>
+              <AlertDialogCancel disabled={soilDetailSaving}>
+                Huỷ
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleRevertSoilEdit}
+                disabled={soilDetailSaving}
+              >
                 Đồng ý
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -2601,11 +2889,14 @@ export default function TreeTypeManagement() {
             <AlertDialogHeader>
               <AlertDialogTitle>Huỷ chỉnh sửa</AlertDialogTitle>
               <AlertDialogDescription>
-                Bạn sẽ thoát chế độ chỉnh sửa và mọi thay đổi chưa lưu sẽ bị bỏ. Chắc chắn muốn huỷ?
+                Bạn sẽ thoát chế độ chỉnh sửa và mọi thay đổi chưa lưu sẽ bị bỏ.
+                Chắc chắn muốn huỷ?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={soilDetailSaving}>Tiếp tục chỉnh sửa</AlertDialogCancel>
+              <AlertDialogCancel disabled={soilDetailSaving}>
+                Tiếp tục chỉnh sửa
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleCancelSoilEdit}
                 disabled={soilDetailSaving}
@@ -2629,7 +2920,9 @@ export default function TreeTypeManagement() {
             <AlertDialogHeader>
               <AlertDialogTitle>Xoá loại đất</AlertDialogTitle>
               <AlertDialogDescription>
-                Thao tác này sẽ xoá vĩnh viễn {selectedSoil?.SoilName ?? "loại đất"} khỏi danh sách và không thể hoàn tác.
+                Thao tác này sẽ xoá vĩnh viễn{" "}
+                {selectedSoil?.SoilName ?? "loại đất"} khỏi danh sách và không
+                thể hoàn tác.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -2661,13 +2954,17 @@ export default function TreeTypeManagement() {
               <AlertDialogDescription>
                 Bạn có chắc muốn cập nhật thông tin loại đất{" "}
                 <span className="font-semibold text-slate-900">
-                  {pendingSoilUpdate?.SoilName || selectedSoil?.SoilName || "đang chọn"}
+                  {pendingSoilUpdate?.SoilName ||
+                    selectedSoil?.SoilName ||
+                    "đang chọn"}
                 </span>
                 ?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={soilDetailSaving}>Huỷ</AlertDialogCancel>
+              <AlertDialogCancel disabled={soilDetailSaving}>
+                Huỷ
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => handleUpdateSoil(pendingSoilUpdate)}
                 disabled={soilDetailSaving}
@@ -2703,7 +3000,10 @@ export default function TreeTypeManagement() {
             </DialogDescription>
           </DialogHeader>
           <Form {...soilForm}>
-            <form className="space-y-4" onSubmit={soilForm.handleSubmit(handlePrepareCreateSoil)}>
+            <form
+              className="space-y-4"
+              onSubmit={soilForm.handleSubmit(handlePrepareCreateSoil)}
+            >
               <FormField
                 control={soilForm.control}
                 name="SoilName"
@@ -2799,7 +3099,11 @@ export default function TreeTypeManagement() {
                 )}
               />
               <div className="flex justify-end gap-3 pt-2">
-                <Button type="button" variant="outline" onClick={() => setCreateSoilOverlayOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCreateSoilOverlayOpen(false)}
+                >
                   Đóng
                 </Button>
                 <Button type="submit" disabled={soilSaving}>
@@ -2826,13 +3130,18 @@ export default function TreeTypeManagement() {
             <AlertDialogTitle>Xác nhận thêm loại đất</AlertDialogTitle>
             <AlertDialogDescription>
               Bạn chuẩn bị tạo loại đất&nbsp;
-              <span className="font-semibold text-slate-900">{pendingSoilCreate?.SoilName || "mới"}</span>. Hãy xác
-              nhận để hoàn tất thao tác.
+              <span className="font-semibold text-slate-900">
+                {pendingSoilCreate?.SoilName || "mới"}
+              </span>
+              . Hãy xác nhận để hoàn tất thao tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={soilSaving}>Huỷ</AlertDialogCancel>
-            <AlertDialogAction onClick={() => handleCreateSoil(pendingSoilCreate)} disabled={soilSaving}>
+            <AlertDialogAction
+              onClick={() => handleCreateSoil(pendingSoilCreate)}
+              disabled={soilSaving}
+            >
               {soilSaving ? "Đang lưu..." : "Xác nhận"}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -2867,7 +3176,10 @@ export default function TreeTypeManagement() {
             </DialogDescription>
           </DialogHeader>
           <Form {...varietyForm}>
-            <form className="space-y-4" onSubmit={varietyForm.handleSubmit(handlePrepareCreateVariety)}>
+            <form
+              className="space-y-4"
+              onSubmit={varietyForm.handleSubmit(handlePrepareCreateVariety)}
+            >
               <FormField
                 control={varietyForm.control}
                 name="VarietyName"
@@ -2932,7 +3244,9 @@ export default function TreeTypeManagement() {
             <AlertDialogTitle>Xác nhận thêm giống mới</AlertDialogTitle>
             <AlertDialogDescription>
               Bạn chuẩn bị thêm giống&nbsp;
-              <span className="font-semibold text-slate-900">{pendingVarietyCreate?.VarietyName || "mới"}</span>
+              <span className="font-semibold text-slate-900">
+                {pendingVarietyCreate?.VarietyName || "mới"}
+              </span>
               . Vui lòng xác nhận để tiếp tục.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -2999,60 +3313,64 @@ export default function TreeTypeManagement() {
               <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
                 <ScrollArea className="max-h-[440px] overflow-visible pr-2">
                   <div className="grid gap-2">
-                  {!activeVarietyTree || (activeVarietyTree.Varieties || []).length === 0 ? (
-                    <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
-                      <Layers className="h-5 w-5 text-emerald-300" />
-                      Chưa có giống nào. Bấm &quot;Thêm giống mới&quot; để bắt đầu.
-                    </div>
-                  ) : filteredVarieties.length === 0 ? (
-                    <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
-                      <Search className="h-5 w-5 text-emerald-300" />
-                      Không tìm thấy giống phù hợp với từ khoá.
-                    </div>
-                  ) : (
-                    paginatedVarieties.map((item, index) => {
-                      const isActive = selectedVarietyId === item.VarietyID;
-                      const absoluteIndex = varietyRangeStart + index;
-                      return (
-                        <div
-                          key={item.VarietyID}
-                          className={cn(
-                            "group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
-                            isActive
-                              ? "border-emerald-500 shadow-sm shadow-emerald-100"
-                              : "border-black hover:border-slate-700",
-                          )}
-                          onClick={() => handleSelectVariety(item.VarietyID)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              handleSelectVariety(item.VarietyID);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
-                        >
-                          <div className="min-w-0 space-y-1">
-                            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
-                              #{absoluteIndex}
-                            </p>
-                            <p className="text-sm font-semibold leading-snug text-slate-900 line-clamp-2">
-                              {item.VarietyName}
-                            </p>
-                          </div>
-                          <Badge
-                            variant="outline"
+                    {!activeVarietyTree ||
+                    (activeVarietyTree.Varieties || []).length === 0 ? (
+                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
+                        <Layers className="h-5 w-5 text-emerald-300" />
+                        Chưa có giống nào. Bấm &quot;Thêm giống mới&quot; để bắt
+                        đầu.
+                      </div>
+                    ) : filteredVarieties.length === 0 ? (
+                      <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
+                        <Search className="h-5 w-5 text-emerald-300" />
+                        Không tìm thấy giống phù hợp với từ khoá.
+                      </div>
+                    ) : (
+                      paginatedVarieties.map((item, index) => {
+                        const isActive = selectedVarietyId === item.VarietyID;
+                        const absoluteIndex = varietyRangeStart + index;
+                        return (
+                          <div
+                            key={item.VarietyID}
                             className={cn(
-                              "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide",
-                              isActive ? "border-emerald-200 bg-emerald-50 text-emerald-600" : "border-slate-300 bg-white text-slate-600",
+                              "group relative flex cursor-pointer items-center justify-between gap-3 rounded-xl border bg-white px-3 py-2.5 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white",
+                              isActive
+                                ? "border-emerald-500 shadow-sm shadow-emerald-100"
+                                : "border-black hover:border-slate-700"
                             )}
+                            onClick={() => handleSelectVariety(item.VarietyID)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                handleSelectVariety(item.VarietyID);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
                           >
-                            {isActive ? "Đang chọn" : "Chọn"}
-                          </Badge>
-                        </div>
-                      );
-                    })
-                  )}
+                            <div className="min-w-0 space-y-1">
+                              <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-400">
+                                #{absoluteIndex}
+                              </p>
+                              <p className="text-sm font-semibold leading-snug text-slate-900 line-clamp-2">
+                                {item.VarietyName}
+                              </p>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "shrink-0 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-wide",
+                                isActive
+                                  ? "border-emerald-200 bg-emerald-50 text-emerald-600"
+                                  : "border-slate-300 bg-white text-slate-600"
+                              )}
+                            >
+                              {isActive ? "Đang chọn" : "Chọn"}
+                            </Badge>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </ScrollArea>
                 {filteredVarieties.length > 0 && (
@@ -3063,7 +3381,9 @@ export default function TreeTypeManagement() {
                           size="sm"
                           variant="outline"
                           className="h-8 rounded-full px-3 text-xs"
-                          onClick={() => setVarietyPage((prev) => Math.max(1, prev - 1))}
+                          onClick={() =>
+                            setVarietyPage((prev) => Math.max(1, prev - 1))
+                          }
                           disabled={varietyPage === 1}
                         >
                           Trước
@@ -3076,7 +3396,9 @@ export default function TreeTypeManagement() {
                           variant="outline"
                           className="h-8 rounded-full px-3 text-xs"
                           onClick={() =>
-                            setVarietyPage((prev) => Math.min(totalVarietyPages, prev + 1))
+                            setVarietyPage((prev) =>
+                              Math.min(totalVarietyPages, prev + 1)
+                            )
                           }
                           disabled={varietyPage === totalVarietyPages}
                         >
@@ -3115,7 +3437,9 @@ export default function TreeTypeManagement() {
                   <Form {...varietyDetailForm}>
                     <form
                       className="space-y-4"
-                      onSubmit={varietyDetailForm.handleSubmit(handlePrepareUpdateVariety)}
+                      onSubmit={varietyDetailForm.handleSubmit(
+                        handlePrepareUpdateVariety
+                      )}
                     >
                       <FormField
                         control={varietyDetailForm.control}
@@ -3126,10 +3450,13 @@ export default function TreeTypeManagement() {
                             <FormControl>
                               <Input
                                 {...field}
-                                disabled={!varietyDetailEditMode || varietySaving}
+                                disabled={
+                                  !varietyDetailEditMode || varietySaving
+                                }
                                 className={cn(
                                   "h-11 rounded-2xl",
-                                  !varietyDetailEditMode && "bg-slate-50 text-slate-500",
+                                  !varietyDetailEditMode &&
+                                    "bg-slate-50 text-slate-500"
                                 )}
                               />
                             </FormControl>
@@ -3146,10 +3473,13 @@ export default function TreeTypeManagement() {
                             <FormControl>
                               <Textarea
                                 {...field}
-                                disabled={!varietyDetailEditMode || varietySaving}
+                                disabled={
+                                  !varietyDetailEditMode || varietySaving
+                                }
                                 className={cn(
                                   "min-h-[120px] rounded-2xl",
-                                  !varietyDetailEditMode && "bg-slate-50 text-slate-500",
+                                  !varietyDetailEditMode &&
+                                    "bg-slate-50 text-slate-500"
                                 )}
                                 placeholder="Đặc điểm nổi bật, vùng canh tác phù hợp..."
                               />
@@ -3173,7 +3503,9 @@ export default function TreeTypeManagement() {
                             type="button"
                             variant="outline"
                             className="border-rose-200 text-rose-600 hover:bg-rose-50"
-                            onClick={() => setVarietyCancelEditConfirmOpen(true)}
+                            onClick={() =>
+                              setVarietyCancelEditConfirmOpen(true)
+                            }
                             disabled={varietySaving}
                           >
                             Huỷ
@@ -3188,7 +3520,8 @@ export default function TreeTypeManagement() {
                         </div>
                       ) : (
                         <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                          Trạng thái chỉ xem. Bấm &quot;Sửa&quot; để mở khoá chỉnh sửa.
+                          Trạng thái chỉ xem. Bấm &quot;Sửa&quot; để mở khoá
+                          chỉnh sửa.
                         </p>
                       )}
                     </form>
@@ -3226,11 +3559,14 @@ export default function TreeTypeManagement() {
             <AlertDialogHeader>
               <AlertDialogTitle>Xoá giống cây</AlertDialogTitle>
               <AlertDialogDescription>
-                Thao tác này sẽ xoá vĩnh viễn giống đang chọn khỏi loại cây và không thể hoàn tác.
+                Thao tác này sẽ xoá vĩnh viễn giống đang chọn khỏi loại cây và
+                không thể hoàn tác.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={varietyDeleting}>Huỷ</AlertDialogCancel>
+              <AlertDialogCancel disabled={varietyDeleting}>
+                Huỷ
+              </AlertDialogCancel>
               <AlertDialogAction
                 className="bg-rose-600 hover:bg-rose-500"
                 onClick={handleDeleteVariety}
@@ -3258,13 +3594,16 @@ export default function TreeTypeManagement() {
               <AlertDialogDescription>
                 Bạn có chắc muốn cập nhật thông tin giống{" "}
                 <span className="font-semibold text-slate-900">
-                  {pendingVarietyUpdate?.VarietyName || selectedVariety?.VarietyName}
+                  {pendingVarietyUpdate?.VarietyName ||
+                    selectedVariety?.VarietyName}
                 </span>
                 ?
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={varietySaving}>Huỷ</AlertDialogCancel>
+              <AlertDialogCancel disabled={varietySaving}>
+                Huỷ
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => handleUpdateVariety(pendingVarietyUpdate)}
                 disabled={varietySaving}
@@ -3287,11 +3626,14 @@ export default function TreeTypeManagement() {
             <AlertDialogHeader>
               <AlertDialogTitle>Huỷ chỉnh sửa?</AlertDialogTitle>
               <AlertDialogDescription>
-                Mọi thay đổi đang thực hiện sẽ bị bỏ qua và khung chi tiết trở lại trạng thái chỉ xem.
+                Mọi thay đổi đang thực hiện sẽ bị bỏ qua và khung chi tiết trở
+                lại trạng thái chỉ xem.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={varietySaving}>Tiếp tục chỉnh sửa</AlertDialogCancel>
+              <AlertDialogCancel disabled={varietySaving}>
+                Tiếp tục chỉnh sửa
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleConfirmCancelVarietyEdit}
                 className="bg-rose-600 hover:bg-rose-500"
@@ -3318,7 +3660,9 @@ export default function TreeTypeManagement() {
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
-              <AlertDialogCancel disabled={varietySaving}>Không</AlertDialogCancel>
+              <AlertDialogCancel disabled={varietySaving}>
+                Không
+              </AlertDialogCancel>
               <AlertDialogAction
                 onClick={handleConfirmRevertVarietyChanges}
                 className="bg-amber-500 hover:bg-amber-400"
@@ -3337,7 +3681,11 @@ export default function TreeTypeManagement() {
     <>
       <LivingBackground
         baseColor={BACKGROUND_PALETTE.bg}
-        palette={[BACKGROUND_PALETTE.leaf, BACKGROUND_PALETTE.ivory, BACKGROUND_PALETTE.accent]}
+        palette={[
+          BACKGROUND_PALETTE.leaf,
+          BACKGROUND_PALETTE.ivory,
+          BACKGROUND_PALETTE.accent,
+        ]}
         density={24}
       />
       <div className="relative z-10 min-h-screen">
@@ -3349,9 +3697,12 @@ export default function TreeTypeManagement() {
                   <Leaf className="h-4 w-4" />
                   Business Admin
                 </p>
-                <h1 className="mt-2 text-4xl font-bold text-white">Quản lý loại cây</h1>
+                <h1 className="mt-2 text-4xl font-bold text-white">
+                  Quản lý loại cây
+                </h1>
                 <p className="text-base text-white/80">
-                  Theo dõi, điều chỉnh TreeTypes và các giống cây đi kèm trong hệ thống.
+                  Theo dõi, điều chỉnh TreeTypes và các giống cây đi kèm trong
+                  hệ thống.
                 </p>
               </div>
               <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end md:w-auto">
@@ -3359,7 +3710,12 @@ export default function TreeTypeManagement() {
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/70" />
                   <Input
                     value={filters.search}
-                    onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
+                    onChange={(e) =>
+                      setFilters((prev) => ({
+                        ...prev,
+                        search: e.target.value,
+                      }))
+                    }
                     placeholder="Tìm kiếm loại cây..."
                     className="h-12 rounded-xl border-white/40 bg-white/10 pl-10 text-white placeholder:text-white/70 focus-visible:border-white focus-visible:bg-white focus-visible:text-slate-900 focus-visible:ring-emerald-200"
                   />
@@ -3416,17 +3772,24 @@ export default function TreeTypeManagement() {
             {renderVarietyDialog()}
             {renderCreateVarietyOverlay()}
 
-            <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+            <AlertDialog
+              open={Boolean(deleteTarget)}
+              onOpenChange={(open) => !open && setDeleteTarget(null)}
+            >
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle>Xác nhận xoá loại cây</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Hành động không thể hoàn tác. TreeType "{deleteTarget?.TreeTypeName}" sẽ bị xoá khỏi danh sách.
+                    Hành động không thể hoàn tác. TreeType "
+                    {deleteTarget?.TreeTypeName}" sẽ bị xoá khỏi danh sách.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Huỷ</AlertDialogCancel>
-                  <AlertDialogAction className="bg-rose-600 hover:bg-rose-500" onClick={handleDelete}>
+                  <AlertDialogAction
+                    className="bg-rose-600 hover:bg-rose-500"
+                    onClick={handleDelete}
+                  >
                     Xoá
                   </AlertDialogAction>
                 </AlertDialogFooter>

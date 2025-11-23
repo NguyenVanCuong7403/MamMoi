@@ -177,6 +177,60 @@ public class TreesController : ControllerBase
     public async Task<IActionResult> GetImages([FromRoute] int id, CancellationToken ct)
         => Ok(await _treeImg.GetGalleryAsync(id, ct));
 
+    /// <summary>
+    /// Upload image file for a tree
+    /// POST /api/trees/{id}/images/upload
+    /// Accepts multipart/form-data
+    /// </summary>
+    [HttpPost("{id:int}/images/upload")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> UploadImageFile([FromRoute] int id, [FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "No file uploaded."
+            });
+        }
+
+        try
+        {
+            // Save to wwwroot/uploads (same as garden upload)
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // Return the accessible URL (same format as garden)
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var fileUrl = $"{baseUrl}/uploads/{uniqueFileName}";
+
+            return Ok(new
+            {
+                success = true,
+                url = fileUrl
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Error uploading image. Please try again."
+            });
+        }
+    }
+
     [HttpPost("{id:int}/images")]
     public async Task<IActionResult> UploadImage([FromRoute] int id, [FromBody] UploadTreeImageRequest req, CancellationToken ct)
     {

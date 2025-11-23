@@ -8,7 +8,13 @@ namespace MamMoi.Infrastructure.Services
     public class TreeImageService : ITreeImageService
     {
         private readonly MamMoiDbContext _db;
-        public TreeImageService(MamMoiDbContext db) => _db = db;
+        private readonly IImageUploadService _imageUploadService;
+        
+        public TreeImageService(MamMoiDbContext db, IImageUploadService imageUploadService)
+        {
+            _db = db;
+            _imageUploadService = imageUploadService;
+        }
 
         public async Task<TreeImageDto> AddImageAsync(int userId, int treeId, UploadTreeImageRequest req, CancellationToken ct)
         {
@@ -54,6 +60,12 @@ namespace MamMoi.Infrastructure.Services
             var img = await _db.TreeImages
                 .FirstOrDefaultAsync(i => i.ImageId == imageId && i.TreeId == treeId, ct);
             if (img == null) return false;
+
+            // Delete physical files
+            if (!string.IsNullOrEmpty(img.ImageUrl))
+                await _imageUploadService.DeleteImageAsync(img.ImageUrl);
+            if (!string.IsNullOrEmpty(img.ThumbnailUrl))
+                await _imageUploadService.DeleteImageAsync(img.ThumbnailUrl);
 
             _db.TreeImages.Remove(img);
             await _db.SaveChangesAsync(ct);

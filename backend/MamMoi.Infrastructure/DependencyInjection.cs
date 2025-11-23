@@ -70,6 +70,7 @@ public static class DependencyInjection
         services.AddScoped<ITreeQueryService, TreeQueryService>();
         services.AddScoped<ITreeCommandService, TreeCommandService>();
         services.AddScoped<ITreeImageService, TreeImageService>();
+        services.AddScoped<IImageUploadService, ImageUploadService>();
 
         services.AddHttpClient<IWeatherProvider, OpenWeatherMapProvider>();
         services.AddScoped<IWeatherService, WeatherService>();
