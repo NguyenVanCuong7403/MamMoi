@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Menu, Bell, Calendar, CloudRain, User as UserIcon } from "lucide-react";
+import { Search, Menu, Bell, Calendar, CloudRain, User as UserIcon, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/API/context/AuthContext"
 
@@ -327,6 +327,18 @@ export default function MMHeader({
               MẦM MỚI
             </span>
           </a>
+
+          {/* Back button */}
+          <button
+            onClick={() => navigate(-1)}
+            className="w-11 h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none"
+            style={{ background: palette.ivory, color: palette.bg }}
+            aria-label="Quay lại"
+            title="Quay lại"
+            data-testid="mm-back-btn"
+          >
+            <ArrowLeft className="w-[22px] h-[22px]" />
+          </button>
 
           <div className="flex-1 min-w-0" />
 
