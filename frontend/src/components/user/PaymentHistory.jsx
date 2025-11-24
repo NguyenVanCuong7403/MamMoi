@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Search, Download, Eye, ChevronDown, ChevronLeft, ChevronRight, X } from "lucide-react";
+import React, { useState, useMemo, useEffect } from "react";
+import { Eye, ChevronLeft, ChevronRight } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,10 +7,23 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogClose,
 } from "@/components/ui/dialog";
 
-function PaymentHistory(props) {
+// Utility function to parse date from time string
+const parseDateFromTime = (timeStr) => {
+  if (!timeStr) return null;
+  const datePart = timeStr.split(' ')[0]; // "2025-10-11"
+  return datePart ? new Date(datePart + 'T00:00:00') : null;
+};
+
+function PaymentHistory({
+  transactions = [],
+  search = "",
+  statusFilter = "Tất cả trạng thái",
+  dateFrom = "",
+  dateTo = "",
+  onPageChange,
+}) {
   const defaultTransactions = [
     {
       id: "SUB-STARTER-58723",
@@ -64,55 +77,70 @@ function PaymentHistory(props) {
     },
   ];
 
-  const transactions = props.transactions || defaultTransactions;
+  const data = transactions.length > 0 ? transactions : defaultTransactions;
 
   // ── States ─────────────────────────────────────
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("Tất cả trạng thái");
-
   const [selectedTransaction, setSelectedTransaction] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // ── Pagination & Filters ───────────────────────
   const pageSize = 5;
-  const pageCount = Math.ceil(transactions.length / pageSize);
-  const statusOptions = ["Tất cả trạng thái", ...new Set(transactions.map((t) => t.status))];
 
-  const filteredData = transactions.filter((t) => {
-    const matchesSearch =
-      t.id.toLowerCase().includes(search.toLowerCase()) ||
-      t.package.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "Tất cả trạng thái" || t.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredData = useMemo(() => {
+    return data.filter((t) => {
+      // Search filter - tìm theo nhiều trường
+      const searchLower = search.toLowerCase();
+      const matchesSearch = !search || 
+        t.id.toLowerCase().includes(searchLower) ||
+        t.package.toLowerCase().includes(searchLower) ||
+        (t.txId && t.txId.toLowerCase().includes(searchLower)) ||
+        t.method.toLowerCase().includes(searchLower) ||
+        t.amount.toLowerCase().includes(searchLower) ||
+        t.time.toLowerCase().includes(searchLower);
+      
+      if (!matchesSearch) return false;
 
-  const currentPageData = filteredData.slice((page - 1) * pageSize, page * pageSize);
+      // Status filter
+      const matchesStatus = statusFilter === "Tất cả trạng thái" || t.status === statusFilter;
+      if (!matchesStatus) return false;
+
+      // Date filter
+      if (dateFrom || dateTo) {
+        const transactionDate = parseDateFromTime(t.time);
+        if (!transactionDate) return false;
+
+        if (dateFrom) {
+          const fromDate = new Date(dateFrom + 'T00:00:00');
+          if (transactionDate < fromDate) return false;
+        }
+
+        if (dateTo) {
+          const toDate = new Date(dateTo + 'T23:59:59');
+          if (transactionDate > toDate) return false;
+        }
+      }
+
+      return true;
+    });
+  }, [data, search, statusFilter, dateFrom, dateTo]);
+
   const currentPageCount = Math.ceil(filteredData.length / pageSize);
+  const currentPageData = filteredData.slice((page - 1) * pageSize, page * pageSize);
 
-  // ── CSV Export ─────────────────────────────────
-  const exportCSV = () => {
-    const headers = ["Mã đơn", "Thời gian", "Gói", "Số tiền", "Phương thức", "Trạng thái"];
-    const rows = filteredData.map((t) => [
-      t.id,
-      t.time,
-      t.package,
-      t.amount.toString().replace(/,/g, "."),
-      t.method,
-      t.status,
-    ]);
+  // ── Reset page when filtered data changes ─────────────
+  useEffect(() => {
+    if (page > currentPageCount && currentPageCount > 0) {
+      setPage(currentPageCount);
+    } else if (currentPageCount === 0) {
+      setPage(1);
+    }
+  }, [filteredData.length, currentPageCount, page]);
 
-    let csvContent =
-      "\uFEFF" +
-      [headers, ...rows].map((e) => e.join(",")).join("\n");
-
-    const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "payment_history.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // ── Handle page change ─────────────────────────
+  const handlePageChange = (newPage) => {
+    setPage(newPage);
+    onPageChange?.(newPage);
   };
 
   // ── Open Modal ─────────────────────────────────
@@ -123,208 +151,153 @@ function PaymentHistory(props) {
 
   // ── Render ─────────────────────────────────────
   return (
-    <div className="mm-fluid-page min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="relative bg-emerald-800 h-28 overflow-hidden">
-        <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <pattern id="topographic" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-              <path d="M10,50 Q30,30 50,50 T90,50" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-              <path d="M0,30 Q20,10 40,30 T80,30" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-              <path d="M20,70 Q40,50 60,70 T100,70" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1"/>
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#topographic)"/>
-        </svg>
-        <div className="relative z-10 flex items-center justify-center h-full">
-          <h1 className="text-white text-3xl font-bold">Lịch sử giao dịch</h1>
-        </div>
-      </div>
-
-      <div className="mm-fluid-shell max-w-7xl mx-auto px-6 py-8">
-        <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-          {/* Filters */}
-          <div className="flex items-center gap-4 mb-6">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Tìm mã đơn, gói, TXID..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-            </div>
-
-            <div className="relative">
-              <select
-                className="appearance-none px-4 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                value={statusFilter}
-                onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-              >
-                {statusOptions.map((status, idx) => (
-                  <option key={idx} value={status}>{status}</option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4 pointer-events-none" />
-            </div>
-
-            <Button
-              variant="outline"
-              onClick={() => { setSearch(""); setStatusFilter("Tất cả trạng thái"); setPage(1); }}
-            >
-              Reset
-            </Button>
-
-            <Button onClick={exportCSV} className="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 flex items-center gap-2">
-              <Download className="w-4 h-4" /> Xuất CSV
-            </Button>
-          </div>
-
-          {/* Table */}
-          <h2 className="text-xl font-semibold mb-4">Giao dịch gần đây</h2>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
+    <>
+      {/* Table */}
+      <div className="w-full overflow-x-auto">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-gray-50">
+                <TableHead className="text-gray-900 font-semibold text-xl py-6 px-6">Mã đơn</TableHead>
+                <TableHead className="text-gray-900 font-semibold text-xl py-6 px-6">Thời gian</TableHead>
+                <TableHead className="text-gray-900 font-semibold text-xl py-6 px-6">Gói</TableHead>
+                <TableHead className="text-gray-900 font-semibold text-xl py-6 px-6">Số tiền/Phương thức</TableHead>
+                <TableHead className="text-gray-900 font-semibold text-xl py-6 px-6">Trạng thái</TableHead>
+                <TableHead className="text-gray-900 font-semibold text-xl py-6 px-6">Thao tác</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {currentPageData.length === 0 ? (
                 <TableRow>
-                  <TableHead>Mã đơn</TableHead>
-                  <TableHead>Thời gian</TableHead>
-                  <TableHead>Gói</TableHead>
-                  <TableHead>Số tiền/Phương thức</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Thao tác</TableHead>
+                  <TableCell colSpan={6} className="text-center py-16 text-gray-600 text-lg">
+                    Không tìm thấy giao dịch nào
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {currentPageData.map((t, index) => (
+              ) : (
+                currentPageData.map((t, index) => (
                   <TableRow key={index} className="hover:bg-gray-50">
-                    <TableCell>{t.id}</TableCell>
-                    <TableCell>{t.time}</TableCell>
-                    <TableCell>{t.package}</TableCell>
-                    <TableCell>
-                      <div>{t.amount}</div>
-                      <div className="text-xs text-gray-500">{t.method}</div>
+                    <TableCell className="text-gray-900 text-lg py-6 px-6">{t.id}</TableCell>
+                    <TableCell className="text-gray-900 text-lg py-6 px-6">{t.time}</TableCell>
+                    <TableCell className="text-gray-900 text-lg py-6 px-6">{t.package}</TableCell>
+                    <TableCell className="py-6 px-6">
+                      <div className="text-gray-900 font-medium text-lg">{t.amount}</div>
+                      <div className="text-base text-gray-600 mt-1">{t.method}</div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-6 px-6">
                       <span
-                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border ${t.statusColor}`}
+                        className={`inline-flex items-center gap-2.5 px-4 py-2.5 rounded-full text-base font-medium border ${t.statusColor}`}
                       >
-                        <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                        <span className="w-3 h-3 rounded-full bg-current"></span>
                         {t.status}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="py-6 px-6">
                       <Button
                         variant="ghost"
-                        className="flex items-center gap-1 border border-gray-300 rounded text-gray-700 hover:bg-gray-50 px-3 py-1.5"
+                        className="flex items-center gap-2.5 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 px-5 py-2.5 text-base font-medium"
                         onClick={() => openDetailModal(t)}
                       >
-                        <Eye className="w-4 h-4" /> Chi tiết
+                        <Eye className="w-5 h-5" /> Chi tiết
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          {/* Pagination */}
-          <div className="flex items-center justify-between mt-6">
-            <div className="text-sm text-gray-600">
-              Hiển thị {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, filteredData.length)} / {filteredData.length} giao dịch
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setPage(Math.max(page - 1, 1))}
-                disabled={page === 1}
-                className="p-2 border border-gray-300 rounded hover:bg-gray-50"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-sm text-gray-700">Trang {page}/{currentPageCount}</span>
-              <Button
-                variant="outline"
-                onClick={() => setPage(Math.min(page + 1, currentPageCount))}
-                disabled={page === currentPageCount}
-                className="p-2 border border-gray-300 rounded hover:bg-gray-50"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
 
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen} >
-  <DialogContent
-    className="max-w-md bg-white rounded overflow-hidden shadow-lg" // rounded corners
-  >
+      {/* Pagination */}
+      <div className="flex items-center justify-between mt-8">
+        <div className="text-lg text-white/60 font-medium">
+          Hiển thị {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, filteredData.length)} / {filteredData.length} giao dịch
+        </div>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="outline"
+            onClick={() => handlePageChange(Math.max(page - 1, 1))}
+            disabled={page === 1}
+            className="p-3 border border-gray-300 rounded-lg hover:bg-gray-100 bg-white text-gray-900 disabled:opacity-50"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </Button>
+          <span className="text-lg text-white/60 font-medium">Trang {page}/{currentPageCount}</span>
+          <Button
+            variant="outline"
+            onClick={() => handlePageChange(Math.min(page + 1, currentPageCount))}
+            disabled={page === currentPageCount}
+            className="p-3 border border-gray-300 rounded-lg hover:bg-gray-100 bg-white text-gray-900 disabled:opacity-50"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </Button>
+        </div>
+      </div>
 
-    {/* ---- Header ---- */}
-    <DialogTitle >Chi Tiết giao dịch</DialogTitle>
+      {/* Detail Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-lg bg-white rounded-lg overflow-hidden shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-semibold">Chi Tiết giao dịch</DialogTitle>
+          </DialogHeader>
 
-    {/* ---- Body ---- */}
-    <div className="px-3 py-1 space-y-1 text-sm">
-      {selectedTransaction && (
-        <>
-          <div className="flex justify-between">
-            <span className="text-gray-600">Mã đơn</span>
-            <span className="font-medium text-gray-900">{selectedTransaction.id}</span>
+          <div className="px-8 py-6 space-y-5 text-base">
+            {selectedTransaction && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-medium">Mã đơn</span>
+                  <span className="font-semibold text-gray-900 text-lg">{selectedTransaction.id}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-medium">Mã giao dịch</span>
+                  <span className="font-semibold text-gray-900 text-lg">{selectedTransaction.txId}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-medium">Gói</span>
+                  <span className="font-semibold text-gray-900 text-lg">{selectedTransaction.package}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-medium">Thời gian</span>
+                  <span className="font-semibold text-gray-900 text-lg">{selectedTransaction.time}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-medium">Phương thức</span>
+                  <span className="font-semibold text-gray-900 text-lg">{selectedTransaction.method}</span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span className="text-gray-600 font-medium">Số tiền</span>
+                  <span className="font-semibold text-gray-900 text-lg">{selectedTransaction.amount}</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-600 font-medium">Trạng thái</span>
+                  <span
+                    className={`
+                      inline-flex items-center gap-2 px-4 py-2 rounded-full text-base font-medium border
+                      ${selectedTransaction.statusColor}
+                    `}
+                  >
+                    <span className="w-3 h-3 rounded-full bg-current"></span>
+                    {selectedTransaction.status}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="flex justify-between">
-            <span className="text-gray-600">Mã giao dịch</span>
-            <span className="font-medium text-gray-900">{selectedTransaction.txId}</span>
+          <div className="border-t border-gray-200 px-8 py-4 bg-gray-50 text-center">
+            <p className="text-sm text-gray-500">
+              * Nếu cần hỗ trợ hoá đơn hoặc hoàn tiền, vui lòng liên hệ support
+            </p>
           </div>
-
-          <div className="flex justify-between">
-            <span className="text-gray-600">Gói</span>
-            <span className="font-medium text-gray-900">{selectedTransaction.package}</span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="text-gray-600">Thời gian</span>
-            <span className="font-medium text-gray-900">{selectedTransaction.time}</span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="text-gray-600">Phương thức</span>
-            <span className="font-medium text-gray-900">{selectedTransaction.method}</span>
-          </div>
-
-          <div className="flex justify-between">
-            <span className="text-gray-600">Số tiền</span>
-            <span className="font-medium text-gray-900">{selectedTransaction.amount}</span>
-          </div>
-
-          {/* ---- Status ---- */}
-          <div className="flex items-center justify-between">
-            <span className="text-gray-600">Trạng thái</span>
-            <span
-              className={`
-                inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border
-                ${selectedTransaction.statusColor}
-              `}
-            >
-              <span className="w-2 h-2 rounded-full bg-current"></span>
-              {selectedTransaction.status}
-            </span>
-          </div>
-        </>
-      )}
-    </div>
-
-    {/* ---- Footer Note ---- */}
-    <div className="border-t border-gray-200 px-6 py-3 bg-gray-50 text-center">
-      <p className="text-[10px] text-gray-500">
-        * Nếu cần hỗ trợ hoá đơn hoặc hoàn tiền, vui lòng liên hệ support
-      </p>
-    </div>
-  </DialogContent>
-</Dialog>
-
-    </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

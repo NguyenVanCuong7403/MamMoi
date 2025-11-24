@@ -1,6 +1,16 @@
 import React from "react";
 import { NavLink, Navigate } from "react-router-dom";
-import { BarChart3, CreditCard, Users, Sprout } from "lucide-react";
+import {
+  BarChart3,
+  CreditCard,
+  Users,
+  Sprout,
+  Leaf,
+  Flower2,
+  Package,
+  Layers,
+  Bell,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/API/context/AuthContext";
 
@@ -19,10 +29,22 @@ const ROLE_NAV_ITEMS = {
       path: "/admin/subscriptions",
     },
     {
+      key: "subscription-plans",
+      label: "Quản lý gói dịch vụ",
+      icon: Package,
+      path: "/admin/subscription-plans",
+    },
+    {
       key: "reports",
       label: "Report",
       icon: BarChart3,
       path: "/admin/reports",
+    },
+    {
+      key: "notifications",
+      label: "Quản lý thông báo",
+      icon: Bell,
+      path: "/admin/notifications",
     },
   ],
   businessadmin: [
@@ -36,7 +58,19 @@ const ROLE_NAV_ITEMS = {
       key: "tree-types",
       label: "Quản lý loại cây",
       icon: Sprout,
-      path: "/admin/business/trees",
+      path: "/admin/business/tree-types",
+    },
+    {
+      key: "tree-varieties",
+      label: "Quản lý giống cây",
+      icon: Flower2,
+      path: "/admin/business/tree-varieties",
+    },
+    {
+      key: "soils",
+      label: "Quản lý loại đất",
+      icon: Layers,
+      path: "/admin/business/soils",
     },
   ],
 };
@@ -48,7 +82,7 @@ const ROLE_SUMMARY = {
   },
   businessadmin: {
     title: "Business Admin",
-    description: "Theo dõi báo cáo sản xuất và quản lý danh mục cây.",
+    description: "Quản lý cây trồng, loại cây, giống cây và báo cáo sản xuất.",
   },
 };
 
@@ -56,22 +90,25 @@ const VALID_ADMIN_ROLES = ["systemadmin", "businessadmin"];
 
 export default function AdminLayout({ children }) {
   const { user } = useAuth();
-  
+
   // Ensure user is logged in
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
-  
+
   const roleKey = (user?.role || "").toLowerCase();
-  
+
   // Only allow valid admin roles
   if (!VALID_ADMIN_ROLES.includes(roleKey)) {
     return <Navigate to="/" replace />;
   }
-  
+
   // Get navigation items for the user's role
   const navItems = ROLE_NAV_ITEMS[roleKey] || [];
-  const { title, description } = ROLE_SUMMARY[roleKey] || { title: "Admin", description: "" };
+  const { title, description } = ROLE_SUMMARY[roleKey] || {
+    title: "Admin",
+    description: "",
+  };
 
   return (
     <div className="flex min-h-screen w-full text-slate-50">
@@ -127,5 +164,3 @@ export default function AdminLayout({ children }) {
     </div>
   );
 }
-
-

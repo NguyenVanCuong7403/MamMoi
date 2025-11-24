@@ -51,4 +51,21 @@
 
     public record TreeCreatedDto(int TreeId);
     public record TreeSummaryDto(int TreeId, string? TreeName, string? TreeCode);
+
+    // Lifecycle management DTOs
+    public record UpdateTreeLifecycleRequest(
+        string PhaseId, // "growth_development", "flowering", "fruiting", "pre_harvest", "post_harvest"
+        int? CycleCount = null,
+        bool? Phase1Completed = null
+    );
+
+    public record TreeLifecycleDto(
+        int TreeId,
+        int StageId,
+        int StageOrder,
+        string StageName,
+        string PhaseId,
+        bool Phase1Completed,
+        int CycleCount
+    );
 }

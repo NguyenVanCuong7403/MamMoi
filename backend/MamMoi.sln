@@ -11,8 +11,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MamMoi.Infrastructure", "Ma
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MamMoi.Domain", "MamMoi.Domain\MamMoi.Domain.csproj", "{3A8CB951-1111-4071-9157-DE9B69C64544}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MamMoi.Application.Tests", "MamMoi.Application.Tests\MamMoi.Application.Tests.csproj", "{9AFD5111-3FEE-336D-C31E-9BEC17F7FC44}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,10 +33,6 @@ Global
 		{3A8CB951-1111-4071-9157-DE9B69C64544}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A8CB951-1111-4071-9157-DE9B69C64544}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A8CB951-1111-4071-9157-DE9B69C64544}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9AFD5111-3FEE-336D-C31E-9BEC17F7FC44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9AFD5111-3FEE-336D-C31E-9BEC17F7FC44}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9AFD5111-3FEE-336D-C31E-9BEC17F7FC44}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9AFD5111-3FEE-336D-C31E-9BEC17F7FC44}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

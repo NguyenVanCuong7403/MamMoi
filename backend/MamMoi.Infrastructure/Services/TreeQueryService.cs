@@ -159,6 +159,7 @@ public class TreeQueryService : ITreeQueryService
     t.Garden.Name,
     t.TreeType.TreeTypeName,
     t.Stage.StageName,
+    t.Stage.StageOrder,
     t.TreeVariety.VarietyName,
     t.LeafStatus,
     t.BranchStatus,
@@ -166,5 +167,57 @@ public class TreeQueryService : ITreeQueryService
     t.FruitStatus
 ))
             .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<TreeLifecycleDto?> GetLifecycleAsync(int treeId, int? currentUserId, CancellationToken ct = default)
+    {
+        var q = _db.Set<Tree>().AsNoTracking().Where(t => t.TreeId == treeId);
+        if (currentUserId is not null) q = q.Where(t => t.UserId == currentUserId);
+
+        var tree = await q
+            .Include(t => t.Stage)
+            .Select(t => new
+            {
+                t.TreeId,
+                t.StageId,
+                StageOrder = t.Stage.StageOrder,
+                StageName = t.Stage.StageName
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (tree == null)
+        {
+            // Log for debugging
+            Console.WriteLine($"[GetLifecycleAsync] Tree with id {treeId} not found. currentUserId: {currentUserId}");
+            return null;
+        }
+
+        // Map StageOrder (1-5) to PhaseId
+        string phaseId = tree.StageOrder switch
+        {
+            1 => "growth_development",
+            2 => "flowering",
+            3 => "fruiting",
+            4 => "pre_harvest",
+            5 => "post_harvest",
+            _ => "growth_development" // fallback
+        };
+
+        // Phase1Completed is true if not in growth_development (StageOrder > 1)
+        bool phase1Completed = tree.StageOrder > 1;
+
+        // TODO: Get cycleCount from database if stored
+        // For now, return 0 as default
+        int cycleCount = 0;
+
+        return new TreeLifecycleDto(
+            tree.TreeId,
+            tree.StageId,
+            tree.StageOrder,
+            tree.StageName,
+            phaseId,
+            phase1Completed,
+            cycleCount
+        );
     }
 }

@@ -8,8 +8,9 @@ namespace MamMoi.Application.DTOs
 {
     public record TreeVarietyDto(
         int VarietyId,
-        int TreeTypeId,
-        string TreeVarietyName,
-        string Description
+        int? TreeTypeId,
+        string? VarietyName,
+        string? VarietyDescription,
+        string? ImageUrl
  );
 }

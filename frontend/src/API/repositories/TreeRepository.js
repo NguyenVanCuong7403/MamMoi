@@ -7,6 +7,78 @@ export default class TreeRepository {
   static async getTreeTypes() {
     return ApiClient.get("/api/trees/types");
   }
+  /**
+   * Get all tree varieties
+   */
+  static async getTreeVarieties() {
+    return ApiClient.get("/api/trees/varieties");
+  }
+
+    /**
+   * Get AI recommendation(s) for a tree.
+   * The API returns recommendations for the requested date and the next 2 days (3 days total).
+   * @param {number} id - tree id
+   * @param {string|Date} [forDate] - optional. If omitted, server will use today's UTC date.
+   *                                   If a Date is passed, it will be converted to yyyy-MM-dd.
+   * @returns {Promise} ApiClient.get promise
+   */
+  static async getAiRecommendation(id, forDate) {
+    if (!id) throw new Error("Missing tree id");
+
+    const params = new URLSearchParams();
+
+    if (forDate) {
+      if (forDate instanceof Date) {
+        // convert to yyyy-MM-dd (UTC)
+        const yyyy = forDate.getUTCFullYear();
+        const mm = String(forDate.getUTCMonth() + 1).padStart(2, "0");
+        const dd = String(forDate.getUTCDate()).padStart(2, "0");
+        params.append("forDate", `${yyyy}-${mm}-${dd}`);
+      } else {
+        // assume string like "2025-11-22"
+        params.append("forDate", String(forDate));
+      }
+    }
+
+    const qs = params.toString();
+    return ApiClient.get(`/api/trees/${id}/recommendation${qs ? `?${qs}` : ""}`);
+  }
+
+  /**
+   * Get tree varieties
+   * @param {number} [treeTypeId] - Optional tree type ID to filter varieties
+   */
+  static async getTreeVarieties(treeTypeId = null) {
+    const url = treeTypeId
+      ? `/api/trees/varieties?treeTypeId=${treeTypeId}`
+      : "/api/trees/varieties";
+    return ApiClient.get(url);
+  }
+
+  /**
+   * Get tree type detail by id (for public PlantDetail page)
+   * Falls back to admin API if available
+   */
+  static async getTreeTypeById(id) {
+    try {
+      // Try admin API first (if user is authenticated)
+      const response = await ApiClient.get(`/api/admin/tree-types/${id}`);
+      if (response?.data) {
+        return response;
+      }
+    } catch (err) {
+      // If admin API fails (no auth), fall back to getting from list
+      console.log("Admin API not available, using public API");
+    }
+
+    // Fallback: get from list and find by id
+    const treeTypes = await ApiClient.get("/api/trees/types");
+    const found = Array.isArray(treeTypes)
+      ? treeTypes.find((t) => t.treeTypeId === parseInt(id))
+      : null;
+
+    return found ? { data: found } : null;
+  }
 
   /**
    * Get all tree varieties
@@ -26,7 +98,15 @@ export default class TreeRepository {
    * @param {number} options.treeTypeId
    * @param {boolean} options.isActive
    */
-  static async getMyTrees({ userId, page = 1, pageSize = 20, sort = "createdAt_desc", gardenId, treeTypeId, isActive } = {}) {
+  static async getMyTrees({
+    userId,
+    page = 1,
+    pageSize = 20,
+    sort = "createdAt_desc",
+    gardenId,
+    treeTypeId,
+    isActive,
+  } = {}) {
     //console.log("getMyTrees");
     const params = new URLSearchParams();
     if (userId) params.append("userId", userId);
@@ -43,7 +123,13 @@ export default class TreeRepository {
   /**
    * Search trees
    */
-  static async searchTrees({ q = "", gardenId, treeTypeId, page = 1, pageSize = 20 } = {}) {
+  static async searchTrees({
+    q = "",
+    gardenId,
+    treeTypeId,
+    page = 1,
+    pageSize = 20,
+  } = {}) {
     const params = new URLSearchParams();
     params.append("q", q);
     params.append("page", page);
@@ -146,5 +232,25 @@ export default class TreeRepository {
    */
   static async getStages(id) {
     return ApiClient.get(`/api/trees/${id}/stages`);
+  }
+
+  /**
+   * Get tree lifecycle information (phase, stage, cycle count)
+   * @param {number} id - Tree ID
+   */
+  static async getLifecycle(id) {
+    return ApiClient.get(`/api/trees/${id}/lifecycle`);
+  }
+
+  /**
+   * Update tree lifecycle phase
+   * @param {number} id - Tree ID
+   * @param {Object} data - UpdateTreeLifecycleRequest
+   * @param {string} data.phaseId - Phase ID: "growth_development", "flowering", "fruiting", "pre_harvest", "post_harvest"
+   * @param {number} [data.cycleCount] - Optional cycle count
+   * @param {boolean} [data.phase1Completed] - Optional phase 1 completed flag
+   */
+  static async updateLifecycle(id, data) {
+    return ApiClient.patch(`/api/trees/${id}/lifecycle`, data);
   }
 }

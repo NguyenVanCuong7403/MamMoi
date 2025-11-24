@@ -8,6 +8,6 @@ public record TreeDetailDto(
     DateOnly? ExpectedHarvestDate, DateOnly? LastHarvestDate,  
     decimal? TotalHarvestedKg, decimal? AverageYieldPerYearKg,  
     string? Notes, string? QrcodeUrl, DateTime CreatedAt, DateTime? UpdatedAt,
-    string GardenName, string TreeTypeName, string StageName, string TreeVarietyName,
+    string GardenName, string TreeTypeName, string StageName, int StageOrder, string TreeVarietyName,
     string? LeafStatus, string? BranchStatus, string? FlowerStatus, string? FruitStatus
 );

@@ -12,6 +12,7 @@ namespace MamMoi.Application.Interfaces
         Task<TreeCreatedDto> CreateAsync(int userId, CreateTreeRequest req, CancellationToken ct);
         Task<TreeSummaryDto?> UpdateAsync(int userId, int treeId, UpdateTreeRequest req, CancellationToken ct);
         Task<bool> UpdateStatusAsync(int userId, int treeId, UpdateTreeStatusRequest req, CancellationToken ct);
+        Task<TreeLifecycleDto?> UpdateLifecycleAsync(int userId, int treeId, UpdateTreeLifecycleRequest req, CancellationToken ct);
         Task<bool> DeleteAsync(int userId, int treeId, CancellationToken ct);
     }
 

@@ -13,5 +13,8 @@ namespace MamMoi.Application.Interfaces
             int treeId,
             DateOnly forDate,
             CancellationToken ct = default);
+
+        Task<List<AirecommendationDto>> getAIRecommendations(int treeId, DateOnly forDate,
+            CancellationToken ct = default);
     }
 }

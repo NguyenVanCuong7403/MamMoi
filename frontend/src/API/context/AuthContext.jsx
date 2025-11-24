@@ -1,4 +1,10 @@
-import React, { createContext, useState, useEffect, useContext, useCallback } from "react";
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from "react";
 import AuthRepository from "../repositories/AuthRepository";
 
 const AuthContext = createContext(null);
@@ -38,6 +44,7 @@ const addRememberedEmail = (email) => {
   if (!email || !email.trim()) return;
   const trimmedEmail = email.trim();
   const emails = getRememberedEmails();
+<<<<<<< HEAD
   
   // Xóa email nếu đã tồn tại (để đưa lên đầu)
   const filtered = emails.filter(e => e !== trimmedEmail);
@@ -48,6 +55,18 @@ const addRememberedEmail = (email) => {
   // Giới hạn số lượng email
   const limited = updated.slice(0, MAX_REMEMBERED_EMAILS);
   
+=======
+
+  // Xóa email nếu đã tồn tại (để đưa lên đầu)
+  const filtered = emails.filter((e) => e !== trimmedEmail);
+
+  // Thêm email vào đầu danh sách
+  const updated = [trimmedEmail, ...filtered];
+
+  // Giới hạn số lượng email
+  const limited = updated.slice(0, MAX_REMEMBERED_EMAILS);
+
+>>>>>>> cuong
   localStorage.setItem("rememberedEmails", JSON.stringify(limited));
 };
 
@@ -55,8 +74,13 @@ const removeRememberedEmail = (email) => {
   if (!email) return;
   const trimmedEmail = email.trim();
   const emails = getRememberedEmails();
+<<<<<<< HEAD
   const filtered = emails.filter(e => e !== trimmedEmail);
   
+=======
+  const filtered = emails.filter((e) => e !== trimmedEmail);
+
+>>>>>>> cuong
   if (filtered.length === 0) {
     localStorage.removeItem("rememberedEmails");
   } else {
@@ -76,7 +100,9 @@ const decodeJwtPayload = (token) => {
     if (!base64Url) return null;
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
     const padded =
-      base64.length % 4 === 0 ? base64 : base64.padEnd(base64.length + (4 - (base64.length % 4)), "=");
+      base64.length % 4 === 0
+        ? base64
+        : base64.padEnd(base64.length + (4 - (base64.length % 4)), "=");
     return JSON.parse(atob(padded));
   } catch (err) {
     console.warn("Failed to decode JWT payload", err);
@@ -148,7 +174,9 @@ export const AuthProvider = ({ children }) => {
     return parsed;
   });
   const [token, setToken] = useState(() => localStorage.getItem("token"));
-  const [refreshToken, setRefreshToken] = useState(() => localStorage.getItem("refreshToken"));
+  const [refreshToken, setRefreshToken] = useState(() =>
+    localStorage.getItem("refreshToken")
+  );
   const [loading, setLoading] = useState(false);
 
   const login = async (email, password, remember = false) => {
@@ -187,6 +215,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("user", JSON.stringify(userData));
 
+
+
       // Lưu email để ghi nhớ đăng nhập (KHÔNG lưu password vì lý do bảo mật)
       // Hỗ trợ nhiều email: lưu vào danh sách thay vì ghi đè
       if (remember) {
@@ -200,9 +230,25 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setToken(data.accessToken);
       setRefreshToken(data.refreshToken);
+<<<<<<< HEAD
       
       console.log("✅ Login successful, returning role:", primaryRole, "roleId:", data.roleId);
       return { success: true, role: primaryRole, roleId: data.roleId, user: userData };
+=======
+
+      console.log(
+        "✅ Login successful, returning role:",
+        primaryRole,
+        "roleId:",
+        data.roleId
+      );
+      return {
+        success: true,
+        role: primaryRole,
+        roleId: data.roleId,
+        user: userData,
+      };
+>>>>>>> cuong
     } catch (err) {
       console.error("Login failed:", err);
       return { success: false, message: err.message };
@@ -224,17 +270,25 @@ export const AuthProvider = ({ children }) => {
       console.log("🔍 AuthContext register response:", response);
 
       if (response.success) {
-        return { 
-          success: true, 
-          message: response.message || "Đăng ký thành công! Vui lòng kiểm tra email để xác thực OTP.",
-          data: response.data
+        return {
+          success: true,
+          message:
+            response.message ||
+            "Đăng ký thành công! Vui lòng kiểm tra email để xác thực OTP.",
+          data: response.data,
         };
       } else {
-        return { success: false, message: response.message || "Đăng ký thất bại" };
+        return {
+          success: false,
+          message: response.message || "Đăng ký thất bại",
+        };
       }
     } catch (err) {
       console.error("Register failed:", err);
-      return { success: false, message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại." };
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
     } finally {
       setLoading(false);
     }
@@ -251,17 +305,23 @@ export const AuthProvider = ({ children }) => {
       console.log("🔍 AuthContext verifyOtp response:", response);
 
       if (response.success) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: response.message || "Xác thực OTP thành công!",
-          data: response.data
+          data: response.data,
         };
       } else {
-        return { success: false, message: response.message || "OTP không hợp lệ" };
+        return {
+          success: false,
+          message: response.message || "OTP không hợp lệ",
+        };
       }
     } catch (err) {
       console.error("Verify OTP failed:", err);
-      return { success: false, message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại." };
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
     } finally {
       setLoading(false);
     }
@@ -275,16 +335,22 @@ export const AuthProvider = ({ children }) => {
       console.log("🔍 AuthContext forgotPassword response:", response);
 
       if (response.success) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: response.message || "Đã gửi email reset mật khẩu!",
         };
       } else {
-        return { success: false, message: response.message || "Gửi email thất bại" };
+        return {
+          success: false,
+          message: response.message || "Gửi email thất bại",
+        };
       }
     } catch (err) {
       console.error("Forgot password failed:", err);
-      return { success: false, message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại." };
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
     } finally {
       setLoading(false);
     }
@@ -298,16 +364,22 @@ export const AuthProvider = ({ children }) => {
       console.log("🔍 AuthContext resendOtp response:", response);
 
       if (response.success) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: response.message || "Đã gửi lại OTP!",
         };
       } else {
-        return { success: false, message: response.message || "Gửi lại OTP thất bại" };
+        return {
+          success: false,
+          message: response.message || "Gửi lại OTP thất bại",
+        };
       }
     } catch (err) {
       console.error("Resend OTP failed:", err);
-      return { success: false, message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại." };
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
     } finally {
       setLoading(false);
     }
@@ -325,16 +397,22 @@ export const AuthProvider = ({ children }) => {
       console.log("🔍 AuthContext resetPassword response:", response);
 
       if (response.success) {
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: response.message || "Đổi mật khẩu thành công!",
         };
       } else {
-        return { success: false, message: response.message || "Đổi mật khẩu thất bại" };
+        return {
+          success: false,
+          message: response.message || "Đổi mật khẩu thất bại",
+        };
       }
     } catch (err) {
       console.error("Reset password failed:", err);
-      return { success: false, message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại." };
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
     } finally {
       setLoading(false);
     }
@@ -343,7 +421,7 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await AuthRepository.logout();
-    } catch {}
+    } catch { }
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
@@ -364,8 +442,12 @@ export const AuthProvider = ({ children }) => {
             userId: apiUser.userId ?? apiUser.UserId ?? prevSafe.userId,
             email: apiUser.email ?? apiUser.Email ?? prevSafe.email,
             fullName: apiUser.fullName ?? apiUser.name ?? prevSafe.fullName,
-            isEmailVerified: apiUser.isEmailVerified ?? prevSafe.isEmailVerified,
-            ProfileImageUrl: apiUser.profileImageUrl ?? apiUser.ProfileImageUrl ?? prevSafe.ProfileImageUrl,
+            isEmailVerified:
+              apiUser.isEmailVerified ?? prevSafe.isEmailVerified,
+            ProfileImageUrl:
+              apiUser.profileImageUrl ??
+              apiUser.ProfileImageUrl ??
+              prevSafe.ProfileImageUrl,
             role: apiUser.role ?? apiUser.Role ?? prevSafe.role,
           };
 
@@ -394,7 +476,21 @@ export const AuthProvider = ({ children }) => {
   }, [token, user, refreshUser]);
 
   return (
-    <AuthContext.Provider value={{ user, token, refreshToken, login, register, verifyOtp, forgotPassword, resetPassword, resendOtp, logout, loading }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        token,
+        refreshToken,
+        login,
+        register,
+        verifyOtp,
+        forgotPassword,
+        resetPassword,
+        resendOtp,
+        logout,
+        loading,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

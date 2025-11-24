@@ -1,9 +1,12 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { HelpCircle, Upload, X, Send, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LivingBackground } from "@/components/background";
+import SupportRequestRepository from "@/API/repositories/SupportRequestRepository";
+import ApiClient from "@/API/ApiClient";
+import { useAuth } from "@/API/context/AuthContext";
 
 /* =========================================================
    Theme & constants
@@ -39,6 +42,7 @@ const CATEGORIES = [
 ];
 
 export default function Report() {
+  const { user } = useAuth();
   const [form, setForm] = useState({
     category: "",
     email: "",
@@ -58,6 +62,24 @@ export default function Report() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
+  const noticeTimeoutRef = useRef(null);
+  const [showLoginNotice, setShowLoginNotice] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (noticeTimeoutRef.current) {
+        clearTimeout(noticeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      setForm((prev) => ({ ...prev, email: "" }));
+      setTouched((prev) => ({ ...prev, email: false }));
+      setErrors((prev) => ({ ...prev, email: "" }));
+    }
+  }, [user]);
 
   // Validation
   const validate = () => {
@@ -67,9 +89,9 @@ export default function Report() {
       newErrors.category = "Vui lòng chọn phân loại";
     }
 
-    if (form.category === "auth" && !form.email.trim()) {
+    if (!user && form.category === "auth" && !form.email.trim()) {
       newErrors.email = "Vui lòng nhập email";
-    } else if (form.category === "auth" && form.email.trim()) {
+    } else if (!user && form.category === "auth" && form.email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(form.email.trim())) {
         newErrors.email = "Email không hợp lệ";
@@ -95,6 +117,24 @@ export default function Report() {
 
   const handleCategoryChange = (e) => {
     const value = e.target.value;
+
+    if (!user && value && value !== "auth") {
+      setShowLoginNotice(true);
+      if (noticeTimeoutRef.current) {
+        clearTimeout(noticeTimeoutRef.current);
+      }
+      noticeTimeoutRef.current = setTimeout(() => {
+        setShowLoginNotice(false);
+      }, 1500);
+      setForm((prev) => ({
+        ...prev,
+        category: "",
+        email: "",
+      }));
+      setErrors((prev) => ({ ...prev, category: "" }));
+      return;
+    }
+
     setForm((prev) => ({
       ...prev,
       category: value,
@@ -148,7 +188,7 @@ export default function Report() {
     // Mark all fields as touched
     setTouched({
       category: true,
-      email: form.category === "auth",
+      email: !user && form.category === "auth",
       title: true,
       content: true,
     });
@@ -159,10 +199,33 @@ export default function Report() {
 
     setIsSubmitting(true);
 
-    // Simulate API call
     try {
-      // TODO: Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Prepare description with email if provided
+      let description = form.content;
+      if (!user && form.category === "auth" && form.email) {
+        description = `${form.content}\n\nEmail liên hệ: ${form.email}`;
+      }
+
+      // Prepare request data - API will auto-map category to priority
+      const requestData = {
+        subject: form.title,
+        description: description,
+        category: form.category || "other",
+        // Priority will be auto-mapped by backend based on category
+      };
+
+      // If there's an image, we'll store the URL in attachmentUrls
+      // For now, if you have a file upload service, implement it here
+      // For simplicity, we'll skip image upload for now
+      // You can add file upload functionality later
+      if (form.image) {
+        // TODO: Implement file upload to get URL
+        // For now, we'll proceed without image
+        console.warn("Image upload not yet implemented, proceeding without image");
+      }
+
+      // Create support request
+      const response = await SupportRequestRepository.createRequest(requestData);
 
       alert("Gửi yêu cầu thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất có thể.");
       
@@ -184,7 +247,9 @@ export default function Report() {
       setErrors({});
       removeImage();
     } catch (error) {
-      alert("Có lỗi xảy ra. Vui lòng thử lại sau.");
+      console.error("Error submitting report:", error);
+      const errorMessage = error.message || "Có lỗi xảy ra. Vui lòng thử lại sau.";
+      alert(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -192,6 +257,28 @@ export default function Report() {
 
   return (
     <>
+      {!user && (
+        <div
+          className={`fixed top-24 left-1/2 z-50 w-full max-w-md -translate-x-1/2 px-4 transition-all duration-300 ease-out ${
+            showLoginNotice ? "opacity-100 translate-y-0 scale-100" : "pointer-events-none opacity-0 -translate-y-4 scale-95"
+          }`}
+        >
+          <div
+            className={`flex items-center gap-3 rounded-3xl bg-gradient-to-r from-emerald-400/90 to-teal-500/90 px-6 py-4 text-white shadow-[0_25px_65px_rgba(0,0,0,0.35)] backdrop-blur-lg ${
+              showLoginNotice ? "animate-[pulse_1.5s_ease-in-out]" : ""
+            }`}
+          >
+            <AlertCircle className="w-6 h-6" />
+            <div>
+              <p className="text-sm font-semibold tracking-[0.2em] uppercase">Cần đăng nhập</p>
+              <p className="text-sm">
+                Bạn phải đăng nhập để gửi báo cáo này. Vui lòng đăng nhập và thử lại.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ✅ Nền sống */}
       <LivingBackground
         baseColor={PALETTE.bg}
@@ -208,12 +295,12 @@ export default function Report() {
             <HelpCircle className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
-            Liên hệ & Hỗ trợ
+            Trung tâm hỗ trợ vấn đề khẩn
           </h1>
-          <p className="text-lg text-white/80 max-w-2xl mx-auto">
-            Chúng tôi luôn sẵn sàng hỗ trợ bạn. Vui lòng điền thông tin bên dưới và chúng tôi sẽ phản hồi trong thời gian sớm nhất.
-          </p>
+          
         </div>
+
+        {/* Removed AI intro + weather alert panels */}
 
         {/* Form Card */}
         <Card className="rounded-3xl border border-white/20 bg-white/10 backdrop-blur-lg shadow-[0_20px_60px_rgba(0,0,0,0.3)]">
@@ -254,8 +341,8 @@ export default function Report() {
                 )}
               </div>
 
-              {/* Email Field - Only show when category is "auth" */}
-              {form.category === "auth" && (
+              {/* Email Field - Only show when category is "auth" and user is not logged in */}
+              {!user && form.category === "auth" && (
                 <div className="transition-all duration-300 ease-in-out">
                   <label className="block text-white text-lg font-semibold mb-3">
                     Email <span className="text-rose-400">*</span>
@@ -429,4 +516,3 @@ export default function Report() {
     </>
   );
 }
-
