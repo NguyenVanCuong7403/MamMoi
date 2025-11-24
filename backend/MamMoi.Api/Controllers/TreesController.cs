@@ -90,8 +90,10 @@ public class TreesController : ControllerBase
 
     // ===================== 1) Tree Variety =====================
     [HttpGet("varieties")]
-    public async Task<IActionResult> GetTreeVarieties(CancellationToken ct)
-        => Ok(await _treeVariety.GetAllAsync(ct));
+    public async Task<IActionResult> GetTreeVarieties(
+        [FromQuery] int? treeTypeId = null,
+        CancellationToken ct = default)
+        => Ok(await _treeVariety.GetAllAsync(treeTypeId, ct));
 
     // ===================== 2) My Trees =====================
     [HttpGet("my")]
@@ -134,6 +136,20 @@ public class TreesController : ControllerBase
     public async Task<IActionResult> GetDetail([FromRoute] int id, CancellationToken ct)
     {
         var dto = await _treeQuery.GetDetailAsync(id, currentUserId: null, ct);
+        if (dto is null) return NotFound();
+        return Ok(dto);
+    }
+
+    // ===================== 4.5) Get Lifecycle =====================
+    /// <summary>
+    /// Get tree lifecycle information (phase, stage, cycle count)
+    /// </summary>
+    [HttpGet("{id:int}/lifecycle")]
+    public async Task<IActionResult> GetLifecycle([FromRoute] int id, CancellationToken ct)
+    {
+        // Allow viewing any tree (similar to GetDetail)
+        // If you want to restrict to owner only, use: var currentUserId = GetCurrentUserId();
+        var dto = await _treeQuery.GetLifecycleAsync(id, currentUserId: null, ct);
         if (dto is null) return NotFound();
         return Ok(dto);
     }
@@ -211,6 +227,34 @@ public class TreesController : ControllerBase
         return ok ? NoContent() : NotFound();
     }
 
+    // ===================== 7.5) Update Lifecycle =====================
+    /// <summary>
+    /// Update tree lifecycle phase (growth_development, flowering, fruiting, pre_harvest, post_harvest)
+    /// </summary>
+    [HttpPatch("{id:int}/lifecycle")]
+    public async Task<IActionResult> UpdateLifecycle([FromRoute] int id, [FromBody] UpdateTreeLifecycleRequest req, CancellationToken ct)
+    {
+        if (!TryResolveUserId(out var userId, out var error)) return error!;
+        try
+        {
+            var dto = await _treeCmd.UpdateLifecycleAsync(userId, id, req, ct);
+            if (dto is null) return NotFound();
+            return Ok(dto);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized(new { message = "You are not authorized to update this tree." });
+        }
+    }
+
     // ===================== 8) Delete =====================
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken ct)
@@ -224,6 +268,60 @@ public class TreesController : ControllerBase
     [HttpGet("{id:int}/images")]
     public async Task<IActionResult> GetImages([FromRoute] int id, CancellationToken ct)
         => Ok(await _treeImg.GetGalleryAsync(id, ct));
+
+    /// <summary>
+    /// Upload image file for a tree
+    /// POST /api/trees/{id}/images/upload
+    /// Accepts multipart/form-data
+    /// </summary>
+    [HttpPost("{id:int}/images/upload")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> UploadImageFile([FromRoute] int id, [FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "No file uploaded."
+            });
+        }
+
+        try
+        {
+            // Save to wwwroot/uploads (same as garden upload)
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // Return the accessible URL (same format as garden)
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var fileUrl = $"{baseUrl}/uploads/{uniqueFileName}";
+
+            return Ok(new
+            {
+                success = true,
+                url = fileUrl
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Error uploading image. Please try again."
+            });
+        }
+    }
 
     [HttpPost("{id:int}/images")]
     public async Task<IActionResult> UploadImage([FromRoute] int id, [FromBody] UploadTreeImageRequest req, CancellationToken ct)

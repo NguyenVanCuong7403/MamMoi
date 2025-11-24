@@ -2993,6 +2993,37 @@ export default function TreeDetail() {
         if (!cancelled) {
           setApiTree(mapDtoToTree(dto));
         }
+
+        // ====== Fetch lifecycle data ======
+        try {
+          const lifecycleRes = await TreeRepository.getLifecycle(treeId);
+          const lifecycleDto = lifecycleRes?.data ?? lifecycleRes;
+          if (!cancelled && lifecycleDto) {
+            // Store lifecycle data from API
+            setLifecycleFromAPI(lifecycleDto);
+
+            // Update lifecycle state from API (single source of truth)
+            const apiPhaseId = normalizePhaseId(lifecycleDto.phaseId);
+            const apiPhase1Completed = lifecycleDto.phase1Completed ?? (apiPhaseId !== "growth_development");
+            const apiCycleCount = lifecycleDto.cycleCount ?? 0;
+
+            setCurrentPhaseId(apiPhaseId);
+            setPhase1Completed(apiPhase1Completed);
+            setCycleCount(apiCycleCount);
+
+            // Update stageId in meta if available
+            if (lifecycleDto.stageId != null) {
+              setMeta(prev => ({
+                ...prev,
+                stageId: lifecycleDto.stageId,
+              }));
+            }
+          }
+        } catch (lifecycleErr) {
+          console.warn("Failed to fetch lifecycle data", lifecycleErr);
+          // Continue without lifecycle data - fallback to tree data
+        }
+
         // ====== NEW: load GardenSoils của vườn này ======
         // giả sử DTO từ backend có: dto.treeId và dto.gardenSoilId
         if (dto.treeId) {
@@ -3321,7 +3352,11 @@ export default function TreeDetail() {
   // ---- DB lifecycle (single source of truth) ----
   const lifecycleFromDB = baseTree.lifecycle || {};
 
+  // State for lifecycle data from API
+  const [lifecycleFromAPI, setLifecycleFromAPI] = useState(null);
+
   const initialPhaseId = normalizePhaseId(
+    lifecycleFromAPI?.phaseId ||
     lifecycleFromDB.currentPhaseId ||
     baseTree?.phenology?.currentPhase ||
     baseTree?.phenology?.stage ||
@@ -3329,13 +3364,17 @@ export default function TreeDetail() {
   );
 
 
-  const initialP1Completed = typeof lifecycleFromDB.phase1Completed === "boolean"
-    ? lifecycleFromDB.phase1Completed
-    : initialPhaseId !== "growth_development";
+  const initialP1Completed = lifecycleFromAPI?.phase1Completed != null
+    ? lifecycleFromAPI.phase1Completed
+    : typeof lifecycleFromDB.phase1Completed === "boolean"
+      ? lifecycleFromDB.phase1Completed
+      : initialPhaseId !== "growth_development";
 
-  const initialCycleCount = Number.isFinite(lifecycleFromDB.cycleCount)
-    ? Number(lifecycleFromDB.cycleCount)
-    : 0;
+  const initialCycleCount = lifecycleFromAPI?.cycleCount != null
+    ? lifecycleFromAPI.cycleCount
+    : Number.isFinite(lifecycleFromDB.cycleCount)
+      ? Number(lifecycleFromDB.cycleCount)
+      : 0;
 
   const [currentPhaseId, setCurrentPhaseId] = useState(initialPhaseId);
   const [phase1Completed, setPhase1Completed] = useState(initialP1Completed);
@@ -5525,21 +5564,40 @@ export default function TreeDetail() {
                 resolvedTreeOwnerId={resolvedTreeOwnerId}
                 onPhaseChange={(payload) => {
                   // payload: { phaseId, cycleCount, phase1Completed, stageId? }
+                  // Lifecycle API already handles the update, so we just sync local state
                   setCurrentPhaseId(payload.phaseId);
                   setCycleCount(payload.cycleCount);
                   setPhase1Completed(payload.phase1Completed);
+
+                  // Update lifecycleFromAPI state with the response from API
                   if (payload.stageId != null) {
+                    setLifecycleFromAPI(prev => ({
+                      ...(prev || {}),
+                      phaseId: payload.phaseId,
+                      cycleCount: payload.cycleCount,
+                      phase1Completed: payload.phase1Completed,
+                      stageId: payload.stageId,
+                    }));
+
+                    // Update stageId in meta
                     setMeta((prev) => ({
                       ...prev,
                       stageId: payload.stageId,
                     }));
-                    persistTreePatch({ stageId: payload.stageId });
+                  } else {
+                    // Update lifecycleFromAPI even if stageId is not provided
+                    setLifecycleFromAPI(prev => ({
+                      ...(prev || {}),
+                      phaseId: payload.phaseId,
+                      cycleCount: payload.cycleCount,
+                      phase1Completed: payload.phase1Completed,
+                    }));
                   }
 
-                  // ✅ đồng bộ lifecycle + phase vào demoTrees
+                  // ✅ đồng bộ lifecycle + phase vào demoTrees (for local state management)
                   syncTreePatch(codeKey, {
                     lifecycle: {
-                      ...(lifecycleFromDB || {}),
+                      ...(lifecycleFromAPI || lifecycleFromDB || {}),
                       currentPhaseId: payload.phaseId,
                       phase1Completed: payload.phase1Completed,
                       cycleCount: payload.cycleCount,
@@ -5553,8 +5611,6 @@ export default function TreeDetail() {
                       currentPhase: payload.phaseId,
                     },
                   });
-
-                  // sau này thay bằng api.trees.updateLifecycle(...)
                 }}
               />
 

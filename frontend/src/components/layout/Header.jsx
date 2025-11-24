@@ -1,8 +1,16 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Search, Menu, Bell, Calendar, CloudRain, User as UserIcon } from "lucide-react";
+import {
+  Search,
+  Menu,
+  Bell,
+  Calendar,
+  CloudRain,
+  User as UserIcon,
+  ArrowLeft,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/API/context/AuthContext"
-
+import { useAuth } from "@/API/context/AuthContext";
+import NotificationRepository from "@/API/repositories/NotificationRepository";
 
 const DEFAULT_MENU = [
   { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
@@ -105,10 +113,9 @@ export default function MMHeader({
   const [avatarMenu, setAvatarMenu] = useState(false);
   const [notificationMenu, setNotificationMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  
-  // Tính số thông báo chưa đọc
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
+
   // Đọc avatar từ localStorage profile nếu user.ProfileImageUrl không có
   const [profileAvatar, setProfileAvatar] = useState(() => {
     try {
@@ -120,7 +127,7 @@ export default function MMHeader({
     } catch {}
     return "";
   });
-  
+
   // Lắng nghe thay đổi trong localStorage profile
   useEffect(() => {
     function handleStorageChange() {
@@ -132,18 +139,16 @@ export default function MMHeader({
         }
       } catch {}
     }
-    
+
     // Lắng nghe storage event (từ tab khác) và custom event (từ cùng tab)
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("userProfileUpdated", handleStorageChange);
-    
+
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("userProfileUpdated", handleStorageChange);
     };
   }, []);
-
-
 
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -167,17 +172,22 @@ export default function MMHeader({
   };
 
   const palette = useMemo(
-    () => ({ bg: "#1F302F", leaf: "#D1DFB6", ivory: "#FBFFDF", accent: "#FFFFA5" }),
+    () => ({
+      bg: "#1F302F",
+      leaf: "#D1DFB6",
+      ivory: "#FBFFDF",
+      accent: "#FFFFA5",
+    }),
     []
   );
 
   useEffect(() => {
-  const close = (e) => {
-    if (!e.target.closest(".avatar-menu-area")) setAvatarMenu(false);
-  };
-  document.addEventListener("click", close);
-  return () => document.removeEventListener("click", close);
-}, []);
+    const close = (e) => {
+      if (!e.target.closest(".avatar-menu-area")) setAvatarMenu(false);
+    };
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, []);
 
   useEffect(() => {
     const onScroll = () => setIsTop(window.scrollY < 60);
@@ -186,7 +196,43 @@ export default function MMHeader({
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-    useEffect(() => {
+  // Fetch notifications and unread count
+  useEffect(() => {
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    const fetchNotifications = async () => {
+      try {
+        setLoadingNotifications(true);
+        // Fetch recent notifications (first page, 5 items)
+        const notificationsResponse =
+          await NotificationRepository.getUserNotifications(1, 5, null, null);
+        if (notificationsResponse.success) {
+          setNotifications(notificationsResponse.data || []);
+        }
+
+        // Fetch unread count
+        const unreadResponse = await NotificationRepository.getUnreadCount();
+        if (unreadResponse.success) {
+          setUnreadCount(unreadResponse.data?.unreadCount || 0);
+        }
+      } catch (err) {
+        console.error("Error fetching notifications:", err);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+
+    fetchNotifications();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
+  useEffect(() => {
     const onKey = (e) => {
       const tag = (document.activeElement?.tagName || "").toLowerCase();
       const typing =
@@ -198,7 +244,9 @@ export default function MMHeader({
       const dateOpen = document.querySelector('[data-mm-date-open="1"]');
 
       // Kiểm tra xem có đang ở màn hình AddTreeNewScreen không
-      const addTreeScreen = document.querySelector('[data-mm-screen="add-tree"]');
+      const addTreeScreen = document.querySelector(
+        '[data-mm-screen="add-tree"]'
+      );
 
       if (e.key === "Enter") {
         if (dateOpen) return; // khung lịch đang mở → không làm gì
@@ -218,8 +266,6 @@ export default function MMHeader({
     return () => window.removeEventListener("keydown", onKey);
   }, [searchOpen]);
 
-
-
   useEffect(() => {
     if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 60);
   }, [searchOpen]);
@@ -230,7 +276,10 @@ export default function MMHeader({
     if (!q) {
       setShowValidationError(true);
       searchInputRef.current?.classList.add("mm-shake");
-      setTimeout(() => searchInputRef.current?.classList.remove("mm-shake"), 350);
+      setTimeout(
+        () => searchInputRef.current?.classList.remove("mm-shake"),
+        350
+      );
       setTimeout(() => setShowValidationError(false), 2500);
       return;
     }
@@ -308,16 +357,31 @@ export default function MMHeader({
           <a
             href="#"
             className="inline-flex items-center gap-3 focus:outline-none focus:ring-2 focus:ring-white/50 rounded flex-shrink-0"
-            onClick={(e) => { navigate("/")} 
-        } 
+            onClick={(e) => {
+              navigate("/");
+            }}
           >
             <div
               className="w-11 h-11 rounded-full grid place-items-center shadow"
               style={{ background: palette.ivory, color: palette.bg }}
             >
-              <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden>
-                <path d="M20 5C20 5 8 8 8 20C8 32 20 35 20 35C20 35 32 32 32 20C32 8 20 5 20 5Z" fill={palette.bg} />
-                <path d="M20 8C20 8 20 15 20 25C20 28 20 32 20 32" stroke={palette.ivory} strokeWidth="1.6" strokeLinecap="round" />
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 40 40"
+                fill="none"
+                aria-hidden
+              >
+                <path
+                  d="M20 5C20 5 8 8 8 20C8 32 20 35 20 35C20 35 32 32 32 20C32 8 20 5 20 5Z"
+                  fill={palette.bg}
+                />
+                <path
+                  d="M20 8C20 8 20 15 20 25C20 28 20 32 20 32"
+                  stroke={palette.ivory}
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                />
               </svg>
             </div>
             <span
@@ -327,6 +391,18 @@ export default function MMHeader({
               MẦM MỚI
             </span>
           </a>
+
+          {/* Back button */}
+          <button
+            onClick={() => navigate(-1)}
+            className="w-11 h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none"
+            style={{ background: palette.ivory, color: palette.bg }}
+            aria-label="Quay lại"
+            title="Quay lại"
+            data-testid="mm-back-btn"
+          >
+            <ArrowLeft className="w-[22px] h-[22px]" />
+          </button>
 
           <div className="flex-1 min-w-0" />
 
@@ -470,70 +546,79 @@ export default function MMHeader({
                         </div>
                       ) : (
                         <div className="divide-y divide-gray-100">
-                          {notifications.map((notification) => (
-                            <div
-                              key={notification.id}
-                              className={[
-                                "px-4 py-3 hover:bg-gray-50 transition cursor-pointer",
-                                !notification.read && "bg-blue-50/50",
-                              ].join(" ")}
-                              onClick={() => {
-                                // Có thể thêm logic đánh dấu đã đọc hoặc điều hướng
-                                console.log(
-                                  "Notification clicked:",
-                                  notification
-                                );
-                              }}
-                            >
-                              <div className="flex gap-3">
-                                {/* Icon */}
-                                <div
-                                  className={[
-                                    "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                                    notification.type === "schedule"
-                                      ? "bg-blue-100"
-                                      : "bg-orange-100",
-                                  ].join(" ")}
-                                >
-                                  {notification.type === "schedule" ? (
-                                    <Calendar
-                                      className={[
-                                        "w-5 h-5",
-                                        notification.type === "schedule"
-                                          ? "text-blue-600"
-                                          : "text-orange-600",
-                                      ].join(" ")}
-                                    />
-                                  ) : (
-                                    <CloudRain className="w-5 h-5 text-orange-600" />
-                                  )}
-                                </div>
+                          {notifications.map((notification) => {
+                            const formatDate = (dateString) => {
+                              if (!dateString) return "Vừa xong";
+                              const date = new Date(dateString);
+                              const now = new Date();
+                              const diff = now - date;
+                              const minutes = Math.floor(diff / 60000);
+                              const hours = Math.floor(diff / 3600000);
+                              const days = Math.floor(diff / 86400000);
 
-                                {/* Content */}
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <h4
-                                      className={[
-                                        "font-medium text-sm",
-                                        !notification.read && "font-semibold",
-                                      ].join(" ")}
-                                    >
-                                      {notification.title}
-                                    </h4>
-                                    {!notification.read && (
-                                      <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
-                                    )}
+                              if (minutes < 1) return "Vừa xong";
+                              if (minutes < 60) return `${minutes} phút trước`;
+                              if (hours < 24) return `${hours} giờ trước`;
+                              if (days < 7) return `${days} ngày trước`;
+                              return date.toLocaleDateString("vi-VN");
+                            };
+
+                            return (
+                              <div
+                                key={notification.notificationId}
+                                className={[
+                                  "px-4 py-3 hover:bg-gray-50 transition cursor-pointer",
+                                  !notification.isRead && "bg-blue-50/50",
+                                ].join(" ")}
+                                onClick={() => {
+                                  if (notification.actionUrl) {
+                                    navigate(notification.actionUrl);
+                                  } else {
+                                    navigate("/notifications");
+                                  }
+                                  setNotificationMenu(false);
+                                  if (!notification.isRead) {
+                                    NotificationRepository.markNotificationsAsRead(
+                                      [notification.notificationId]
+                                    );
+                                  }
+                                }}
+                              >
+                                <div className="flex gap-3">
+                                  {/* Icon */}
+                                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-emerald-100">
+                                    <Bell className="w-5 h-5 text-emerald-600" />
                                   </div>
-                                  <p className="text-xs text-gray-600 mt-1 line-clamp-2">
-                                    {notification.message}
-                                  </p>
-                                  <p className="text-xs text-gray-400 mt-1.5">
-                                    {notification.time}
-                                  </p>
+
+                                  {/* Content */}
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <h4
+                                        className={[
+                                          "font-medium text-sm",
+                                          !notification.isRead &&
+                                            "font-semibold",
+                                        ].join(" ")}
+                                      >
+                                        {notification.title}
+                                      </h4>
+                                      {!notification.isRead && (
+                                        <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                                      )}
+                                    </div>
+                                    {notification.message && (
+                                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">
+                                        {notification.message}
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-gray-400 mt-1.5">
+                                      {formatDate(notification.sentAt)}
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -545,8 +630,7 @@ export default function MMHeader({
                           className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-medium"
                           onClick={() => {
                             setNotificationMenu(false);
-                            // Có thể điều hướng đến trang thông báo đầy đủ
-                            console.log("View all notifications");
+                            navigate("/notifications");
                           }}
                         >
                           Xem tất cả thông báo
@@ -561,7 +645,7 @@ export default function MMHeader({
             {/* If logged in → avatar dropdown. If not → login/register */}
             {user ? (
               <div className="hidden md:block relative avatar-menu-area">
-                {(user.ProfileImageUrl || profileAvatar) ? (
+                {user.ProfileImageUrl || profileAvatar ? (
                   <button
                     onClick={() => setAvatarMenu((prev) => !prev)}
                     className="w-11 h-11 rounded-full overflow-hidden border border-white/40 shadow focus:outline-none transition hover:scale-[1.03] grid place-items-center"
@@ -615,46 +699,46 @@ export default function MMHeader({
                       </button>
                     )}
 
-        <button
-          className="block w-full text-left px-4 py-2 hover:bg-gray-100"
-          onClick={() => {
-            navigate("/profile");
-            setAvatarMenu((prev) => !prev)
-          }}
-        >
-          Hồ sơ
-        </button>
+                    <button
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                      onClick={() => {
+                        navigate("/profile");
+                        setAvatarMenu((prev) => !prev);
+                      }}
+                    >
+                      Hồ sơ
+                    </button>
 
-        <button
-          className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
-          onClick={logout}
-        >
-          Đăng xuất
-        </button>
-      </div>
-    )}
-  </div>
-) : (
-  <div
-    className="hidden md:flex items-stretch rounded-xl overflow-hidden shadow border"
-    style={{ borderColor: palette.ivory }}
-  >
-    <button
-      onClick={handleLoginClick}
-      className="px-5 py-2.5 text-base bg-white/0 text-white hover:bg-white/10 focus:outline-none"
-    >
-      Đăng nhập
-    </button>
-    <div className="w-px bg-white/20" />
-    <button
-      onClick={handleRegisterClick}
-      className="px-5 py-2.5 text-base font-medium focus:outline-none"
-      style={{ background: palette.accent, color: "#1F302F" }}
-    >
-      Đăng ký
-    </button>
-  </div>
-)}
+                    <button
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
+                      onClick={logout}
+                    >
+                      Đăng xuất
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div
+                className="hidden md:flex items-stretch rounded-xl overflow-hidden shadow border"
+                style={{ borderColor: palette.ivory }}
+              >
+                <button
+                  onClick={handleLoginClick}
+                  className="px-5 py-2.5 text-base bg-white/0 text-white hover:bg-white/10 focus:outline-none"
+                >
+                  Đăng nhập
+                </button>
+                <div className="w-px bg-white/20" />
+                <button
+                  onClick={handleRegisterClick}
+                  className="px-5 py-2.5 text-base font-medium focus:outline-none"
+                  style={{ background: palette.accent, color: "#1F302F" }}
+                >
+                  Đăng ký
+                </button>
+              </div>
+            )}
 
             {/* Menu button */}
             <button
@@ -676,14 +760,14 @@ export default function MMHeader({
         <div className="fixed inset-0 z-[70]">
           {/* Overlay (fade 800ms) */}
           <div
-  className="absolute inset-0 bg-black/50"
-  style={{
-    opacity: menuAnimOpen ? 1 : 0,                                // chỉ fade
-    transition: "opacity var(--mm-uline-dur) var(--mm-uline-ease)",
-    pointerEvents: menuAnimOpen ? "auto" : "none",                 // tránh bắt click khi ẩn
-  }}
-  onClick={closeMenu}
-/>
+            className="absolute inset-0 bg-black/50"
+            style={{
+              opacity: menuAnimOpen ? 1 : 0, // chỉ fade
+              transition: "opacity var(--mm-uline-dur) var(--mm-uline-ease)",
+              pointerEvents: menuAnimOpen ? "auto" : "none", // tránh bắt click khi ẩn
+            }}
+            onClick={closeMenu}
+          />
 
           {/* Panel (rộng vừa; slide 780ms bezier mượt) */}
           <aside
@@ -759,7 +843,9 @@ export default function MMHeader({
                                 }ms both`,
                               }}
                             >
-                              <span className="relative z-10">{item.label}</span>
+                              <span className="relative z-10">
+                                {item.label}
+                              </span>
                               {/* underline chậm hơn */}
                               <span
                                 aria-hidden
@@ -787,7 +873,9 @@ export default function MMHeader({
                                 }ms both`,
                               }}
                             >
-                              <span className="relative z-10">{item.label}</span>
+                              <span className="relative z-10">
+                                {item.label}
+                              </span>
                               {/* underline chậm hơn */}
                               <span
                                 aria-hidden
@@ -810,31 +898,34 @@ export default function MMHeader({
             {/* Bottom Auth — không viền, không ring xanh */}
             <div className="sticky bottom-0 left-0 right-0 p-6 bg-[#1A3433]/90 backdrop-blur-sm">
               {user ? (
-    <div className="flex flex-col gap-3">
-      <button
-        onClick={logout}
-        className="h-11 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30"
-      >
-        Đăng xuất
-      </button>
-    </div>
-  ) : (
-    <div className="flex gap-3">
-      <button
-        onClick={handleLoginClick}
-        className="flex-1 h-11 rounded-full text-[#EAF5C8] bg-white/5 border border-white/20"
-      >
-        Đăng nhập
-      </button>
-      <button
-        onClick={handleRegisterClick}
-        className="flex-1 h-11 rounded-full font-semibold"
-        style={{ background: `linear-gradient(180deg, ${palette.accent}, #F4F39A)`, color: "#1F302F" }}
-      >
-        Đăng ký
-      </button>
-    </div>
-  )}
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={logout}
+                    className="h-11 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    onClick={handleLoginClick}
+                    className="flex-1 h-11 rounded-full text-[#EAF5C8] bg-white/5 border border-white/20"
+                  >
+                    Đăng nhập
+                  </button>
+                  <button
+                    onClick={handleRegisterClick}
+                    className="flex-1 h-11 rounded-full font-semibold"
+                    style={{
+                      background: `linear-gradient(180deg, ${palette.accent}, #F4F39A)`,
+                      color: "#1F302F",
+                    }}
+                  >
+                    Đăng ký
+                  </button>
+                </div>
+              )}
             </div>
           </aside>
         </div>

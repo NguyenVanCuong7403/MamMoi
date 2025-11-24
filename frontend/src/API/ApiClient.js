@@ -26,6 +26,15 @@ export default class ApiClient {
     return this.handleResponse(res);
   }
 
+  static async patch(path, body) {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "PATCH",
+      headers: this.getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return this.handleResponse(res);
+  }
+
   static async delete(path) {
     const res = await fetch(`${API_BASE}${path}`, {
       method: "DELETE",

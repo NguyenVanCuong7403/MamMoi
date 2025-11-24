@@ -55,10 +55,18 @@ public static class DependencyInjection
         services.AddScoped<IAdminSoilMasterService, AdminSoilMasterService>();
         services.AddScoped<IAdminRevenueService, AdminRevenueService>();
         services.AddScoped<IAdminSupportRequestService, MamMoi.Infrastructure.Services.SupportRequests.AdminSupportRequestService>();
+        
+        // Note: NotificationService is registered above, but we need to ensure it's available for AdminSupportRequestService
         services.AddScoped<IAdminSubscriptionService, AdminSubscriptionService>();
 
         // Register support request service
         services.AddScoped<ISupportRequestService, MamMoi.Infrastructure.Services.SupportRequests.SupportRequestService>();
+
+        // Register notification service
+        services.AddScoped<INotificationService, MamMoi.Infrastructure.Services.Notifications.NotificationService>();
+
+        // Register background service for task expiration notifications
+        services.AddHostedService<MamMoi.Infrastructure.Services.Notifications.TaskExpirationNotificationBackgroundService>();
 
         // Register authentication services
         services.AddScoped<IAuthService, MamMoi.Infrastructure.Services.Auth.AuthService>();
@@ -71,6 +79,7 @@ public static class DependencyInjection
         services.AddScoped<ITreeQueryService, TreeQueryService>();
         services.AddScoped<ITreeCommandService, TreeCommandService>();
         services.AddScoped<ITreeImageService, TreeImageService>();
+        services.AddScoped<IImageUploadService, ImageUploadService>();
 
         services.AddHttpClient<IWeatherProvider, OpenWeatherMapProvider>();
         services.AddScoped<IWeatherService, WeatherService>();

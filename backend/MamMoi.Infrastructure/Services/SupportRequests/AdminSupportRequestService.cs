@@ -1,4 +1,5 @@
 using MamMoi.Application.DTOs.SupportRequest;
+using MamMoi.Application.Interfaces;
 using MamMoi.Application.Interfaces.Admin;
 using MamMoi.Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
@@ -13,13 +14,16 @@ public class AdminSupportRequestService : IAdminSupportRequestService
 {
     private readonly MamMoiDbContext _dbContext;
     private readonly ILogger<AdminSupportRequestService> _logger;
+    private readonly INotificationService _notificationService;
 
     public AdminSupportRequestService(
         MamMoiDbContext dbContext,
-        ILogger<AdminSupportRequestService> logger)
+        ILogger<AdminSupportRequestService> logger,
+        INotificationService notificationService)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
     public async Task<(List<SupportRequestListItemDto> requests, int totalCount)> GetAllRequestsAsync(
@@ -122,6 +126,9 @@ public class AdminSupportRequestService : IAdminSupportRequestService
         if (request == null)
             return null;
 
+        // Store old status to detect changes
+        var oldStatus = request.Status;
+
         if (!string.IsNullOrWhiteSpace(dto.Status))
         {
             request.Status = dto.Status;
@@ -146,6 +153,40 @@ public class AdminSupportRequestService : IAdminSupportRequestService
 
         await _dbContext.SaveChangesAsync();
         _logger.LogInformation("Support request {RequestId} updated by admin", requestId);
+
+        // Notify user based on status change
+        try
+        {
+            // If status changed to Resolved
+            if (!string.IsNullOrWhiteSpace(dto.Status) && dto.Status == "Resolved" && oldStatus != "Resolved")
+            {
+                await _notificationService.NotifyUserOnSupportRequestResolvedAsync(
+                    requestId,
+                    request.UserId,
+                    dto.Resolution);
+            }
+            // If status changed to Closed
+            else if (!string.IsNullOrWhiteSpace(dto.Status) && dto.Status == "Closed" && oldStatus != "Closed")
+            {
+                await _notificationService.NotifyUserOnSupportRequestClosedAsync(
+                    requestId,
+                    request.UserId,
+                    dto.Resolution);
+            }
+            // If admin just responded with resolution (status didn't change but resolution was added)
+            else if (!string.IsNullOrWhiteSpace(dto.Resolution) && string.IsNullOrWhiteSpace(dto.Status))
+            {
+                await _notificationService.NotifyUserOnSupportRequestResponseAsync(
+                    requestId,
+                    request.UserId,
+                    dto.Resolution);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send notification to user for support request {RequestId}", requestId);
+            // Don't throw - notification failure shouldn't break request update
+        }
 
         return await GetRequestByIdAsync(requestId);
     }

@@ -39,6 +39,17 @@ public partial class TreeType
 
     public bool IsActive { get; set; }
 
+    // Fields for PlantDetail page
+    public string? CareGuide { get; set; } // JSON array of care instruction strings
+
+    public string? LightRequirement { get; set; }
+
+    public string? WaterRequirement { get; set; }
+
+    public string? Pests { get; set; } // JSON array of pest objects with name, description, severity
+
+    public string? SeasonalRoadmap { get; set; } // JSON array of roadmap objects with stage, timing, action
+
     public virtual SoilMaster SoilMaster { get; set; } = null!;
 
     public virtual ICollection<TreeGrowthStage> TreeGrowthStages { get; set; } = new List<TreeGrowthStage>();

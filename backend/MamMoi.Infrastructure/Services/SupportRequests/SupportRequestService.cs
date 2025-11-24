@@ -13,13 +13,16 @@ public class SupportRequestService : ISupportRequestService
 {
     private readonly MamMoiDbContext _dbContext;
     private readonly ILogger<SupportRequestService> _logger;
+    private readonly INotificationService _notificationService;
 
     public SupportRequestService(
         MamMoiDbContext dbContext,
-        ILogger<SupportRequestService> logger)
+        ILogger<SupportRequestService> logger,
+        INotificationService notificationService)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
     public async Task<SupportRequestDto> CreateRequestAsync(int userId, CreateSupportRequestDto dto)
@@ -60,6 +63,17 @@ public class SupportRequestService : ISupportRequestService
         await _dbContext.SaveChangesAsync();
 
         _logger.LogInformation("Support request created: {TicketNumber} by user {UserId}", ticketNumber, userId);
+
+        // Notify admin about new support request
+        try
+        {
+            await _notificationService.NotifyAdminOnSupportRequestAsync(request.RequestId, userId, request.Subject);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send notification to admin for support request {RequestId}", request.RequestId);
+            // Don't throw - notification failure shouldn't break request creation
+        }
 
         return await GetRequestByIdAsync(request.RequestId, userId) ?? 
             throw new InvalidOperationException("Failed to retrieve created request");
