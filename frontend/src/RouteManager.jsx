@@ -8,6 +8,7 @@ import TreeManagement from "./components/user/TreeManagement";
 import TreeDetail from "./components/user/TreeDetail";
 import Home from "./components/user/Home";
 import UserProfile from "./components/user/UserProfile";
+import Notifications from "./components/user/Notifications";
 import Demo from "./components/user/Demo";
 import Report from "./components/user/Report";
 import PaymentHistory from "./components/user/PaymentHistory";
@@ -22,6 +23,7 @@ import SystemAdminSubscriptionManagement from "./components/admin/SystemAdmin/Su
 import SystemAdminSubscriptionPlanManagement from "./components/admin/SystemAdmin/SubscriptionPlanManagement";
 import SystemAdminReportManagement from "./components/admin/SystemAdmin/ReportManagement";
 import SystemAdminRevenueManagement from "./components/admin/SystemAdmin/RevenueManagement";
+import SystemAdminNotificationManagement from "./components/admin/SystemAdmin/NotificationManagement";
 import BusinessAdminTreeVarietyManagement from "./components/admin/BusinessAdmin/TreeVarietyManagement";
 import BusinessAdminTreeManagement from "./components/admin/BusinessAdmin/TreeManagement";
 import BusinessAdminTreeTypeManagement from "./components/admin/BusinessAdmin/TreeTypeManagement";
@@ -134,6 +136,14 @@ export default function RouteManager({ authTab }) {
           </RoleGuard>
         }
       />
+      <Route
+        path="/admin/notifications"
+        element={
+          <RoleGuard roles={["SystemAdmin"]}>
+            <SystemAdminNotificationManagement />
+          </RoleGuard>
+        }
+      />
       {/* BusinessAdmin routes - BusinessAdmin only */}
       <Route
         path="/admin/business/reports"
@@ -175,7 +185,22 @@ export default function RouteManager({ authTab }) {
           </RoleGuard>
         }
       />
-      <Route path="/profile" element={<UserProfile />} />
+      <Route
+        path="/profile"
+        element={
+          <LoginGuard>
+            <UserProfile />
+          </LoginGuard>
+        }
+      />
+      <Route
+        path="/notifications"
+        element={
+          <LoginGuard>
+            <Notifications />
+          </LoginGuard>
+        }
+      />
       <Route path="/report" element={<Report />} />
       {/* 404 */}
       <Route path="*" element={<h2>404 - Page Not Found</h2>} />

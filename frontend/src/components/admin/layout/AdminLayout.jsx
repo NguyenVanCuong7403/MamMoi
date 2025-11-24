@@ -9,6 +9,7 @@ import {
   Flower2,
   Package,
   Layers,
+  Bell,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/API/context/AuthContext";
@@ -39,6 +40,12 @@ const ROLE_NAV_ITEMS = {
       icon: BarChart3,
       path: "/admin/reports",
     },
+    {
+      key: "notifications",
+      label: "Quản lý thông báo",
+      icon: Bell,
+      path: "/admin/notifications",
+    },
   ],
   businessadmin: [
     {
@@ -52,12 +59,6 @@ const ROLE_NAV_ITEMS = {
       label: "Quản lý loại cây",
       icon: Sprout,
       path: "/admin/business/tree-types",
-    },
-    {
-      key: "trees",
-      label: "Quản lý cây trồng",
-      icon: Leaf,
-      path: "/admin/business/trees",
     },
     {
       key: "tree-varieties",

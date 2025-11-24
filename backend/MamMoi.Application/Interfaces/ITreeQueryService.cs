@@ -30,5 +30,7 @@ namespace MamMoi.Application.Interfaces
             CancellationToken ct = default);
 
         Task<TreeDetailDto?> GetDetailAsync(int treeId, int? currentUserId, CancellationToken ct = default);
+        
+        Task<TreeLifecycleDto?> GetLifecycleAsync(int treeId, int? currentUserId, CancellationToken ct = default);
     }
 }

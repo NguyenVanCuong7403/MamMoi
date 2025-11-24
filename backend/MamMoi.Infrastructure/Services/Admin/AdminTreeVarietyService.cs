@@ -82,6 +82,7 @@ public class AdminTreeVarietyService : IAdminTreeVarietyService
             TreeTypeName = variety.TreeType.TreeTypeName,
             VarietyName = variety.VarietyName,
             VarietyDescription = variety.VarietyDescription,
+            ImageUrl = variety.ImageUrl,
             TreesCount = await _dbContext.Trees.CountAsync(t => t.VarietyId == varietyId)
         };
     }
@@ -114,7 +115,8 @@ public class AdminTreeVarietyService : IAdminTreeVarietyService
         {
             TreeTypeId = dto.TreeTypeId,
             VarietyName = dto.VarietyName,
-            VarietyDescription = dto.VarietyDescription
+            VarietyDescription = dto.VarietyDescription,
+            ImageUrl = dto.ImageUrl
         };
 
         _dbContext.TreeVarietys.Add(variety);
@@ -143,6 +145,9 @@ public class AdminTreeVarietyService : IAdminTreeVarietyService
 
         if (dto.VarietyDescription != null)
             variety.VarietyDescription = dto.VarietyDescription;
+
+        if (dto.ImageUrl != null)
+            variety.ImageUrl = dto.ImageUrl;
 
         await _dbContext.SaveChangesAsync();
 

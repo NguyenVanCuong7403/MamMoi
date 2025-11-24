@@ -9,6 +9,6 @@ namespace MamMoi.Application.Interfaces
 {
     public interface ITreeVarietyService
     {
-        Task<IReadOnlyList<TreeVarietyDto>> GetAllAsync(CancellationToken ct = default);
+        Task<IReadOnlyList<TreeVarietyDto>> GetAllAsync(int? treeTypeId = null, CancellationToken ct = default);
     }
 }

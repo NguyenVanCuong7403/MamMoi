@@ -12,6 +12,7 @@ namespace MamMoi.Infrastructure.Models
         public int TreeTypeId { get; set; }
         public string? VarietyName { get; set; }
         public string? VarietyDescription { get; set; }
+        public string? ImageUrl { get; set; }
         public virtual TreeType TreeType { get; set; } = null!;
         public virtual ICollection<Tree> Trees { get; set; } = new List<Tree>();
     }

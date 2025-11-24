@@ -26,6 +26,7 @@ public class AdminController : ControllerBase
     private readonly IAdminSupportRequestService _adminSupportRequestService;
     private readonly IAdminSubscriptionService _adminSubscriptionService;
     private readonly ISubscriptionPlanService _subscriptionPlanService;
+    private readonly IImageUploadService _imageUploadService;
     private readonly ILogger<AdminController> _logger;
 
     public AdminController(
@@ -38,6 +39,7 @@ public class AdminController : ControllerBase
         IAdminSupportRequestService adminSupportRequestService,
         IAdminSubscriptionService adminSubscriptionService,
         ISubscriptionPlanService subscriptionPlanService,
+        IImageUploadService imageUploadService,
         ILogger<AdminController> logger)
     {
         _adminUserService = adminUserService;
@@ -49,6 +51,7 @@ public class AdminController : ControllerBase
         _adminSupportRequestService = adminSupportRequestService;
         _adminSubscriptionService = adminSubscriptionService;
         _subscriptionPlanService = subscriptionPlanService;
+        _imageUploadService = imageUploadService;
         _logger = logger;
     }
 
@@ -198,6 +201,126 @@ public class AdminController : ControllerBase
 
     #endregion
 
+    #region Image Upload
+
+    /// <summary>
+    /// Upload image for tree type
+    /// POST /api/admin/tree-types/upload
+    /// Accepts multipart/form-data
+    /// </summary>
+    [HttpPost("tree-types/upload")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> UploadTreeTypeImage([FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "No file uploaded."
+            });
+        }
+
+        try
+        {
+            // Use ImageUploadService to save with category "tree-types"
+            var relativePath = await _imageUploadService.UploadImageAsync(
+                file.OpenReadStream(),
+                file.FileName,
+                file.ContentType,
+                "tree-types"
+            );
+
+            // Return the accessible URL
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var fileUrl = $"{baseUrl}{relativePath}";
+
+            return Ok(new
+            {
+                success = true,
+                url = fileUrl
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid file uploaded for tree type");
+            return BadRequest(new
+            {
+                success = false,
+                message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading tree type image");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Error uploading image. Please try again."
+            });
+        }
+    }
+
+    /// <summary>
+    /// Upload image for tree growth stage
+    /// POST /api/admin/tree-growth-stages/upload
+    /// Accepts multipart/form-data
+    /// </summary>
+    [HttpPost("tree-growth-stages/upload")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> UploadGrowthStageImage([FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "No file uploaded."
+            });
+        }
+
+        try
+        {
+            // Use ImageUploadService to save with category "growth-stages"
+            var relativePath = await _imageUploadService.UploadImageAsync(
+                file.OpenReadStream(),
+                file.FileName,
+                file.ContentType,
+                "growth-stages"
+            );
+
+            // Return the accessible URL
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var fileUrl = $"{baseUrl}{relativePath}";
+
+            return Ok(new
+            {
+                success = true,
+                url = fileUrl
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid file uploaded for growth stage");
+            return BadRequest(new
+            {
+                success = false,
+                message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading growth stage image");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Error uploading image. Please try again."
+            });
+        }
+    }
+
+    #endregion
+
     #region TreeType Management
 
     /// <summary>
@@ -305,7 +428,16 @@ public class AdminController : ControllerBase
         try
         {
             if (!ModelState.IsValid)
-                return BadRequest(new { success = false, message = "Invalid input", errors = ModelState });
+            {
+                var errors = ModelState
+                    .Where(x => x.Value?.Errors.Count > 0)
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+                _logger.LogWarning("Model validation failed for TreeType {TreeTypeId}: {Errors}", id, errors);
+                return BadRequest(new { success = false, message = "Invalid input", errors = errors });
+            }
 
             var treeType = await _adminTreeTypeService.UpdateTreeTypeAsync(id, dto);
             if (treeType == null)
@@ -315,12 +447,13 @@ public class AdminController : ControllerBase
         }
         catch (InvalidOperationException ex)
         {
+            _logger.LogWarning(ex, "Invalid operation when updating TreeType {TreeTypeId}", id);
             return BadRequest(new { success = false, message = ex.Message });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating tree type: {TreeTypeId}", id);
-            return StatusCode(500, new { success = false, message = "Internal server error" });
+            return StatusCode(500, new { success = false, message = "Internal server error", details = ex.Message });
         }
     }
 

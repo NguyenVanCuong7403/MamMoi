@@ -67,6 +67,17 @@ export default class AdminTreeRepository {
     return response;
   }
 
+  /**
+   * Upload a tree type image file
+   * @param {File} file - Image file to upload
+   * @returns {Promise<{success: boolean, url: string}>}
+   */
+  static async uploadTreeTypeImage(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return ApiClient.post("/api/admin/tree-types/upload", formData, true);
+  }
+
   // ========== Tree Varieties ==========
 
   /**
