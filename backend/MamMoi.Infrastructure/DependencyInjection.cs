@@ -44,6 +44,7 @@ public static class DependencyInjection
         services.AddScoped<IInvitationService, MamMoi.Infrastructure.Services.Staff.StaffService>();
         services.AddScoped<IGardenMemberService, MamMoi.Infrastructure.Services.GardenMember.GardenMemberService>();
         services.AddScoped<ICareScheduleService, MamMoi.Infrastructure.Services.CareSchedules.CareScheduleService>();
+        services.AddScoped<IPaymentService, MamMoi.Infrastructure.Services.Payment.PaymentService>();
         services.AddScoped<ISubscriptionPlanService, MamMoi.Infrastructure.Services.SubscriptionPlans.SubscriptionPlanService>();
 
         // Register admin services
