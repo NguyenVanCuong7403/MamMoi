@@ -57,7 +57,7 @@ namespace MamMoi.Infrastructure.Services.GardenSoils
         where t.TreeId == treeId
         from gs in _db.Set<GardenSoil>().AsNoTracking()
             .Where(gs => gs.GardenId == t.GardenId
-                      && gs.SoilMasterId == t.TreeType.SoilMasterId)
+                      )
         select new GardenSoilDto(
             gs.GardenSoilId,
             gs.GardenId,
