@@ -177,7 +177,8 @@ public class AuthService : IAuthService
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             TokenExpiresAt = DateTime.Now.AddMinutes(60),
-            Message = "Xác thực thành công! Chào mừng bạn đến với MamMoi."
+            Message = "Xác thực thành công! Chào mừng bạn đến với MamMoi.",
+            RoleId = userEntity.RoleId
         };
     }
 
@@ -326,7 +327,8 @@ public class AuthService : IAuthService
             RefreshToken = refreshToken,
             ProfileImageUrl = userEntity.ProfileImageUrl,
             TokenExpiresAt = DateTime.Now.AddMinutes(60),
-            Message = "Đăng nhập thành công!"
+            Message = "Đăng nhập thành công!",
+            RoleId = userEntity.RoleId
         };
     }
 

@@ -53,4 +53,9 @@ public class AuthResponseDto
 
 
     public string? ProfileImageUrl { get; set; }
+
+    /// <summary>
+    /// Role ID của user (1: SystemAdmin, 2: BusinessAdmin, 3: Farmer, 4: Staff)
+    /// </summary>
+    public int RoleId { get; set; }
 }

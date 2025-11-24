@@ -44,6 +44,18 @@ const addRememberedEmail = (email) => {
   if (!email || !email.trim()) return;
   const trimmedEmail = email.trim();
   const emails = getRememberedEmails();
+<<<<<<< HEAD
+  
+  // Xóa email nếu đã tồn tại (để đưa lên đầu)
+  const filtered = emails.filter(e => e !== trimmedEmail);
+  
+  // Thêm email vào đầu danh sách
+  const updated = [trimmedEmail, ...filtered];
+  
+  // Giới hạn số lượng email
+  const limited = updated.slice(0, MAX_REMEMBERED_EMAILS);
+  
+=======
 
   // Xóa email nếu đã tồn tại (để đưa lên đầu)
   const filtered = emails.filter((e) => e !== trimmedEmail);
@@ -54,6 +66,7 @@ const addRememberedEmail = (email) => {
   // Giới hạn số lượng email
   const limited = updated.slice(0, MAX_REMEMBERED_EMAILS);
 
+>>>>>>> cuong
   localStorage.setItem("rememberedEmails", JSON.stringify(limited));
 };
 
@@ -61,8 +74,13 @@ const removeRememberedEmail = (email) => {
   if (!email) return;
   const trimmedEmail = email.trim();
   const emails = getRememberedEmails();
+<<<<<<< HEAD
+  const filtered = emails.filter(e => e !== trimmedEmail);
+  
+=======
   const filtered = emails.filter((e) => e !== trimmedEmail);
 
+>>>>>>> cuong
   if (filtered.length === 0) {
     localStorage.removeItem("rememberedEmails");
   } else {
@@ -212,6 +230,11 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setToken(data.accessToken);
       setRefreshToken(data.refreshToken);
+<<<<<<< HEAD
+      
+      console.log("✅ Login successful, returning role:", primaryRole, "roleId:", data.roleId);
+      return { success: true, role: primaryRole, roleId: data.roleId, user: userData };
+=======
 
       console.log(
         "✅ Login successful, returning role:",
@@ -225,6 +248,7 @@ export const AuthProvider = ({ children }) => {
         roleId: data.roleId,
         user: userData,
       };
+>>>>>>> cuong
     } catch (err) {
       console.error("Login failed:", err);
       return { success: false, message: err.message };

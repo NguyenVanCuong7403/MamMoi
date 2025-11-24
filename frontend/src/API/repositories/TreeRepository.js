@@ -81,6 +81,13 @@ export default class TreeRepository {
   }
 
   /**
+   * Get all tree varieties
+   */
+  static async getTreeVarieties() {
+    return ApiClient.get("/api/trees/varieties");
+  }
+
+  /**
    * Get my trees (with optional filters, pagination, and sort)
    * @param {Object} options
    * @param {number} options.userId - optional, fallback to JWT
