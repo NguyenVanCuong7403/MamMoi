@@ -197,6 +197,8 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("user", JSON.stringify(userData));
 
+
+
       // Lưu email để ghi nhớ đăng nhập (KHÔNG lưu password vì lý do bảo mật)
       // Hỗ trợ nhiều email: lưu vào danh sách thay vì ghi đè
       if (remember) {
@@ -395,7 +397,7 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await AuthRepository.logout();
-    } catch {}
+    } catch { }
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");

@@ -1,4 +1,11 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+} from "react";
 import LivingBackground from "@/components/background/LivingBackground";
 import { useLocation, useSearchParams } from "react-router-dom";
 
@@ -124,6 +131,18 @@ const PHASES5 = [
   "Sau thu hoạch",
 ];
 const PHASE_ORDER = [...PHASES5];
+const CLICKABLE_FORM_STYLES = `
+.mm-clickable-form input:not(:disabled):not([readonly]),
+.mm-clickable-form textarea:not(:disabled):not([readonly]),
+.mm-clickable-form select:not(:disabled),
+.mm-clickable-form button:not(:disabled) {
+  cursor: pointer;
+}
+.mm-clickable-form input:focus,
+.mm-clickable-form textarea:focus {
+  cursor: text;
+}
+`;
 
 function mapLegacyTo5(name = "") {
   const s = String(name).toLowerCase();
@@ -313,7 +332,10 @@ function SafeImage({ src, alt = "", className = "" }) {
 }
 
 /* ------------------------------ Image Picker ----------------------------- */
-function ImagePicker({ code, value, onChange, onFileSelected }) {
+const ImagePicker = forwardRef(function ImagePicker(
+  { code, value, onChange, onFileSelected },
+  ref
+) {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -335,6 +357,10 @@ function ImagePicker({ code, value, onChange, onFileSelected }) {
     fileInputRef.current?.click();
   }
 
+  useImperativeHandle(ref, () => ({
+    open: handleImageClick,
+  }));
+
   return (
     <div className="space-y-3">
       <input
@@ -344,16 +370,21 @@ function ImagePicker({ code, value, onChange, onFileSelected }) {
         className="hidden"
         onChange={handleFile}
       />
-      <div 
+      <div
         className="rounded-xl overflow-hidden border cursor-pointer hover:opacity-90 transition-opacity"
         onClick={handleImageClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleImageClick();
+          }
+        }}
+        aria-label="Chọn hoặc thay ảnh cây"
       >
         {value ? (
-          <SafeImage
-            src={value}
-            alt="preview"
-            className="w-full h-40 object-cover"
-          />
+          <SafeImage src={value} alt="preview" className="w-full h-40 object-cover" />
         ) : (
           <div className="w-full h-40 bg-neutral-100 flex flex-col items-center justify-center text-neutral-400">
             <Upload className="w-8 h-8 mb-2" />
@@ -363,7 +394,7 @@ function ImagePicker({ code, value, onChange, onFileSelected }) {
       </div>
     </div>
   );
-}
+});
 /* ------------------------------ Searchable Select (dùng cho Loại cây / Giống / Loại đất) ----------------------------- */
 /* ------------------------------ Searchable Select (giống AddressPicker) ----------------------------- */
 function SearchableSelect({
@@ -1075,6 +1106,7 @@ export default function AddTreeNewScreen() {
   const [lastCreatedSpecies, setLastCreatedSpecies] = useState("");
   const [lastCreatedVariety, setLastCreatedVariety] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+const imagePickerRef = useRef(null);
 
 // ✅ CHẶN ENTER TRONG CÁC Ô INPUT TEXT 1 DÒNG
   const handleTextInputKeyDown = (e) => {
@@ -1153,7 +1185,12 @@ export default function AddTreeNewScreen() {
   const [phaseOverride, setPhaseOverride] = useState("");
   useEffect(() => {
     setVariety("");
+    setSelectedVarietyId("");
     setGardenSoilId("");   // reset loại đất khi đổi loại cây
+  }, [treeTypeId]);
+
+  useEffect(() => {
+    setGardenSoilId(""); // fallback khi speciesKey đổi từ nguồn khác
   }, [speciesKey]);
 
   // Nếu chưa override tay, khi có ngày trồng thì seed lại phase theo lib (1 lần)
@@ -1252,34 +1289,49 @@ const effectivePhase = phaseOverride || defaultPhase5;
   }, []);
 
   useEffect(() => {
-  let mounted = true;
-  (async () => {
-    try {
-      const res = await TreeRepository.getTreeVarieties(); // giả sử trả array TreeVarietyDto
-      if (!mounted) return;
-      const arr = Array.isArray(res) ? res : (res.data || []);
-      setVarietiesAll(arr);
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await TreeRepository.getTreeVarieties(); // giả sử trả array TreeVarietyDto
+        if (!mounted) return;
+        const arr = Array.isArray(res) ? res : res.data || [];
+        setVarietiesAll(arr);
 
-      // build mapping by TreeTypeId
-      const map = {};
-      arr.forEach(v => {
-        const key = String(v.treeTypeId ?? v.TreeTypeId ?? v.TreeTypeID ?? v.TreeTypeId ?? "0");
-        if (!map[key]) map[key] = [];
-        map[key].push({
-          value: v.varietyId ?? v.VarietyId ?? v.VarietyID ?? v.VarietyId,
-          label: v.treeVarietyName ?? v.TreeVarietyName ?? v.TreeVarietyName,
-          raw: v
+        // build mapping by TreeTypeId
+        const map = {};
+        arr.forEach((v) => {
+          const normalizedTreeTypeId =
+            v.treeTypeId ?? v.TreeTypeId ?? v.TreeTypeID ?? null;
+          const normalizedVarietyId =
+            v.varietyId ?? v.VarietyId ?? v.VarietyID ?? null;
+          const normalizedVarietyName =
+            v.varietyName ??
+            v.VarietyName ??
+            v.treeVarietyName ??
+            v.TreeVarietyName ??
+            "";
+
+          if (normalizedTreeTypeId == null || normalizedVarietyId == null) return;
+
+          const key = String(normalizedTreeTypeId);
+          if (!map[key]) map[key] = [];
+          map[key].push({
+            value: String(normalizedVarietyId),
+            label: normalizedVarietyName,
+            raw: v,
+          });
         });
-      });
-      setVarietiesByType(map);
-    } catch (err) {
-      console.error("Failed to load varieties", err);
-      setVarietiesAll([]);
-      setVarietiesByType({});
-    }
-  })();
-  return () => { mounted = false; };
-}, []);
+        setVarietiesByType(map);
+      } catch (err) {
+        console.error("Failed to load varieties", err);
+        setVarietiesAll([]);
+        setVarietiesByType({});
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Validate submit (remove gardenId requirement)
   const REQUIRED_MSG = {
@@ -1474,12 +1526,18 @@ const effectivePhase = phaseOverride || defaultPhase5;
   const previewDone = Boolean(image);
   const noteDone = Boolean(userIntent);
 
+const openImagePicker = () => {
+  imagePickerRef.current?.open?.();
+};
+
   /* ------------------------------ UI ------------------------------ */
   return (
-    <div
-      className="min-h-screen relative overflow-x-hidden"
-      style={{ backgroundColor: "#1F302F", paddingTop: "calc(var(--mm-header-h, 88px) + 12px)" }}
-    >
+    <>
+      <style>{CLICKABLE_FORM_STYLES}</style>
+      <div
+        className="min-h-screen relative overflow-x-hidden mm-clickable-form"
+        style={{ backgroundColor: "#1F302F", paddingTop: "calc(var(--mm-header-h, 88px) + 12px)" }}
+      >
       {/* Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <LivingBackground
@@ -1544,7 +1602,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
           <div className="grid lg:grid-cols-12 gap-4 lg:gap-6 items-start min-w-0">
             {/* LEFT – form */}
             <div className="lg:col-span-8 space-y-6 min-w-0">
-              <Card className="relative z-20 rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5 overflow-hidden">
+              <Card className="relative z-20 rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5 overflow-visible">
 
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center gap-2 break-words">
@@ -1870,12 +1928,25 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
                 <CardHeader className="pb-3"><CardTitle className="break-words">Hướng dẫn điền & sử dụng</CardTitle></CardHeader>
                 <CardContent className="text-sm text-neutral-700 min-w-0">
-                  <ol className="list-decimal ml-5 space-y-1 break-words">
-                    <li><b>Mã cây</b> tự gợi ý sau khi chọn <b>Loại</b> & <b>Giống</b>; có thể chỉnh tay.</li>
-                    <li>Nhập <b>Tuổi trước khi trồng</b> (tháng) và <b>Ngày trồng</b> để ước tính tuổi tổng.</li>
-                    <li><b>Mô tả lá/cành</b> giúp AI hiểu cây; nếu bỏ trống, hệ thống hiểu là <i>bình thường</i>.</li>
-                    <li><b>Giai đoạn</b>: <b>Hoa</b> cho nhập từ <b>Ra hoa</b>; <b>Quả</b> cho nhập từ <b>Ra quả</b>.</li>
-                    <li>Nếu đi từ trang danh sách vườn → danh sách cây → tạo cây, màn này sẽ tự nhận <b>Vườn</b>.</li>
+                  <ol className="list-decimal ml-5 space-y-1.5 break-words">
+                    <li>
+                      <b>Mã cây</b> tự gợi ý sau khi chọn <b>Loại cây</b> và <b>Giống</b>; click khung để sửa thủ công khi cần.
+                    </li>
+                    <li>
+                      <b>Giống</b> chỉ mở khi bạn đã chọn <b>Loại cây</b>; nếu thay đổi loại, hệ thống sẽ reset danh sách giống và yêu cầu chọn lại.
+                    </li>
+                    <li>
+                      <b>Tuổi trước khi trồng</b> (tính theo tháng) và <b>Ngày trồng</b> giúp tính tuổi tổng + gợi ý giai đoạn, hãy nhập dữ liệu thực tế.
+                    </li>
+                    <li>
+                      <b>Loại đất</b> chỉ khả dụng khi màn hình được mở từ một vườn đã cấu hình danh sách đất; nếu dropdown bị khoá, hãy kiểm tra lại cấu hình đất ở trang vườn.
+                    </li>
+                    <li>
+                      <b>Giai đoạn</b> quyết định khả năng nhập <b>Hoa</b>/<b>Quả</b>: trường Hoa chỉ cho nhập từ giai đoạn “Ra hoa”, trường Quả từ “Ra quả” trở lên.
+                    </li>
+                    <li>
+                      <b>Ảnh & Preview</b>: click trực tiếp vào khung ảnh hoặc phần preview để chọn/thay ảnh nhanh, đồng thời xem lại các thông tin tóm tắt.
+                    </li>
                   </ol>
                 </CardContent>
               </Card>
@@ -1928,10 +1999,28 @@ const effectivePhase = phaseOverride || defaultPhase5;
                 <CardHeader className="pb-3"><CardTitle className="break-words">Ảnh & Preview</CardTitle></CardHeader>
                 <CardContent className="space-y-4 min-w-0">
                   <div className="min-w-0">
-                  <ImagePicker code={code} value={image} onChange={setImage} onFileSelected={setImageFile} />
+                  <ImagePicker
+                    ref={imagePickerRef}
+                    code={code}
+                    value={image}
+                    onChange={setImage}
+                    onFileSelected={setImageFile}
+                  />
                   </div>
                   <div className="rounded-xl border bg-white overflow-hidden ring-1 ring-black/5 min-w-0">
-                    <div className="h-52 w-full bg-neutral-100 grid place-items-center min-w-0 overflow-hidden">
+                    <div
+                      className="h-52 w-full bg-neutral-100 grid place-items-center min-w-0 overflow-hidden cursor-pointer"
+                      onClick={openImagePicker}
+                      role="button"
+                      tabIndex={0}
+                      title="Click để chọn hoặc thay ảnh"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openImagePicker();
+                        }
+                      }}
+                    >
                       {image && image.trim() ? (
                         <SafeImage src={image} alt="tree" className="w-full h-52 object-cover" />
                       ) : (
@@ -2107,7 +2196,8 @@ const effectivePhase = phaseOverride || defaultPhase5;
           </div>
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 

@@ -30,7 +30,7 @@ namespace MamMoi.Infrastructure.Services
                 var soil = await _db.GardenSoils.FirstOrDefaultAsync(gs => gs.GardenSoilId == req.GardenSoilId, ct);
                 var ttSoilId = await _db.TreeTypes.Where(t => t.TreeTypeId == req.TreeTypeId)
                                   .Select(t => t.SoilMasterId).FirstAsync(ct);
-                if (soil == null || soil.GardenId != req.GardenId || soil.SoilMasterId != ttSoilId)
+                if (soil == null || soil.GardenId != req.GardenId)
                     throw new InvalidOperationException("GardenSoil does not match Garden/TreeType.");
             }
 
