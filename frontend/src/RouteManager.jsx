@@ -1,5 +1,6 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
+import ScrollToTop from "./components/ScrollToTop";
 import AuthScreen from "./components/auth/AuthScreen";
 import AddTreeNewScreen from "./components/user/AddTreeNewScreen";
 import CareFlowEditablePreview from "./components/user/CareFlowEditablePreview";
@@ -34,7 +35,9 @@ import PlantDetail from "./components/user/PlantDetail";
 
 export default function RouteManager({ authTab }) {
   return (
-    <Routes>
+    <>
+      <ScrollToTop />
+      <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/auth" element={<AuthScreen defaultTab={authTab} />} />
       <Route
@@ -205,5 +208,6 @@ export default function RouteManager({ authTab }) {
       {/* 404 */}
       <Route path="*" element={<h2>404 - Page Not Found</h2>} />
     </Routes>
+    </>
   );
 }
