@@ -70,6 +70,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LivingBackground } from "@/components/background";
 import AdminLayout from "../layout/AdminLayout";
+import AdminReportRepository from "@/API/repositories/AdminReportRepository";
 
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
@@ -125,9 +126,21 @@ const STATUS_LABELS = {
 const STATUS_BADGE_FALLBACK = "bg-slate-100 text-slate-600";
 
 const PRIORITY_META = {
-  high: { label: "Cao", className: "bg-rose-100 text-rose-700", accent: "text-rose-600" },
-  medium: { label: "Trung bình", className: "bg-amber-100 text-amber-700", accent: "text-amber-600" },
-  low: { label: "Thấp", className: "bg-emerald-100 text-emerald-700", accent: "text-emerald-600" },
+  high: {
+    label: "Cao",
+    className: "bg-rose-100 text-rose-700",
+    accent: "text-rose-600",
+  },
+  medium: {
+    label: "Trung bình",
+    className: "bg-amber-100 text-amber-700",
+    accent: "text-amber-600",
+  },
+  low: {
+    label: "Thấp",
+    className: "bg-emerald-100 text-emerald-700",
+    accent: "text-emerald-600",
+  },
 };
 
 const TYPE_META = {
@@ -143,25 +156,71 @@ const SLA_HOURS = 24;
 const generateMockReports = () => {
   const now = new Date();
   const users = [
-    { id: "USR-000001", name: "Nguyễn Minh Hoàng", email: "hoang.nm@example.com" },
+    {
+      id: "USR-000001",
+      name: "Nguyễn Minh Hoàng",
+      email: "hoang.nm@example.com",
+    },
     { id: "USR-000002", name: "Trần Thị Mai", email: "mai.tran@orchard.vn" },
-    { id: "USR-000003", name: "Phạm Anh Tuấn", email: "tuan.pham@greengrow.vn" },
+    {
+      id: "USR-000003",
+      name: "Phạm Anh Tuấn",
+      email: "tuan.pham@greengrow.vn",
+    },
     { id: "USR-000004", name: "Võ Thảo Nhi", email: "nhi.vo@example.com" },
     { id: "USR-000005", name: "Lê Quang Khải", email: "khai.le@citrus.io" },
     { id: "USR-000006", name: "Đỗ Thanh Vân", email: "van.do@example.com" },
     { id: "USR-000007", name: "Huỳnh Tấn Tài", email: "tai.huynh@fruitful.vn" },
     { id: "USR-000008", name: "Đinh Yến Nhi", email: "yen.nhi@example.com" },
-    { id: "USR-000009", name: "Trương Quý Long", email: "long.truong@agrimax.vn" },
-    { id: "USR-000010", name: "Hồ Khánh Linh", email: "linh.khanh@example.com" },
+    {
+      id: "USR-000009",
+      name: "Trương Quý Long",
+      email: "long.truong@agrimax.vn",
+    },
+    {
+      id: "USR-000010",
+      name: "Hồ Khánh Linh",
+      email: "linh.khanh@example.com",
+    },
     { id: "USR-000011", name: "Tô Thành Phát", email: "phat.to@fruitflow.vn" },
-    { id: "USR-000012", name: "Phan Ngọc Trang", email: "trang.phan@citrus.vn" },
+    {
+      id: "USR-000012",
+      name: "Phan Ngọc Trang",
+      email: "trang.phan@citrus.vn",
+    },
   ];
 
   const reportTemplates = [
-    { type: "payment", title: "Thanh toán QR bị treo, không tạo hóa đơn", summary: "User báo thanh toán xong nhưng hệ thống không kích hoạt gói.", priority: "high", status: "in_progress" },
-    { type: "auth", title: "Không nhận được OTP khi đăng nhập", summary: "OTP gửi qua SMS chậm hơn 5 phút, người dùng không thể đăng nhập.", priority: "high", status: "in_progress" },
-    { type: "system", title: "API dự báo thời tiết trả về lỗi 500", summary: "Module đồng bộ thời tiết thất bại với tất cả garden miền Trung.", priority: "medium", status: "resolved" },
-    { type: "other", title: "Gợi ý UI: hiển thị lịch sử chăm sóc dạng timeline", summary: "Nâng cao trải nghiệm xem lịch sử cho từng cây.", priority: "low", status: "in_progress" },
+    {
+      type: "payment",
+      title: "Thanh toán QR bị treo, không tạo hóa đơn",
+      summary: "User báo thanh toán xong nhưng hệ thống không kích hoạt gói.",
+      priority: "high",
+      status: "in_progress",
+    },
+    {
+      type: "auth",
+      title: "Không nhận được OTP khi đăng nhập",
+      summary:
+        "OTP gửi qua SMS chậm hơn 5 phút, người dùng không thể đăng nhập.",
+      priority: "high",
+      status: "in_progress",
+    },
+    {
+      type: "system",
+      title: "API dự báo thời tiết trả về lỗi 500",
+      summary:
+        "Module đồng bộ thời tiết thất bại với tất cả garden miền Trung.",
+      priority: "medium",
+      status: "resolved",
+    },
+    {
+      type: "other",
+      title: "Gợi ý UI: hiển thị lịch sử chăm sóc dạng timeline",
+      summary: "Nâng cao trải nghiệm xem lịch sử cho từng cây.",
+      priority: "low",
+      status: "in_progress",
+    },
   ];
 
   const reports = [];
@@ -171,7 +230,9 @@ const generateMockReports = () => {
     const date = new Date(now.getTime() - daysAgo * 24 * 60 * 60 * 1000);
 
     reports.push({
-      id: `RP-${date.toISOString().split("T")[0].replace(/-/g, "")}-${String(index + 1).padStart(4, "0")}`,
+      id: `RP-${date.toISOString().split("T")[0].replace(/-/g, "")}-${String(
+        index + 1
+      ).padStart(4, "0")}`,
       type: template.type,
       title: template.title,
       summary: template.summary,
@@ -198,7 +259,11 @@ const MOCK_REPORTS_LEGACY = [
     type: "payment",
     title: "Thanh toán QR bị treo, không tạo hóa đơn",
     summary: "User báo thanh toán xong nhưng hệ thống không kích hoạt gói.",
-    user: { id: "USR-9081", name: "Nguyễn Bảo Khánh", email: "khanh.nguyen@example.com" },
+    user: {
+      id: "USR-9081",
+      name: "Nguyễn Bảo Khánh",
+      email: "khanh.nguyen@example.com",
+    },
     createdAt: "2025-11-17T08:05:00",
     priority: "high",
     status: "new",
@@ -216,7 +281,11 @@ const MOCK_REPORTS_LEGACY = [
     type: "auth",
     title: "Không nhận được OTP khi đăng nhập",
     summary: "OTP gửi qua SMS chậm hơn 5 phút, người dùng không thể đăng nhập.",
-    user: { id: "USR-9012", name: "Phạm Thảo Nhi", email: "nhi.pham@example.com" },
+    user: {
+      id: "USR-9012",
+      name: "Phạm Thảo Nhi",
+      email: "nhi.pham@example.com",
+    },
     createdAt: "2025-11-17T10:42:00",
     priority: "high",
     status: "in_progress",
@@ -234,7 +303,11 @@ const MOCK_REPORTS_LEGACY = [
     type: "system",
     title: "API dự báo thời tiết trả về lỗi 500",
     summary: "Module đồng bộ thời tiết thất bại với tất cả garden miền Trung.",
-    user: { id: "USR-8998", name: "Trần Văn Hải", email: "hai.tran@example.com" },
+    user: {
+      id: "USR-8998",
+      name: "Trần Văn Hải",
+      email: "hai.tran@example.com",
+    },
     createdAt: "2025-11-15T22:10:00",
     priority: "medium",
     status: "in_progress",
@@ -252,21 +325,31 @@ const MOCK_REPORTS_LEGACY = [
     type: "payment",
     title: "Không thể in hóa đơn GTGT",
     summary: "Trang tải vô hạn khi người dùng tải file PDF hóa đơn.",
-    user: { id: "USR-8770", name: "Hồ Quốc Thịnh", email: "thinh.ho@example.com" },
+    user: {
+      id: "USR-8770",
+      name: "Hồ Quốc Thịnh",
+      email: "thinh.ho@example.com",
+    },
     createdAt: "2025-11-14T13:30:00",
     priority: "high",
     status: "resolved",
     content:
       "Lỗi xuất phát từ thay đổi template pdfjs. Đã triển khai sửa nhưng cần phản hồi người dùng.",
-    internalNote: "Đã kiểm tra và sửa lỗi template PDF. Đã deploy fix vào production. Đã gửi email thông báo cho khách hàng.",
-    emailContent: "Xin chào Hồ Quốc Thịnh,\n\nChúng tôi đã xử lý xong báo cáo RP-20251115-0011. Lỗi đã được khắc phục và bạn có thể tải hóa đơn bình thường.\n\nTrân trọng,\nĐội Hỗ trợ Mầm Mới",
+    internalNote:
+      "Đã kiểm tra và sửa lỗi template PDF. Đã deploy fix vào production. Đã gửi email thông báo cho khách hàng.",
+    emailContent:
+      "Xin chào Hồ Quốc Thịnh,\n\nChúng tôi đã xử lý xong báo cáo RP-20251115-0011. Lỗi đã được khắc phục và bạn có thể tải hóa đơn bình thường.\n\nTrân trọng,\nĐội Hỗ trợ Mầm Mới",
   },
   {
     id: "RP-20251114-0005",
     type: "system",
     title: "Dashboard cây bị trắng sau khi cập nhật trình duyệt",
     summary: "Một số người dùng Chrome 130 báo trắng màn hình.",
-    user: { id: "USR-8321", name: "Đoàn Nhật Minh", email: "minh.doan@example.com" },
+    user: {
+      id: "USR-8321",
+      name: "Đoàn Nhật Minh",
+      email: "minh.doan@example.com",
+    },
     createdAt: "2025-11-14T06:15:00",
     priority: "medium",
     status: "new",
@@ -284,8 +367,10 @@ const MOCK_REPORTS_LEGACY = [
     status: "resolved",
     content:
       "SMTP SendGrid trả về mã 550. Cần cập nhật SPF/DKIM checklist cho khách hàng doanh nghiệp.",
-    internalNote: "Đã hướng dẫn khách hàng cập nhật SPF/DKIM records. Đã verify lại và email hoạt động bình thường.",
-    emailContent: "Xin chào Lý Thị Ánh,\n\nChúng tôi đã xử lý xong báo cáo RP-20251113-0007. Email verify đã hoạt động bình thường sau khi cập nhật SPF/DKIM.\n\nTrân trọng,\nĐội Hỗ trợ Mầm Mới",
+    internalNote:
+      "Đã hướng dẫn khách hàng cập nhật SPF/DKIM records. Đã verify lại và email hoạt động bình thường.",
+    emailContent:
+      "Xin chào Lý Thị Ánh,\n\nChúng tôi đã xử lý xong báo cáo RP-20251113-0007. Email verify đã hoạt động bình thường sau khi cập nhật SPF/DKIM.\n\nTrân trọng,\nĐội Hỗ trợ Mầm Mới",
   },
   {
     id: "RP-20251113-0015",
@@ -304,7 +389,11 @@ const MOCK_REPORTS_LEGACY = [
     type: "payment",
     title: "Gia hạn tự động bị thất bại",
     summary: "Thẻ credit hợp lệ nhưng bị từ chối.",
-    user: { id: "USR-7801", name: "Nguyễn Hải Đăng", email: "dang.nguyen@example.com" },
+    user: {
+      id: "USR-7801",
+      name: "Nguyễn Hải Đăng",
+      email: "dang.nguyen@example.com",
+    },
     createdAt: "2025-11-12T02:45:00",
     priority: "high",
     status: "new",
@@ -316,26 +405,35 @@ const MOCK_REPORTS_LEGACY = [
     type: "system",
     title: "Không xem được lịch tưới trên mobile",
     summary: "App mobile crash khi mở tab CareFlow.",
-    user: { id: "USR-7450", name: "Đặng Hữu Phúc", email: "phuc.dang@example.com" },
+    user: {
+      id: "USR-7450",
+      name: "Đặng Hữu Phúc",
+      email: "phuc.dang@example.com",
+    },
     createdAt: "2025-11-09T09:12:00",
     priority: "medium",
     status: "rejected",
     content:
       "Không tái hiện được trên staging, cần thêm log nếu khách hàng cung cấp.",
-    internalNote: "Đã test trên staging và không tái hiện được lỗi. Đã yêu cầu khách hàng cung cấp thêm log nhưng không nhận được phản hồi sau 3 ngày.",
-    emailContent: "Xin chào Đặng Hữu Phúc,\n\nChúng tôi đã kiểm tra báo cáo RP-20251110-0010 nhưng không thể tái hiện lỗi trên hệ thống. Vui lòng cung cấp thêm log hoặc video để chúng tôi có thể hỗ trợ tốt hơn.\n\nTrân trọng,\nĐội Hỗ trợ Mầm Mới",
+    internalNote:
+      "Đã test trên staging và không tái hiện được lỗi. Đã yêu cầu khách hàng cung cấp thêm log nhưng không nhận được phản hồi sau 3 ngày.",
+    emailContent:
+      "Xin chào Đặng Hữu Phúc,\n\nChúng tôi đã kiểm tra báo cáo RP-20251110-0010 nhưng không thể tái hiện lỗi trên hệ thống. Vui lòng cung cấp thêm log hoặc video để chúng tôi có thể hỗ trợ tốt hơn.\n\nTrân trọng,\nĐội Hỗ trợ Mầm Mới",
   },
   {
     id: "RP-20251108-0004",
     type: "other",
     title: "Gợi ý UI: hiển thị lịch sử chăm sóc dạng timeline",
     summary: "Nâng cao trải nghiệm xem lịch sử cho từng cây.",
-    user: { id: "USR-7011", name: "Trần Ngọc Hà", email: "ha.tran@example.com" },
+    user: {
+      id: "USR-7011",
+      name: "Trần Ngọc Hà",
+      email: "ha.tran@example.com",
+    },
     createdAt: "2025-11-07T15:20:00",
     priority: "low",
     status: "in_progress",
-    content:
-      "Đề nghị cho phép xuất dữ liệu timeline ra PDF để chia sẻ nội bộ.",
+    content: "Đề nghị cho phép xuất dữ liệu timeline ra PDF để chia sẻ nội bộ.",
   },
 ];
 
@@ -351,17 +449,23 @@ const priorityOrder = { high: 0, medium: 1, low: 2 };
 const closedStatuses = ["resolved", "rejected"];
 
 function isOverdue(report) {
-  const elapsedHours = (Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
-  return elapsedHours > SLA_HOURS && !closedStatuses.includes(normalizeStatus(report.status));
+  const elapsedHours =
+    (Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
+  return (
+    elapsedHours > SLA_HOURS &&
+    !closedStatuses.includes(normalizeStatus(report.status))
+  );
 }
 
 function wasOverdue(report) {
-  const elapsedHours = (Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
+  const elapsedHours =
+    (Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
   return elapsedHours > SLA_HOURS;
 }
 
 function getRemainingHours(report) {
-  const elapsedHours = (Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
+  const elapsedHours =
+    (Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
   return SLA_HOURS - elapsedHours;
 }
 
@@ -416,7 +520,9 @@ function exportReportsToCSV(reports) {
       escapeCsvValue(TYPE_META[report.type]?.label ?? report.type),
       escapeCsvValue(PRIORITY_META[report.priority]?.label ?? report.priority),
       escapeCsvValue(getStatusLabel(report.status)),
-      escapeCsvValue(new Date(report.createdAt).toLocaleString("vi-VN", { hour12: false })),
+      escapeCsvValue(
+        new Date(report.createdAt).toLocaleString("vi-VN", { hour12: false })
+      ),
       escapeCsvValue(overdueMeta ? overdueMeta.label : ""),
     ].join(",");
   });
@@ -448,7 +554,9 @@ function ReportTimelineChart({ data, timeframeLabel }) {
   if (data.length === 0) {
     return (
       <div className="flex h-full flex-col items-center justify-center rounded-2xl border border-emerald-50 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 p-5 text-emerald-50 shadow-lg">
-        <p className="text-sm text-emerald-100/80">Chưa có dữ liệu trong bộ lọc.</p>
+        <p className="text-sm text-emerald-100/80">
+          Chưa có dữ liệu trong bộ lọc.
+        </p>
       </div>
     );
   }
@@ -480,13 +588,23 @@ function ReportTimelineChart({ data, timeframeLabel }) {
             }}
           >
             <defs>
-              <linearGradient id="reportTimelineGradient" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient
+                id="reportTimelineGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
                 <stop offset="0%" stopColor="#bbf7d0" stopOpacity={0.95} />
                 <stop offset="60%" stopColor="#4ade80" stopOpacity={0.4} />
                 <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid stroke="#064e3b" strokeDasharray="3 3" opacity={0.35} />
+            <CartesianGrid
+              stroke="#064e3b"
+              strokeDasharray="3 3"
+              opacity={0.35}
+            />
             <XAxis
               dataKey="label"
               tickLine={false}
@@ -509,7 +627,12 @@ function ReportTimelineChart({ data, timeframeLabel }) {
               stroke="#bbf7d0"
               strokeWidth={2.4}
               fill="url(#reportTimelineGradient)"
-              dot={{ r: 3, strokeWidth: 1.5, stroke: "#dcfce7", fill: "#22c55e" }}
+              dot={{
+                r: 3,
+                strokeWidth: 1.5,
+                stroke: "#dcfce7",
+                fill: "#22c55e",
+              }}
               activeDot={{ r: 5, strokeWidth: 0, fill: "#22c55e" }}
             />
           </RechartsAreaChart>
@@ -531,7 +654,11 @@ const COMPARISON_PERIODS = [
   { value: "year", label: "Năm này so với năm trước" },
 ];
 
-function ReportTypeDistributionChart({ data, timeFilter = "day", allReports = [] }) {
+function ReportTypeDistributionChart({
+  data,
+  timeFilter = "day",
+  allReports = [],
+}) {
   const chartData = data.map((item) => ({
     ...item,
     label: item.label ?? TYPE_META[item.key]?.label ?? item.key,
@@ -541,7 +668,7 @@ function ReportTypeDistributionChart({ data, timeFilter = "day", allReports = []
   const total = chartData.reduce((sum, item) => sum + item.value, 0);
   const peakValue = chartData.reduce(
     (max, item) => Math.max(max, item.value),
-    0,
+    0
   );
 
   // Map timeFilter sang comparison period
@@ -589,7 +716,13 @@ function ReportTypeDistributionChart({ data, timeFilter = "day", allReports = []
       previousPeriodEnd = currentPeriodStart;
     }
 
-    const previousCounts = { total: 0, auth: 0, payment: 0, system: 0, other: 0 };
+    const previousCounts = {
+      total: 0,
+      auth: 0,
+      payment: 0,
+      system: 0,
+      other: 0,
+    };
 
     allReports.forEach((report) => {
       const reportDate = new Date(report.createdAt);
@@ -609,7 +742,7 @@ function ReportTypeDistributionChart({ data, timeFilter = "day", allReports = []
   };
 
   const totalChange = calculateChange(total, previousData.total);
-  
+
   // Tính change cho từng loại báo cáo
   const chartDataWithChange = chartData.map((item) => {
     const previousValue = previousData[item.key] || 0;
@@ -689,24 +822,23 @@ function ReportTypeDistributionChart({ data, timeFilter = "day", allReports = []
                 tickMargin={8}
                 tick={{ fill: "#6b7280", fontSize: 11 }}
                 width={50}
-                domain={[0, (dataMax) => {
-                  if (dataMax === 0) return 1;
-                  // Tính padding 20% và làm tròn lên đến số tròn phù hợp
-                  const padded = dataMax * 1.2;
-                  if (padded < 10) return Math.ceil(padded);
-                  if (padded < 100) return Math.ceil(padded / 5) * 5;
-                  if (padded < 1000) return Math.ceil(padded / 50) * 50;
-                  if (padded < 10000) return Math.ceil(padded / 500) * 500;
-                  return Math.ceil(padded / 1000) * 1000;
-                }]}
+                domain={[
+                  0,
+                  (dataMax) => {
+                    if (dataMax === 0) return 1;
+                    // Tính padding 20% và làm tròn lên đến số tròn phù hợp
+                    const padded = dataMax * 1.2;
+                    if (padded < 10) return Math.ceil(padded);
+                    if (padded < 100) return Math.ceil(padded / 5) * 5;
+                    if (padded < 1000) return Math.ceil(padded / 50) * 50;
+                    if (padded < 10000) return Math.ceil(padded / 500) * 500;
+                    return Math.ceil(padded / 1000) * 1000;
+                  },
+                ]}
                 allowDecimals={false}
               />
               <RechartsTooltip content={<CustomTooltip />} />
-              <Bar
-                dataKey="value"
-                radius={[8, 8, 0, 0]}
-                maxBarSize={40}
-              >
+              <Bar dataKey="value" radius={[8, 8, 0, 0]} maxBarSize={40}>
                 {chartData.map((item) => (
                   <Cell key={item.key} fill={item.color} />
                 ))}
@@ -761,14 +893,12 @@ function ReportTypeDistributionChart({ data, timeFilter = "day", allReports = []
 }
 
 export default function ReportManagement() {
-  const [reports, setReports] = useState(MOCK_REPORTS);
-
-  // Hàm cập nhật report
-  const updateReport = (reportId, updates) => {
-    setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, ...updates } : r)));
-  };
-  
-  const [filters, setFilters] = useState(defaultFilters);
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [selectedReport, setSelectedReport] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDetailOpen, setViewDetailOpen] = useState(false);
@@ -779,6 +909,98 @@ export default function ReportManagement() {
   const [pendingStatus, setPendingStatus] = useState("");
   const [hasSubmitAttempt, setHasSubmitAttempt] = useState(false);
   const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
+  const [filters, setFilters] = useState(defaultFilters);
+
+  // Hàm cập nhật report
+  const updateReport = async (reportId, updates) => {
+    try {
+      // Find the report to get requestId
+      const report = reports.find((r) => r.id === reportId);
+      const requestId = report?.requestId || reportId;
+
+      const updateData = {
+        status: updates.status,
+        resolution: updates.internalNote || updates.resolution,
+        priority: updates.priority,
+        category: updates.category,
+      };
+
+      await AdminReportRepository.updateReport(requestId, updateData);
+
+      // Refresh reports after update
+      await fetchReports();
+    } catch (err) {
+      console.error("Error updating report:", err);
+      throw err;
+    }
+  };
+
+  // Fetch reports from API
+  const fetchReports = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Map filters to API parameters
+      const statusFilter = filters.status === "all" ? null : filters.status;
+      const priorityFilter =
+        filters.priority === "all" ? null : filters.priority;
+      const categoryFilter = filters.type === "all" ? null : filters.type;
+
+      // Calculate date range based on time filter
+      const now = new Date();
+      let startDate = null;
+      let endDate = null;
+
+      if (filters.time === "day") {
+        startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        endDate = now;
+      } else if (filters.time === "week") {
+        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        endDate = now;
+      } else if (filters.time === "month") {
+        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        endDate = now;
+      } else if (filters.time === "year") {
+        startDate = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+        endDate = now;
+      }
+
+      const response = await AdminReportRepository.getReports(
+        page,
+        100, // Large page size to get all reports for filtering
+        statusFilter,
+        priorityFilter,
+        categoryFilter,
+        null,
+        startDate,
+        endDate
+      );
+
+      if (response.success) {
+        setReports(response.data || []);
+        setTotalCount(response.pagination?.totalCount || 0);
+        setTotalPages(response.pagination?.totalPages || 1);
+      }
+    } catch (err) {
+      console.error("Error fetching reports:", err);
+      setError(err.message || "Có lỗi xảy ra khi tải danh sách báo cáo");
+      setReports([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch and when filters change
+  useEffect(() => {
+    fetchReports();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.time, filters.status, filters.priority, filters.type, page]);
+
+  // Refresh button handler
+  const handleRefresh = () => {
+    fetchReports();
+  };
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -789,7 +1011,9 @@ export default function ReportManagement() {
   };
 
   const filteredReports = useMemo(() => {
-    const timeWindow = TIME_SEGMENTS.find((item) => item.value === filters.time);
+    const timeWindow = TIME_SEGMENTS.find(
+      (item) => item.value === filters.time
+    );
     const limitHours = timeWindow?.durationHours ?? Infinity;
     const now = Date.now();
 
@@ -798,8 +1022,11 @@ export default function ReportManagement() {
       const diffHours = (now - createdAt) / (1000 * 60 * 60);
       const matchesTime = diffHours >= 0 && diffHours <= limitHours;
       const matchesPriority =
-        filters.priority === "all" ? true : report.priority === filters.priority;
-      const matchesType = filters.type === "all" ? true : report.type === filters.type;
+        filters.priority === "all"
+          ? true
+          : report.priority === filters.priority;
+      const matchesType =
+        filters.type === "all" ? true : report.type === filters.type;
       const matchesStatus =
         filters.status === "all"
           ? true
@@ -814,14 +1041,21 @@ export default function ReportManagement() {
         report.user.name.toLowerCase().includes(term) ||
         report.user.email.toLowerCase().includes(term);
 
-      return matchesTime && matchesPriority && matchesType && matchesStatus && matchesSearch;
+      return (
+        matchesTime &&
+        matchesPriority &&
+        matchesType &&
+        matchesStatus &&
+        matchesSearch
+      );
     });
   }, [filters, reports]);
 
   const sortedReports = useMemo(() => {
     const now = Date.now();
     const getOverdueDuration = (report) => {
-      const elapsedHours = (now - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
+      const elapsedHours =
+        (now - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
       return Math.max(0, elapsedHours - SLA_HOURS);
     };
 
@@ -838,7 +1072,8 @@ export default function ReportManagement() {
         if (overdueDiff !== 0) return overdueDiff;
       }
 
-      const createdDiff = new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      const createdDiff =
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       if (createdDiff !== 0) return createdDiff;
 
       if (priorityOrder[a.priority] !== priorityOrder[b.priority]) {
@@ -851,7 +1086,9 @@ export default function ReportManagement() {
 
   const stats = useMemo(() => {
     const overdue = filteredReports.filter((report) => isOverdue(report));
-    const resolved = filteredReports.filter((report) => report.status === "resolved");
+    const resolved = filteredReports.filter(
+      (report) => report.status === "resolved"
+    );
     // Báo cáo chưa xử lý = tất cả báo cáo đang xử lý (in_progress/new) + tất cả báo cáo xử lý muộn
     const rejected = filteredReports.filter((report) => {
       const normalizedStatus = normalizeStatus(report.status);
@@ -871,11 +1108,13 @@ export default function ReportManagement() {
     if (overdueReports.length === 0) return null;
 
     const pickOldest = (reports) =>
-      [...reports].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))[0];
+      [...reports].sort(
+        (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
+      )[0];
 
     for (const priorityKey of Object.keys(PRIORITY_META)) {
       const reportsByPriority = overdueReports.filter(
-        (report) => report.priority === priorityKey,
+        (report) => report.priority === priorityKey
       );
       if (reportsByPriority.length > 0) {
         return {
@@ -888,7 +1127,7 @@ export default function ReportManagement() {
     }
 
     const nonPriorityReports = overdueReports.filter(
-      (report) => !PRIORITY_META[report.priority],
+      (report) => !PRIORITY_META[report.priority]
     );
     if (nonPriorityReports.length > 0) {
       return {
@@ -1103,14 +1342,27 @@ export default function ReportManagement() {
   const showEmailContentError = hasSubmitAttempt && !isEmailContentValid;
   const showStatusError = hasSubmitAttempt && !isStatusValid;
 
-  const handleConfirm = () => {
-    if (selectedReport && statusUpdate && isAdminNotesValid && isEmailContentValid) {
-      // Cập nhật report status thông qua context
-      updateReport(selectedReport.id, {
-        status: statusUpdate,
-        internalNote: adminNotes.trim(),
-        emailContent: emailContent.trim(),
-      });
+  const handleConfirm = async () => {
+    if (
+      selectedReport &&
+      statusUpdate &&
+      isAdminNotesValid &&
+      isEmailContentValid
+    ) {
+      try {
+        // Cập nhật report status thông qua API
+        await updateReport(selectedReport.id, {
+          status: statusUpdate,
+          internalNote: adminNotes.trim(),
+          emailContent: emailContent.trim(),
+        });
+
+        // Show success message (email sending would be handled by backend)
+        alert("Cập nhật báo cáo thành công!");
+      } catch (err) {
+        alert("Có lỗi xảy ra khi cập nhật báo cáo. Vui lòng thử lại.");
+        return;
+      }
     }
     setConfirmOpen(false);
     setDialogOpen(false);
@@ -1132,8 +1384,12 @@ export default function ReportManagement() {
     filteredReports.length === 0 ? (
       <div className="flex flex-col items-center justify-center py-12 text-center text-slate-500">
         <ShieldQuestion className="mb-4 h-10 w-10 text-slate-300" />
-        <p className="text-base font-semibold text-slate-600">Không có báo cáo nào khớp bộ lọc</p>
-        <p className="text-sm">Thử thay đổi bộ lọc ưu tiên hoặc khoảng thời gian.</p>
+        <p className="text-base font-semibold text-slate-600">
+          Không có báo cáo nào khớp bộ lọc
+        </p>
+        <p className="text-sm">
+          Thử thay đổi bộ lọc ưu tiên hoặc khoảng thời gian.
+        </p>
       </div>
     ) : null;
 
@@ -1141,707 +1397,968 @@ export default function ReportManagement() {
     <>
       <LivingBackground
         baseColor={BACKGROUND_PALETTE.bg}
-        palette={[BACKGROUND_PALETTE.leaf, BACKGROUND_PALETTE.ivory, BACKGROUND_PALETTE.accent]}
+        palette={[
+          BACKGROUND_PALETTE.leaf,
+          BACKGROUND_PALETTE.ivory,
+          BACKGROUND_PALETTE.accent,
+        ]}
         density={28}
       />
       <div className="relative min-h-screen z-10">
         <AdminLayout>
           <>
             <div className="space-y-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
-              <ShieldCheck className="h-4 w-4" />
-              Quản trị hệ thống
-            </p>
-            <h1 className="mt-2 text-3xl font-semibold text-white">
-              Quản lý báo cáo
-            </h1>
-            <p className="text-emerald-100/80">
-              Giám sát báo cáo bảo mật, thanh toán và hoạt động hệ thống toàn bộ hệ sinh thái Mầm Mới.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
-              {TIME_SEGMENTS.map((segment) => {
-                const isActive = filters.time === segment.value;
-                return (
-                  <button
-                    key={segment.value}
-                    onClick={() => handleFilterChange("time", segment.value)}
-                    className={cn(
-                      "rounded-full px-4 py-2 text-sm font-semibold transition-all",
-                      isActive
-                        ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/30"
-                        : "text-white/70 hover:text-white"
-                    )}
-                  >
-                    {segment.label}
-                  </button>
-                );
-              })}
-            </div>
-            <Button
-              variant="outline"
-              className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-            >
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Đồng bộ dữ liệu
-            </Button>
-          </div>
-        </div>
-
-        {overdueAlert && (
-          <div className="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-rose-700 shadow-lg shadow-rose-200/50">
-            <div className="flex flex-wrap items-center gap-3">
-              <AlertTriangle className="h-5 w-5" />
-              <div className="flex flex-col gap-1">
-                <p className="font-semibold">
-                  {overdueAlert.type === "priority"
-                    ? `Bạn đang có ${overdueAlert.count} báo cáo ưu tiên đang bị quá hạn chưa được xử lý.`
-                    : `Bạn đang có ${overdueAlert.count} báo cáo đang bị quá hạn chưa được xử lý.`}
-                </p>
-                {overdueAlert.type === "priority" && (
-                  <p className="text-sm">
-                    Ưu tiên: Ưu tiên {PRIORITY_META[overdueAlert.priority]?.label?.toLowerCase()} ·
-                    Báo cáo lâu nhất từ {new Date(overdueAlert.nextReport.createdAt).toLocaleString("vi-VN", { hour12: false })}
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
+                    <ShieldCheck className="h-4 w-4" />
+                    Quản trị hệ thống
                   </p>
-                )}
-                {overdueAlert.type === "general" && (
-                  <p className="text-sm">
-                    Báo cáo lâu nhất từ{" "}
-                    {new Date(overdueAlert.nextReport.createdAt).toLocaleString("vi-VN", { hour12: false })}
+                  <h1 className="mt-2 text-3xl font-semibold text-white">
+                    Quản lý báo cáo
+                  </h1>
+                  <p className="text-emerald-100/80">
+                    Giám sát báo cáo bảo mật, thanh toán và hoạt động hệ thống
+                    toàn bộ hệ sinh thái Mầm Mới.
                   </p>
-                )}
-              </div>
-              <Button
-                variant="outline"
-                className="border-rose-200 bg-white/70 text-rose-700 hover:bg-white"
-                onClick={() => {
-                  if (overdueAlert.nextReport) openDialog(overdueAlert.nextReport);
-                }}
-              >
-                Xử lý ngay
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <Card className="border-none bg-white/95 text-slate-900 rounded-2xl shadow-2xl shadow-emerald-900/10">
-          <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <CardTitle className="text-2xl text-slate-900">Tổng quan báo cáo</CardTitle>
-              <p className="text-sm text-slate-500">
-                Dữ liệu {TIME_SEGMENTS.find((t) => t.value === filters.time)?.label?.toLowerCase() ?? "kỳ"} hiện tại{" "}
-                <span className="font-semibold text-emerald-600">so với kỳ trước</span>
-              </p>
-            </div>
-            <Button
-              variant="outline"
-              className="gap-2 rounded-xl border-emerald-100 text-emerald-700 hover:bg-emerald-50"
-              onClick={resetFilters}
-            >
-              <Filter className="h-4 w-4" /> Đặt lại bộ lọc
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {[
-                {
-                  key: "total",
-                  label: "Tổng số báo cáo",
-                  value: stats.total,
-                },
-                {
-                  key: "rejected",
-                  label: "Báo cáo chưa xử lý",
-                  value: stats.rejected,
-                },
-                {
-                  key: "overdue",
-                  label: "Báo cáo xử lý muộn",
-                  value: stats.overdue,
-                },
-                {
-                  key: "resolved",
-                  label: "Đã xử lý",
-                  value: stats.resolved,
-                },
-              ].map((item) => {
-                const isOverdueCard = item.key === "overdue";
-                return (
-                  <div
-                    key={item.key}
-                    className={cn(
-                      "rounded-2xl border border-emerald-50 bg-white px-6 py-5 shadow-sm",
-                      isOverdueCard && "border-rose-100 bg-rose-50/70"
-                    )}
-                  >
-                    <p
-                      className={cn(
-                        "text-sm",
-                        isOverdueCard ? "text-rose-600" : "text-slate-500"
-                      )}
-                    >
-                      {item.label}
-                    </p>
-                    <p
-                      className={cn(
-                        "mt-2 text-3xl font-semibold",
-                        isOverdueCard ? "text-rose-700" : "text-slate-900"
-                      )}
-                    >
-                      {item.value}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none bg-transparent text-slate-900 shadow-none">
-          <CardContent className="grid gap-6 p-0 lg:grid-cols-3 lg:min-h-[360px]">
-            <div className="lg:col-span-2 h-full">
-              <ReportTimelineChart
-                data={timelineData}
-                timeframeLabel={TIME_SEGMENTS.find((t) => t.value === filters.time)?.label ?? "Kỳ"}
-              />
-            </div>
-            <div className="lg:col-span-1 h-full">
-              <ReportTypeDistributionChart
-                data={typeDistribution}
-                timeFilter={filters.time}
-                allReports={reports}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-none bg-white/95 text-slate-900 rounded-2xl shadow-2xl shadow-emerald-900/10">
-            <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <CardTitle className="text-2xl text-slate-900">Danh sách báo cáo</CardTitle>
-                <p className="text-sm text-slate-500">{filteredReports.length} báo cáo khớp bộ lọc</p>
-              </div>
-              <Button
-                className="gap-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
-                onClick={handleExportReports}
-                disabled={sortedReports.length === 0}
-              >
-                <FileDown className="h-4 w-4" />
-                Xuất CSV
-              </Button>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="flex flex-wrap gap-3">
-                <div className="relative flex-1 min-w-[220px]">
-                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    placeholder="Tìm tiêu đề / nội dung / người gửi"
-                    className="rounded-xl border-slate-200 bg-slate-50 pl-10 text-slate-800"
-                    value={filters.search}
-                    onChange={(event) => handleFilterChange("search", event.target.value)}
-                  />
                 </div>
-                <Select value={filters.priority} onValueChange={(value) => handleFilterChange("priority", value)}>
-                  <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                    <SelectValue placeholder="Ưu tiên" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRIORITY_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={filters.type} onValueChange={(value) => handleFilterChange("type", value)}>
-                  <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                    <SelectValue placeholder="Loại báo cáo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tất cả loại</SelectItem>
-                    {REPORT_TYPES.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={filters.status}
-                  onValueChange={(value) => handleFilterChange("status", value)}
-                >
-                  <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                    <SelectValue placeholder="Trạng thái" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button
-                  variant="outline"
-                  className="rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                  onClick={resetFilters}
-                >
-                  Đặt lại
-                </Button>
-              </div>
-
-              <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
-                <Table>
-                  <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
-                  <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
-                    <TableHead>Mã báo cáo</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Loại</TableHead>
-                    <TableHead>Ưu tiên</TableHead>
-                      <TableHead>Thời gian gửi</TableHead>
-                      <TableHead>Trạng thái</TableHead>
-                      <TableHead className="text-right">Hành động</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {sortedReports.map((report) => {
-                      const overdue = isOverdue(report);
-                      const overdueMeta = getOverdueBadgeMeta(report);
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
+                    {TIME_SEGMENTS.map((segment) => {
+                      const isActive = filters.time === segment.value;
                       return (
-                        <TableRow
-                          key={report.id}
+                        <button
+                          key={segment.value}
+                          onClick={() =>
+                            handleFilterChange("time", segment.value)
+                          }
                           className={cn(
-                            "text-sm border-b border-slate-100 transition",
-                            overdue
-                              ? "bg-rose-50/70 hover:bg-rose-100/80"
-                              : "bg-white/60 hover:bg-emerald-50/40"
+                            "rounded-full px-4 py-2 text-sm font-semibold transition-all",
+                            isActive
+                              ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/30"
+                              : "text-white/70 hover:text-white"
                           )}
                         >
-                          <TableCell className="font-semibold text-slate-900">{report.id}</TableCell>
-                          <TableCell>
-                            <p className="font-medium text-slate-800">{report.user.name}</p>
-                            <p className="text-xs font-mono text-slate-500">{report.user.id}</p>
-                          </TableCell>
-                          <TableCell className="font-semibold text-slate-700">
-                            {TYPE_META[report.type]?.label}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={cn("border-0", PRIORITY_META[report.priority]?.className)}>
-                              {PRIORITY_META[report.priority]?.label}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-slate-500">
-                            {new Date(report.createdAt).toLocaleString("vi-VN", { hour12: false })}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-wrap items-center gap-2">
-                              <Badge className={cn("border-0", getStatusBadgeClass(report.status))}>
-                                {getStatusLabel(report.status)}
-                              </Badge>
-                              {overdueMeta && (
-                                <Badge className={cn("border-0", overdueMeta.className)}>
-                                  {overdueMeta.label}
-                                </Badge>
-                              )}
-                              {isReportClosed(report) && report.internalNote && (
-                                <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
-                                  <span className="font-semibold text-slate-700">Log nội bộ: </span>
-                                  <span className="line-clamp-1">
-                                    {report.internalNote.length > 100
-                                      ? `${report.internalNote.substring(0, 100)}...`
-                                      : report.internalNote}
-                                  </span>
-                                </div>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              className={cn(
-                                isReportClosed(report)
-                                  ? "text-slate-700 hover:bg-slate-50"
-                                  : "text-emerald-700 hover:bg-emerald-50"
-                              )}
-                              onClick={() => openDialog(report)}
-                            >
-                              {isReportClosed(report) ? "Xem chi tiết" : "Xử lý"}
-                            </Button>
-                          </TableCell>
-                        </TableRow>
+                          {segment.label}
+                        </button>
                       );
                     })}
-                  </TableBody>
-                </Table>
-                {emptyState}
-              </div>
-            </CardContent>
-          </Card>
-      </div>
-
-      <Dialog open={dialogOpen} onOpenChange={(open) => setDialogOpen(open)}>
-        <DialogContent className="max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-slate-900">Xử lý báo cáo</DialogTitle>
-            <DialogDescription>
-              Cập nhật trạng thái, ghi log nội bộ và chuẩn bị nội dung phản hồi cho người gửi.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedReport && (
-            <div className="space-y-6 py-2">
-              <div className="grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">Mã báo cáo</p>
-                  <p className="text-sm font-mono text-slate-900">{selectedReport.id}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">Người gửi</p>
-                  <p className="text-sm text-slate-900">{selectedReport.user.name}</p>
-                  <p className="text-xs font-mono text-slate-500">{selectedReport.user.id}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">Loại báo cáo</p>
-                  <p className="text-sm text-slate-900">{TYPE_META[selectedReport.type]?.label}</p>
-                </div>
-                <div className="space-x-2">
-                  <Badge className={cn("border-0", PRIORITY_META[selectedReport.priority]?.className)}>
-                    Ưu tiên {PRIORITY_META[selectedReport.priority]?.label}
-                  </Badge>
-                  {wasOverdue(selectedReport) && (
-                    <Badge className="border-0 bg-rose-600 text-white">Report xử lý muộn</Badge>
-                  )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    onClick={handleRefresh}
+                    disabled={loading}
+                  >
+                    <RefreshCw
+                      className={cn("mr-2 h-4 w-4", loading && "animate-spin")}
+                    />
+                    {loading ? "Đang tải..." : "Đồng bộ dữ liệu"}
+                  </Button>
                 </div>
               </div>
 
-              <div>
-                <p className="text-xs font-semibold uppercase text-slate-400">Nội dung báo cáo</p>
-                <p className="mt-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-                  {selectedReport.content}
-                </p>
-              </div>
-
-              {selectedReport.evidence?.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">Ảnh chứng minh</p>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    {selectedReport.evidence.map((item, index) => (
-                      <div
-                        key={`${item.url}-${index}`}
-                        className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
-                      >
-                        <img
-                          src={item.url}
-                          alt={item.caption}
-                          className="h-40 w-full object-cover"
-                          loading="lazy"
-                        />
-                        <div className="flex items-center justify-between px-3 py-2">
-                          <p className="text-sm font-medium text-slate-700">{item.caption}</p>
-                          <Button variant="ghost" asChild className="text-emerald-600 hover:bg-emerald-50">
-                            <a href={item.url} target="_blank" rel="noopener noreferrer">
-                              Xem
-                            </a>
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+              {error && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-rose-700 shadow-lg">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5" />
+                    <p>{error}</p>
                   </div>
                 </div>
               )}
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-slate-700">Log nội bộ</p>
-                  <Textarea
-                    rows={5}
-                    value={adminNotes}
-                    onChange={(event) => setAdminNotes(event.target.value)}
-                    placeholder="Admin đã xử lý như thế nào..."
-                    required
-                    aria-invalid={showAdminNotesError}
-                    className={cn(
-                      "rounded-2xl border bg-white",
-                      showAdminNotesError ? "border-rose-300" : "border-slate-200"
-                    )}
-                  />
-                  {showAdminNotesError && (
-                    <p className="text-xs font-medium text-rose-600">
-                      Vui lòng ghi log nội bộ trước khi xác nhận.
-                    </p>
-                  )}
+              {loading && reports.length === 0 ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                  <span className="ml-3 text-slate-600">
+                    Đang tải dữ liệu...
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-slate-700">Nội dung phản hồi người dùng</p>
-                  <Textarea
-                    rows={5}
-                    value={emailContent}
-                    onChange={(event) => setEmailContent(event.target.value)}
-                    placeholder="Nội dung email sẽ gửi cho người dùng..."
-                    required
-                    aria-invalid={showEmailContentError}
-                    className={cn(
-                      "rounded-2xl border bg-white",
-                      showEmailContentError ? "border-rose-300" : "border-slate-200"
-                    )}
-                  />
-                  {showEmailContentError && (
-                    <p className="text-xs font-medium text-rose-600">
-                      Vui lòng soạn nội dung phản hồi cho người dùng.
-                    </p>
-                  )}
-                </div>
-              </div>
+              ) : null}
 
-              <div className="space-y-2">
-                <p className="text-sm font-semibold text-slate-700">Cập nhật trạng thái</p>
-                <Select
-                  value={statusUpdate || undefined}
-                  onValueChange={handleStatusIntent}
-                >
-                  <SelectTrigger
+              {overdueAlert && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/90 p-4 text-rose-700 shadow-lg shadow-rose-200/50">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <AlertTriangle className="h-5 w-5" />
+                    <div className="flex flex-col gap-1">
+                      <p className="font-semibold">
+                        {overdueAlert.type === "priority"
+                          ? `Bạn đang có ${overdueAlert.count} báo cáo ưu tiên đang bị quá hạn chưa được xử lý.`
+                          : `Bạn đang có ${overdueAlert.count} báo cáo đang bị quá hạn chưa được xử lý.`}
+                      </p>
+                      {overdueAlert.type === "priority" && (
+                        <p className="text-sm">
+                          Ưu tiên: Ưu tiên{" "}
+                          {PRIORITY_META[
+                            overdueAlert.priority
+                          ]?.label?.toLowerCase()}{" "}
+                          · Báo cáo lâu nhất từ{" "}
+                          {new Date(
+                            overdueAlert.nextReport.createdAt
+                          ).toLocaleString("vi-VN", { hour12: false })}
+                        </p>
+                      )}
+                      {overdueAlert.type === "general" && (
+                        <p className="text-sm">
+                          Báo cáo lâu nhất từ{" "}
+                          {new Date(
+                            overdueAlert.nextReport.createdAt
+                          ).toLocaleString("vi-VN", { hour12: false })}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="border-rose-200 bg-white/70 text-rose-700 hover:bg-white"
+                      onClick={() => {
+                        if (overdueAlert.nextReport)
+                          openDialog(overdueAlert.nextReport);
+                      }}
+                    >
+                      Xử lý ngay
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <Card className="border-none bg-white/95 text-slate-900 rounded-2xl shadow-2xl shadow-emerald-900/10">
+                <CardHeader className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <CardTitle className="text-2xl text-slate-900">
+                      Tổng quan báo cáo
+                    </CardTitle>
+                    <p className="text-sm text-slate-500">
+                      Dữ liệu{" "}
+                      {TIME_SEGMENTS.find(
+                        (t) => t.value === filters.time
+                      )?.label?.toLowerCase() ?? "kỳ"}{" "}
+                      hiện tại{" "}
+                      <span className="font-semibold text-emerald-600">
+                        so với kỳ trước
+                      </span>
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="gap-2 rounded-xl border-emerald-100 text-emerald-700 hover:bg-emerald-50"
+                    onClick={resetFilters}
+                  >
+                    <Filter className="h-4 w-4" /> Đặt lại bộ lọc
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {[
+                      {
+                        key: "total",
+                        label: "Tổng số báo cáo",
+                        value: stats.total,
+                      },
+                      {
+                        key: "rejected",
+                        label: "Báo cáo chưa xử lý",
+                        value: stats.rejected,
+                      },
+                      {
+                        key: "overdue",
+                        label: "Báo cáo xử lý muộn",
+                        value: stats.overdue,
+                      },
+                      {
+                        key: "resolved",
+                        label: "Đã xử lý",
+                        value: stats.resolved,
+                      },
+                    ].map((item) => {
+                      const isOverdueCard = item.key === "overdue";
+                      return (
+                        <div
+                          key={item.key}
+                          className={cn(
+                            "rounded-2xl border border-emerald-50 bg-white px-6 py-5 shadow-sm",
+                            isOverdueCard && "border-rose-100 bg-rose-50/70"
+                          )}
+                        >
+                          <p
+                            className={cn(
+                              "text-sm",
+                              isOverdueCard ? "text-rose-600" : "text-slate-500"
+                            )}
+                          >
+                            {item.label}
+                          </p>
+                          <p
+                            className={cn(
+                              "mt-2 text-3xl font-semibold",
+                              isOverdueCard ? "text-rose-700" : "text-slate-900"
+                            )}
+                          >
+                            {item.value}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none bg-transparent text-slate-900 shadow-none">
+                <CardContent className="grid gap-6 p-0 lg:grid-cols-3 lg:min-h-[360px]">
+                  <div className="lg:col-span-2 h-full">
+                    <ReportTimelineChart
+                      data={timelineData}
+                      timeframeLabel={
+                        TIME_SEGMENTS.find((t) => t.value === filters.time)
+                          ?.label ?? "Kỳ"
+                      }
+                    />
+                  </div>
+                  <div className="lg:col-span-1 h-full">
+                    <ReportTypeDistributionChart
+                      data={typeDistribution}
+                      timeFilter={filters.time}
+                      allReports={reports}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="border-none bg-white/95 text-slate-900 rounded-2xl shadow-2xl shadow-emerald-900/10">
+                <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <CardTitle className="text-2xl text-slate-900">
+                      Danh sách báo cáo
+                    </CardTitle>
+                    <p className="text-sm text-slate-500">
+                      {filteredReports.length} báo cáo khớp bộ lọc
+                    </p>
+                  </div>
+                  <Button
+                    className="gap-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+                    onClick={handleExportReports}
+                    disabled={sortedReports.length === 0}
+                  >
+                    <FileDown className="h-4 w-4" />
+                    Xuất CSV
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-5">
+                  <div className="flex flex-wrap gap-3">
+                    <div className="relative flex-1 min-w-[220px]">
+                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        placeholder="Tìm tiêu đề / nội dung / người gửi"
+                        className="rounded-xl border-slate-200 bg-slate-50 pl-10 text-slate-800"
+                        value={filters.search}
+                        onChange={(event) =>
+                          handleFilterChange("search", event.target.value)
+                        }
+                      />
+                    </div>
+                    <Select
+                      value={filters.priority}
+                      onValueChange={(value) =>
+                        handleFilterChange("priority", value)
+                      }
+                    >
+                      <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
+                        <SelectValue placeholder="Ưu tiên" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {PRIORITY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={filters.type}
+                      onValueChange={(value) =>
+                        handleFilterChange("type", value)
+                      }
+                    >
+                      <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
+                        <SelectValue placeholder="Loại báo cáo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tất cả loại</SelectItem>
+                        {REPORT_TYPES.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={filters.status}
+                      onValueChange={(value) =>
+                        handleFilterChange("status", value)
+                      }
+                    >
+                      <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
+                        <SelectValue placeholder="Trạng thái" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      className="rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                      onClick={resetFilters}
+                    >
+                      Đặt lại
+                    </Button>
+                  </div>
+
+                  <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
+                    <Table>
+                      <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
+                        <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
+                          <TableHead>Mã báo cáo</TableHead>
+                          <TableHead>User</TableHead>
+                          <TableHead>Loại</TableHead>
+                          <TableHead>Ưu tiên</TableHead>
+                          <TableHead>Thời gian gửi</TableHead>
+                          <TableHead>Trạng thái</TableHead>
+                          <TableHead className="text-right">
+                            Hành động
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {sortedReports.map((report) => {
+                          const overdue = isOverdue(report);
+                          const overdueMeta = getOverdueBadgeMeta(report);
+                          return (
+                            <TableRow
+                              key={report.id}
+                              className={cn(
+                                "text-sm border-b border-slate-100 transition",
+                                overdue
+                                  ? "bg-rose-50/70 hover:bg-rose-100/80"
+                                  : "bg-white/60 hover:bg-emerald-50/40"
+                              )}
+                            >
+                              <TableCell className="font-semibold text-slate-900">
+                                {report.id}
+                              </TableCell>
+                              <TableCell>
+                                <p className="font-medium text-slate-800">
+                                  {report.user.name}
+                                </p>
+                                <p className="text-xs font-mono text-slate-500">
+                                  {report.user.id}
+                                </p>
+                              </TableCell>
+                              <TableCell className="font-semibold text-slate-700">
+                                {TYPE_META[report.type]?.label}
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  className={cn(
+                                    "border-0",
+                                    PRIORITY_META[report.priority]?.className
+                                  )}
+                                >
+                                  {PRIORITY_META[report.priority]?.label}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-slate-500">
+                                {new Date(report.createdAt).toLocaleString(
+                                  "vi-VN",
+                                  { hour12: false }
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <Badge
+                                    className={cn(
+                                      "border-0",
+                                      getStatusBadgeClass(report.status)
+                                    )}
+                                  >
+                                    {getStatusLabel(report.status)}
+                                  </Badge>
+                                  {overdueMeta && (
+                                    <Badge
+                                      className={cn(
+                                        "border-0",
+                                        overdueMeta.className
+                                      )}
+                                    >
+                                      {overdueMeta.label}
+                                    </Badge>
+                                  )}
+                                  {isReportClosed(report) &&
+                                    report.internalNote && (
+                                      <div className="rounded-lg bg-slate-50 px-2 py-1.5 text-xs text-slate-600">
+                                        <span className="font-semibold text-slate-700">
+                                          Log nội bộ:{" "}
+                                        </span>
+                                        <span className="line-clamp-1">
+                                          {report.internalNote.length > 100
+                                            ? `${report.internalNote.substring(
+                                                0,
+                                                100
+                                              )}...`
+                                            : report.internalNote}
+                                        </span>
+                                      </div>
+                                    )}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  className={cn(
+                                    isReportClosed(report)
+                                      ? "text-slate-700 hover:bg-slate-50"
+                                      : "text-emerald-700 hover:bg-emerald-50"
+                                  )}
+                                  onClick={() => openDialog(report)}
+                                >
+                                  {isReportClosed(report)
+                                    ? "Xem chi tiết"
+                                    : "Xử lý"}
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                    {emptyState}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Dialog
+              open={dialogOpen}
+              onOpenChange={(open) => setDialogOpen(open)}
+            >
+              <DialogContent className="max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-3xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl text-slate-900">
+                    Xử lý báo cáo
+                  </DialogTitle>
+                  <DialogDescription>
+                    Cập nhật trạng thái, ghi log nội bộ và chuẩn bị nội dung
+                    phản hồi cho người gửi.
+                  </DialogDescription>
+                </DialogHeader>
+                {selectedReport && (
+                  <div className="space-y-6 py-2">
+                    <div className="grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-slate-400">
+                          Mã báo cáo
+                        </p>
+                        <p className="text-sm font-mono text-slate-900">
+                          {selectedReport.id}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-slate-400">
+                          Người gửi
+                        </p>
+                        <p className="text-sm text-slate-900">
+                          {selectedReport.user.name}
+                        </p>
+                        <p className="text-xs font-mono text-slate-500">
+                          {selectedReport.user.id}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-slate-400">
+                          Loại báo cáo
+                        </p>
+                        <p className="text-sm text-slate-900">
+                          {TYPE_META[selectedReport.type]?.label}
+                        </p>
+                      </div>
+                      <div className="space-x-2">
+                        <Badge
+                          className={cn(
+                            "border-0",
+                            PRIORITY_META[selectedReport.priority]?.className
+                          )}
+                        >
+                          Ưu tiên{" "}
+                          {PRIORITY_META[selectedReport.priority]?.label}
+                        </Badge>
+                        {wasOverdue(selectedReport) && (
+                          <Badge className="border-0 bg-rose-600 text-white">
+                            Report xử lý muộn
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-slate-400">
+                        Nội dung báo cáo
+                      </p>
+                      <p className="mt-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+                        {selectedReport.content}
+                      </p>
+                    </div>
+
+                    {selectedReport.evidence?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-slate-400">
+                          Ảnh chứng minh
+                        </p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {selectedReport.evidence.map((item, index) => (
+                            <div
+                              key={`${item.url}-${index}`}
+                              className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                            >
+                              <img
+                                src={item.url}
+                                alt={item.caption}
+                                className="h-40 w-full object-cover"
+                                loading="lazy"
+                              />
+                              <div className="flex items-center justify-between px-3 py-2">
+                                <p className="text-sm font-medium text-slate-700">
+                                  {item.caption}
+                                </p>
+                                <Button
+                                  variant="ghost"
+                                  asChild
+                                  className="text-emerald-600 hover:bg-emerald-50"
+                                >
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Xem
+                                  </a>
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-slate-700">
+                          Log nội bộ
+                        </p>
+                        <Textarea
+                          rows={5}
+                          value={adminNotes}
+                          onChange={(event) =>
+                            setAdminNotes(event.target.value)
+                          }
+                          placeholder="Admin đã xử lý như thế nào..."
+                          required
+                          aria-invalid={showAdminNotesError}
+                          className={cn(
+                            "rounded-2xl border bg-white",
+                            showAdminNotesError
+                              ? "border-rose-300"
+                              : "border-slate-200"
+                          )}
+                        />
+                        {showAdminNotesError && (
+                          <p className="text-xs font-medium text-rose-600">
+                            Vui lòng ghi log nội bộ trước khi xác nhận.
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-slate-700">
+                          Nội dung phản hồi người dùng
+                        </p>
+                        <Textarea
+                          rows={5}
+                          value={emailContent}
+                          onChange={(event) =>
+                            setEmailContent(event.target.value)
+                          }
+                          placeholder="Nội dung email sẽ gửi cho người dùng..."
+                          required
+                          aria-invalid={showEmailContentError}
+                          className={cn(
+                            "rounded-2xl border bg-white",
+                            showEmailContentError
+                              ? "border-rose-300"
+                              : "border-slate-200"
+                          )}
+                        />
+                        {showEmailContentError && (
+                          <p className="text-xs font-medium text-rose-600">
+                            Vui lòng soạn nội dung phản hồi cho người dùng.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold text-slate-700">
+                        Cập nhật trạng thái
+                      </p>
+                      <Select
+                        value={statusUpdate || undefined}
+                        onValueChange={handleStatusIntent}
+                      >
+                        <SelectTrigger
+                          className={cn(
+                            "rounded-2xl",
+                            showStatusError
+                              ? "border-rose-300"
+                              : "border-slate-200"
+                          )}
+                        >
+                          <SelectValue placeholder="Chọn trạng thái xử lý" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_FLOW_OPTIONS.map((option) => (
+                            <SelectItem key={option.value} value={option.value}>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={cn(
+                                    "h-2 w-2 rounded-full",
+                                    STATUS_META[
+                                      option.value
+                                    ]?.className?.includes("rose")
+                                      ? "bg-rose-500"
+                                      : STATUS_META[
+                                          option.value
+                                        ]?.className?.includes("sky")
+                                      ? "bg-sky-500"
+                                      : STATUS_META[
+                                          option.value
+                                        ]?.className?.includes("amber")
+                                      ? "bg-amber-500"
+                                      : "bg-emerald-500"
+                                  )}
+                                />
+                                {option.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {showStatusError && (
+                        <p className="text-xs font-medium text-rose-600">
+                          Vui lòng chọn trạng thái cần xử lý.
+                        </p>
+                      )}
+                    </div>
+
+                    <Button
+                      className="w-full rounded-2xl bg-emerald-600 py-6 text-lg font-semibold hover:bg-emerald-700"
+                      disabled={!selectedReport}
+                      onClick={handleConfirmClick}
+                    >
+                      Xác nhận xử lý
+                    </Button>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            <Dialog
+              open={viewDetailOpen}
+              onOpenChange={(open) => setViewDetailOpen(open)}
+            >
+              <DialogContent className="max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-3xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl text-slate-900">
+                    Chi tiết báo cáo
+                  </DialogTitle>
+                  <DialogDescription>
+                    Thông tin chi tiết về báo cáo đã được xử lý. Không thể chỉnh
+                    sửa.
+                  </DialogDescription>
+                </DialogHeader>
+                {selectedReport && (
+                  <div className="space-y-6 py-2">
+                    <div className="grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-2">
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-slate-400">
+                          Mã báo cáo
+                        </p>
+                        <p className="text-sm font-mono text-slate-900">
+                          {selectedReport.id}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-slate-400">
+                          Người gửi
+                        </p>
+                        <p className="text-sm text-slate-900">
+                          {selectedReport.user.name}
+                        </p>
+                        <p className="text-xs font-mono text-slate-500">
+                          {selectedReport.user.id}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-slate-400">
+                          Loại báo cáo
+                        </p>
+                        <p className="text-sm text-slate-900">
+                          {TYPE_META[selectedReport.type]?.label}
+                        </p>
+                      </div>
+                      <div className="space-x-2">
+                        <Badge
+                          className={cn(
+                            "border-0",
+                            PRIORITY_META[selectedReport.priority]?.className
+                          )}
+                        >
+                          Ưu tiên{" "}
+                          {PRIORITY_META[selectedReport.priority]?.label}
+                        </Badge>
+                        <Badge
+                          className={cn(
+                            "border-0",
+                            getStatusBadgeClass(selectedReport.status)
+                          )}
+                        >
+                          {getStatusLabel(selectedReport.status)}
+                        </Badge>
+                        {wasOverdue(selectedReport) && (
+                          <Badge className="border-0 bg-rose-600 text-white">
+                            Report xử lý muộn
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-semibold uppercase text-slate-400">
+                        Nội dung báo cáo
+                      </p>
+                      <p className="mt-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
+                        {selectedReport.content}
+                      </p>
+                    </div>
+
+                    {selectedReport.evidence?.length > 0 && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-slate-400">
+                          Ảnh chứng minh
+                        </p>
+                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                          {selectedReport.evidence.map((item, index) => (
+                            <div
+                              key={`${item.url}-${index}`}
+                              className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                            >
+                              <img
+                                src={item.url}
+                                alt={item.caption}
+                                className="h-40 w-full object-cover"
+                                loading="lazy"
+                              />
+                              <div className="flex items-center justify-between px-3 py-2">
+                                <p className="text-sm font-medium text-slate-700">
+                                  {item.caption}
+                                </p>
+                                <Button
+                                  variant="ghost"
+                                  asChild
+                                  className="text-emerald-600 hover:bg-emerald-50"
+                                >
+                                  <a
+                                    href={item.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    Xem
+                                  </a>
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-slate-700">
+                          Log nội bộ
+                        </p>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 min-h-[120px]">
+                          {selectedReport.internalNote ||
+                            "Không có log nội bộ."}
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold text-slate-700">
+                          Nội dung phản hồi người dùng
+                        </p>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 min-h-[120px] whitespace-pre-wrap">
+                          {selectedReport.emailContent ||
+                            "Không có nội dung phản hồi."}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                      <Button
+                        variant="outline"
+                        className="rounded-2xl border-slate-200 px-6"
+                        onClick={() => setViewDetailOpen(false)}
+                      >
+                        Đóng
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+
+            <AlertDialog
+              open={statusConfirmOpen}
+              onOpenChange={(open) => {
+                if (!open) {
+                  cancelStatusChoice();
+                } else {
+                  setStatusConfirmOpen(true);
+                }
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Xác nhận trạng thái mới</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Bạn sắp chọn trạng thái{" "}
+                    <strong>{getStatusLabel(pendingStatus)}</strong> cho báo cáo{" "}
+                    {selectedReport?.id}.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
+                  <p className="text-xs uppercase tracking-wide text-slate-400">
+                    Trạng thái mới
+                  </p>
+                  <Badge
                     className={cn(
-                      "rounded-2xl",
-                      showStatusError ? "border-rose-300" : "border-slate-200"
+                      "mt-2 border-0",
+                      getStatusBadgeClass(pendingStatus)
                     )}
                   >
-                    <SelectValue placeholder="Chọn trạng thái xử lý" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_FLOW_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={cn(
-                              "h-2 w-2 rounded-full",
-                              STATUS_META[option.value]?.className?.includes("rose")
-                                ? "bg-rose-500"
-                                : STATUS_META[option.value]?.className?.includes("sky")
-                                ? "bg-sky-500"
-                                : STATUS_META[option.value]?.className?.includes("amber")
-                                ? "bg-amber-500"
-                                : "bg-emerald-500"
-                            )}
-                          />
-                          {option.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {showStatusError && (
-                  <p className="text-xs font-medium text-rose-600">Vui lòng chọn trạng thái cần xử lý.</p>
-                )}
-              </div>
-
-              <Button
-                className="w-full rounded-2xl bg-emerald-600 py-6 text-lg font-semibold hover:bg-emerald-700"
-                disabled={!selectedReport}
-                onClick={handleConfirmClick}
-              >
-                Xác nhận xử lý
-              </Button>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={viewDetailOpen} onOpenChange={(open) => setViewDetailOpen(open)}>
-        <DialogContent className="max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-3xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-slate-900">Chi tiết báo cáo</DialogTitle>
-            <DialogDescription>
-              Thông tin chi tiết về báo cáo đã được xử lý. Không thể chỉnh sửa.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedReport && (
-            <div className="space-y-6 py-2">
-              <div className="grid gap-4 rounded-2xl bg-slate-50 p-4 sm:grid-cols-2">
-                <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">Mã báo cáo</p>
-                  <p className="text-sm font-mono text-slate-900">{selectedReport.id}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">Người gửi</p>
-                  <p className="text-sm text-slate-900">{selectedReport.user.name}</p>
-                  <p className="text-xs font-mono text-slate-500">{selectedReport.user.id}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">Loại báo cáo</p>
-                  <p className="text-sm text-slate-900">{TYPE_META[selectedReport.type]?.label}</p>
-                </div>
-                <div className="space-x-2">
-                  <Badge className={cn("border-0", PRIORITY_META[selectedReport.priority]?.className)}>
-                    Ưu tiên {PRIORITY_META[selectedReport.priority]?.label}
+                    {getStatusLabel(pendingStatus)}
                   </Badge>
-                  <Badge className={cn("border-0", getStatusBadgeClass(selectedReport.status))}>
-                    {getStatusLabel(selectedReport.status)}
-                  </Badge>
-                  {wasOverdue(selectedReport) && (
-                    <Badge className="border-0 bg-rose-600 text-white">Report xử lý muộn</Badge>
-                  )}
                 </div>
-              </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel onClick={cancelStatusChoice}>
+                    Huỷ
+                  </AlertDialogCancel>
+                  <AlertDialogAction onClick={confirmStatusChoice}>
+                    Xác nhận trạng thái
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
-              <div>
-                <p className="text-xs font-semibold uppercase text-slate-400">Nội dung báo cáo</p>
-                <p className="mt-2 rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-                  {selectedReport.content}
-                </p>
-              </div>
-
-              {selectedReport.evidence?.length > 0 && (
-                <div>
-                  <p className="text-xs font-semibold uppercase text-slate-400">Ảnh chứng minh</p>
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    {selectedReport.evidence.map((item, index) => (
-                      <div
-                        key={`${item.url}-${index}`}
-                        className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+            <AlertDialog
+              open={confirmOpen}
+              onOpenChange={(open) => setConfirmOpen(open)}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Xác nhận gửi cập nhật?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Bạn sắp cập nhật báo cáo {selectedReport?.id} với trạng thái{" "}
+                    <strong>{getStatusLabel(statusUpdate)}</strong> và gửi email
+                    cho {selectedReport?.user?.email}.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-4 text-sm text-slate-600">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Báo cáo
+                      </p>
+                      <p className="mt-1 font-mono text-slate-900">
+                        {selectedReport?.id}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Ưu tiên
+                      </p>
+                      <Badge
+                        className={cn(
+                          "mt-1 border-0",
+                          PRIORITY_META[selectedReport?.priority]?.className
+                        )}
                       >
-                        <img
-                          src={item.url}
-                          alt={item.caption}
-                          className="h-40 w-full object-cover"
-                          loading="lazy"
-                        />
-                        <div className="flex items-center justify-between px-3 py-2">
-                          <p className="text-sm font-medium text-slate-700">{item.caption}</p>
-                          <Button variant="ghost" asChild className="text-emerald-600 hover:bg-emerald-50">
-                            <a href={item.url} target="_blank" rel="noopener noreferrer">
-                              Xem
-                            </a>
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
+                        {PRIORITY_META[selectedReport?.priority]?.label}
+                      </Badge>
+                    </div>
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Loại báo cáo
+                      </p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {selectedReport &&
+                          TYPE_META[selectedReport.type]?.label}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                      <p className="text-xs uppercase tracking-wide text-slate-400">
+                        Người nhận email
+                      </p>
+                      <p className="mt-1 font-semibold text-slate-900">
+                        {selectedReport?.user?.name}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        {selectedReport?.user?.email}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-400">
+                      Trạng thái xử lý
+                    </p>
+                    <Badge
+                      className={cn(
+                        "mt-2 border-0",
+                        getStatusBadgeClass(statusUpdate)
+                      )}
+                    >
+                      {getStatusLabel(statusUpdate)}
+                    </Badge>
+                  </div>
+                  <div className="rounded-xl border border-slate-100 bg-white p-3">
+                    <p className="text-xs uppercase tracking-wide text-slate-400">
+                      Nội dung email
+                    </p>
+                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-xs text-slate-700">
+                      {emailContent || "Chưa nhập nội dung phản hồi."}
+                    </pre>
                   </div>
                 </div>
-              )}
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-slate-700">Log nội bộ</p>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 min-h-[120px]">
-                    {selectedReport.internalNote || "Không có log nội bộ."}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-sm font-semibold text-slate-700">Nội dung phản hồi người dùng</p>
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 min-h-[120px] whitespace-pre-wrap">
-                    {selectedReport.emailContent || "Không có nội dung phản hồi."}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex justify-end">
-                <Button
-                  variant="outline"
-                  className="rounded-2xl border-slate-200 px-6"
-                  onClick={() => setViewDetailOpen(false)}
-                >
-                  Đóng
-                </Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog
-        open={statusConfirmOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            cancelStatusChoice();
-          } else {
-            setStatusConfirmOpen(true);
-          }
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận trạng thái mới</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bạn sắp chọn trạng thái <strong>{getStatusLabel(pendingStatus)}</strong> cho báo cáo{" "}
-              {selectedReport?.id}.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-slate-400">Trạng thái mới</p>
-            <Badge className={cn("mt-2 border-0", getStatusBadgeClass(pendingStatus))}>
-              {getStatusLabel(pendingStatus)}
-            </Badge>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={cancelStatusChoice}>Huỷ</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmStatusChoice}>Xác nhận trạng thái</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={confirmOpen} onOpenChange={(open) => setConfirmOpen(open)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Xác nhận gửi cập nhật?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Bạn sắp cập nhật báo cáo {selectedReport?.id} với trạng thái{" "}
-              <strong>{getStatusLabel(statusUpdate)}</strong> và gửi email cho{" "}
-              {selectedReport?.user?.email}.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-4 text-sm text-slate-600">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Báo cáo</p>
-                <p className="mt-1 font-mono text-slate-900">{selectedReport?.id}</p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Ưu tiên</p>
-                <Badge
-                  className={cn("mt-1 border-0", PRIORITY_META[selectedReport?.priority]?.className)}
-                >
-                  {PRIORITY_META[selectedReport?.priority]?.label}
-                </Badge>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Loại báo cáo</p>
-                <p className="mt-1 font-semibold text-slate-900">
-                  {selectedReport && TYPE_META[selectedReport.type]?.label}
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                <p className="text-xs uppercase tracking-wide text-slate-400">Người nhận email</p>
-                <p className="mt-1 font-semibold text-slate-900">
-                  {selectedReport?.user?.name}
-                </p>
-                <p className="text-xs text-slate-500">{selectedReport?.user?.email}</p>
-              </div>
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-400">Trạng thái xử lý</p>
-              <Badge className={cn("mt-2 border-0", getStatusBadgeClass(statusUpdate))}>
-                {getStatusLabel(statusUpdate)}
-              </Badge>
-            </div>
-            <div className="rounded-xl border border-slate-100 bg-white p-3">
-              <p className="text-xs uppercase tracking-wide text-slate-400">Nội dung email</p>
-              <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-xs text-slate-700">
-                {emailContent || "Chưa nhập nội dung phản hồi."}
-              </pre>
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Hủy</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirm}>Xác nhận & gửi</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Hủy</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleConfirm}>
+                    Xác nhận & gửi
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </>
         </AdminLayout>
       </div>
     </>
   );
 }
-

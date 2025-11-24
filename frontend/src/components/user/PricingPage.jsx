@@ -97,7 +97,7 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="mm-fluid-page min-h-screen bg-gray-50">
       {/* Hero Section with Topographic Background */}
       <div className="relative bg-gradient-to-br from-emerald-800 to-emerald-900 text-white overflow-hidden">
         {/* Topographic Pattern */}
@@ -117,7 +117,7 @@ export default function PricingPage() {
           </svg>
         </div>
 
-        <div className="relative container mx-auto px-4 py-16">
+        <div className="mm-fluid-shell relative container mx-auto px-4 py-16">
           <div className="text-center mb-12">
             <span className="inline-block bg-emerald-700 text-white px-4 py-1 rounded-full text-sm mb-4">
               Dịch vụ
@@ -125,13 +125,13 @@ export default function PricingPage() {
             <h1 className="text-4xl md:text-5xl font-bold mb-4">
               Đăng ký gói chăm sóc<br />cây ăn quả cho nông hộ
             </h1>
-            <p className="text-emerald-100 max-w-2xl mx-auto">
+            <p className="mm-fluid-text text-emerald-100 max-w-2xl mx-auto">
               Theo dõi vườn cây, nhận cảnh báo sâu bệnh vì lịch tưới bón thông minh – thiết kế riêng cho
             </p>
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="mm-fluid-shell grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {plans.map((plan, index) => (
               <Card 
                 key={index} 
@@ -183,8 +183,8 @@ export default function PricingPage() {
       </div>
 
       {/* Features Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
+      <div className="mm-fluid-shell container mx-auto px-4 py-16">
+        <div className="mm-fluid-shell grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {features.map((feature, index) => (
             <Card key={index} className="text-center">
               <CardContent className="p-6">
@@ -201,14 +201,14 @@ export default function PricingPage() {
 
       {/* Newsletter Section */}
       <div className="bg-gray-100 py-12">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto">
+        <div className="mm-fluid-shell container mx-auto px-4">
+          <div className="mm-fluid-shell max-w-3xl mx-auto">
             <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
                   Đăng ký nhận tin & ưu đãi
                 </h2>
-                <p className="text-gray-600">
+                <p className="mm-fluid-text text-gray-600">
                   Chúng tôi sẽ gửi hướng dẫn kỹnh tạo vườn, kèm 7 ngày dùng thử Pro.
                 </p>
               </div>
@@ -223,13 +223,13 @@ export default function PricingPage() {
                 </Button>
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-4">
+            <p className="mm-fluid-text text-xs text-gray-500 mt-4">
               Bằng việc đăng ký bạn đồng ý với Điều khoản & Chính sách bảo mật.
             </p>
           </div>
 
           {/* Promo Box */}
-          <div className="max-w-3xl mx-auto mt-8">
+          <div className="mm-fluid-shell max-w-3xl mx-auto mt-8">
             <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -238,7 +238,7 @@ export default function PricingPage() {
                       <Sparkles className="w-5 h-5 text-emerald-600" />
                       <span className="font-semibold text-emerald-900">Gợi ý</span>
                     </div>
-                    <p className="text-emerald-800">Gói 1.990.000 rất chi tiết</p>
+                    <p className="mm-fluid-text text-emerald-800">Gói 1.990.000 rất chi tiết</p>
                   </div>
                   <Button variant="link" className="text-emerald-700">
                     Tư vấn nhanh →
@@ -251,13 +251,13 @@ export default function PricingPage() {
       </div>
 
       {/* FAQ Section */}
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-3xl mx-auto">
+      <div className="mm-fluid-shell container mx-auto px-4 py-16">
+        <div className="mm-fluid-shell max-w-3xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-3">
               Câu hỏi thường gặp
             </h2>
-            <p className="text-gray-600">
+            <p className="mm-fluid-text text-gray-600">
               Nếu không thấy câu trả lời, hãy nhắn chúng tôi qua chat.
             </p>
           </div>
@@ -279,7 +279,7 @@ export default function PricingPage() {
                   </button>
                   {expandedFaq === index && (
                     <div className="px-6 pb-6 text-gray-600">
-                      {faq.answer}
+                      <p className="mm-fluid-text">{faq.answer}</p>
                     </div>
                   )}
                 </CardContent>

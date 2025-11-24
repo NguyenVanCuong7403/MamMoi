@@ -26,6 +26,15 @@ export default class ApiClient {
     return this.handleResponse(res);
   }
 
+  static async patch(path, body) {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "PATCH",
+      headers: this.getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return this.handleResponse(res);
+  }
+
   static async delete(path) {
     const res = await fetch(`${API_BASE}${path}`, {
       method: "DELETE",
@@ -38,7 +47,7 @@ export default class ApiClient {
     const token = localStorage.getItem("token");
     const headers = {
     };
-    
+
     if (!isFormData) headers["Content-Type"] = "application/json";
     if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
@@ -47,15 +56,25 @@ export default class ApiClient {
   static async handleResponse(res) {
     if (!res.ok) {
       let errorMessage = res.statusText;
+      // Clone the response so we can read it multiple times
+      const clonedRes = res.clone();
       try {
-        const errorData = await res.json();
+        const errorData = await clonedRes.json();
         console.log(errorData);
         errorMessage = errorData.message || errorData.Message || errorMessage;
       } catch {
-        // If not JSON, use text
-        errorMessage = await res.text() || errorMessage;
+        // If not JSON, try to read as text from the original response
+        try {
+          errorMessage = await res.text() || errorMessage;
+        } catch {
+          // If reading text also fails, use status text
+          errorMessage = res.statusText;
+        }
       }
-      throw new Error(errorMessage);
+      const error = new Error(errorMessage);
+      error.status = res.status;
+      error.statusText = res.statusText;
+      throw error;
     }
     if (res.status === 204) return null;
     return await res.json();

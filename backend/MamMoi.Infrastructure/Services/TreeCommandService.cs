@@ -39,6 +39,7 @@ namespace MamMoi.Infrastructure.Services
                 GardenId = req.GardenId,
                 UserId = userId,
                 TreeTypeId = req.TreeTypeId,
+                VarietyId = req.TreeVarietyId,
                 StageId = req.StageId,
                 TreeCode = string.IsNullOrWhiteSpace(req.TreeCode) ? null : req.TreeCode,
                 TreeName = req.TreeName,
@@ -120,6 +121,7 @@ namespace MamMoi.Infrastructure.Services
             tree.IsActive = req.IsActive ?? tree.IsActive;
             tree.ExpectedHarvestDate = req.ExpectedHarvestDate ?? tree.ExpectedHarvestDate;
             tree.Notes = req.Notes ?? tree.Notes;
+            tree.preMonths = req.preMonths ?? tree.preMonths;
 
             // cập nhật 4 trạng thái nếu FE gửi
             tree.LeafStatus = req.LeafStatus ?? tree.LeafStatus;
@@ -172,6 +174,67 @@ namespace MamMoi.Infrastructure.Services
             });
             await _db.SaveChangesAsync(ct);
             return true;
+        }
+
+        public async Task<TreeLifecycleDto?> UpdateLifecycleAsync(int userId, int treeId, UpdateTreeLifecycleRequest req, CancellationToken ct)
+        {
+            var tree = await _db.Trees
+                .Include(t => t.Stage)
+                .FirstOrDefaultAsync(t => t.TreeId == treeId, ct);
+            
+            if (tree == null) return null;
+            if (!await IsGardenOwner(userId, tree.GardenId, ct)) 
+                throw new UnauthorizedAccessException("User is not garden owner.");
+
+            // Map phaseId to stageOrder (1-5)
+            // growth_development -> 1, flowering -> 2, fruiting -> 3, pre_harvest -> 4, post_harvest -> 5
+            int targetStageOrder = req.PhaseId.ToLower() switch
+            {
+                "growth_development" => 1,
+                "flowering" => 2,
+                "fruiting" => 3,
+                "pre_harvest" => 4,
+                "post_harvest" => 5,
+                _ => throw new ArgumentException($"Invalid phaseId: {req.PhaseId}. Must be one of: growth_development, flowering, fruiting, pre_harvest, post_harvest")
+            };
+
+            // Find the actual StageId for this TreeType with the target StageOrder
+            var targetStage = await _db.TreeGrowthStages
+                .FirstOrDefaultAsync(s => s.TreeTypeId == tree.TreeTypeId && s.StageOrder == targetStageOrder, ct);
+
+            if (targetStage == null)
+                throw new InvalidOperationException($"TreeType {tree.TreeTypeId} does not have a stage with StageOrder {targetStageOrder}.");
+
+            // Update tree stage
+            tree.StageId = targetStage.StageId;
+            tree.UpdatedAt = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync(ct);
+
+            // Log activity
+            _db.ActivityLogs.Add(new ActivityLog
+            {
+                UserId = userId,
+                TreeId = treeId,
+                ActivityType = "UpdateLifecycle",
+                ActivityDescription = $"Updated lifecycle phase to {req.PhaseId} (Stage: {targetStage.StageName})",
+                CreatedAt = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync(ct);
+
+            // Determine phase1Completed: true if not in growth_development
+            bool phase1Completed = req.Phase1Completed ?? (targetStageOrder > 1);
+
+            // Return DTO with lifecycle information
+            return new TreeLifecycleDto(
+                tree.TreeId,
+                targetStage.StageId,
+                targetStage.StageOrder,
+                targetStage.StageName,
+                req.PhaseId,
+                phase1Completed,
+                req.CycleCount ?? 0 // TODO: Store cycleCount in database if needed
+            );
         }
 
         public async Task<bool> DeleteAsync(int userId, int treeId, CancellationToken ct)

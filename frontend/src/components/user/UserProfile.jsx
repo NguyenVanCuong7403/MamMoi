@@ -19,9 +19,22 @@ import {
   Eye,
   RefreshCcw,
   CheckCircle2,
+  Check,
   Info,
   Copy,
   Search,
+  Heart,
+  List,
+  Bell,
+  LogOut,
+  Grid,
+  Lock,
+  CreditCard,
+  TrendingUp,
+  Download,
+  Calendar,
+  ChevronDown,
+  Clock,
 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -29,14 +42,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import LivingBackground from "@/components/background/LivingBackground";
+import PaymentHistory from "./PaymentHistory";
+import AuthRepository from "@/API/repositories/AuthRepository";
+import { useAuth } from "@/API/context/AuthContext";
 
 /* =========================================================
    Theme & helpers
 ========================================================= */
 const BG = "#1F302F";
-const CONTAINER = "mx-auto w-full max-w-[2160px] px-6 sm:px-8 lg:px-12 2xl:px-16";
-const LEFT_COL = "col-span-12 lg:col-span-8 xl:col-span-9";
-const RIGHT_COL = "col-span-12 lg:col-span-4 xl:col-span-3";
+const CONTAINER = "mm-fluid-shell mx-auto w-full px-6 sm:px-8 lg:px-12 2xl:px-16";
 
 const LS_PROFILE = "mm_user_profile_v3";
 const LS_GARDENS = "mm_user_gardens_v3";
@@ -81,6 +95,7 @@ const defaultProfile = {
   phone: "0988284661",
   address: "Khu A, Thạch Hoà, Hòa Lạc, Hà Nội",
   avatarUrl: "",
+  gender: "Không xác định",
 };
 
 const defaultGardens = [
@@ -246,7 +261,7 @@ function SafeImage({ src, alt = "", className = "" }) {
 
   if (!url || failed)
     return (
-      <Upload className="h-6 w-6 text-neutral-400" aria-label="no-image" />
+      <UserIcon className="h-6 w-6 text-neutral-400" aria-label="no-image" />
     );
   return (
     <img
@@ -262,8 +277,7 @@ function SafeImage({ src, alt = "", className = "" }) {
 }
 
 function ImagePicker({ value, onChange }) {
-  const [urlInput, setUrlInput] = useState("");
-  const [useLink, setUseLink] = useState(false);
+  const fileInputRef = useRef(null);
 
   function handleFile(e) {
     const f = e.target.files?.[0];
@@ -271,74 +285,37 @@ function ImagePicker({ value, onChange }) {
     const objectUrl = URL.createObjectURL(f);
     onChange(objectUrl);
   }
-  function applyUrl() {
-    const n = normalizeImageUrl(urlInput || "");
-    const finalUrl = looksBlockedHost(n)
-      ? `/api/image-proxy?u=${encodeURIComponent(n)}`
-      : n;
-    if (finalUrl) onChange(finalUrl);
-    setUrlInput("");
-    setUseLink(false);
+
+  function handleImageClick() {
+    fileInputRef.current?.click();
   }
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-3">
-        <label className="flex h-10 items-center gap-2 rounded-xl border bg-white px-3 text-sm cursor-pointer hover:bg-neutral-50">
-          <Upload className="w-4 h-4" />
-          <span>Chọn ảnh (tải lên)</span>
-          <input
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleFile}
-          />
-        </label>
-        <Button
-          type="button"
-          className={BTN.base}
-          onClick={() => setUseLink((v) => !v)}
-        >
-          <Link2 className="w-4 h-4 mr-1" />
-          Dùng link
-        </Button>
-      </div>
-      {useLink && (
-        <div className="flex gap-2">
-          <Input
-            placeholder="Dán link ảnh (https://...)"
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            className="rounded-xl bg-white"
-          />
-          <Button
-            className={`${BTN.base} ${BTN.primary}`}
-            type="button"
-            onClick={applyUrl}
-          >
-            Áp dụng
-          </Button>
-          <Button
-            className={`${BTN.base} ${BTN.outline}`}
-            type="button"
-            onClick={() => {
-              setUseLink(false);
-              setUrlInput("");
-            }}
-          >
-            Huỷ
-          </Button>
-        </div>
-      )}
-      {value ? (
-        <div className="rounded-2xl overflow-hidden border">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFile}
+      />
+      <div 
+        className="rounded-2xl overflow-hidden border cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={handleImageClick}
+      >
+        {value ? (
           <SafeImage
             src={value}
             alt="preview"
             className="w-full h-40 object-cover"
           />
-        </div>
-      ) : null}
+        ) : (
+          <div className="w-full h-40 bg-neutral-100 flex flex-col items-center justify-center text-neutral-400">
+            <Upload className="w-8 h-8 mb-2" />
+            <span className="text-sm">Click để chọn ảnh</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -361,9 +338,9 @@ function BadgeSoft({ children, color = "emerald" }) {
     </span>
   );
 }
-function FieldLabel({ children, required }) {
+function FieldLabel({ children, required, className = "" }) {
   return (
-    <div className="mb-1 text-sm text-neutral-600">
+    <div className={`mb-1 text-sm text-neutral-600 ${className}`}>
       {children}
       {required ? <span className="text-rose-600"> *</span> : null}
     </div>
@@ -428,7 +405,8 @@ function SearchInput({ value, onChange, placeholder = "Tìm kiếm...", classNam
 
 /* ===== Avatar Sync ===== */
 function AvatarSync({ src, size = 80, title = "" }) {
-  const hasImg = !!src;
+  // Kiểm tra xem src có phải là URL hợp lệ không (không rỗng và có ít nhất một ký tự)
+  const hasImg = src && typeof src === 'string' && src.trim().length > 0;
   const color = hasImg ? "bg-emerald-500" : "bg-amber-500";
   const badgeTitle = hasImg
     ? "Ảnh đã sẵn sàng đồng bộ"
@@ -449,7 +427,62 @@ function AvatarSync({ src, size = 80, title = "" }) {
         className={`absolute -bottom-0.5 -right-0.5 grid place-items-center h-5 w-5 rounded-full ${color} text-white ring-2 ring-white`}
         title={badgeTitle}
       >
-        <Link2 className="h-3 w-3" />
+        {hasImg ? (
+          <Check className="h-3 w-3" />
+        ) : (
+          <Clock className="h-3 w-3" />
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ===== Avatar Picker (clickable avatar for upload) ===== */
+function AvatarPicker({ src, size = 80, title = "", onChange }) {
+  const fileInputRef = useRef(null);
+  const hasImg = !!src;
+
+  function handleFile(e) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const objectUrl = URL.createObjectURL(f);
+    if (onChange) onChange(objectUrl);
+  }
+
+  function handleAvatarClick() {
+    if (onChange) {
+      fileInputRef.current?.click();
+    }
+  }
+
+  return (
+    <div className="relative group">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFile}
+      />
+      <div
+        className={`relative rounded-full overflow-hidden ring-2 ring-white bg-neutral-100 grid place-items-center text-neutral-500 ${
+          onChange ? "cursor-pointer transition-all hover:ring-4 hover:ring-emerald-300" : ""
+        }`}
+        style={{ width: size, height: size }}
+        title={onChange ? (hasImg ? "Click để đổi ảnh" : "Click để chọn ảnh") : (title || "Ảnh đại diện")}
+        aria-label="Ảnh đại diện người dùng"
+        onClick={handleAvatarClick}
+      >
+        {hasImg ? (
+          <SafeImage src={src} alt="avatar" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+        ) : (
+          <UserIcon className="h-7 w-7" />
+        )}
+        {onChange && (
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all rounded-full flex items-center justify-center">
+            <Upload className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -537,6 +570,7 @@ function PasswordModal({
   currentPassword,
   defaultEmail = "",
   userName = "",
+  initialTab = "change", // change | forgot
 }) {
   // fallback helpers nếu tách file
   const callGenOTP =
@@ -555,7 +589,7 @@ function PasswordModal({
         };
 
   /* --------------- state --------------- */
-  const [tab, setTab] = React.useState("change"); // change | forgot
+  const [tab, setTab] = React.useState("forgot"); // forgot
 
   // Đổi mật khẩu
   const [cp, setCp] = React.useState("");
@@ -564,6 +598,7 @@ function PasswordModal({
   const [peek, setPeek] = React.useState(false);
   const [tC, setTC] = React.useState({ cp: false, np: false, cf: false });
   const [eC, setEC] = React.useState({ cp: "", np: "", cf: "" });
+  const [isVerifying, setIsVerifying] = React.useState(false);
   const cpRef = React.useRef(null);
   const npRef = React.useRef(null);
   const cfRef = React.useRef(null);
@@ -594,10 +629,11 @@ function PasswordModal({
   React.useEffect(() => {
     if (!open) return;
     // reset khi mở modal
-    setTab("change");
+    setTab(initialTab);
     setCp(""); setNp(""); setCf("");
     setTC({ cp: false, np: false, cf: false });
     setEC({ cp: "", np: "", cf: "" });
+    setIsVerifying(false);
 
     setStep("otp");
     setFpEmail(defaultEmail || "");
@@ -606,7 +642,7 @@ function PasswordModal({
     setSentAt(null); setCooldown(0);
     setNp2(""); setCf2("");
     setTS({ np: false, cf: false }); setES({ np: "", cf: "" });
-  }, [open, defaultEmail]);
+  }, [open, defaultEmail, initialTab]);
 
   React.useEffect(() => {
     if (!open || cooldown <= 0) return;
@@ -627,17 +663,12 @@ function PasswordModal({
     }
   }, [open, tab, step, otp, otpCode, np2]);
 
+
   /* --------------- actions --------------- */
   const validateChange = () => {
     if (!cp.trim()) {
       setTC((t) => ({ ...t, cp: true }));
       setEC((e) => ({ ...e, cp: "Vui lòng nhập mật khẩu hiện tại" }));
-      cpRef.current?.focus();
-      return false;
-    }
-    if (cp !== currentPassword) {
-      setTC((t) => ({ ...t, cp: true }));
-      setEC((e) => ({ ...e, cp: "Mật khẩu hiện tại không đúng" }));
       cpRef.current?.focus();
       return false;
     }
@@ -673,10 +704,56 @@ function PasswordModal({
     }
     return true;
   };
-  const submitChange = () => {
+
+  const submitChange = async () => {
     if (!validateChange()) return;
+
+    // Gọi API để đổi mật khẩu (API sẽ verify mật khẩu hiện tại)
+    setIsVerifying(true);
+    try {
+      const response = await AuthRepository.changePassword({
+        currentPassword: cp,
+        newPassword: np,
+      });
+
+      if (response.success) {
     onChanged?.(np);
     onClose?.();
+      } else {
+        // Nếu có lỗi về mật khẩu hiện tại không đúng
+        const errorMessage = response.message || "";
+        if (errorMessage.includes("không đúng") || errorMessage.includes("incorrect") || errorMessage.includes("Password hiện tại") || errorMessage.includes("Current password")) {
+          setTC((t) => ({ ...t, cp: true }));
+          setEC((e) => ({ ...e, cp: "Mật khẩu hiện tại không đúng" }));
+          // Clear tất cả 3 field và bắt nhập lại
+          setCp("");
+          setNp("");
+          setCf("");
+          setTC({ cp: false, np: false, cf: false });
+          setEC({ cp: "", np: "", cf: "" });
+          cpRef.current?.focus();
+        } else {
+          setEC((e) => ({ ...e, np: errorMessage || "Đổi mật khẩu thất bại" }));
+        }
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || "";
+      if (errorMessage.includes("không đúng") || errorMessage.includes("incorrect") || errorMessage.includes("Password hiện tại") || errorMessage.includes("Current password")) {
+        setTC((t) => ({ ...t, cp: true }));
+        setEC((e) => ({ ...e, cp: "Mật khẩu hiện tại không đúng" }));
+        // Clear tất cả 3 field và bắt nhập lại
+        setCp("");
+        setNp("");
+        setCf("");
+        setTC({ cp: false, np: false, cf: false });
+        setEC({ cp: "", np: "", cf: "" });
+        cpRef.current?.focus();
+      } else {
+        setEC((e) => ({ ...e, np: errorMessage || "Đổi mật khẩu thất bại" }));
+      }
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   function sendOTP() {
@@ -760,124 +837,17 @@ function PasswordModal({
             <div>
               <div className="text-lg font-semibold">Bảo mật & mật khẩu</div>
               <div className="text-white/80 text-sm">
-                {tab === "change"
-                  ? "Đổi mật khẩu bằng mật khẩu hiện tại"
-                  : "Quên mật khẩu — xác minh OTP qua email"}
+                Quên mật khẩu — xác minh OTP qua email
               </div>
             </div>
             <button className="rounded p-1 hover:bg-white/10" onClick={onClose} aria-label="Đóng">
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="mt-4 flex gap-2" role="tablist">
-            <TabBtn
-              active={tab === "change"}
-              onClick={() => setTab("change")}
-            >
-              Đổi mật khẩu
-            </TabBtn>
-            <TabBtn
-              active={tab === "forgot"}
-              onClick={() => {
-                setTab("forgot");
-                // reset phần OTP mỗi lần chuyển sang
-                setStep("otp");
-                setOtp(""); setOtpCode(""); setOtpErr("");
-                setSentAt(null); setCooldown(0);
-              }}
-            >
-              Quên mật khẩu (OTP email)
-            </TabBtn>
-          </div>
         </div>
 
         {/* Body */}
-        <div className="bg-white p-6">
-          {tab === "change" && (
-            <form autoComplete="off" onSubmit={(e) => e.preventDefault()}>
-              <input type="text" autoComplete="username" className="hidden" />
-              <input type="password" autoComplete="new-password" className="hidden" />
-
-              {/* Current password */}
-              <div className="space-y-1 mb-3">
-                <div className="flex items-center justify-between">
-                  <FieldLabel>Mật khẩu hiện tại</FieldLabel>
-                  <span className="text-xs text-neutral-500">Giữ icon để xem tạm</span>
-                </div>
-                <div className="relative">
-                  <Input
-                    ref={cpRef}
-                    type={peek ? "text" : "password"}
-                    autoComplete="off"
-                    readOnly
-                    onFocus={(e) => e.currentTarget.removeAttribute("readonly")}
-                    data-lpignore="true"
-                    data-1p-ignore="true"
-                    className={`${!tC.cp ? INPUT_OK : eC.cp ? INPUT_ERR : INPUT_OK} no-native-eye pr-10`}
-                    value={cp}
-                    onChange={(e) => setCp(e.target.value)}
-                    onBlur={() => setTC((t) => ({ ...t, cp: true }))}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 hover:bg-neutral-100"
-                    onMouseDown={() => setPeek(true)}
-                    onMouseUp={() => setPeek(false)}
-                    onMouseLeave={() => setPeek(false)}
-                    aria-label="Giữ để xem"
-                  >
-                    <Eye className="h-4 w-4" />
-                  </button>
-                </div>
-                {tC.cp && eC.cp ? <p className="text-xs text-rose-600">{eC.cp}</p> : null}
-              </div>
-
-              {/* New password */}
-              <div className="space-y-1 mb-3">
-                <FieldLabel>Mật khẩu mới</FieldLabel>
-                <Input
-                  ref={npRef}
-                  type="password"
-                  autoComplete="new-password"
-                  readOnly
-                  onFocus={(e) => e.currentTarget.removeAttribute("readonly")}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  className={`${!tC.np ? INPUT_OK : eC.np ? INPUT_ERR : INPUT_OK} no-native-eye`}
-                  value={np}
-                  onChange={(e) => setNp(e.target.value)}
-                  onBlur={() => setTC((t) => ({ ...t, np: true }))}
-                  placeholder="Tối thiểu 8 ký tự"
-                />
-                {tC.np && eC.np ? <p className="text-xs text-rose-600">{eC.np}</p> : null}
-              </div>
-
-              {/* Confirm new */}
-              <div className="space-y-1">
-                <FieldLabel>Xác nhận mật khẩu mới</FieldLabel>
-                <Input
-                  ref={cfRef}
-                  type="password"
-                  autoComplete="new-password"
-                  readOnly
-                  onFocus={(e) => e.currentTarget.removeAttribute("readonly")}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  className={`${!tC.cf ? INPUT_OK : eC.cf ? INPUT_ERR : INPUT_OK} no-native-eye`}
-                  value={cf}
-                  onChange={(e) => setCf(e.target.value)}
-                  onBlur={() => setTC((t) => ({ ...t, cf: true }))}
-                />
-                {tC.cf && eC.cf ? <p className="text-xs text-rose-600">{eC.cf}</p> : null}
-              </div>
-
-              <div className="mt-4 flex justify-end gap-2">
-                <Button className={`${BTN.base} ${BTN.outline}`} onClick={onClose}>Huỷ</Button>
-                <Button className={`${BTN.base} ${BTN.primary}`} onClick={submitChange}>Xác nhận</Button>
-              </div>
-            </form>
-          )}
-
+                                                                                  <div className="bg-white p-6">
           {tab === "forgot" && (
             <div className="space-y-4">
               {step === "otp" && (
@@ -927,13 +897,7 @@ function PasswordModal({
                     {otpErr ? <div className="mt-1 text-xs text-rose-600">{otpErr}</div> : null}
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="text-sm text-neutral-600 hover:underline"
-                      onClick={() => setTab("change")}
-                    >
-                      ← Quay lại đổi mật khẩu
-                    </button>
+                  <div className="flex items-center justify-end">
                     <div className="flex gap-2">
                       <Button className={`${BTN.base} ${BTN.outline}`} onClick={onClose}>
                         Huỷ
@@ -2085,6 +2049,8 @@ async function copyCredentialsToClipboard(account, password) {
    Main
 ========================================================= */
 export default function UserProfile() {
+  const { user } = useAuth();
+  
   // demo password
   const loadDemoPw = () => {
     try {
@@ -2116,7 +2082,6 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
   useEffect(() => save(LS_STAFFS, staffs), [staffs]);
   useEffect(() => save(LS_TREES, trees), [trees]);
 
-  const [editing, setEditing] = useState(false);
 
   /* ====== Search/Filter ====== */
   // Gardens
@@ -2127,9 +2092,125 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
   const [staffGardenFilter, setStaffGardenFilter] = useState("all"); // all | __none | gardenName
   const [staffStatusFilter, setStaffStatusFilter] = useState("all"); // all | active | inactive
 
+  // Payment History Filters
+  const [paymentSearch, setPaymentSearch] = useState("");
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState("Tất cả trạng thái");
+  const [paymentDateFrom, setPaymentDateFrom] = useState("");
+  const [paymentDateTo, setPaymentDateTo] = useState("");
+
+  const [activeMenu, setActiveMenu] = useState("account"); // "account" | "password" | "history" | "upgrade"
+  const [currentPackage, setCurrentPackage] = useState("Starter"); // Gói hiện tại
   const [pwOpen, setPwOpen] = useState(false);
+  const [pwModalTab, setPwModalTab] = useState("change"); // change | forgot
   const [addGardenOpen, setAddGardenOpen] = useState(false);
   const [addStaffOpen, setAddStaffOpen] = useState(false);
+  
+  // Password change form state
+  const [cp, setCp] = useState(""); // current password
+  const [np, setNp] = useState(""); // new password
+  const [cf, setCf] = useState(""); // confirm password
+  const [peek, setPeek] = useState(false);
+  const [touchedPw, setTouchedPw] = useState({ cp: false, np: false, cf: false });
+  const [errorsPw, setErrorsPw] = useState({ cp: "", np: "", cf: "" });
+  const cpRef = useRef(null);
+  const npRef = useRef(null);
+  const cfRef = useRef(null);
+
+  // Validate password change form
+  const validatePasswordChange = () => {
+    const newErrors = { cp: "", np: "", cf: "" };
+    let isValid = true;
+
+    // Kiểm tra mật khẩu mới trước (ưu tiên cao nhất)
+    if (!np.trim()) {
+      newErrors.np = "Vui lòng nhập mật khẩu mới";
+      isValid = false;
+    } else if (np.length < 8) {
+      newErrors.np = "Mật khẩu mới tối thiểu 8 ký tự";
+      isValid = false;
+    } else if (np === cp) {
+      newErrors.np = "Mật khẩu mới không được trùng mật khẩu cũ";
+      isValid = false;
+    }
+
+    // Kiểm tra xác nhận mật khẩu (chỉ khi mật khẩu mới hợp lệ)
+    if (!newErrors.np) {
+      if (!cf.trim()) {
+        newErrors.cf = "Vui lòng xác nhận mật khẩu mới";
+        isValid = false;
+      } else if (cf !== np) {
+        newErrors.cf = "Xác nhận mật khẩu không khớp";
+        isValid = false;
+      }
+    }
+
+    // KHÔNG kiểm tra mật khẩu hiện tại ở đây
+    // Chỉ kiểm tra khi submit (trong handlePasswordChange)
+
+    setErrorsPw(newErrors);
+    setTouchedPw({ cp: true, np: true, cf: true });
+    return isValid;
+  };
+
+  // Submit password change
+  const handlePasswordChange = () => {
+    // Bước 1: Kiểm tra mật khẩu mới và xác nhận trước
+    if (!validatePasswordChange()) return;
+
+    // Bước 2: Chỉ kiểm tra mật khẩu hiện tại sau khi mật khẩu mới hợp lệ
+    const newErrors = { cp: "", np: "", cf: "" };
+    let hasError = false;
+
+    if (!cp.trim()) {
+      newErrors.cp = "Vui lòng nhập mật khẩu hiện tại";
+      hasError = true;
+    } else if (cp !== demoPw) {
+      newErrors.cp = "Mật khẩu hiện tại không đúng";
+      hasError = true;
+    }
+
+    if (hasError) {
+      setErrorsPw((prev) => ({ ...prev, ...newErrors }));
+      setTouchedPw((prev) => ({ ...prev, cp: true }));
+      cpRef.current?.focus();
+      return;
+    }
+
+    // Nếu tất cả đều hợp lệ, thực hiện đổi mật khẩu
+    setDemoPw(np);
+    try {
+      localStorage.setItem(LS_DEMO_PW, np);
+    } catch {}
+    // Reset form
+    setCp("");
+    setNp("");
+    setCf("");
+    setTouchedPw({ cp: false, np: false, cf: false });
+    setErrorsPw({ cp: "", np: "", cf: "" });
+    // Show success message (you can add a toast notification here)
+  };
+
+  // Reset password form when switching menu
+  useEffect(() => {
+    if (activeMenu !== "password") {
+      setCp("");
+      setNp("");
+      setCf("");
+      setTouchedPw({ cp: false, np: false, cf: false });
+      setErrorsPw({ cp: "", np: "", cf: "" });
+      setPeek(false);
+    }
+  }, [activeMenu]);
+
+  // Clear các field mật khẩu mới khi mật khẩu hiện tại bị xóa
+  useEffect(() => {
+    if (activeMenu === "password" && !cp.trim()) {
+      setNp("");
+      setCf("");
+      setTouchedPw((t) => ({ ...t, np: false, cf: false }));
+      setErrorsPw((e) => ({ ...e, np: "", cf: "" }));
+    }
+  }, [cp, activeMenu]);
   const [gardenDetail, setGardenDetail] = useState({
     open: false,
     garden: null,
@@ -2185,25 +2266,14 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
     editTree.open;
 
   const profileRef = useRef(null);
-  const goEditFromMenu = () => {
-    setEditing(true);
-    setTimeout(
-      () =>
-        profileRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        }),
-      0
-    );
-  };
 
   const [draft, setDraft] = useState(profile);
   const [touchedProfile, setTouchedProfile] = useState({});
   useEffect(() => {
     setDraft(profile);
     setTouchedProfile({});
-    setAllowEditContact({ email: false, phone: false }); // reset gate mỗi lần bật edit
-  }, [editing, profile]);
+    // Không reset OTP gate khi profile thay đổi, chỉ reset khi user thay đổi
+  }, [profile]);
 
   const profileErrors = {
     fullName: !draft.fullName.trim() ? "Họ & tên là bắt buộc" : "",
@@ -2414,7 +2484,21 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
     setTouchedProfile((t) => ({ ...t, fullName: true, contact: true }));
     if (!canSaveProfile) return;
     setProfile(draft);
-    setEditing(false);
+    setAllowEditContact({ email: false, phone: false }); // Reset OTP gate sau khi save
+    
+    // Đồng bộ avatar với AuthContext để header cập nhật
+    if (user) {
+      const updatedUser = {
+        ...user,
+        ProfileImageUrl: draft.avatarUrl || user.ProfileImageUrl,
+        fullName: draft.fullName || user.fullName,
+      };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      // Trigger custom event để AuthContext có thể cập nhật nếu cần
+      window.dispatchEvent(new CustomEvent("userProfileUpdated", { detail: updatedUser }));
+    }
+    
+    showToast("Đã lưu", "Thông tin tài khoản đã được cập nhật", "success");
   }
 
  function formatGardenLocation(g) {
@@ -2477,8 +2561,8 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
   };
   const closeOtp = () => setOtpState({ open: false, target: null });
 
- return (
-  <div className="min-h-screen relative">
+  return (
+   <div className="mm-fluid-page min-h-screen relative">
     <LivingBackground density={28} baseColor={BG} />
     <PageRails />
 
@@ -2487,67 +2571,44 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
         className={`${CONTAINER} pt-20 pb-6`}
         inert={overlayOpen ? "" : undefined}
       >
-        <Card className="rounded-3xl border border-white/20 bg-white/10 backdrop-blur text-white shadow-[0_12px_40px_rgba(0,0,0,0.08)]">
-          <CardContent className="p-8">
-            <div className="flex flex-col items-start gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="grid h-12 w-12 place-items-center rounded-full bg-white/15 ring-1 ring-white/20">
-                  <Shield className="h-6 w-6" />
-                </div>
-                <div>
-                  <div className="text-lg font-semibold">Hồ sơ người dùng</div>
-                  <div className="text-white/80 text-sm">
-                    Quản lý thông tin, vườn và nhân viên
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="inline-flex items-center rounded-full bg-emerald-500/90 px-3 py-1 text-sm font-semibold shadow ring-1 ring-white/20">
-                  Gói: Starter
-                </span>
-                <Button className={`${BTN.base} ${BTN.outline}`}>Nâng cấp</Button>
-              </div>
-            </div>
+        <div className="mb-6">
+          <h1 className="text-6xl font-bold text-white drop-shadow-lg">Hồ sơ người dùng</h1>
+          <p className="text-white/90 text-base mt-2">
+            Quản lý thông tin, vườn và nhân viên
+          </p>
+        </div>
 
-            {/* Stats */}
-            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-              {[
-                {
-                  label: "Số vườn hoạt động",
-                  value: gardens.filter((g) => g.status === "Đang hoạt động")
-                    .length,
-                  icon: <MapPin className="h-5 w-5" />,
-                },
-                {
-                  label: "Vườn dừng hoạt động",
-                  value: gardens.filter((g) => g.status !== "Đang hoạt động")
-                    .length,
-                },
-                {
-                  label: "Số nhân viên",
-                  value: staffs.length,
-                  icon: <Users className="h-5 w-5" />,
-                },
-                {
-                  label: "Tổng số cây đang chăm",
-                  value: stats.totalTrees,
-                  icon: <TreePine className="h-5 w-5" />,
-                },
-              ].map((s, i) => (
+        {/* Stats */}
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          {[
+            {
+              label: "Hiển thị gói hiện tại",
+              value: currentPackage,
+              icon: <Shield className="h-5 w-5" />,
+            },
+            {
+              label: "Số vườn đang quản lý",
+              value: gardens.length,
+              icon: <MapPin className="h-5 w-5" />,
+            },
+            {
+              label: "Tổng số cây đang chăm",
+              value: stats.totalTrees,
+              icon: <TreePine className="h-5 w-5" />,
+            },
+          ].map((s, i) => (
                 <div
                   key={i}
-                  className="rounded-2xl border border-white/20 bg-white/10 p-4"
+                  className="rounded-2xl border border-white/25 bg-white/20 backdrop-blur-[10px] p-4"
                 >
-                  <div className="flex items-center justify-between text-xs opacity-80">
+                  <div className="flex items-center justify-between text-2xl font-semibold text-white/90 mb-2">
                     <span>{s.label}</span>
                     {s.icon}
                   </div>
-                  <div className="mt-1 text-4xl font-semibold">{s.value}</div>
+                  <div className={`${s.label.includes("vườn") || s.label.includes("cây") ? "text-4xl" : "text-2xl"} font-medium text-white drop-shadow-sm`}>{s.value}</div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* Main */}
@@ -2555,179 +2616,790 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
         className={`${CONTAINER} pb-16`}
         inert={overlayOpen ? "" : undefined}
       >
-        <div className="grid grid-cols-12 gap-6">
-          {/* LEFT */}
-          <section ref={profileRef} className={`space-y-6 ${LEFT_COL}`}>
-            {/* Profile */}
-            <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
+        <div className="flex gap-8 w-full">
+          {/* Sidebar Menu - Left */}
+          <aside className="w-80 shrink-0">
+            <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
               <CardContent className="p-8">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex items-center gap-3">
-                    <AvatarSync src={profile.avatarUrl} />
-                    <div>
-                      <div className="text-2xl md:text-3xl font-semibold text-neutral-900">
+                <div className="mb-8">
+                  <h2 className="text-2xl font-semibold text-white drop-shadow-lg">Quản lý tài khoản</h2>
+                </div>
+                
+                {/* Navigation Menu */}
+                <nav className="space-y-3 mb-10">
+                  <button 
+                    onClick={() => setActiveMenu("account")}
+                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
+                      activeMenu === "account"
+                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                        : "text-white/90 hover:bg-slate-800/50"
+                    }`}
+                  >
+                    <UserIcon className="h-6 w-6" />
+                    <span className="text-lg font-medium">Tài khoản</span>
+                  </button>
+                  <button 
+                    onClick={() => setActiveMenu("password")}
+                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
+                      activeMenu === "password"
+                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                        : "text-white/90 hover:bg-slate-800/50"
+                    }`}
+                  >
+                    <Lock className="h-6 w-6" />
+                    <span className="text-lg">Mật khẩu</span>
+                  </button>
+                  <button 
+                    onClick={() => setActiveMenu("history")}
+                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
+                      activeMenu === "history"
+                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                        : "text-white/90 hover:bg-slate-800/50"
+                    }`}
+                  >
+                    <CreditCard className="h-6 w-6" />
+                    <span className="text-lg">Lịch sử giao dịch</span>
+                  </button>
+                  <button 
+                    onClick={() => setActiveMenu("upgrade")}
+                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
+                      activeMenu === "upgrade"
+                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                        : "text-white/90 hover:bg-slate-800/50"
+                    }`}
+                  >
+                    <TrendingUp className="h-6 w-6" />
+                    <span className="text-lg">Nâng cấp gói</span>
+                  </button>
+                </nav>
+
+                {/* User Profile Summary */}
+                <div className="pt-8 border-t border-white/30">
+                  <div className="flex items-center gap-4 mb-4">
+                    <AvatarSync src={profile.avatarUrl} size={56} />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-base font-medium text-white truncate">
   {profile.fullName}
 </div>
-<div className="mt-1 flex flex-wrap items-center gap-4 text-base md:text-[17px] text-neutral-700">
-                        <span className="inline-flex items-center gap-1">
-                          <Mail className="h-5 w-5" /> {profile.email}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <Phone className="h-5 w-5" /> {profile.phone}
-                        </span>
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin className="h-5 w-5" /> {profile.address}
-                        </span>
+                      <div className="text-sm text-white/80 truncate">
+                        {profile.email || "—"}
                       </div>
                     </div>
                   </div>
-                </div>
-
-                <Separator className="my-4" />
-
-                {!editing ? (
-                 <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-  {[
-    ["Họ & tên", profile.fullName],
-    ["Email", profile.email],
-    ["Điện thoại", profile.phone],
-    ["Địa chỉ", profile.address],
-  ].map(([k, v]) => (
-    <div
-      key={k}
-      className="rounded-2xl border bg-neutral-50 px-4 py-3"
-    >
-      <div className="text-sm md:text-base text-neutral-500">{k}</div>
-      <div className="text-[17px] md:text-[18px] text-neutral-900">
-        {v || "—"}
-      </div>
-    </div>
-  ))}
-</div>
-                ) : (
-                  <EditProfileForm
-                    draft={draft}
-                    setDraft={setDraft}
-                    touchedProfile={touchedProfile}
-                    setTouchedProfile={setTouchedProfile}
-                    profileErrors={profileErrors}
-                    allowEdit={allowEditContact}
-                    openOtp={openOtp}
-                    onCancel={() => {
-                      setEditing(false);
-                      setDraft(profile);
-                      setTouchedProfile({});
-                      setAllowEditContact({ email: false, phone: false });
+                  <Button
+                    className="w-full mt-5 rounded-xl h-12 bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 text-base font-medium shadow-lg"
+                    onClick={() => {
+                      // Logout logic here
                     }}
-                    onSave={saveProfile}
-                  />
-                )}
+                  >
+                    <LogOut className="h-5 w-5 mr-2" />
+                    <span className="text-base">Thoát</span>
+                  </Button>
+                </div>
               </CardContent>
             </Card>
+          </aside>
 
-            {/* Gardens */}
-            <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
+          {/* Main Content - Right */}
+          <div className="flex-1">
+            {/* Tài khoản Section */}
+            {activeMenu === "account" && (
+              <section ref={profileRef} className="space-y-6">
+                {/* Card duy nhất cho tất cả thông tin tài khoản */}
+                <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
+                  <CardContent className="p-4 sm:p-6 md:p-8">
+                    {/* Header */}
+                    <div className="mb-6">
+                      <h1 className="text-xl sm:text-2xl font-semibold text-white mb-1 break-words drop-shadow-lg">Tài khoản</h1>
+                      <p className="text-xs sm:text-sm text-white/80 break-words">Cập nhật thông tin tài khoản</p>
+                    </div>
+
+                    {/* Avatar Section */}
+                    <div className="flex flex-col items-center gap-4 mb-6">
+                      <div className="relative flex-shrink-0">
+                        <AvatarPicker
+                          src={draft.avatarUrl}
+                          size={120}
+                          onChange={(v) => setDraft({ ...draft, avatarUrl: v })}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Form Fields */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 min-w-0">
+                      {/* Họ & tên */}
+                      <div className="min-w-0">
+                        <FieldLabel required className="text-white/90">Họ & tên</FieldLabel>
+                        <Input
+                          name="full-name"
+                          autoComplete="name"
+                          aria-invalid={!!(touchedProfile.fullName && profileErrors.fullName)}
+                          className={
+                            !touchedProfile.fullName
+                              ? "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
+                              : profileErrors.fullName
+                              ? "h-12 w-full rounded-xl bg-slate-800/60 border border-rose-500 text-white placeholder:text-white/50 focus:ring-2 focus:ring-rose-500/40 min-w-0"
+                              : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
+                          }
+                          value={draft.fullName}
+                          onChange={(e) => setDraft({ ...draft, fullName: e.target.value })}
+                          onBlur={() => setTouchedProfile((t) => ({ ...t, fullName: true }))}
+                          placeholder="Nhập họ và tên"
+                        />
+                        {touchedProfile.fullName && profileErrors.fullName ? (
+                          <p className="mt-1 text-xs text-rose-400 break-words">{profileErrors.fullName}</p>
+                        ) : null}
+                      </div>
+
+                      {/* Email + OTP gate */}
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-start sm:items-center justify-between gap-2 mb-2 min-w-0">
+                          <FieldLabel className="text-white/80 break-words min-w-0 flex-1">Email (xác minh OTP trước khi đổi)</FieldLabel>
+                          {allowEditContact.email ? (
+                            <span className="text-xs text-emerald-400 whitespace-nowrap flex-shrink-0">Đã xác minh OTP ✓</span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="text-xs text-emerald-400 hover:underline whitespace-nowrap flex-shrink-0"
+                              onClick={() => openOtp("email")}
+                            >
+                              Đổi email
+                            </button>
+                          )}
+                        </div>
+                        <Input
+                          type="email"
+                          name="profile-email"
+                          autoComplete="off"
+                          readOnly={!allowEditContact.email}
+                          aria-invalid={!!(touchedProfile.contact && profileErrors.contact)}
+                          className={
+                            !touchedProfile.contact
+                              ? "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
+                              : profileErrors.contact
+                              ? "h-12 w-full rounded-xl bg-slate-800/60 border border-rose-500 text-white placeholder:text-white/40 focus:ring-2 focus:ring-rose-500/40 min-w-0"
+                              : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
+                          }
+                          value={draft.email}
+                          onChange={(e) => setDraft({ ...draft, email: e.target.value })}
+                          onBlur={() => setTouchedProfile((t) => ({ ...t, contact: true }))}
+                          placeholder="name@company.com"
+                        />
+                        {touchedProfile.contact && profileErrors.contact ? (
+                          <p className="mt-1 text-xs text-rose-400 break-words">{profileErrors.contact}</p>
+                        ) : null}
+                      </div>
+
+                      {/* Số điện thoại */}
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-start sm:items-center justify-between gap-2 mb-2 min-w-0">
+                          <FieldLabel className="text-white/80 break-words min-w-0 flex-1">Số điện thoại (xác minh OTP trước khi đổi)</FieldLabel>
+                          {allowEditContact.phone ? (
+                            <span className="text-xs text-emerald-400 whitespace-nowrap flex-shrink-0">Đã xác minh OTP ✓</span>
+                          ) : (
+                            <button
+                              type="button"
+                              className="text-xs text-emerald-400 hover:underline whitespace-nowrap flex-shrink-0"
+                              onClick={() => openOtp("phone")}
+                            >
+                              Đổi SĐT
+                            </button>
+                          )}
+                        </div>
+                        <Input
+                          type="tel"
+                          name="profile-phone"
+                          autoComplete="off"
+                          inputMode="numeric"
+                          pattern="\d*"
+                          readOnly={!allowEditContact.phone}
+                          aria-invalid={!!(touchedProfile.contact && profileErrors.contact)}
+                          className={
+                            !touchedProfile.contact
+                              ? "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
+                              : profileErrors.contact
+                              ? "h-12 w-full rounded-xl bg-slate-800/60 border border-rose-500 text-white placeholder:text-white/40 focus:ring-2 focus:ring-rose-500/40 min-w-0"
+                              : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
+                          }
+                          value={draft.phone}
+                          onChange={(e) =>
+                            setDraft({ ...draft, phone: e.target.value.replace(/\D/g, "") })
+                          }
+                          onBlur={() => setTouchedProfile((t) => ({ ...t, contact: true }))}
+                          placeholder="0xxxxxxxxx"
+                        />
+                        {touchedProfile.contact && profileErrors.contact ? (
+                          <p className="mt-1 text-xs text-rose-400 break-words">{profileErrors.contact}</p>
+                        ) : null}
+                      </div>
+
+                      {/* Địa chỉ */}
+                      <div className="min-w-0">
+                        <FieldLabel className="text-white/80 break-words">Địa chỉ</FieldLabel>
+                        <Input
+                          name="address"
+                          autoComplete="street-address"
+                          className="h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
+                          value={draft.address}
+                          onChange={(e) => setDraft({ ...draft, address: e.target.value })}
+                          placeholder="Số nhà/đường, phường/xã, quận/huyện, tỉnh/thành"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="flex flex-col sm:flex-row justify-end gap-2 pt-4 mt-6 border-t border-white/30">
+                      <Button
+                        className="h-12 px-6 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white font-medium w-full sm:w-auto"
+                        onClick={saveProfile}
+                      >
+                        Lưu thay đổi
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
+            {/* Mật khẩu Section */}
+            {activeMenu === "password" && (
+              <section className="space-y-6">
+                <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.15)]">
               <CardContent className="p-8">
-              <div className="mb-3 flex items-center justify-between gap-3">
-  <div className="text-base font-semibold">Quản lý vườn</div>
-  {/* Mỗi thành phần dùng COMPACT.* để thu nhỏ và thêm flex-wrap để xuống hàng khi cần */}
-  <div className="flex items-center gap-2 flex-wrap md:flex-nowrap">
-    <select
-      value={gardenFilter}
-      onChange={(e) => setGardenFilter(e.target.value)}
-      className={`${COMPACT.select} w-[220px] shrink-0`}
-      title="Lọc trạng thái vườn"
-    >
-      <option value="all">Tất cả vườn</option>
-      <option value="active">Đang hoạt động</option>
-      <option value="stopped">Dừng hoạt động</option>
-    </select>
+                    <div className="mb-6">
+                      <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">Mật khẩu</h1>
+                      <p className="text-sm text-white/80">Bảo mật tài khoản của bạn</p>
+                    </div>
 
-    <SearchInput
-      value={searchGarden}
-      onChange={setSearchGarden}
-      placeholder="Tìm tên/địa chỉ/tỉnh–huyện–xã…"
-    />
+                    <div className="space-y-6">
+                      {/* Change Password Form */}
+                      <div className="p-6 rounded-2xl bg-white/20 border border-white/25">
+                        <div className="flex items-center gap-3 mb-4">
+                          <Lock className="h-6 w-6 text-yellow-400" />
+                          <h2 className="text-lg font-semibold text-white">Đổi mật khẩu</h2>
+                        </div>
+                        <p className="text-sm text-white/70 mb-6">
+                          Để đảm bảo an toàn, vui lòng đổi mật khẩu định kỳ. Mật khẩu mới phải có ít nhất 8 ký tự.
+                        </p>
 
+                        <form 
+                          autoComplete="off" 
+                          onSubmit={(e) => { e.preventDefault(); handlePasswordChange(); }}
+                          style={{ position: 'relative' }}
+                        >
+                          {/* Hidden inputs to trick password managers */}
+                          <input 
+                            type="text" 
+                            autoComplete="username" 
+                            className="hidden" 
+                            tabIndex="-1" 
+                            style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}
+                          />
+                          <input 
+                            type="password" 
+                            autoComplete="new-password" 
+                            className="hidden" 
+                            tabIndex="-1"
+                            style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}
+                          />
+
+                          {/* Current password */}
+                          <div className="space-y-2 mb-4">
+                            <label className="block text-sm font-bold text-white/90">Mật khẩu hiện tại</label>
+                            <Input
+                              ref={cpRef}
+                              type="password"
+                              autoComplete="off"
+                              readOnly
+                              spellCheck="false"
+                              onFocus={(e) => {
+                                e.currentTarget.removeAttribute("readonly");
+                                // Reset cả 3 trường mật khẩu khi click vào để nhập lại
+                                setCp("");
+                                setNp("");
+                                setCf("");
+                                setErrorsPw({ cp: "", np: "", cf: "" });
+                                setTouchedPw({ cp: false, np: false, cf: false });
+                              }}
+                              data-lpignore="true"
+                              data-1p-ignore="true"
+                              data-bwignore="true"
+                              data-dashlane-ignore="true"
+                              data-ignore-autofill="true"
+                              data-form-type="other"
+                              data-form-type-other="true"
+                              name="current-password-disabled"
+                              id="current-password-disabled"
+                              className={`h-12 w-full rounded-xl bg-slate-800/60 border ${
+                                !touchedPw.cp
+                                  ? "border-emerald-400/40"
+                                  : errorsPw.cp
+                                  ? "border-rose-500 focus:ring-2 focus:ring-rose-500/40"
+                                  : "border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/40"
+                              } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye`}
+                              value={cp}
+                              onChange={(e) => {
+                                setCp(e.target.value);
+                                if (errorsPw.cp) {
+                                  setErrorsPw((e) => ({ ...e, cp: "" }));
+                                }
+                              }}
+                              onBlur={() => setTouchedPw((t) => ({ ...t, cp: true }))}
+                              placeholder="Nhập mật khẩu hiện tại"
+                            />
+                            {touchedPw.cp && errorsPw.cp && (
+                              <p className="text-xs text-rose-400">{errorsPw.cp}</p>
+                            )}
+                          </div>
+
+                          {/* New password */}
+                          <div className="space-y-2 mb-4">
+                            <label className="block text-sm font-bold text-white/80">Mật khẩu mới</label>
+                            <Input
+                              ref={npRef}
+                              type="password"
+                              autoComplete="off"
+                              readOnly
+                              spellCheck="false"
+                              onFocus={(e) => {
+                                if (!cp.trim()) {
+                                  e.preventDefault();
+                                  e.currentTarget.blur();
+                                  cpRef.current?.focus();
+                                  return;
+                                }
+                                e.currentTarget.removeAttribute("readonly");
+                              }}
+                              data-lpignore="true"
+                              data-1p-ignore="true"
+                              data-bwignore="true"
+                              data-dashlane-ignore="true"
+                              data-ignore-autofill="true"
+                              data-form-type="other"
+                              disabled={!cp.trim()}
+                              className={`h-12 w-full rounded-xl bg-slate-800/60 border ${
+                                !touchedPw.np
+                                  ? "border-emerald-400/40"
+                                  : errorsPw.np
+                                  ? "border-rose-500 focus:ring-2 focus:ring-rose-500/40"
+                                  : "border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/40"
+                              } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye ${!cp.trim() ? "opacity-50 cursor-not-allowed" : ""}`}
+                              value={np}
+                              onChange={(e) => {
+                                if (!cp.trim()) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                setNp(e.target.value);
+                                if (errorsPw.np) {
+                                  setErrorsPw((e) => ({ ...e, np: "" }));
+                                }
+                              }}
+                              onBlur={() => setTouchedPw((t) => ({ ...t, np: true }))}
+                              onPaste={(e) => {
+                                if (!cp.trim()) {
+                                  e.preventDefault();
+                                  cpRef.current?.focus();
+                                  return;
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (!cp.trim() && e.key !== "Tab") {
+                                  e.preventDefault();
+                                  cpRef.current?.focus();
+                                }
+                              }}
+                              placeholder={!cp.trim() ? "Vui lòng nhập mật khẩu hiện tại trước" : "Tối thiểu 8 ký tự"}
+                            />
+                            {touchedPw.np && errorsPw.np && (
+                              <p className="text-xs text-rose-400">{errorsPw.np}</p>
+                            )}
+                            {!cp.trim() && <p className="text-xs text-white/50">Vui lòng nhập mật khẩu hiện tại trước</p>}
+                          </div>
+
+                          {/* Confirm new password */}
+                          <div className="space-y-2 mb-6">
+                            <label className="block text-sm font-bold text-white/80">Xác nhận mật khẩu mới</label>
+                            <Input
+                              ref={cfRef}
+                              type="password"
+                              autoComplete="off"
+                              readOnly
+                              spellCheck="false"
+                              onFocus={(e) => {
+                                if (!cp.trim()) {
+                                  e.preventDefault();
+                                  e.currentTarget.blur();
+                                  cpRef.current?.focus();
+                                  return;
+                                }
+                                e.currentTarget.removeAttribute("readonly");
+                              }}
+                              data-lpignore="true"
+                              data-1p-ignore="true"
+                              data-bwignore="true"
+                              data-dashlane-ignore="true"
+                              data-ignore-autofill="true"
+                              data-form-type="other"
+                              disabled={!cp.trim()}
+                              className={`h-12 w-full rounded-xl bg-slate-800/60 border ${
+                                !touchedPw.cf
+                                  ? "border-emerald-400/40"
+                                  : errorsPw.cf
+                                  ? "border-rose-500 focus:ring-2 focus:ring-rose-500/40"
+                                  : "border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/40"
+                              } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye ${!cp.trim() ? "opacity-50 cursor-not-allowed" : ""}`}
+                              value={cf}
+                              onChange={(e) => {
+                                if (!cp.trim()) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                setCf(e.target.value);
+                                if (errorsPw.cf) {
+                                  setErrorsPw((e) => ({ ...e, cf: "" }));
+                                }
+                              }}
+                              onBlur={() => setTouchedPw((t) => ({ ...t, cf: true }))}
+                              onPaste={(e) => {
+                                if (!cp.trim()) {
+                                  e.preventDefault();
+                                  cpRef.current?.focus();
+                                  return;
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (!cp.trim() && e.key !== "Tab") {
+                                  e.preventDefault();
+                                  cpRef.current?.focus();
+                                }
+                              }}
+                              placeholder={!cp.trim() ? "Vui lòng nhập mật khẩu hiện tại trước" : "Nhập lại mật khẩu mới"}
+                            />
+                            {touchedPw.cf && errorsPw.cf && (
+                              <p className="text-xs text-rose-400">{errorsPw.cf}</p>
+                            )}
+                          </div>
+
+                          <div className="flex justify-between items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPwModalTab("forgot");
+                                setPwOpen(true);
+                              }}
+                              className="text-sm text-emerald-400 hover:text-emerald-300 transition-colors underline underline-offset-2"
+                            >
+                              Quên mật khẩu ?
+                            </button>
+                            <div className="flex gap-3">
     <Button
-      className={`${COMPACT.btn} ${BTN.primary} ${BTN.base} gap-2 shrink-0`}
-      onClick={openGardenModal}
-      title="Thêm vườn mới"
-    >
-      <Plus className="h-5 w-5" /> Thêm vườn
+                                type="button"
+                                className="h-12 px-6 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                onClick={() => {
+                                  setCp("");
+                                  setNp("");
+                                  setCf("");
+                                  setTouchedPw({ cp: false, np: false, cf: false });
+                                  setErrorsPw({ cp: "", np: "", cf: "" });
+                                }}
+                              >
+                                Huỷ
+                              </Button>
+                              <Button
+                                type="submit"
+                                className="h-12 px-6 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white font-medium"
+                              >
+                                Xác nhận
     </Button>
   </div>
+                          </div>
+                        </form>
 </div>
 
-                <div className="space-y-2">
-                  {filteredGardens.map((g, idx) => {
-                    const managers = staffs
-                      .filter((s) => s.assigned === g.name)
-                      .map((s) => s.name);
-                    return (
-                      <div key={idx} className="rounded-2xl border p-3">
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          {/* LEFT: thumb + info */}
-                          <div className="min-w-0 flex items-start gap-3">
-                            <SquareThumb src={g.coverUrl} size={72} fallback="garden" title={g.name} />
-                            <div className="min-w-0">
-                              <div className="truncate font-medium text-neutral-900">{g.name}</div>
-                              <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-neutral-600">
-                                <span className="inline-flex items-center gap-1">
-                                  <MapPin className="h-4 w-4" />
-                                  {formatGardenLocation(g)}
-                                </span>
-                                <BadgeSoft color="neutral">
-                                  {(treeCountMap[g.name] || 0) + " cây"}
-                                </BadgeSoft>
-                                <BadgeSoft color={g.status === "Đang hoạt động" ? "emerald" : "rose"}>
-                                  {g.status}
-                                </BadgeSoft>
-                                <span className="inline-flex items-center gap-1">
-                                  <Users className="h-5 w-5" />
-                                  Nhân viên quản lý:{" "}
-                                  <b className="ml-1">{managers.length ? managers.join(", ") : "—"}</b>
-                                </span>
+                      {/* Security Tips */}
+                      <div className="p-6 rounded-2xl bg-white/20 border border-white/25">
+                        <div className="flex items-center gap-3 mb-4">
+                          <Shield className="h-6 w-6 text-emerald-400" />
+                          <h2 className="text-lg font-semibold text-white">Bảo mật tài khoản</h2>
                               </div>
+                        <ul className="space-y-3 text-sm text-white/70">
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                            <span>Sử dụng mật khẩu mạnh với ít nhất 8 ký tự</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                            <span>Không chia sẻ mật khẩu với người khác</span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
+                            <span>Đổi mật khẩu định kỳ để tăng cường bảo mật</span>
+                          </li>
+                        </ul>
                             </div>
                           </div>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
 
-                          {/* RIGHT: actions */}
-                          <div className="flex items-center gap-2">
-                            <Button
-                              className={`${BTN.base} ${BTN.outline} h-11 px-5`}
-                              onClick={() => setGardenDetail({ open: true, garden: g })}
-                            >
-                              Chi tiết
-                            </Button>
-                            <Button
-                              className={`${BTN.base} ${BTN.outline} h-11 px-5`}
-                              onClick={() =>
-                                setEditGarden({
-                                  open: true,
-                                  index: idx,
-                                  data: { ...g },
-                                })
-                              }
-                            >
-                              Sửa
-                            </Button>
-                            <Button
-                              className={`${BTN.base} ${BTN.outline} h-11 px-5 text-rose-600 hover:bg-rose-50`}
-                              onClick={() => openConfirmDeleteGarden(g)}
-                            >
-                              <Trash2 className="mr-1 h-5 w-5" /> Xóa
-                            </Button>
+            {/* Lịch sử giao dịch Section */}
+            {activeMenu === "history" && (
+              <section className="space-y-6">
+                <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
+                  <CardContent className="p-6 sm:p-8">
+                    {/* Header */}
+                    <div className="mb-6">
+                      <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">Lịch sử giao dịch</h1>
+                      <p className="text-sm text-white/80">Xem và quản lý các giao dịch thanh toán của bạn</p>
+                    </div>
+
+                    {/* Filters Section */}
+                    <div className="space-y-6 mb-6">
+                      {/* Search and Status Row */}
+                      <div className="flex flex-wrap items-center gap-4">
+                        <div className="flex-1 min-w-[280px] relative">
+                          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70 w-5 h-5" />
+                          <Input
+                            type="text"
+                            placeholder="Tìm mã đơn, gói, TXID, phương thức, số tiền..."
+                            className="pl-12 h-14 w-full rounded-xl bg-white/20 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 text-base"
+                            value={paymentSearch}
+                            onChange={(e) => setPaymentSearch(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="relative">
+                          <select
+                            className="appearance-none px-5 py-3 pr-10 h-14 text-base border border-emerald-400/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 bg-white/20 backdrop-blur-sm text-white font-medium min-w-[200px]"
+                            value={paymentStatusFilter}
+                            onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                          >
+                            <option value="Tất cả trạng thái" className="bg-gray-800">Tất cả trạng thái</option>
+                            <option value="Thành công" className="bg-gray-800">Thành công</option>
+                            <option value="Đang xử lý" className="bg-gray-800">Đang xử lý</option>
+                            <option value="Thất bại" className="bg-gray-800">Thất bại</option>
+                            <option value="Hoàn tiền" className="bg-gray-800">Hoàn tiền</option>
+                          </select>
+                          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 w-5 h-5 pointer-events-none" />
+                        </div>
+
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setPaymentSearch("");
+                            setPaymentStatusFilter("Tất cả trạng thái");
+                            setPaymentDateFrom("");
+                            setPaymentDateTo("");
+                          }}
+                          className="h-14 px-5 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg text-base font-medium"
+                        >
+                          Reset
+                        </Button>
+
+                        <Button 
+                          onClick={() => {
+                            // Export CSV logic
+                            const defaultTransactions = [
+                              {
+                                id: "SUB-STARTER-58723",
+                                time: "2025-10-11 09:35",
+                                package: "Starter",
+                                amount: "490,000 đ",
+                                method: "QR (VNPay)",
+                                status: "Thành công",
+                                txId: "TX9X2H1",
+                              },
+                            ];
+                            const headers = ["Mã đơn", "Thời gian", "Gói", "Số tiền", "Phương thức", "Trạng thái"];
+                            const rows = defaultTransactions.map((t) => [
+                              t.id,
+                              t.time,
+                              t.package,
+                              t.amount.toString().replace(/,/g, "."),
+                              t.method,
+                              t.status,
+                            ]);
+                            let csvContent = "\uFEFF" + [headers, ...rows].map((e) => e.join(",")).join("\n");
+                            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+                            const link = document.createElement("a");
+                            link.setAttribute("href", encodedUri);
+                            link.setAttribute("download", "payment_history.csv");
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                          }}
+                          className="h-14 px-5 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 text-base font-medium"
+                        >
+                          <Download className="w-5 h-5" /> Xuất CSV
+                        </Button>
+                      </div>
+
+                      {/* Date Filter Row */}
+                      <div className="flex flex-wrap items-center gap-3 p-2.5 rounded-xl bg-white/20 border border-white/10">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Calendar className="w-5 h-5 text-white/80" />
+                          <span className="text-white/90 text-base font-medium tracking-wide px-1">Lọc theo ngày:</span>
+                        </div>
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex-1 min-w-0">
+                            <DateInput
+                              value={paymentDateFrom}
+                              onChange={setPaymentDateFrom}
+                            />
+                          </div>
+                          <span className="text-white/70 text-xl shrink-0 px-1">→</span>
+                          <div className="flex-1 min-w-0">
+                            <DateInput
+                              value={paymentDateTo}
+                              onChange={setPaymentDateTo}
+                            />
                           </div>
                         </div>
+                        {(paymentDateFrom || paymentDateTo) && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => { setPaymentDateFrom(""); setPaymentDateTo(""); }}
+                            className="h-11 text-sm text-white/90 hover:text-white hover:bg-white/20 px-4 shrink-0"
+                          >
+                            <X className="w-4 h-4 mr-1" /> Xóa lọc
+                          </Button>
+                        )}
                       </div>
-                    );
-                  })}
+                    </div>
+
+                    {/* Payment History Table */}
+                    <div className="border-t border-white/20 pt-6">
+                      <PaymentHistory
+                        transactions={[]}
+                        search={paymentSearch}
+                        statusFilter={paymentStatusFilter}
+                        dateFrom={paymentDateFrom}
+                        dateTo={paymentDateTo}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+            )}
+
+            {/* Nâng cấp gói Section */}
+            {activeMenu === "upgrade" && (
+              <section className="space-y-6">
+                <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
+                  <CardContent className="p-8">
+                    <div className="mb-6">
+                      <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">Nâng cấp gói</h1>
+                      <p className="text-sm text-white/80">Chọn gói phù hợp với nhu cầu của bạn</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Starter Package */}
+                      <div className="p-6 rounded-2xl bg-white/20 border border-white/25 hover:border-yellow-500/50 transition-colors">
+                        <div className="mb-4">
+                          <h3 className="text-xl font-semibold text-white mb-2">Starter</h3>
+                          <div className="text-3xl font-bold text-yellow-400 mb-1">490,000đ</div>
+                          <div className="text-sm text-white/80">/tháng</div>
+                        </div>
+                        <ul className="space-y-2 mb-6 text-sm text-white/70">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                            <span>Quản lý tối đa 3 vườn</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                            <span>Quản lý tối đa 10 cây</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                            <span>Hỗ trợ email</span>
+                          </li>
+                        </ul>
+                            <Button
+                          className="w-full h-12 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                          disabled
+                            >
+                          Gói hiện tại
+                            </Button>
+                      </div>
+
+                      {/* Pro Package */}
+                      <div className="p-6 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50 relative">
+                        <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                          Phổ biến
+                        </div>
+                        <div className="mb-4">
+                          <h3 className="text-xl font-semibold text-white mb-2">Pro</h3>
+                          <div className="text-3xl font-bold text-yellow-400 mb-1">990,000đ</div>
+                          <div className="text-sm text-white/80">/tháng</div>
+                        </div>
+                        <ul className="space-y-2 mb-6 text-sm text-white/70">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-yellow-400 shrink-0" />
+                            <span>Quản lý không giới hạn vườn</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-yellow-400 shrink-0" />
+                            <span>Quản lý không giới hạn cây</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-yellow-400 shrink-0" />
+                            <span>Hỗ trợ 24/7</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-yellow-400 shrink-0" />
+                            <span>Báo cáo nâng cao</span>
+                          </li>
+                        </ul>
+                            <Button
+                          className="w-full h-12 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white font-medium"
+                        >
+                          Nâng cấp ngay
+                            </Button>
+                      </div>
+
+                      {/* Farmer Package */}
+                      <div className="p-6 rounded-2xl bg-white/20 border border-white/25 hover:border-yellow-500/50 transition-colors">
+                        <div className="mb-4">
+                          <h3 className="text-xl font-semibold text-white mb-2">Farmer</h3>
+                          <div className="text-3xl font-bold text-yellow-400 mb-1">1,990,000đ</div>
+                          <div className="text-sm text-white/80">/tháng</div>
+                        </div>
+                        <ul className="space-y-2 mb-6 text-sm text-white/70">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                            <span>Tất cả tính năng Pro</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                            <span>Quản lý nhân viên</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                            <span>API tích hợp</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+                            <span>Hỗ trợ ưu tiên</span>
+                          </li>
+                        </ul>
+                            <Button
+                          className="w-full h-12 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                            >
+                          Nâng cấp ngay
+                            </Button>
+                          </div>
                 </div>
               </CardContent>
             </Card>
+              </section>
+            )}
 
-            {/* Staffs */}
+            {/* Staffs - TẠM THỜI ẨN (để bật lại: bỏ comment và đổi false thành true) */}
+            <section>
+            {false && (
             <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
               <CardContent className="p-8">
               <div className="mb-3">
@@ -2838,97 +3510,23 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
                 </div>
               </CardContent>
             </Card>
+            )}
           </section>
-
-          {/* RIGHT (sticky) */}
-          <aside className={`space-y-6 ${RIGHT_COL} lg:sticky lg:top-20 h-fit`}>
-            {/* Menu */}
-            <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
-              <CardContent className="p-4">
-                <div className="mb-3 text-xl font-semibold">Menu</div>
-<div className="space-y-2">
-  {[
-    "Chỉnh sửa hồ sơ",
-    "Cài đặt thông báo",
-    "Bảo mật & mật khẩu",
-    "Quản lý gói & thanh toán",
-    "Quản lý vườn",
-    "Quản lý nhân viên",
-  ].map((m) => (
-    <button
-      key={m}
-      className="w-full rounded-2xl border px-4 py-3 text-left text-base hover:bg-neutral-50"
-      onClick={() => {
-        if (m.includes("mật khẩu")) setPwOpen(true);
-        if (m.includes("Chỉnh sửa")) goEditFromMenu();
-      }}
-    >
-      {m}
-    </button>
-  ))}
 </div>
-              </CardContent>
-            </Card>
-
-            {/* Hướng dẫn trang tài khoản */}
-<Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
-  <CardContent className="p-4">
-    <div className="mb-3 text-xl font-semibold">Hướng dẫn trang tài khoản</div>
-
-    <div className="space-y-3 text-[15.5px] md:text-[16.5px] leading-relaxed text-neutral-800">
-      <p><b>Tổng quan:</b> Đây là nơi bạn cập nhật thông tin cá nhân, quản lý vườn và nhân viên. Các mục quan trọng nằm ở cột phải (Menu) và các khối lớn ở giữa trang.</p>
-
-      <ol className="list-decimal pl-5 space-y-2">
-        <li>
-          <b>Hồ sơ người dùng:</b> Xem/đổi <i>Email</i>, <i>SĐT</i>, <i>Địa chỉ</i>.
-          Bấm <i>“Chỉnh sửa hồ sơ”</i> (hoặc nút trong Menu) để bật chế độ sửa. Hoàn tất thì bấm <i>“Lưu thay đổi”</i>.
-        </li>
-        <li>
-          <b>Đổi Email / SĐT (OTP):</b> Vì an toàn, cần xác minh OTP. Bấm <i>“Đổi email”</i> hoặc <i>“Đổi SĐT”</i> → <i>Nhận mã</i> →
-          nhập đủ <b>6 số</b> để mở khoá ô nhập.
-        </li>
-        <li>
-          <b>Bảo mật & mật khẩu:</b> Vào Menu → <i>“Bảo mật & mật khẩu”</i>. 
-          Tab <i>“Đổi mật khẩu”</i> dùng khi nhớ mật khẩu cũ; tab <i>“Quên mật khẩu (OTP email)”</i> dùng khi quên mật khẩu.
-        </li>
-        <li>
-          <b>Quản lý vườn:</b> Bấm <i>“Thêm vườn”</i> → nhập <i>Tên vườn</i> và chọn <i>Địa chỉ</i> từ gợi ý (Tỉnh/Thành, Phường/Xã, Địa chỉ).
-          Trong danh sách vườn: <i>Chi tiết</i> (xem cây & nhân viên), <i>Sửa</i> hoặc <i>Xoá</i>.
-        </li>
-        <li>
-          <b>Nhân viên & phân công:</b> Bấm <i>“Thêm nhân viên”</i> → nhập <i>Họ tên</i> + (ít nhất) <i>Email</i> hoặc <i>SĐT</i>, 
-          mật khẩu tạm tối thiểu <b>8 ký tự</b>. Có thể phân công ngay hoặc bấm <i>“Phân công”</i> sau. 
-          Vào <i>“Chi tiết”</i> để <i>Sửa</i> thông tin hoặc <i>Đổi mật khẩu</i>.
-        </li>
-        <li>
-          <b>Tìm kiếm & lọc:</b> Ô kính lúp để tìm nhanh theo tên, email, SĐT, địa chỉ. 
-          Dùng các hộp <i>Lọc trạng thái</i>/<i>Lọc vườn</i> để thu gọn danh sách.
-        </li>
-        <li>
-          <b>Ảnh & liên kết:</b> Có thể tải ảnh trực tiếp hoặc dán link <i>Google Drive/Dropbox</i>. 
-          Hệ thống tự chuẩn hoá link để hiển thị ổn định.
-        </li>
-        
-      </ol>
-
-      <div className="rounded-xl border p-3 bg-emerald-50 border-emerald-200 text-emerald-800 text-[15px] md:text-[16px]">
-        <b>Mẹo đọc dễ hơn:</b> Bạn có thể phóng to trang bằng <kbd>Ctrl</kbd> + <kbd>+</kbd> (trên máy tính) hoặc 
-        dùng cử chỉ phóng to (trên điện thoại).
-      </div>
-    </div>
-  </CardContent>
-</Card>
-          </aside>
         </div>
       </main>
 
       {/* ================== MODALS ================== */}
       <PasswordModal
         open={pwOpen}
-        onClose={() => setPwOpen(false)}
+        onClose={() => {
+          setPwOpen(false);
+          setPwModalTab("change"); // Reset về tab change khi đóng
+        }}
         currentPassword={demoPw}
         defaultEmail={profile.email}
         userName={profile.fullName}
+        initialTab={pwModalTab}
         onChanged={(newPw) => {
           setDemoPw(newPw);
           try {
@@ -3483,41 +4081,41 @@ function EditProfileForm({
   onSave,
 }) {
   return (
-    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-      <div>
+    <div className="grid grid-cols-1 gap-3 md:grid-cols-2 min-w-0">
+      <div className="min-w-0">
         <FieldLabel required>Họ & tên</FieldLabel>
         <Input
           name="full-name"
           autoComplete="name"
           aria-invalid={!!(touchedProfile.fullName && profileErrors.fullName)}
-          className={
+          className={`${
             !touchedProfile.fullName
               ? INPUT_OK
               : profileErrors.fullName
               ? INPUT_ERR
               : INPUT_OK
-          }
+          } min-w-0`}
           value={draft.fullName}
           onChange={(e) => setDraft({ ...draft, fullName: e.target.value })}
           onBlur={() => setTouchedProfile((t) => ({ ...t, fullName: true }))}
         />
         {touchedProfile.fullName && profileErrors.fullName ? (
-          <p className="mt-1 text-xs text-rose-600">
+          <p className="mt-1 text-xs text-rose-600 break-words">
             {profileErrors.fullName}
           </p>
         ) : null}
       </div>
 
       {/* Email + OTP gate */}
-      <div>
-        <div className="flex items-center justify-between">
-          <FieldLabel>Email (xác minh OTP trước khi đổi)</FieldLabel>
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <FieldLabel className="break-words min-w-0 flex-1">Email (xác minh OTP trước khi đổi)</FieldLabel>
           {allowEdit.email ? (
-            <span className="text-xs text-emerald-700">Đã xác minh OTP ✓</span>
+            <span className="text-xs text-emerald-700 whitespace-nowrap flex-shrink-0">Đã xác minh OTP ✓</span>
           ) : (
             <button
               type="button"
-              className="text-xs text-emerald-700 hover:underline"
+              className="text-xs text-emerald-700 hover:underline whitespace-nowrap flex-shrink-0"
               onClick={() => openOtp("email")}
             >
               Đổi email
@@ -3530,9 +4128,9 @@ function EditProfileForm({
           autoComplete="off"
           readOnly={!allowEdit.email}
           aria-invalid={!!(touchedProfile.contact && profileErrors.contact)}
-          className={
+          className={`${
             !touchedProfile.contact ? INPUT_OK : profileErrors.contact ? INPUT_ERR : INPUT_OK
-          }
+          } min-w-0`}
           value={draft.email}
           onChange={(e) => setDraft({ ...draft, email: e.target.value })}
           onBlur={() => setTouchedProfile((t) => ({ ...t, contact: true }))}
@@ -3540,63 +4138,11 @@ function EditProfileForm({
         />
       </div>
 
-      {/* Phone + OTP gate */}
-      <div>
-        <div className="flex items-center justify-between">
-          <FieldLabel>Số điện thoại (xác minh OTP trước khi đổi)</FieldLabel>
-          {allowEdit.phone ? (
-            <span className="text-xs text-emerald-700">Đã xác minh OTP ✓</span>
-          ) : (
-            <button
-              type="button"
-              className="text-xs text-emerald-700 hover:underline"
-              onClick={() => openOtp("phone")}
-            >
-              Đổi SĐT
-            </button>
-          )}
-        </div>
-        <Input
-          type="tel"
-          name="profile-phone"
-          autoComplete="off"
-          inputMode="numeric"
-          pattern="\d*"
-          readOnly={!allowEdit.phone}
-          aria-invalid={!!(touchedProfile.contact && profileErrors.contact)}
-          className={
-            !touchedProfile.contact ? INPUT_OK : profileErrors.contact ? INPUT_ERR : INPUT_OK
-          }
-          value={draft.phone}
-          onChange={(e) =>
-            setDraft({ ...draft, phone: e.target.value.replace(/\D/g, "") })
-          }
-          onBlur={() => setTouchedProfile((t) => ({ ...t, contact: true }))}
-          placeholder="0xxxxxxxxx"
-        />
-        {touchedProfile.contact && profileErrors.contact ? (
-          <p className="mt-1 text-xs text-rose-600">{profileErrors.contact}</p>
-        ) : null}
-      </div>
-
-      {/* Địa chỉ */}
-      <div>
-        <FieldLabel>Địa chỉ</FieldLabel>
-        <Input
-          name="address"
-          autoComplete="street-address"
-          className={INPUT_OK}
-          value={draft.address}
-          onChange={(e) => setDraft({ ...draft, address: e.target.value })}
-          placeholder="Số nhà/đường, phường/xã, quận/huyện, tỉnh/thành"
-        />
-      </div>
-
-      <div className="md:col-span-2 flex justify-end gap-2 pt-1">
-        <Button className={`${BTN.base} ${BTN.outline}`} onClick={onCancel}>
+      <div className="md:col-span-2 flex flex-col sm:flex-row justify-end gap-2 pt-1 min-w-0">
+        <Button className={`${BTN.base} ${BTN.outline} w-full sm:w-auto`} onClick={onCancel}>
           Huỷ
         </Button>
-        <Button className={`${BTN.base} ${BTN.primary}`} onClick={onSave}>
+        <Button className={`${BTN.base} ${BTN.primary} w-full sm:w-auto`} onClick={onSave}>
           Lưu thay đổi
         </Button>
       </div>
@@ -3931,6 +4477,365 @@ function StaffModal({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/* =========================================================
+   DateInput Component (từ AddTreeNewScreen)
+========================================================= */
+function DateInput({ value, onChange, error }) {
+  const [parts, setParts] = React.useState(() => parseIsoToParts(value));
+  const [open, setOpen] = React.useState(false);
+  const wrapRef = React.useRef(null);
+  const dayRef = React.useRef(null);
+  const monthRef = React.useRef(null);
+  const yearRef = React.useRef(null);
+
+  const today = new Date();
+
+  React.useEffect(() => {
+    setParts(parseIsoToParts(value));
+  }, [value]);
+
+  React.useEffect(() => {
+    const handleClick = (e) => {
+      if (!wrapRef.current) return;
+      if (!wrapRef.current.contains(e.target)) {
+        commitParts();
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [parts]);
+
+  function parseIsoToParts(iso) {
+    if (!iso) return { d: "", m: "", y: "" };
+    const [y, m, d] = iso.split("-");
+    return { d: d || "", m: m || "", y: y || "" };
+  }
+
+  function getDaysInMonthSafe(yearStr, monthStr) {
+    const monthNum = Number(monthStr);
+    if (!monthNum || monthNum < 1 || monthNum > 12) return 31;
+    const yearNum = Number(yearStr);
+    if (!yearStr || String(yearStr).length < 4 || !yearNum) {
+      if ([1, 3, 5, 7, 8, 10, 12].includes(monthNum)) return 31;
+      if ([4, 6, 9, 11].includes(monthNum)) return 30;
+      if (monthNum === 2) return 29;
+    }
+    return new Date(yearNum, monthNum, 0).getDate();
+  }
+
+  function buildIsoFromParts({ d, m, y }) {
+    if (!d || !m || !y) return "";
+    if (y.length !== 4) return "";
+    const dayNum = Number(d);
+    const monthNum = Number(m);
+    const yearNum = Number(y);
+    if (!dayNum || !monthNum || !yearNum) return "";
+    const dt = new Date(yearNum, monthNum - 1, dayNum);
+    if (
+      dt.getFullYear() !== yearNum ||
+      dt.getMonth() !== monthNum - 1 ||
+      dt.getDate() !== dayNum
+    ) {
+      return "";
+    }
+    return `${String(yearNum).padStart(4, "0")}-${String(monthNum).padStart(
+      2,
+      "0"
+    )}-${String(dayNum).padStart(2, "0")}`;
+  }
+
+  function commitParts() {
+    const iso = buildIsoFromParts(parts);
+    if (!iso) {
+      onChange("");
+      setParts({ d: "", m: "", y: "" });
+    } else {
+      onChange(iso);
+      setParts(parseIsoToParts(iso));
+    }
+  }
+
+  function getDaysInMonth(y, m) {
+    const yearNum = Number(y);
+    const monthNum = Number(m);
+    if (!yearNum || !monthNum) return 31;
+    return new Date(yearNum, monthNum, 0).getDate();
+  }
+
+  function handleSegmentChange(segment, raw) {
+    const onlyDigits = raw.replace(/\D/g, "");
+    const maxLen = segment === "y" ? 4 : 2;
+    let v = onlyDigits.slice(0, maxLen);
+
+    setParts((prev) => {
+      const next = { ...prev };
+
+      if (segment === "d") {
+        if (!v) {
+          next.d = "";
+          return next;
+        }
+        if (v.length === 1) {
+          next.d = v;
+          return next;
+        }
+        v = v.slice(0, 2);
+        let num = Number(v) || 0;
+        if (num === 0) num = 1;
+        const limit = getDaysInMonthSafe(prev.y || "", prev.m || "");
+        if (num > limit) num = limit;
+        if (v[0] === "0" && num < 10) {
+          next.d = "0" + String(num);
+        } else {
+          next.d = String(num);
+        }
+      } else if (segment === "m") {
+        if (!v) {
+          next.m = "";
+          return next;
+        }
+        if (v.length === 1) {
+          next.m = v;
+          return next;
+        }
+        v = v.slice(0, 2);
+        let num = Number(v) || 0;
+        if (num === 0) num = 1;
+        if (num > 12) num = 12;
+        if (v[0] === "0" && num < 10) {
+          next.m = "0" + String(num);
+        } else {
+          next.m = String(num);
+        }
+        if (next.d && next.d.length === 2) {
+          const limit = getDaysInMonthSafe(prev.y || "", next.m);
+          const dayNum = Number(next.d) || 0;
+          if (dayNum > limit) {
+            let adjusted = limit;
+            if (adjusted < 10) next.d = "0" + String(adjusted);
+            else next.d = String(adjusted);
+          }
+        }
+      } else if (segment === "y") {
+        next.y = v;
+        if (v.length === 4 && next.d && next.m && next.d.length === 2) {
+          const limit = getDaysInMonthSafe(v, next.m);
+          const dayNum = Number(next.d) || 0;
+          if (dayNum > limit) {
+            let adjusted = limit;
+            if (adjusted < 10) next.d = "0" + String(adjusted);
+            else next.d = String(adjusted);
+          }
+        }
+      }
+
+      return next;
+    });
+  }
+
+  function handleKeyDown(e, current) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      e.stopPropagation();
+      if (current === "d" && monthRef.current) {
+        monthRef.current.focus();
+      } else if (current === "m" && yearRef.current) {
+        yearRef.current.focus();
+      } else if (current === "y") {
+        commitParts();
+        setOpen(false);
+        yearRef.current?.blur();
+      }
+    }
+  }
+
+  const selected = value ? new Date(value + "T00:00:00") : null;
+  const [month, setMonth] = React.useState(
+    selected ? selected.getMonth() : today.getMonth()
+  );
+  const [year, setYear] = React.useState(
+    selected ? selected.getFullYear() : today.getFullYear()
+  );
+
+  React.useEffect(() => {
+    if (selected) {
+      setMonth(selected.getMonth());
+      setYear(selected.getFullYear());
+    }
+  }, [value]);
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+  const blanks = Array.from({ length: firstDay }).map((_, i) => i);
+  const days = Array.from({ length: daysInMonth }).map((_, i) => i + 1);
+
+  const monthNames = [
+    "Th1", "Th2", "Th3", "Th4", "Th5", "Th6",
+    "Th7", "Th8", "Th9", "Th10", "Th11", "Th12",
+  ];
+
+  function pickDay(day) {
+    const iso = buildIsoFromParts({
+      d: String(day),
+      m: String(month + 1),
+      y: String(year),
+    });
+    if (!iso) return;
+    onChange(iso);
+    setParts(parseIsoToParts(iso));
+    setOpen(false);
+  }
+
+  return (
+    <div
+      className="relative w-full min-w-0"
+      ref={wrapRef}
+      data-mm-date-open={open ? "1" : undefined}
+    >
+      <div
+        className={
+          "flex items-center w-full min-w-0 rounded-xl border bg-slate-800/60 h-14 px-3 overflow-hidden " +
+          (error
+            ? "border-rose-500 focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-500/40"
+            : "border-emerald-400/40 focus-within:border-yellow-500 focus-within:ring-2 focus-within:ring-yellow-500/40")
+        }
+        onClick={() => setOpen(true)}
+      >
+        <div className="flex items-center gap-1 flex-1 min-w-0 justify-center">
+          <input
+            ref={dayRef}
+            value={parts.d}
+            onChange={(e) => handleSegmentChange("d", e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, "d")}
+            onFocus={() => setOpen(true)}
+            placeholder="Ngày"
+            inputMode="numeric"
+            className="min-w-[1.25rem] flex-1 max-w-[2.5rem] bg-transparent border-none outline-none text-center placeholder:text-white/50 text-white text-base tracking-wider"
+          />
+          <span className="text-white/50 shrink-0">/</span>
+          <input
+            ref={monthRef}
+            value={parts.m}
+            onChange={(e) => handleSegmentChange("m", e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, "m")}
+            onFocus={() => setOpen(true)}
+            placeholder="Tháng"
+            inputMode="numeric"
+            className="min-w-[1.25rem] flex-1 max-w-[2.5rem] bg-transparent border-none outline-none text-center placeholder:text-white/50 text-white text-base tracking-wider"
+          />
+          <span className="text-white/50 shrink-0">/</span>
+          <input
+            ref={yearRef}
+            value={parts.y}
+            onChange={(e) => handleSegmentChange("y", e.target.value)}
+            onKeyDown={(e) => handleKeyDown(e, "y")}
+            onFocus={() => setOpen(true)}
+            placeholder="Năm"
+            inputMode="numeric"
+            className="min-w-[2rem] flex-1 max-w-[3.5rem] bg-transparent border-none outline-none text-center placeholder:text-white/50 text-white text-base tracking-wider"
+          />
+        </div>
+      </div>
+
+      {open && (
+        <div
+          className="absolute left-0 mt-1 w-full max-w-[18rem] min-w-[16rem] rounded-xl border bg-white shadow-xl z-[1600] p-3 overflow-hidden"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.stopPropagation();
+            }
+          }}
+          style={{ maxWidth: 'min(18rem, calc(100vw - 2rem))' }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <button
+              type="button"
+              className="px-2 py-1 text-xs rounded-lg border bg-neutral-50 hover:bg-neutral-100"
+              onClick={() => {
+                if (month === 0) {
+                  setMonth(11);
+                  setYear((y) => y - 1);
+                } else setMonth((m) => m - 1);
+              }}
+            >
+              ←
+            </button>
+            <div className="text-sm font-medium">
+              {monthNames[month]} {year}
+            </div>
+            <button
+              type="button"
+              className="px-2 py-1 text-xs rounded-lg border bg-neutral-50 hover:bg-neutral-100"
+              onClick={() => {
+                if (month === 11) {
+                  setMonth(0);
+                  setYear((y) => y + 1);
+                } else setMonth((m) => m + 1);
+              }}
+            >
+              →
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-[11px] text-center text-neutral-500 mb-1">
+            {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((d) => (
+              <div key={d}>{d}</div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-sm">
+            {blanks.map((b) => (
+              <div key={`b-${b}`} />
+            ))}
+            {days.map((d) => {
+              const isSelected =
+                selected &&
+                d === selected.getDate() &&
+                month === selected.getMonth() &&
+                year === selected.getFullYear();
+              const isToday =
+                !selected &&
+                d === today.getDate() &&
+                month === today.getMonth() &&
+                year === today.getFullYear();
+
+              let extraClass = "";
+              if (isSelected) {
+                extraClass = "bg-emerald-500 text-white";
+              } else if (isToday) {
+                extraClass = "border border-emerald-500 text-emerald-700 font-semibold";
+              } else {
+                extraClass = "hover:bg-emerald-50 text-neutral-800";
+              }
+
+              return (
+                <button
+                  type="button"
+                  key={d}
+                  onClick={() => pickDay(d)}
+                  className={
+                    "h-7 w-7 rounded-full flex items-center justify-center text-xs " +
+                    extraClass
+                  }
+                >
+                  {d}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-1 text-xs text-rose-400 break-words min-w-0">
+          {error}
+        </p>
+      )}
     </div>
   );
 }

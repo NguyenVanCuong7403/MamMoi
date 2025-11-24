@@ -1,11 +1,11 @@
- import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import LivingBackground from "@/components/background/LivingBackground";
 import { useLocation, useSearchParams } from "react-router-dom";
 
 import {
   Calendar as CalIcon,
   Image as ImageIcon,
- MapPin,
+  MapPin,
   Link2,
   Upload,
   Info,
@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {  normalizePhaseBeforeSave } from "@/lib/treePhase";
+import { normalizePhaseBeforeSave } from "@/lib/treePhase";
 import { normalize as vnNormalize } from "@/lib/useVnAdmin";
 import TreeRepository from "@/API/repositories/TreeRepository";
 import GardenSoilRepository from "@/API/repositories/GardenSoilRepository";
@@ -668,7 +668,7 @@ function DateInput({ value, onChange, error }) {
     }
   }
 
-    function getDaysInMonth(y, m) {
+  function getDaysInMonth(y, m) {
     const yearNum = Number(y);
     const monthNum = Number(m);
     if (!yearNum || !monthNum) return 31; // chưa đủ thông tin thì tạm cho 31
@@ -830,14 +830,14 @@ function DateInput({ value, onChange, error }) {
       data-mm-date-open={open ? "1" : undefined}
     >
       <div
-       className={
-    "flex items-center justify-between w-full min-w-0 rounded-xl border bg-white h-11 px-3 " +
-    (error
-      ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/40"
-      : "border-neutral-300 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/40")
-  }
-  onClick={() => setOpen(true)}
->
+        className={
+          "flex items-center justify-between w-full min-w-0 rounded-xl border bg-white h-11 px-3 " +
+          (error
+            ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/40"
+            : "border-neutral-300 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/40")
+        }
+        onClick={() => setOpen(true)}
+      >
         <div className="flex items-center gap-1 flex-1 min-w-0">
           <input
             ref={dayRef}
@@ -847,8 +847,8 @@ function DateInput({ value, onChange, error }) {
             onFocus={() => setOpen(true)}
             placeholder="Ngày"
             inputMode="numeric"
-  className="w-8 sm:w-9 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400"          />
-<span className="text-neutral-300 text-sm">/</span>
+            className="w-8 sm:w-9 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400" />
+          <span className="text-neutral-300 text-sm">/</span>
           <input
             ref={monthRef}
             value={parts.m}
@@ -857,7 +857,7 @@ function DateInput({ value, onChange, error }) {
             onFocus={() => setOpen(true)}
             placeholder="Tháng"
             inputMode="numeric"
-className="w-9 sm:w-10 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400"         />
+            className="w-9 sm:w-10 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400" />
           <span className="text-neutral-300 text-sm">/</span>
           <input
             ref={yearRef}
@@ -867,7 +867,7 @@ className="w-9 sm:w-10 bg-transparent border-none outline-none text-xs sm:text-s
             onFocus={() => setOpen(true)}
             placeholder="Năm"
             inputMode="numeric"
-className="w-11 sm:w-12 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400"
+            className="w-11 sm:w-12 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400"
           />
         </div>
         <button
@@ -884,7 +884,7 @@ className="w-11 sm:w-12 bg-transparent border-none outline-none text-xs sm:text-
 
       {open && (
         <div
- className="absolute left-0 mt-1 w-full max-w-[18rem] rounded-xl border bg-white shadow-xl z-[1600] p-3"          // Chặn Enter trong popup lịch không cho bubble lên window
+          className="absolute left-0 mt-1 w-full max-w-[18rem] rounded-xl border bg-white shadow-xl z-[1600] p-3"          // Chặn Enter trong popup lịch không cho bubble lên window
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.stopPropagation();
@@ -1014,10 +1014,10 @@ export default function AddTreeNewScreen() {
             Array.isArray(data)
               ? data
               : [
-                  { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
-                  { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
-                  { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
-                ]
+                { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
+                { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
+                { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
+              ]
           );
         } else {
           setGardens([
@@ -1079,12 +1079,16 @@ export default function AddTreeNewScreen() {
   const [userEditedCode, setUserEditedCode] = useState(false);
   const [speciesKey, setSpeciesKey] = useState("");
   const [treeTypes, setTreeTypes] = useState([]);
-  const [treeTypeId, setTreeTypeId] = useState("");  
+  const [treeTypeId, setTreeTypeId] = useState("");
   const [variety, setVariety] = useState("");
+  const [varietiesAll, setVarietiesAll] = useState([]);
+  const [varietiesByType, setVarietiesByType] = useState({});
+  const [selectedVarietyId, setSelectedVarietyId] = useState("");
   const [status, setStatus] = useState(""); // GIỮ để bảo toàn payload (không render form)
   //const [soil, setSoil] = useState("");
-  const [gardenSoils, setGardenSoils] = useState([]);     
+  const [gardenSoils, setGardenSoils] = useState([]);
   const [gardenSoilId, setGardenSoilId] = useState("");
+  const [treeLocation, setTreeLocation] = useState("");
   const [plantDate, setPlantDate] = useState("");
   const [preAge, setPreAge] = useState("");
   const [image, setImage] = useState("");
@@ -1100,7 +1104,7 @@ export default function AddTreeNewScreen() {
   const [lastCreatedVariety, setLastCreatedVariety] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-// ✅ CHẶN ENTER TRONG CÁC Ô INPUT TEXT 1 DÒNG
+  // ✅ CHẶN ENTER TRONG CÁC Ô INPUT TEXT 1 DÒNG
   const handleTextInputKeyDown = (e) => {
     if (e.key === "Enter") {
       // Không cho form / header nhận phím Enter
@@ -1111,7 +1115,7 @@ export default function AddTreeNewScreen() {
     }
   };
 
-  
+
 
   // Morphology fields
   const [branchInfo, setBranchInfo] = useState("");
@@ -1146,7 +1150,7 @@ export default function AddTreeNewScreen() {
     }
   };
 
-    const speciesOptions = useMemo(() => {
+  const speciesOptions = useMemo(() => {
     if (treeTypes.length) {
       return treeTypes.map((t) => ({
         value: String(t.treeTypeId),
@@ -1182,7 +1186,7 @@ export default function AddTreeNewScreen() {
 
   // Nếu chưa override tay, khi có ngày trồng thì seed lại phase theo lib (1 lần)
 
-  
+
 
   const ageAfterPlant = useMemo(() => monthsBetween(plantDate), [plantDate]);
   const preAgeNum = useMemo(() => parseInt(preAge || "0", 10) || 0, [preAge]);
@@ -1218,7 +1222,7 @@ export default function AddTreeNewScreen() {
     [totalAge, regionTag, speciesKey, soil, status]
   );
   const defaultPhase5 = useMemo(() => mapLegacyTo5(legacyPhase), [legacyPhase]);
-const effectivePhase = phaseOverride || defaultPhase5;
+  const effectivePhase = phaseOverride || defaultPhase5;
   // Can edit flower / fruit separately
   const canEditFlower = useMemo(() => {
     const idx = PHASE_ORDER.indexOf(effectivePhase);
@@ -1257,7 +1261,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
   }, [speciesKey, variety, speciesLabel, userEditedCode]);
 
 
-    // Load TreeTypes từ API
+  // Load TreeTypes từ API
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1275,6 +1279,36 @@ const effectivePhase = phaseOverride || defaultPhase5;
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await TreeRepository.getTreeVarieties(); // giả sử trả array TreeVarietyDto
+        if (!mounted) return;
+        const arr = Array.isArray(res) ? res : (res.data || []);
+        setVarietiesAll(arr);
+
+        // build mapping by TreeTypeId
+        const map = {};
+        arr.forEach(v => {
+          const key = String(v.treeTypeId ?? v.TreeTypeId ?? v.TreeTypeID ?? v.TreeTypeId ?? "0");
+          if (!map[key]) map[key] = [];
+          map[key].push({
+            value: v.varietyId ?? v.VarietyId ?? v.VarietyID ?? v.VarietyId,
+            label: v.treeVarietyName ?? v.TreeVarietyName ?? v.TreeVarietyName,
+            raw: v
+          });
+        });
+        setVarietiesByType(map);
+      } catch (err) {
+        console.error("Failed to load varieties", err);
+        setVarietiesAll([]);
+        setVarietiesByType({});
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
   // Validate submit (remove gardenId requirement)
   const REQUIRED_MSG = {
     code: "Vui lòng nhập mã cây (hoặc sẽ tự gợi ý sau khi chọn Loại + Giống).",
@@ -1282,7 +1316,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
     variety: "Chọn giống",
     plantDate: "Chọn ngày trồng",
     soil: "Chọn loại đất",
-      phaseOverride: "Chọn giai đoạn phát triển của cây",
+    phaseOverride: "Chọn giai đoạn phát triển của cây",
   };
   function validateBasic() {
     const e = {};
@@ -1303,6 +1337,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
     setVariety("");
     setStatus("");
     setGardenSoilId("");
+    setTreeLocation("");
     setPlantDate("");
     setPreAge("");
     setImage("");
@@ -1337,7 +1372,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
         code,
         speciesKey,
         speciesLabel,
-        variety,
+        selectedVarietyId,
         soil,          // từ soilLabel
         gardenId: currentGarden.id,
         plantDate,
@@ -1361,7 +1396,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
       // Map phase → StageId 1..5
       var tempSId = Math.max(1, PHASES5.indexOf(effectivePhase) + 1);
-      const stageIndex = (Number(treeTypeId) - 1) * 4 + ((tempSId >= 3) ? tempSId - 1 : tempSId);
+      const stageIndex = (Number(treeTypeId) - 1) * 5 + (tempSId);
 
       // Chuẩn CreateTreeRequest đúng backend
       const createReq = {
@@ -1369,14 +1404,16 @@ const effectivePhase = phaseOverride || defaultPhase5;
         TreeTypeId: treeTypeId ? Number(treeTypeId) : 0, // đã validate không rỗng từ trước
         StageId: stageIndex,
 
+        TreeVarietyId: selectedVarietyId,
         TreeCode: code.trim() || null,
-        TreeName: [speciesLabel, variety].filter(Boolean).join(" ") || null,
+        TreeName: variety || null,
         PlantDate: plantDate || null, // dạng "yyyy-MM-dd" → DateOnly? bên C#
 
         GardenSoilId: gardenSoilId ? Number(gardenSoilId) : null,
-        Location: null, // hiện UI chưa có, sau này thêm field Location thì map vào đây
+        Location: treeLocation,
 
         Notes: (note || userIntent || "").trim() || null,
+        preMonths: preAgeNum,
 
         LeafStatus: leafInfo.trim() || null,
         BranchStatus: branchInfo.trim() || null,
@@ -1407,11 +1444,11 @@ const effectivePhase = phaseOverride || defaultPhase5;
         //await TreeRepository.uploadTreeImage(newTreeId, formData);
 
         // hoặc nếu backend /api/trees/{id}/images nhận JSON { url: "..."} thì:
-         const uploadRes = await GardenRepository.uploadGardenImage(imageFile);
-         const url = uploadRes?.url;
-         if (url) {
-           await TreeRepository.uploadTreeImage(newTreeId, { imageUrl: url });
-         }
+        const uploadRes = await GardenRepository.uploadGardenImage(imageFile);
+        const url = uploadRes?.url;
+        if (url) {
+          await TreeRepository.uploadTreeImage(newTreeId, { imageUrl: url });
+        }
       }
 
       // Show success như cũ
@@ -1506,7 +1543,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
                   </div>
                 ) : (
                   <div className="mt-2 text-emerald-100/60 text-xs">
-                   
+
                   </div>
                 )}
               </div>
@@ -1552,261 +1589,286 @@ const effectivePhase = phaseOverride || defaultPhase5;
                   <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
                     <Label htmlFor="code" className="text-neutral-700">Mã cây</Label>
                     <div className="relative">
-<Input
-  id="code"
-  value={code}
-  placeholder="Mã cây duy nhất (VD: BD-03)."
-  maxLength={15}                         // ✅ GIỚI HẠN TỐI ĐA 15 KÝ TỰ
-  onChange={(e) => {
-    setCode(e.target.value);
-    setUserEditedCode(true);
-    setErrors((x) => ({ ...x, code: undefined }));
-  }}
-  onKeyDown={handleTextInputKeyDown}
-  className={`rounded-xl h-11 w-full bg-white border-neutral-300 placeholder:text-neutral-400
+                      <Input
+                        id="code"
+                        value={code}
+                        placeholder="Mã cây duy nhất (VD: BD-03)."
+                        maxLength={15}                         // ✅ GIỚI HẠN TỐI ĐA 15 KÝ TỰ
+                        onChange={(e) => {
+                          setCode(e.target.value);
+                          setUserEditedCode(true);
+                          setErrors((x) => ({ ...x, code: undefined }));
+                        }}
+                        onKeyDown={handleTextInputKeyDown}
+                        className={`rounded-xl h-11 w-full bg-white border-neutral-300 placeholder:text-neutral-400
     focus:ring-emerald-500/40 focus:border-emerald-500
     ${errors.code ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : ""}`}
-/>
+                      />
 
-</div>
+                    </div>
                     {errors.code && <p className="text-xs text-red-500 mt-1">{errors.code}</p>}
                   </div>
 
                   {/* 2. Loại cây */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-  <Label className="text-neutral-700">Loại cây</Label>
-  <SearchableSelect
-  value={treeTypeId}
-  onChange={(val) => {
-    setTreeTypeId(val);
-    setErrors((x) => ({ ...x, speciesKey: undefined }));
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Loại cây</Label>
+                    <SearchableSelect
+                      value={treeTypeId}
+                      onChange={(val) => {
+                        setTreeTypeId(val);
+                        setErrors((x) => ({ ...x, speciesKey: undefined }));
 
-    // map sang speciesKey (mango/grapefruit/...) để giữ heuristic cũ
-    const t = treeTypes.find(
-      (x) => String(x.treeTypeId) === String(val)
-    );
-    const label = t?.treeTypeName || "";
-    setSpeciesKey(normalizeSpecies(label)); // dùng hàm normalizeSpecies có sẵn
-  }}
-  options={speciesOptions}
-  placeholder="— Chọn loại cây —"
-  disabled={false}
-  error={errors.speciesKey}
-  inputPlaceholder="Gõ tên loại cây (xoài, bưởi, nhãn...)"
-/>
-</div>
+                        // map sang speciesKey (mango/grapefruit/...) để giữ heuristic cũ
+                        const t = treeTypes.find(
+                          (x) => String(x.treeTypeId) === String(val)
+                        );
+                        const label = t?.treeTypeName || "";
+                        setSpeciesKey(normalizeSpecies(label)); // dùng hàm normalizeSpecies có sẵn
+                      }}
+                      options={speciesOptions}
+                      placeholder="— Chọn loại cây —"
+                      disabled={false}
+                      error={errors.speciesKey}
+                      inputPlaceholder="Gõ tên loại cây (xoài, bưởi, nhãn...)"
+                    />
+                  </div>
 
 
                   {/* 3. Giống */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-  <Label className="text-neutral-700">Giống</Label>
-  <SearchableSelect
-    value={variety}
-    onChange={(val) => {
-      setVariety(val);
-      setErrors((x) => ({ ...x, variety: undefined }));
-    }}
-    options={
-      speciesKey
-        ? (VARIETIES[speciesKey] || []).map((v) => ({ value: v, label: v }))
-        : []
-    }
-    placeholder={speciesKey ? "— Chọn giống —" : "Chọn loại cây trước"}
-    disabled={!speciesKey}
-    error={errors.variety}
-    inputPlaceholder="Gõ tên giống (Cát Chu, Ri6...)"
-  />
-</div>
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Giống</Label>
+                    <SearchableSelect
+                      value={selectedVarietyId}
+                      onChange={(val) => {
+                        const opts = treeTypeId ? (varietiesByType[String(treeTypeId)] || []).map((v) => ({ value: v.value, label: v.label })) : [];
+
+                        // if the select returns an object like { value, label }
+                        if (val && typeof val === "object" && "value" in val && "label" in val) {
+                          setSelectedVarietyId(val.value);
+                          setVariety(val.label);
+                          setErrors((x) => ({ ...x, variety: undefined }));
+                          return;
+                        }
+
+                        // if the select returns just the value (id), look up the label
+                        if (val != null) {
+                          const found = opts.find((o) => String(o.value) === String(val));
+                          setSelectedVarietyId(val);
+                          setVariety(found ? found.label : ""); // set empty string if not found
+                          setErrors((x) => ({ ...x, variety: undefined }));
+                          return;
+                        }
+
+                        // cleared
+                        setSelectedVarietyId(null);
+                        setVariety("");
+                        setErrors((x) => ({ ...x, variety: undefined }));
+                      }}
+                      options={
+                        treeTypeId
+                          ? (varietiesByType[String(treeTypeId)] || []).map((v) => ({ value: v.value, label: v.label }))
+                          : []
+                      }
+                      placeholder={treeTypeId ? "— Chọn giống —" : "Chọn loại cây trước"}
+                      disabled={!treeTypeId}
+                      error={errors.variety}
+                      inputPlaceholder="Gõ tên giống (Cát Chu, Ri6...)"
+                    />
+                  </div>
 
 
                   {/* 4. Tuổi trước khi trồng */}
                   <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
                     <Label className="text-neutral-700">Tuổi trước khi trồng (tháng)</Label>
                     <div className="relative">
-                     <Input
-  type="number"
-  min={0}
-  value={preAge}
-  onChange={(e) => setPreAge(e.target.value)}
-  onKeyDown={handleTextInputKeyDown}   // ✅ THÊM
-  className="rounded-xl h-11 pr-12 w-full bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
-/>
+                      <Input
+                        type="number"
+                        min={0}
+                        value={preAge}
+                        onChange={(e) => setPreAge(e.target.value)}
+                        onKeyDown={handleTextInputKeyDown}   // ✅ THÊM
+                        className="rounded-xl h-11 pr-12 w-full bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
+                      />
 
                       <span className="absolute right-3 top-2.5 text-sm text-neutral-600">tháng</span>
                     </div>
                   </div>
 
-                 {/* 5. Ngày trồng */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
-  <Label className="text-neutral-700">Ngày trồng</Label>
-  <DateInput
-    value={plantDate}
-    onChange={(val) => {
-      setPlantDate(val);
-      setErrors((x) => ({ ...x, plantDate: undefined }));
-    }}
-    error={errors.plantDate}
-  />
-</div>
+                  {/* 5. Ngày trồng */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+                    <Label className="text-neutral-700">Ngày trồng</Label>
+                    <DateInput
+                      value={plantDate}
+                      onChange={(val) => {
+                        setPlantDate(val);
+                        setErrors((x) => ({ ...x, plantDate: undefined }));
+                      }}
+                      error={errors.plantDate}
+                    />
+                  </div>
 
 
 
 
-                {/* 6. Mô tả tình trạng lá */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-  <Label className="text-neutral-700">Mô tả tình trạng lá</Label>
-  <Input
-    value={leafInfo}
-    onChange={handleMorphChange("leaf", setLeafInfo)}
-    onFocus={() => {
-      if (
-        leafInfo &&
-        leafInfo.length > MORPH_INLINE_LIMIT &&
-        !editingMorphField
-      ) {
-        startMorphEdit("leaf", leafInfo);
-      }
-    }}
-    onKeyDown={handleTextInputKeyDown}
-    placeholder="VD: lá xanh tốt, vàng nhẹ, sâu…"
-    className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
-  />
-</div>
+                  {/* 6. Mô tả tình trạng lá */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Mô tả tình trạng lá</Label>
+                    <Input
+                      value={leafInfo}
+                      onChange={handleMorphChange("leaf", setLeafInfo)}
+                      onFocus={() => {
+                        if (
+                          leafInfo &&
+                          leafInfo.length > MORPH_INLINE_LIMIT &&
+                          !editingMorphField
+                        ) {
+                          startMorphEdit("leaf", leafInfo);
+                        }
+                      }}
+                      onKeyDown={handleTextInputKeyDown}
+                      placeholder="VD: lá xanh tốt, vàng nhẹ, sâu…"
+                      className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
+                    />
+                  </div>
 
 
-                {/* 7. Mô tả tình trạng cành */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-  <Label className="text-neutral-700">Mô tả tình trạng cành</Label>
-  <Input
-    value={branchInfo}
-    onChange={handleMorphChange("branch", setBranchInfo)}
-    onFocus={() => {
-      if (
-        branchInfo &&
-        branchInfo.length > MORPH_INLINE_LIMIT &&
-        !editingMorphField
-      ) {
-        startMorphEdit("branch", branchInfo);
-      }
-    }}
-    onKeyDown={handleTextInputKeyDown}
-    placeholder="Tình trạng cành, ..."
-    className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
-  />
-</div>
+                  {/* 7. Mô tả tình trạng cành */}
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Mô tả tình trạng cành</Label>
+                    <Input
+                      value={branchInfo}
+                      onChange={handleMorphChange("branch", setBranchInfo)}
+                      onFocus={() => {
+                        if (
+                          branchInfo &&
+                          branchInfo.length > MORPH_INLINE_LIMIT &&
+                          !editingMorphField
+                        ) {
+                          startMorphEdit("branch", branchInfo);
+                        }
+                      }}
+                      onKeyDown={handleTextInputKeyDown}
+                      placeholder="Tình trạng cành, ..."
+                      className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
+                    />
+                  </div>
 
 
 
                   {/* 8. Loại đất */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-  <Label className="text-neutral-700">Loại đất</Label>
-  <SearchableSelect
-  value={gardenSoilId}
-  onChange={(val) => {
-    setGardenSoilId(val);
-    setErrors((x) => ({ ...x, soil: undefined }));
-  }}
-  options={gardenSoils.map((s) => ({
-    value: String(s.gardenSoilId),
-    label: s.customLabel || `Đất #${s.gardenSoilId}`,
-  }))}
-  placeholder={
-    currentGarden?.id
-      ? gardenSoils.length
-        ? "— Chọn loại đất —"
-        : "Vườn chưa cấu hình loại đất"
-      : "Chọn vườn trước"
-  }
-  disabled={!currentGarden?.id || !gardenSoils.length}
-  error={errors.soil}
-  inputPlaceholder="Gõ để lọc loại đất (đất đỏ, phù sa...)"
-/>
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Loại đất</Label>
+                    <SearchableSelect
+                      value={gardenSoilId}
+                      onChange={(val) => {
+                        const selected = gardenSoils.find((s) => String(s.gardenSoilId) === String(val));
+                        setGardenSoilId(val);
+                        setErrors((x) => ({ ...x, soil: undefined }));
 
-</div>
+                        // Set tree location using the label/customLabel
+                        setTreeLocation(selected ? selected.customLabel || `Đất #${selected.gardenSoilId}` : "");
+                      }}
+                      options={gardenSoils.map((s) => ({
+                        value: String(s.gardenSoilId),
+                        label: s.customLabel || `Đất #${s.gardenSoilId}`,
+                      }))}
+                      placeholder={
+                        currentGarden?.id
+                          ? gardenSoils.length
+                            ? "— Chọn loại đất —"
+                            : "Vườn chưa cấu hình loại đất"
+                          : "Chọn vườn trước"
+                      }
+                      disabled={!currentGarden?.id || !gardenSoils.length}
+                      error={errors.soil}
+                      inputPlaceholder="Gõ để lọc loại đất (đất đỏ, phù sa...)"
+                    />
+
+                  </div>
 
 
                   {/* 9. Giai đoạn */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-  <Label className="text-neutral-700">Giai đoạn</Label>
-  <div className="relative">
-    <select
-  value={phaseOverride}
-  onChange={(e) => {
-    setPhaseOverride(e.target.value);
-    setErrors((x) => ({ ...x, phaseOverride: undefined }));
-    e.target.blur(); // chọn xong thì bỏ focus, tắt viền xanh
-  }}
-  className={
-    "h-11 w-full rounded-xl border bg-white px-3 text-sm appearance-none " +
-    (errors.phaseOverride
-      ? "border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500"
-      : "border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500")
-  }
->
-  <option value="">— Hãy chọn giai đoạn —</option>
-  {PHASES5.map((p) => (
-    <option key={p} value={p}>
-      {p}
-    </option>
-  ))}
-</select>
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Giai đoạn</Label>
+                    <div className="relative">
+                      <select
+                        value={phaseOverride}
+                        onChange={(e) => {
+                          setPhaseOverride(e.target.value);
+                          setErrors((x) => ({ ...x, phaseOverride: undefined }));
+                          e.target.blur(); // chọn xong thì bỏ focus, tắt viền xanh
+                        }}
+                        className={
+                          "h-11 w-full rounded-xl border bg-white px-3 text-sm appearance-none " +
+                          (errors.phaseOverride
+                            ? "border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500"
+                            : "border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500")
+                        }
+                      >
+                        <option value="">— Hãy chọn giai đoạn —</option>
+                        {PHASES5.map((p) => (
+                          <option key={p} value={p}>
+                            {p}
+                          </option>
+                        ))}
+                      </select>
 
-  </div>
-  {errors.phaseOverride && (
-    <p className="mt-1 text-xs text-red-500">{errors.phaseOverride}</p>
-  )}
-  
-</div>
+                    </div>
+                    {errors.phaseOverride && (
+                      <p className="mt-1 text-xs text-red-500">{errors.phaseOverride}</p>
+                    )}
+
+                  </div>
 
 
                   {/* 10. Mô tả tình trạng hoa (always visible, gated) */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-  <Label className="text-neutral-700">Mô tả tình trạng hoa</Label>
-  <Input
-    value={flowerInfo}
-    onChange={handleMorphChange("flower", setFlowerInfo)}
-    onFocus={() => {
-      if (
-        canEditFlower &&
-        flowerInfo &&
-        flowerInfo.length > MORPH_INLINE_LIMIT &&
-        !editingMorphField
-      ) {
-        startMorphEdit("flower", flowerInfo);
-      }
-    }}
-    onKeyDown={handleTextInputKeyDown}
-    disabled={!canEditFlower}
-    placeholder="Mô tả tình trạng, tỉ lệ ra hoa, ..."
-    className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Mô tả tình trạng hoa</Label>
+                    <Input
+                      value={flowerInfo}
+                      onChange={handleMorphChange("flower", setFlowerInfo)}
+                      onFocus={() => {
+                        if (
+                          canEditFlower &&
+                          flowerInfo &&
+                          flowerInfo.length > MORPH_INLINE_LIMIT &&
+                          !editingMorphField
+                        ) {
+                          startMorphEdit("flower", flowerInfo);
+                        }
+                      }}
+                      onKeyDown={handleTextInputKeyDown}
+                      disabled={!canEditFlower}
+                      placeholder="Mô tả tình trạng, tỉ lệ ra hoa, ..."
+                      className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
       border-neutral-300 ${!canEditFlower ? "opacity-60 cursor-not-allowed" : ""}`}
-  />
-</div>
+                    />
+                  </div>
 
 
                   {/* 11. Mô tả tình trạng quả (always visible, gated) */}
-<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-  <Label className="text-neutral-700">Mô tả tình trạng quả</Label>
-  <Input
-    value={fruitInfo}
-    onChange={handleMorphChange("fruit", setFruitInfo)}
-    onFocus={() => {
-      if (
-        canEditFruit &&
-        fruitInfo &&
-        fruitInfo.length > MORPH_INLINE_LIMIT &&
-        !editingMorphField
-      ) {
-        startMorphEdit("fruit", fruitInfo);
-      }
-    }}
-    onKeyDown={handleTextInputKeyDown}
-    disabled={!canEditFruit}
-    placeholder="Số lượng, kích thước, tình trạng, ..."
-    className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
+                    <Label className="text-neutral-700">Mô tả tình trạng quả</Label>
+                    <Input
+                      value={fruitInfo}
+                      onChange={handleMorphChange("fruit", setFruitInfo)}
+                      onFocus={() => {
+                        if (
+                          canEditFruit &&
+                          fruitInfo &&
+                          fruitInfo.length > MORPH_INLINE_LIMIT &&
+                          !editingMorphField
+                        ) {
+                          startMorphEdit("fruit", fruitInfo);
+                        }
+                      }}
+                      onKeyDown={handleTextInputKeyDown}
+                      disabled={!canEditFruit}
+                      placeholder="Số lượng, kích thước, tình trạng, ..."
+                      className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
       border-neutral-300 ${!canEditFruit ? "opacity-60 cursor-not-allowed" : ""}`}
-  />
-</div>
+                    />
+                  </div>
 
 
                   {/* NOTE cuối card */}
@@ -1891,18 +1953,18 @@ const effectivePhase = phaseOverride || defaultPhase5;
                     </div>
                     <div className="p-4 space-y-2">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-  {/* Tên cây */}
-  <div className="font-semibold text-center sm:text-left">
-    {speciesLabel || "Chưa đặt tên"}
-  </div>
+                        {/* Tên cây */}
+                        <div className="font-semibold text-center sm:text-left">
+                          {speciesLabel || "Chưa đặt tên"}
+                        </div>
 
-  {/* Pill giai đoạn */}
-  <div className="w-full sm:w-auto flex justify-center sm:justify-end">
-    <Badge className="rounded-full bg-emerald-600 text-white border-emerald-600 shadow">
-      {effectivePhase}
-    </Badge>
-  </div>
-</div>
+                        {/* Pill giai đoạn */}
+                        <div className="w-full sm:w-auto flex justify-center sm:justify-end">
+                          <Badge className="rounded-full bg-emerald-600 text-white border-emerald-600 shadow">
+                            {effectivePhase}
+                          </Badge>
+                        </div>
+                      </div>
 
 
                       {/* Chips */}
@@ -1926,18 +1988,18 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
                       <div className="text-xs text-neutral-600">#{code || "—"}</div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-  <Field label="Tuổi" value={`${totalAge} tháng`} />
-  <Field label="Vườn" value={currentGarden?.name || "—"} />
-  <Field label="Giống" value={variety || "—"} />
-  {branchInfo ? <Field label="Cành" value={shortPreview(branchInfo)} /> : null}
-  {leafInfo ? <Field label="Lá" value={shortPreview(leafInfo)} /> : null}
-  {canEditFlower && flowerInfo ? (
-    <Field label="Hoa" value={shortPreview(flowerInfo)} />
-  ) : null}
-  {canEditFruit && fruitInfo ? (
-    <Field label="Quả" value={shortPreview(fruitInfo)} />
-  ) : null}
-</div>
+                        <Field label="Tuổi" value={`${totalAge} tháng`} />
+                        <Field label="Vườn" value={currentGarden?.name || "—"} />
+                        <Field label="Giống" value={variety || "—"} />
+                        {branchInfo ? <Field label="Cành" value={shortPreview(branchInfo)} /> : null}
+                        {leafInfo ? <Field label="Lá" value={shortPreview(leafInfo)} /> : null}
+                        {canEditFlower && flowerInfo ? (
+                          <Field label="Hoa" value={shortPreview(flowerInfo)} />
+                        ) : null}
+                        {canEditFruit && fruitInfo ? (
+                          <Field label="Quả" value={shortPreview(fruitInfo)} />
+                        ) : null}
+                      </div>
 
                     </div>
                   </div>
@@ -1956,9 +2018,9 @@ const effectivePhase = phaseOverride || defaultPhase5;
                   <ul className="list-disc ml-5 space-y-1">
                     <li><b>Mã cây</b> là duy nhất; tự gợi ý theo <b>Loại</b> + <b>Giống</b> nhưng vẫn có thể chỉnh tay.</li>
                     <li>
-  Có thể <b>gõ để lọc</b> <i>Loại cây / Giống / Loại đất</i>,
-  cách dùng giống ô chọn <b>Tỉnh / Thành phố</b> khi thêm vườn.
-</li>
+                      Có thể <b>gõ để lọc</b> <i>Loại cây / Giống / Loại đất</i>,
+                      cách dùng giống ô chọn <b>Tỉnh / Thành phố</b> khi thêm vườn.
+                    </li>
 
                     <li><b>Giai đoạn</b> quyết định khả năng nhập <b>Hoa</b>/<b>Quả</b> (xem mô tả ở thẻ hướng dẫn).</li>
                     <li><b>Ngày trồng</b> dùng để ước tính tuổi & giai đoạn.</li>
@@ -1971,7 +2033,7 @@ const effectivePhase = phaseOverride || defaultPhase5;
         </main>
       </div>
 
-          {/* Popup nhập mô tả chi tiết lá / cành / hoa / quả */}
+      {/* Popup nhập mô tả chi tiết lá / cành / hoa / quả */}
       {editingMorphField && (
         <MorphologyEditorOverlay
           fieldKey={editingMorphField}
@@ -2041,16 +2103,16 @@ const effectivePhase = phaseOverride || defaultPhase5;
 
               <div className="pointer-events-none absolute inset-0 overflow-hidden">
                 {[
-                  ["10%","12%","0s","bg-emerald-500"],["18%","78%","0.1s","bg-yellow-400"],
-                  ["28%","8%","0.2s","bg-sky-400"],["30%","90%","0.15s","bg-rose-400"],
-                  ["-6%","45%","0.05s","bg-violet-500"],["-4%","65%","0.25s","bg-emerald-500"],
-                  ["22%","30%","0.18s","bg-yellow-400"],["14%","60%","0.28s","bg-sky-400"],
-                  ["6%","38%","0.33s","bg-rose-400"],["-8%","20%","0.4s","bg-violet-500"],
-                  ["24%","50%","0.12s","bg-emerald-500"],["-10%","72%","0.22s","bg-sky-400"],
-                ].map((p,i)=>(
+                  ["10%", "12%", "0s", "bg-emerald-500"], ["18%", "78%", "0.1s", "bg-yellow-400"],
+                  ["28%", "8%", "0.2s", "bg-sky-400"], ["30%", "90%", "0.15s", "bg-rose-400"],
+                  ["-6%", "45%", "0.05s", "bg-violet-500"], ["-4%", "65%", "0.25s", "bg-emerald-500"],
+                  ["22%", "30%", "0.18s", "bg-yellow-400"], ["14%", "60%", "0.28s", "bg-sky-400"],
+                  ["6%", "38%", "0.33s", "bg-rose-400"], ["-8%", "20%", "0.4s", "bg-violet-500"],
+                  ["24%", "50%", "0.12s", "bg-emerald-500"], ["-10%", "72%", "0.22s", "bg-sky-400"],
+                ].map((p, i) => (
                   <span key={i}
                     className={`absolute w-2 h-3 ${p[3]} rounded-[2px]`}
-                    style={{ top:p[0], left:p[1], animation:"mm-confetti 1.2s ease-in-out infinite", animationDelay:p[2] }}
+                    style={{ top: p[0], left: p[1], animation: "mm-confetti 1.2s ease-in-out infinite", animationDelay: p[2] }}
                   />
                 ))}
               </div>
@@ -2145,8 +2207,8 @@ function StepDot({ active, done, label }) {
           (done
             ? "bg-emerald-600 border-emerald-600 text-white"
             : active
-            ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-            : "bg-white/70 border-white/60 text-neutral-500")
+              ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+              : "bg-white/70 border-white/60 text-neutral-500")
         }
       >
         <Sprout className={"w-4 h-4 " + (done ? "opacity-100" : "opacity-70")} />

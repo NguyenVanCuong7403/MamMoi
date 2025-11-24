@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace MamMoi.Infrastructure.Models;
@@ -19,7 +19,12 @@ public partial class SubscriptionPlan
 
     public string? Features { get; set; }
 
-    public bool IsActive { get; set; }
+    public int? MaxGardens { get; set; }
 
-    public virtual ICollection<Subscription> Subscriptions { get; set; } = new List<Subscription>();
+    public int? MaxTreesPerGarden { get; set; }
+
+    public int? DurationInMonths { get; set; }
+
+    public bool IsActive { get; set; }
 }
+

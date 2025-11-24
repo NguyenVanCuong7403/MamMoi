@@ -21,6 +21,7 @@ public class TreeQueryService : ITreeQueryService
             .Include(t => t.TreeType)
             .Include(t => t.Stage)
             .Include(t => t.TreeImages)
+            .Include(t => t.TreeVariety)
             .AsQueryable();
 
         if (gardenId is not null) q = q.Where(t => t.GardenId == gardenId);
@@ -44,6 +45,7 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeName,
                 t.Garden.Name,
                 t.TreeType.TreeTypeName,
+                t.TreeVariety.VarietyName,
                 t.Stage.StageName,
                 // tổng hợp “health/status” cho cột hiển thị ngắn gọn
                 (t.FruitStatus ?? t.FlowerStatus ?? "Bình thường"),
@@ -52,10 +54,12 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeImages.OrderBy(img => img.ImageId)
             .Select(img => img.ImageUrl)
             .FirstOrDefault(),
+                t.preMonths,
                 t.CreatedAt,
                 t.PlantDate
             ))
             .ToListAsync(ct);
+        Console.WriteLine(items.ElementAt(0));
 
         return new PagedResult<TreeListItemDto>
         {
@@ -96,6 +100,7 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeName,
                 t.Garden.Name,
                 t.TreeType.TreeTypeName,
+                t.TreeVariety.VarietyName,
                 t.Stage.StageName,
                 (t.FruitStatus ?? t.FlowerStatus ?? "Bình thường"),
                 t.LeafStatus,
@@ -103,6 +108,7 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeImages.OrderBy(img => img.ImageId)
             .Select(img => img.ImageUrl)
             .FirstOrDefault(),
+                t.preMonths,
                 t.CreatedAt,
                 t.PlantDate
             ))
@@ -126,16 +132,19 @@ public class TreeQueryService : ITreeQueryService
             .Include(t => t.Garden)
             .Include(t => t.TreeType)
             .Include(t => t.Stage)
+            .Include(t => t.TreeVariety)
             .Select(t => new TreeDetailDto(
     t.TreeId,
     t.GardenId,
     t.UserId,
     t.TreeTypeId,
     t.StageId,
+    t.VarietyId ?? 0,
     t.TreeCode,
     t.TreeName,
     t.PlantDate,
     t.Location,
+    t.preMonths,
     t.GardenSoilId,
     t.IsActive,
     t.IsFruiting,
@@ -150,11 +159,65 @@ public class TreeQueryService : ITreeQueryService
     t.Garden.Name,
     t.TreeType.TreeTypeName,
     t.Stage.StageName,
+    t.Stage.StageOrder,
+    t.TreeVariety.VarietyName,
     t.LeafStatus,
     t.BranchStatus,
     t.FlowerStatus,
     t.FruitStatus
 ))
             .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<TreeLifecycleDto?> GetLifecycleAsync(int treeId, int? currentUserId, CancellationToken ct = default)
+    {
+        var q = _db.Set<Tree>().AsNoTracking().Where(t => t.TreeId == treeId);
+        if (currentUserId is not null) q = q.Where(t => t.UserId == currentUserId);
+
+        var tree = await q
+            .Include(t => t.Stage)
+            .Select(t => new
+            {
+                t.TreeId,
+                t.StageId,
+                StageOrder = t.Stage.StageOrder,
+                StageName = t.Stage.StageName
+            })
+            .FirstOrDefaultAsync(ct);
+
+        if (tree == null)
+        {
+            // Log for debugging
+            Console.WriteLine($"[GetLifecycleAsync] Tree with id {treeId} not found. currentUserId: {currentUserId}");
+            return null;
+        }
+
+        // Map StageOrder (1-5) to PhaseId
+        string phaseId = tree.StageOrder switch
+        {
+            1 => "growth_development",
+            2 => "flowering",
+            3 => "fruiting",
+            4 => "pre_harvest",
+            5 => "post_harvest",
+            _ => "growth_development" // fallback
+        };
+
+        // Phase1Completed is true if not in growth_development (StageOrder > 1)
+        bool phase1Completed = tree.StageOrder > 1;
+
+        // TODO: Get cycleCount from database if stored
+        // For now, return 0 as default
+        int cycleCount = 0;
+
+        return new TreeLifecycleDto(
+            tree.TreeId,
+            tree.StageId,
+            tree.StageOrder,
+            tree.StageName,
+            phaseId,
+            phase1Completed,
+            cycleCount
+        );
     }
 }

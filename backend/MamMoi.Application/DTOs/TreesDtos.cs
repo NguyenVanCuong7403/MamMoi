@@ -4,12 +4,14 @@
         int GardenId,
         int TreeTypeId,
         int StageId,
+        int TreeVarietyId,
         string? TreeCode,
         string? TreeName,
         DateOnly? PlantDate,
         int? GardenSoilId,
         string? Location = null,
         string? Notes = null,
+        int? preMonths = 0,
         // mô tả trạng thái lá/cành/hoa/quả trên form
         string? LeafStatus = null,
         string? BranchStatus = null,
@@ -28,6 +30,7 @@
         string? Location,
         bool? IsFruiting,
         bool? IsActive,
+        int? preMonths,
         DateOnly? ExpectedHarvestDate,
         string? Notes,
         string? LeafStatus,
@@ -48,4 +51,21 @@
 
     public record TreeCreatedDto(int TreeId);
     public record TreeSummaryDto(int TreeId, string? TreeName, string? TreeCode);
+
+    // Lifecycle management DTOs
+    public record UpdateTreeLifecycleRequest(
+        string PhaseId, // "growth_development", "flowering", "fruiting", "pre_harvest", "post_harvest"
+        int? CycleCount = null,
+        bool? Phase1Completed = null
+    );
+
+    public record TreeLifecycleDto(
+        int TreeId,
+        int StageId,
+        int StageOrder,
+        string StageName,
+        string PhaseId,
+        bool Phase1Completed,
+        int CycleCount
+    );
 }

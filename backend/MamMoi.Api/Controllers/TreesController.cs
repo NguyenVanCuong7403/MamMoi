@@ -12,19 +12,25 @@ public class TreesController : ControllerBase
 {
     private readonly ITreeQueryService _treeQuery;
     private readonly ITreeTypeService _treeType;
+    private readonly ITreeVarietyService _treeVariety;
     private readonly ITreeCommandService _treeCmd;
     private readonly ITreeImageService _treeImg;
+    private readonly IAiRecommendationService _aiRecommendationService;
 
     public TreesController(
         ITreeQueryService treeQuery,
         ITreeTypeService treeType,
+        ITreeVarietyService treeVariety,
         ITreeCommandService treeCmd,
-        ITreeImageService treeImg)
+        ITreeImageService treeImg,
+        IAiRecommendationService aiRecommendationService)
     {
         _treeQuery = treeQuery;
         _treeType = treeType;
+        _treeVariety = treeVariety;
         _treeCmd = treeCmd;
         _treeImg = treeImg;
+        _aiRecommendationService = aiRecommendationService;
     }
 
     private int? GetUserIdFromClaims()
@@ -82,6 +88,13 @@ public class TreesController : ControllerBase
     public async Task<IActionResult> GetTreeTypes(CancellationToken ct)
         => Ok(await _treeType.GetAllAsync(ct));
 
+    // ===================== 1) Tree Variety =====================
+    [HttpGet("varieties")]
+    public async Task<IActionResult> GetTreeVarieties(
+        [FromQuery] int? treeTypeId = null,
+        CancellationToken ct = default)
+        => Ok(await _treeVariety.GetAllAsync(treeTypeId, ct));
+
     // ===================== 2) My Trees =====================
     [HttpGet("my")]
     public async Task<IActionResult> GetMyTrees(
@@ -127,6 +140,20 @@ public class TreesController : ControllerBase
         return Ok(dto);
     }
 
+    // ===================== 4.5) Get Lifecycle =====================
+    /// <summary>
+    /// Get tree lifecycle information (phase, stage, cycle count)
+    /// </summary>
+    [HttpGet("{id:int}/lifecycle")]
+    public async Task<IActionResult> GetLifecycle([FromRoute] int id, CancellationToken ct)
+    {
+        // Allow viewing any tree (similar to GetDetail)
+        // If you want to restrict to owner only, use: var currentUserId = GetCurrentUserId();
+        var dto = await _treeQuery.GetLifecycleAsync(id, currentUserId: null, ct);
+        if (dto is null) return NotFound();
+        return Ok(dto);
+    }
+
     // ===================== 5) Create =====================
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] CreateTreeRequest req, CancellationToken ct)
@@ -146,6 +173,51 @@ public class TreesController : ControllerBase
         return Ok(dto);
     }
 
+    /// <summary>
+    /// Lấy gợi ý/khuyến nghị AI cho cây tại một ngày cụ thể.
+    /// GET api/trees/{id}/recommendation?forDate=2025-11-23
+    /// </summary>
+    [HttpGet("{id:int}/recommendation")]
+    public async Task<IActionResult> GetAiRecommendation([FromRoute] int id, [FromQuery] string? forDate, CancellationToken ct = default)
+    {
+        // parse forDate (DateOnly) - nếu không có thì dùng ngày hiện tại (UTC date)
+        DateOnly targetDate;
+        if (string.IsNullOrWhiteSpace(forDate))
+        {
+            var utcToday = DateTime.UtcNow.Date;
+            targetDate = DateOnly.FromDateTime(utcToday);
+        }
+        else
+        {
+            if (!DateOnly.TryParse(forDate, out targetDate))
+            {
+                // cố gắng parse theo ISO yyyy-MM-dd nếu TryParse không thành công
+                if (!DateOnly.TryParseExact(forDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out targetDate))
+                {
+                    return BadRequest("Ngày không hợp lệ. Vui lòng truyền ?forDate=yyyy-MM-dd hoặc định dạng hợp lệ cho DateOnly.");
+                }
+            }
+        }
+
+        // Gọi service AI
+        try
+        {
+            var dto = await _aiRecommendationService.getAIRecommendations(id, targetDate, ct);
+            if (dto is null) return NotFound(); // service trả null nếu không tìm thấy cây hoặc ko có data
+            return Ok(dto);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499); // Client Closed Request / cancel
+        }
+        catch (Exception ex)
+        {
+            // ghi log nếu bạn có logger (không có logger trong controller này), trả 500 chung
+            return StatusCode(500, $"Lỗi khi gọi AI recommendation: {ex}");
+        }
+    }
+
+
     // ===================== 7) Update Status =====================
     [HttpPatch("{id:int}/status")]
     public async Task<IActionResult> UpdateStatus([FromRoute] int id, [FromBody] UpdateTreeStatusRequest req, CancellationToken ct)
@@ -153,6 +225,34 @@ public class TreesController : ControllerBase
         if (!TryResolveUserId(out var userId, out var error)) return error!;
         var ok = await _treeCmd.UpdateStatusAsync(userId, id, req, ct);
         return ok ? NoContent() : NotFound();
+    }
+
+    // ===================== 7.5) Update Lifecycle =====================
+    /// <summary>
+    /// Update tree lifecycle phase (growth_development, flowering, fruiting, pre_harvest, post_harvest)
+    /// </summary>
+    [HttpPatch("{id:int}/lifecycle")]
+    public async Task<IActionResult> UpdateLifecycle([FromRoute] int id, [FromBody] UpdateTreeLifecycleRequest req, CancellationToken ct)
+    {
+        if (!TryResolveUserId(out var userId, out var error)) return error!;
+        try
+        {
+            var dto = await _treeCmd.UpdateLifecycleAsync(userId, id, req, ct);
+            if (dto is null) return NotFound();
+            return Ok(dto);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Unauthorized(new { message = "You are not authorized to update this tree." });
+        }
     }
 
     // ===================== 8) Delete =====================
@@ -168,6 +268,60 @@ public class TreesController : ControllerBase
     [HttpGet("{id:int}/images")]
     public async Task<IActionResult> GetImages([FromRoute] int id, CancellationToken ct)
         => Ok(await _treeImg.GetGalleryAsync(id, ct));
+
+    /// <summary>
+    /// Upload image file for a tree
+    /// POST /api/trees/{id}/images/upload
+    /// Accepts multipart/form-data
+    /// </summary>
+    [HttpPost("{id:int}/images/upload")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    public async Task<IActionResult> UploadImageFile([FromRoute] int id, [FromForm] IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = "No file uploaded."
+            });
+        }
+
+        try
+        {
+            // Save to wwwroot/uploads (same as garden upload)
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+
+            if (!Directory.Exists(uploadsFolder))
+                Directory.CreateDirectory(uploadsFolder);
+
+            var uniqueFileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            // Return the accessible URL (same format as garden)
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var fileUrl = $"{baseUrl}/uploads/{uniqueFileName}";
+
+            return Ok(new
+            {
+                success = true,
+                url = fileUrl
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Error uploading image. Please try again."
+            });
+        }
+    }
 
     [HttpPost("{id:int}/images")]
     public async Task<IActionResult> UploadImage([FromRoute] int id, [FromBody] UploadTreeImageRequest req, CancellationToken ct)

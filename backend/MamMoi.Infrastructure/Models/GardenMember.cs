@@ -9,13 +9,13 @@ public partial class GardenMember
 
     public int GardenId { get; set; }
 
-    public int UserId { get; set; }
+    public int UserId { get; set; } // Không nullable nữa vì tạo trực tiếp
 
     public int RoleId { get; set; }
 
-    public DateTime CreatedAt { get; set; }
+    public string Status { get; set; } = "Active";
 
-    public string? Status { get; set; }
+    public DateTime CreatedAt { get; set; }
 
     public virtual Garden Garden { get; set; } = null!;
 

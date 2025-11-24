@@ -255,8 +255,8 @@ export default function Home() {
     }
   }, []);
 
-  return (
-    <div className="min-h-screen bg-[#FBFFDF] text-[#333] font-sans selection:bg-[#FFFFA5] selection:text-[#1F302F]">
+    return (
+     <div className="mm-fluid-page min-h-screen bg-[#FBFFDF] text-[#333] font-sans selection:bg-[#FFFFA5] selection:text-[#1F302F]">
       {/* Tokens */}
       <style>{`
         /* --- IMPORTANT: @import MUST be first in the stylesheet or the browser ignores it --- */
@@ -373,19 +373,19 @@ export default function Home() {
 
       {/* Strapline */}
       <section data-testid="strapline" className="cv-auto bg-[#1F302F] text-[#D1DFB6] py-6">
-        <div className="mx-auto max-w-[1650px] px-4 md:px-[90px]">
-          <p className="text-center text-[clamp(16px,2.1vw,22px)] opacity-90">Chuẩn hóa quy trình – nắm bắt mùa vụ – tăng năng suất bền vững.</p>
+        <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px]">
+          <p className="mm-fluid-text text-center text-[clamp(16px,2.1vw,22px)] opacity-90">Chuẩn hóa quy trình – nắm bắt mùa vụ – tăng năng suất bền vững.</p>
         </div>
       </section>
 
       {/* Colloque / Event card */}
       <section data-testid="colloque-card" className="cv-auto bg-[#1F302F] py-12 md:py-20">
-        <div className="mx-auto max-w-[1150px] px-4">
+        <div className="mm-fluid-shell mx-auto max-w-[1150px] px-4">
           <div className="rounded-[18px] md:rounded-[20px] bg-[#D1DFB6] ring-1 ring-black/10 shadow-[0_12px_36px_rgba(0,0,0,0.25)] p-6 md:p-8 md:min-h-[420px] flex flex-col md:flex-row gap-8 md:gap-10 items-center">
             <div className="md:w-[46%]"><img src="https://images.unsplash.com/photo-1533240332313-0db49b459ad6?q=80&w=1600&auto=format&fit=crop" alt="Sự kiện Mầm Mới" className="w-full h-[280px] md:h-[420px] object-cover rounded-[18px]" /></div>
             <div className="md:w-[54%] flex flex-col">
               <h3 className="text-[clamp(26px,3vw,38px)] leading-snug text-[#1F302F] font-semibold">Hội thảo Mầm Mới 2025: Số hóa vườn cây ăn quả</h3>
-              <p className="mt-3 text-[15px] md:text-[16px] text-[#1F302F]/85">Kết nối chuyên gia – hợp tác xã – nhà vườn để bàn về chuẩn quy trình chăm sóc, cảnh báo thời tiết và quản lý vườn bằng dữ liệu. Cùng định hình một cách làm nông bền vững, hiệu quả hơn.</p>
+              <p className="mm-fluid-text mt-3 text-[15px] md:text-[16px] text-[#1F302F]/85">Kết nối chuyên gia – hợp tác xã – nhà vườn để bàn về chuẩn quy trình chăm sóc, cảnh báo thời tiết và quản lý vườn bằng dữ liệu. Cùng định hình một cách làm nông bền vững, hiệu quả hơn.</p>
               <div className="mt-5"><a href="#register" className="inline-flex items-center rounded-full bg-[#FFFFA5] text-[#1F302F] px-4 py-2 text-sm font-medium shadow hover:shadow-md transition">Xem chi tiết</a></div>
             </div>
           </div>
@@ -394,7 +394,7 @@ export default function Home() {
 
       {/* Intro split */}
       <section id="intro" data-testid="intro-split" className="cv-auto bg-[#1F302F] text-[#FBFFDF] py-16 md:py-24">
-        <div className="mx-auto max-w-[1650px] px-4 md:px-[90px]">
+        <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px]">
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div>
               <h2 className="text-[clamp(28px,3.2vw,42.5px)] leading-[1.15] font-medium">
@@ -435,7 +435,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <p className="mt-10 text-[12.5px] md:text-[13.5px] text-[#D1DFB6]/80 md:text-right md:max-w-3xl md:ml-auto">
+          <p className="mm-fluid-text mt-10 text-[12.5px] md:text-[13.5px] text-[#D1DFB6]/80 md:text-right md:max-w-3xl md:ml-auto">
             Tại đây, quy trình chăm sóc được chuẩn hóa, việc mùa nào làm việc nấy; dữ liệu tăng trưởng, lịch tưới – bón – tỉa – phòng bệnh đều được ghi chép rõ ràng để nâng năng suất một cách bền vững.
           </p>
         </div>
@@ -443,7 +443,7 @@ export default function Home() {
 
       {/* Territory teaser */}
       <section id="territory-teaser" data-testid="territory-teaser" className="cv-auto bg-[#FBFFDF]">
-        <div className="mx-auto max-w-[1650px] px-4 md:px-[90px] py-16 md:py-24 relative">
+        <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px] py-16 md:py-24 relative">
           <div aria-hidden className="pointer-events-none absolute -bottom-28 right-[12%] w-[520px] h-[520px] rounded-full bg-[#EEF3CC] z-0" />
           <div className="relative grid md:grid-cols-2 gap-10 items-end">
             <div className="relative order-2 md:order-1 z-10">
@@ -479,12 +479,12 @@ export default function Home() {
 
       {/* Territory map */}
       <section id="territory-map" data-testid="map-section" className="cv-auto bg-[#EEF3CC]">
-        <div className="mx-auto max-w-[1650px] px-4 md:px-[90px] py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
+        <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px] py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
           <div>
             <h2 className="text-[clamp(32px,3.6vw,56px)] leading-tight text-[#243833] font-medium">Bản đồ canh tác & thời tiết địa phương</h2>
-            <p className="mt-6 text-[#243833]/80 max-w-2xl">Theo dõi khu vườn của bạn trên một nền tảng thống nhất: cây nào, trồng khi nào, đang ở giai đoạn nào – tất cả đều rõ ràng.</p>
-            <p className="mt-4 text-[#243833]/80 max-w-2xl">Kết hợp dữ liệu thời tiết để nhắc điều chỉnh tưới tiêu, che phủ, cắt tỉa và phòng bệnh trước những đợt mưa lớn hay nắng gắt.</p>
-            <p className="mt-4 text-[#243833]/80 max-w-2xl">Bức tranh tổng thể giúp bạn ra quyết định nhanh, chính xác – từ hộ gia đình đến trang trại quy mô.</p>
+            <p className="mm-fluid-text mt-6 text-[#243833]/80 max-w-2xl">Theo dõi khu vườn của bạn trên một nền tảng thống nhất: cây nào, trồng khi nào, đang ở giai đoạn nào – tất cả đều rõ ràng.</p>
+            <p className="mm-fluid-text mt-4 text-[#243833]/80 max-w-2xl">Kết hợp dữ liệu thời tiết để nhắc điều chỉnh tưới tiêu, che phủ, cắt tỉa và phòng bệnh trước những đợt mưa lớn hay nắng gắt.</p>
+            <p className="mm-fluid-text mt-4 text-[#243833]/80 max-w-2xl">Bức tranh tổng thể giúp bạn ra quyết định nhanh, chính xác – từ hộ gia đình đến trang trại quy mô.</p>
           </div>
           <div className="relative">
             <div className="rounded-[28px] overflow-hidden bg-[#F4F7DF] ring-1 ring-black/5">
@@ -503,7 +503,7 @@ export default function Home() {
       <main id="main">
         {/* News */}
         <section id="news" className="cv-auto bg-[#D1DFB6]">
-          <div className="mx-auto max-w-[1280px] px-4 md:px-[90px] py-14 md:py-20">
+          <div className="mm-fluid-shell mx-auto max-w-[1280px] px-4 md:px-[90px] py-14 md:py-20">
             <h2 className="text-center text-[clamp(34px,3.6vw,48px)] leading-tight font-semibold text-[#1F302F]">
               Tin mới
             </h2>
@@ -543,7 +543,7 @@ export default function Home() {
                   <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/35 to-black/10" />
                   <div className="relative z-10 h-full p-6 md:p-8 flex flex-col justify-end text-white">
                     <h3 className="text-[clamp(22px,2.3vw,30px)] leading-snug font-semibold drop-shadow-md">{n.title}</h3>
-                    <p className="mt-4 text-[14.5px] md:text-[16px] opacity-95 drop-shadow max-w-[92%]">{n.body}</p>
+                    <p className="mm-fluid-text mt-4 text-[14.5px] md:text-[16px] opacity-95 drop-shadow max-w-[92%]">{n.body}</p>
                   </div>
                 </a>
               ))}
