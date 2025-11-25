@@ -539,9 +539,10 @@ public partial class MamMoiDbContext : DbContext
             entity.HasKey(e => e.VarietyId)
                   .HasName("PK_TreeVariety");
 
-            entity.Property(e => e.VarietyId)
-                  .HasColumnName("VarietyID")
-                  .ValueGeneratedOnAdd();
+      entity.Property(e => e.VarietyId)
+                .HasColumnName("VarietyID")
+                .ValueGeneratedOnAdd()
+                .UseIdentityColumn();
 
             // TreeTypeId (nullable FK)
             entity.Property(e => e.TreeTypeId)

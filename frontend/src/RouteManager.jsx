@@ -11,6 +11,7 @@ import UserProfile from "./components/user/UserProfile";
 import Notifications from "./components/user/Notifications";
 import Demo from "./components/user/Demo";
 import Report from "./components/user/Report";
+import ReportManagement from "./components/user/ReportManagement";
 import PaymentHistory from "./components/user/PaymentHistory";
 import LoginGuard from "./guards/LoginGuard";
 import RoleGuard from "./guards/RoleGuard";
@@ -202,6 +203,14 @@ export default function RouteManager({ authTab }) {
         }
       />
       <Route path="/report" element={<Report />} />
+      <Route
+        path="/reports"
+        element={
+          <LoginGuard>
+            <ReportManagement />
+          </LoginGuard>
+        }
+      />
       {/* 404 */}
       <Route path="*" element={<h2>404 - Page Not Found</h2>} />
     </Routes>
