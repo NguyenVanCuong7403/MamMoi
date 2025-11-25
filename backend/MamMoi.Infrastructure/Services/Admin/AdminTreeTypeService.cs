@@ -1,4 +1,4 @@
-using MamMoi.Application.DTOs.Admin;
+﻿using MamMoi.Application.DTOs.Admin;
 using MamMoi.Application.Interfaces;
 using MamMoi.Application.Interfaces.Admin;
 using MamMoi.Infrastructure.Models;
@@ -76,16 +76,16 @@ public class AdminTreeTypeService : IAdminTreeTypeService
                 FloodTolerance = t.FloodTolerance,
                 FrostTolerance = t.FrostTolerance,
                 WindTolerance = t.WindTolerance,
-            ImageUrl = t.ImageUrl,
-            IsActive = t.IsActive,
-            CareGuide = t.CareGuide,
-            LightRequirement = t.LightRequirement,
-            WaterRequirement = t.WaterRequirement,
-            Pests = t.Pests,
-            SeasonalRoadmap = t.SeasonalRoadmap,
-            VarietiesCount = t.TreeVarieties.Count,
-            TreesCount = t.Trees.Count,
-            GrowthStagesCount = t.TreeGrowthStages.Count
+                ImageUrl = t.ImageUrl,
+                IsActive = t.IsActive,
+                CareGuide = t.CareGuide,
+                LightRequirement = t.LightRequirement,
+                WaterRequirement = t.WaterRequirement,
+                Pests = t.Pests,
+                SeasonalRoadmap = t.SeasonalRoadmap,
+                VarietiesCount = t.TreeVarieties.Count,
+                TreesCount = t.Trees.Count,
+                GrowthStagesCount = t.TreeGrowthStages.Count
             })
             .ToListAsync();
 
@@ -172,8 +172,114 @@ public class AdminTreeTypeService : IAdminTreeTypeService
 
         _dbContext.TreeTypes.Add(treeType);
         await _dbContext.SaveChangesAsync();
+        await AddDefaultTreeGrowthStagesAsync(treeType.TreeTypeId);
 
         return await GetTreeTypeByIdAsync(treeType.TreeTypeId) ?? throw new Exception("Failed to create tree type");
+    }
+
+    private async Task AddDefaultTreeGrowthStagesAsync(int treeTypeId)
+    {
+        var stages = new List<TreeGrowthStage>
+    {
+        new TreeGrowthStage
+        {
+            TreeTypeId = treeTypeId,
+            StageName = "Sinh trưởng – phát triển",
+            StageOrder = 1,
+            Description = "Ra rễ, phát triển tán lá",
+            MinAgeInMonths = 0,
+            MaxAgeInMonths = 18,
+            WateringFrequencyDays = 3,
+            WateringAmountLiters = 10.00m,
+            FertilizingFrequencyDays = 60,
+            FertilizerType = "NPK 16-16-8",
+            FertilizerAmountGrams = 100.00m,
+            PruningFrequencyDays = 90,
+            CareInstructions = "Duy trì ẩm, thoát nước tốt",
+            CommonIssues = "Rệp sáp, nấm lá",
+            CriticalWeatherFactors = "Mưa kéo dài, gió nóng",
+            VulnerabilityLevel = 5
+        },
+        new TreeGrowthStage
+        {
+            TreeTypeId = treeTypeId,
+            StageName = "Ra hoa",
+            StageOrder = 2,
+            Description = "Hình thành chồi hoa, phân hóa mầm hoa",
+            MinAgeInMonths = 18,
+            MaxAgeInMonths = 20,
+            WateringFrequencyDays = 4,
+            WateringAmountLiters = 11.00m,
+            FertilizingFrequencyDays = 45,
+            FertilizerType = "Vi lượng + cân đối",
+            FertilizerAmountGrams = 80.00m,
+            PruningFrequencyDays = 60,
+            CareInstructions = "Phun vi lượng khi phân hóa mầm",
+            CommonIssues = "Rụng hoa, thối nụ",
+            CriticalWeatherFactors = "Mưa trái mùa",
+            VulnerabilityLevel = 6
+        },
+        new TreeGrowthStage
+        {
+            TreeTypeId = treeTypeId,
+            StageName = "Đậu quả",
+            StageOrder = 3,
+            Description = "Hình thành quả non, nuôi quả ban đầu",
+            MinAgeInMonths = 20,
+            MaxAgeInMonths = 24,
+            WateringFrequencyDays = 4,
+            WateringAmountLiters = 13.00m,
+            FertilizingFrequencyDays = 45,
+            FertilizerType = "Kali cao",
+            FertilizerAmountGrams = 120.00m,
+            PruningFrequencyDays = 60,
+            CareInstructions = "Bảo vệ quả non, bón kali bổ sung",
+            CommonIssues = "Rụng quả non, sâu đục",
+            CriticalWeatherFactors = "Mưa trái mùa",
+            VulnerabilityLevel = 6
+        },
+        new TreeGrowthStage
+        {
+            TreeTypeId = treeTypeId,
+            StageName = "Trước thu hoạch",
+            StageOrder = 4,
+            Description = "Nuôi quả lớn, tích lũy",
+            MinAgeInMonths = 24,
+            MaxAgeInMonths = 30,
+            WateringFrequencyDays = 5,
+            WateringAmountLiters = 8.00m,
+            FertilizingFrequencyDays = 60,
+            FertilizerType = "NPK cân đối",
+            FertilizerAmountGrams = 80.00m,
+            PruningFrequencyDays = 120,
+            CareInstructions = "Giữ ẩm vừa, tỉa cành khuất sáng",
+            CommonIssues = "Nứt quả",
+            CriticalWeatherFactors = "Nắng nóng, khô hạn",
+            VulnerabilityLevel = 4
+        },
+        new TreeGrowthStage
+        {
+            TreeTypeId = treeTypeId,
+            StageName = "Sau thu hoạch",
+            StageOrder = 5,
+            Description = "Phục hồi sau thu",
+            MinAgeInMonths = 30,
+            MaxAgeInMonths = 36,
+            WateringFrequencyDays = 7,
+            WateringAmountLiters = 6.00m,
+            FertilizingFrequencyDays = 90,
+            FertilizerType = "Hữu cơ",
+            FertilizerAmountGrams = 200.00m,
+            PruningFrequencyDays = 180,
+            CareInstructions = "Tỉa cành, vệ sinh vườn",
+            CommonIssues = "Nấm bệnh lưu tồn",
+            CriticalWeatherFactors = "Mưa dầm",
+            VulnerabilityLevel = 3
+        }
+    };
+
+        _dbContext.TreeGrowthStages.AddRange(stages);
+        await _dbContext.SaveChangesAsync();
     }
 
     public async Task<TreeTypeDetailDto?> UpdateTreeTypeAsync(int treeTypeId, UpdateTreeTypeDto dto)
@@ -240,13 +346,13 @@ public class AdminTreeTypeService : IAdminTreeTypeService
         if (dto.ImageUrl != null)
         {
             var newImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl;
-            
+
             // Delete old image if exists and is being changed or removed
             if (!string.IsNullOrEmpty(treeType.ImageUrl) && treeType.ImageUrl != newImageUrl)
             {
                 await _imageUploadService.DeleteImageAsync(treeType.ImageUrl);
             }
-            
+
             treeType.ImageUrl = newImageUrl;
         }
 
@@ -310,4 +416,3 @@ public class AdminTreeTypeService : IAdminTreeTypeService
         return await DeleteTreeTypeAsync(treeTypeId);
     }
 }
-

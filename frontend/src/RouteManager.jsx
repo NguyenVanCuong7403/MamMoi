@@ -19,6 +19,7 @@ import GardenManagement from "./components/user/GardenManagement";
 import MamMoiQrCheckout from "./components/user/checkout";
 import InvoiceSuccess from "./components/user/InvoiceSuccess";
 import PricingPage from "./components/user/PricingPage";
+import ReportManagement from "./components/user/ReportManagement";
 import SystemAdminUserManagement from "./components/admin/SystemAdmin/UserManagement";
 import SystemAdminSubscriptionManagement from "./components/admin/SystemAdmin/SubscriptionManagement";
 import SystemAdminSubscriptionPlanManagement from "./components/admin/SystemAdmin/SubscriptionPlanManagement";
@@ -205,6 +206,14 @@ export default function RouteManager({ authTab }) {
         }
       />
       <Route path="/report" element={<Report />} />
+      <Route
+        path="/reports"
+        element={
+          <LoginGuard>
+            <ReportManagement />
+          </LoginGuard>
+        }
+      />
       {/* 404 */}
       <Route path="*" element={<h2>404 - Page Not Found</h2>} />
     </Routes>
