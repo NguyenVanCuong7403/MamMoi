@@ -6972,7 +6972,7 @@ async function getAISuggestions(tree, phaseId) {
     console.warn("Unexpected AI response shape, expected array of DTOs.", dtos);
     return [];
   }
-  console.log(dtos);
+  //console.log(dtos);
 
   const suggestions = [];
 

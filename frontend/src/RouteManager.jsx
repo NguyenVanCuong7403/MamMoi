@@ -29,10 +29,7 @@ import BusinessAdminTreeVarietyManagement from "./components/admin/BusinessAdmin
 import BusinessAdminTreeManagement from "./components/admin/BusinessAdmin/TreeManagement";
 import BusinessAdminTreeTypeManagement from "./components/admin/BusinessAdmin/TreeTypeManagement";
 import BusinessAdminReportManagement from "./components/admin/BusinessAdmin/ReportManagementBA";
-<<<<<<< HEAD
-=======
 import BusinessAdminSoilManagement from "./components/admin/BusinessAdmin/SoilManagement";
->>>>>>> cuong
 import PlantGallery from "./components/user/PlantGallery";
 import PlantDetail from "./components/user/PlantDetail";
 
@@ -208,14 +205,11 @@ export default function RouteManager({ authTab }) {
         }
       />
       <Route path="/report" element={<Report />} />
-<<<<<<< HEAD
 
       {/* Plant Showcase - Public View */}
       <Route path="/plants" element={<PlantGallery />} />
       <Route path="/plants/:id" element={<PlantDetail />} />
 
-=======
->>>>>>> cuong
       {/* 404 */}
       <Route path="*" element={<h2>404 - Page Not Found</h2>} />
     </Routes>

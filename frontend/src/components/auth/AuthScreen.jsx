@@ -56,18 +56,6 @@ const addRememberedEmail = (email) => {
   if (!email || !email.trim()) return;
   const trimmedEmail = email.trim();
   const emails = getRememberedEmails();
-<<<<<<< HEAD
-  
-  // Xóa email nếu đã tồn tại (để đưa lên đầu)
-  const filtered = emails.filter(e => e !== trimmedEmail);
-  
-  // Thêm email vào đầu danh sách
-  const updated = [trimmedEmail, ...filtered];
-  
-  // Giới hạn số lượng email
-  const limited = updated.slice(0, MAX_REMEMBERED_EMAILS);
-  
-=======
 
   // Xóa email nếu đã tồn tại (để đưa lên đầu)
   const filtered = emails.filter((e) => e !== trimmedEmail);
@@ -78,7 +66,6 @@ const addRememberedEmail = (email) => {
   // Giới hạn số lượng email
   const limited = updated.slice(0, MAX_REMEMBERED_EMAILS);
 
->>>>>>> cuong
   localStorage.setItem("rememberedEmails", JSON.stringify(limited));
 };
 
@@ -86,13 +73,8 @@ const removeRememberedEmail = (email) => {
   if (!email) return;
   const trimmedEmail = email.trim();
   const emails = getRememberedEmails();
-<<<<<<< HEAD
-  const filtered = emails.filter(e => e !== trimmedEmail);
-  
-=======
   const filtered = emails.filter((e) => e !== trimmedEmail);
 
->>>>>>> cuong
   if (filtered.length === 0) {
     localStorage.removeItem("rememberedEmails");
   } else {
@@ -116,24 +98,13 @@ const getPostLoginPath = (role, roleId = null) => {
     console.log("🔍 Checking by roleId:", roleId);
     // SystemAdmin (roleId: 1) redirect to user management
     if (roleId === 1) {
-<<<<<<< HEAD
-      console.log("✅ SystemAdmin detected by roleId, redirecting to /admin/users");
-=======
       console.log(
         "✅ SystemAdmin detected by roleId, redirecting to /admin/users"
       );
->>>>>>> cuong
       return "/admin/users";
     }
     // BusinessAdmin (roleId: 2) redirect to tree management
     if (roleId === 2) {
-<<<<<<< HEAD
-      console.log("✅ BusinessAdmin detected by roleId, redirecting to /admin/business/trees");
-      return "/admin/business/trees";
-    }
-  }
-  
-=======
       console.log(
         "✅ BusinessAdmin detected by roleId, redirecting to /admin/business/trees"
       );
@@ -141,29 +112,10 @@ const getPostLoginPath = (role, roleId = null) => {
     }
   }
 
->>>>>>> cuong
   // Fallback: check by role name
   if (role) {
     const normalizedRole = normalizeRole(role);
     console.log("🔍 Checking by role name:", normalizedRole);
-<<<<<<< HEAD
-    
-    // SystemAdmin redirect to user management
-    if (normalizedRole === "systemadmin") {
-      console.log("✅ SystemAdmin detected by role name, redirecting to /admin/users");
-      return "/admin/users";
-    }
-    
-    // BusinessAdmin redirect to tree management
-    if (normalizedRole === "businessadmin") {
-      console.log("✅ BusinessAdmin detected by role name, redirecting to /admin/business/trees");
-      return "/admin/business/trees";
-    }
-  }
-  
-  // Default user redirect to home
-  console.warn("⚠️ Unknown role/roleId, redirecting to home. Role:", role, "RoleId:", roleId);
-=======
 
     // SystemAdmin redirect to user management
     if (normalizedRole === "systemadmin") {
@@ -189,7 +141,6 @@ const getPostLoginPath = (role, roleId = null) => {
     "RoleId:",
     roleId
   );
->>>>>>> cuong
   return "/";
 };
 
@@ -272,12 +223,6 @@ export default function AuthScreen({ defaultTab = "login" }) {
       const role = res?.role || res?.user?.role;
       const roleId = res?.user?.roleId || res?.roleId || res?.data?.roleId;
       const redirectPath = getPostLoginPath(role, roleId);
-<<<<<<< HEAD
-      console.log("✅ Login successful - Role:", role, "RoleId:", roleId, "Redirect to:", redirectPath);
-      console.log("✅ Full login response:", res);
-      console.log("✅ User from response:", res?.user);
-      
-=======
       console.log(
         "✅ Login successful - Role:",
         role,
@@ -289,18 +234,12 @@ export default function AuthScreen({ defaultTab = "login" }) {
       console.log("✅ Full login response:", res);
       console.log("✅ User from response:", res?.user);
 
->>>>>>> cuong
       // Đảm bảo localStorage đã được cập nhật trước khi navigate
       // Wait a bit for state to update, then navigate
       setTimeout(() => {
         try {
           setLoginSuccessOverlay(false);
           console.log("🚀 Navigating to:", redirectPath);
-<<<<<<< HEAD
-          console.log("🚀 Current token in localStorage:", localStorage.getItem("token") ? "exists" : "missing");
-          console.log("🚀 Current user in localStorage:", localStorage.getItem("user"));
-          
-=======
           console.log(
             "🚀 Current token in localStorage:",
             localStorage.getItem("token") ? "exists" : "missing"
@@ -310,7 +249,6 @@ export default function AuthScreen({ defaultTab = "login" }) {
             localStorage.getItem("user")
           );
 
->>>>>>> cuong
           // Use window.location.href to force full page reload and ensure state is loaded
           // This ensures AuthContext reads from localStorage on mount
           window.location.href = redirectPath;
@@ -461,9 +399,6 @@ export default function AuthScreen({ defaultTab = "login" }) {
         const role = res?.role || res?.user?.role;
         const roleId = res?.user?.roleId || res?.roleId || res?.data?.roleId;
         const redirectPath = getPostLoginPath(role, roleId);
-<<<<<<< HEAD
-        console.log("✅ OTP Login successful - Role:", role, "RoleId:", roleId, "Redirect to:", redirectPath);
-=======
         console.log(
           "✅ OTP Login successful - Role:",
           role,
@@ -472,7 +407,6 @@ export default function AuthScreen({ defaultTab = "login" }) {
           "Redirect to:",
           redirectPath
         );
->>>>>>> cuong
         // Use window.location.href to force full page reload
         setTimeout(() => {
           window.location.href = redirectPath;
@@ -904,20 +838,12 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
     }
 
     setAcctError(message);
-<<<<<<< HEAD
     
-=======
-
->>>>>>> cuong
     // Nếu email hợp lệ và checkbox "Ghi nhớ đăng nhập" đang được tick, thêm email vào danh sách
     if (!message && remember && value) {
       addRememberedEmail(value);
     }
-<<<<<<< HEAD
     
-=======
-
->>>>>>> cuong
     return !message;
   };
 
@@ -1065,11 +991,7 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
             onCheckedChange={(v) => {
               const newValue = Boolean(v);
               setRemember(newValue);
-<<<<<<< HEAD
               
-=======
-
->>>>>>> cuong
               if (!newValue) {
                 // Nếu bỏ tick, chỉ xóa email hiện tại khỏi danh sách (nếu có)
                 // Không xóa toàn bộ danh sách để giữ lại các email khác
