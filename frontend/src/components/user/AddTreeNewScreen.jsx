@@ -1,11 +1,18 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+} from "react";
 import LivingBackground from "@/components/background/LivingBackground";
 import { useLocation, useSearchParams } from "react-router-dom";
 
 import {
   Calendar as CalIcon,
   Image as ImageIcon,
-  MapPin,
+ MapPin,
   Link2,
   Upload,
   Info,
@@ -18,7 +25,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { normalizePhaseBeforeSave } from "@/lib/treePhase";
+import {  normalizePhaseBeforeSave } from "@/lib/treePhase";
 import { normalize as vnNormalize } from "@/lib/useVnAdmin";
 import TreeRepository from "@/API/repositories/TreeRepository";
 import GardenSoilRepository from "@/API/repositories/GardenSoilRepository";
@@ -124,6 +131,18 @@ const PHASES5 = [
   "Sau thu hoạch",
 ];
 const PHASE_ORDER = [...PHASES5];
+const CLICKABLE_FORM_STYLES = `
+.mm-clickable-form input:not(:disabled):not([readonly]),
+.mm-clickable-form textarea:not(:disabled):not([readonly]),
+.mm-clickable-form select:not(:disabled),
+.mm-clickable-form button:not(:disabled) {
+  cursor: pointer;
+}
+.mm-clickable-form input:focus,
+.mm-clickable-form textarea:focus {
+  cursor: text;
+}
+`;
 
 function mapLegacyTo5(name = "") {
   const s = String(name).toLowerCase();
@@ -313,9 +332,11 @@ function SafeImage({ src, alt = "", className = "" }) {
 }
 
 /* ------------------------------ Image Picker ----------------------------- */
-function ImagePicker({ code, value, onChange, onFileSelected }) {
-  const [urlInput, setUrlInput] = useState("");
-  const [linkOpen, setLinkOpen] = useState(false);
+const ImagePicker = forwardRef(function ImagePicker(
+  { code, value, onChange, onFileSelected },
+  ref
+) {
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!code) return;
@@ -332,60 +353,48 @@ function ImagePicker({ code, value, onChange, onFileSelected }) {
     if (code) imageRegistry.set(code, objectUrl);
   }
 
-  function applyUrl() {
-    const u = (urlInput || "").trim();
-    if (!u) return;
-    const normalized = normalizeImageUrl(u);
-    const finalUrl = looksBlockedHost(normalized)
-      ? `/api/image-proxy?u=${encodeURIComponent(normalized)}`
-      : normalized;
-    onChange(finalUrl);
-    if (code) imageRegistry.set(code, finalUrl);
-    setUrlInput("");
-    setLinkOpen(false);
+  function handleImageClick() {
+    fileInputRef.current?.click();
   }
+
+  useImperativeHandle(ref, () => ({
+    open: handleImageClick,
+  }));
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap gap-3">
-        <label className="flex items-center justify-center gap-2 h-10 rounded-xl border bg-white/90 backdrop-blur px-3 text-sm cursor-pointer hover:bg-white">
-          <Upload className="w-4 h-4" />
-          <span>Chọn ảnh (tải lên)</span>
-          <input type="file" accept="image/*" className="hidden" onChange={handleFile} />
-        </label>
-        <Button type="button" onClick={() => setLinkOpen((v) => !v)} className="rounded-xl">
-          <Link2 className="w-4 h-4 mr-1" />
-          Dùng link
-        </Button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFile}
+      />
+      <div
+        className="rounded-xl overflow-hidden border cursor-pointer hover:opacity-90 transition-opacity"
+        onClick={handleImageClick}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleImageClick();
+          }
+        }}
+        aria-label="Chọn hoặc thay ảnh cây"
+      >
+        {value ? (
+          <SafeImage src={value} alt="preview" className="w-full h-40 object-cover" />
+        ) : (
+          <div className="w-full h-40 bg-neutral-100 flex flex-col items-center justify-center text-neutral-400">
+            <Upload className="w-8 h-8 mb-2" />
+            <span className="text-sm">Click để chọn ảnh</span>
+          </div>
+        )}
       </div>
-
-      {linkOpen && (
-        <div className="flex gap-2">
-          <Input
-            placeholder="Dán link ảnh (https://...)"
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            className="rounded-xl bg-white"
-          />
-          <Button type="button" onClick={applyUrl} className="rounded-xl">
-            Áp dụng
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => {
-              setLinkOpen(false);
-              setUrlInput("");
-            }}
-            className="rounded-xl"
-          >
-            Huỷ
-          </Button>
-        </div>
-      )}
     </div>
   );
-}
+});
 /* ------------------------------ Searchable Select (dùng cho Loại cây / Giống / Loại đất) ----------------------------- */
 /* ------------------------------ Searchable Select (giống AddressPicker) ----------------------------- */
 function SearchableSelect({
@@ -481,7 +490,7 @@ function SearchableSelect({
   }
 
   return (
-    <div className="relative" ref={wrapRef}>
+    <div className="relative min-w-0" ref={wrapRef}>
       <Input
         ref={inputRef}
         value={text}
@@ -517,7 +526,7 @@ function SearchableSelect({
         autoComplete="off"
         spellCheck={false}
         className={
-          "h-11 w-full rounded-xl bg-white placeholder:text-neutral-400 " +
+          "h-11 w-full min-w-0 rounded-xl bg-white placeholder:text-neutral-400 truncate " +
           (disabled ? "opacity-60 cursor-not-allowed " : "") +
           (error
             ? "border border-red-500 focus-visible:ring-2 focus-visible:ring-rose-500/40 focus-visible:border-red-500"
@@ -668,7 +677,7 @@ function DateInput({ value, onChange, error }) {
     }
   }
 
-  function getDaysInMonth(y, m) {
+    function getDaysInMonth(y, m) {
     const yearNum = Number(y);
     const monthNum = Number(m);
     if (!yearNum || !monthNum) return 31; // chưa đủ thông tin thì tạm cho 31
@@ -830,15 +839,15 @@ function DateInput({ value, onChange, error }) {
       data-mm-date-open={open ? "1" : undefined}
     >
       <div
-        className={
-          "flex items-center justify-between w-full min-w-0 rounded-xl border bg-white h-11 px-3 " +
-          (error
-            ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/40"
-            : "border-neutral-300 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/40")
-        }
-        onClick={() => setOpen(true)}
-      >
-        <div className="flex items-center gap-1 flex-1 min-w-0">
+       className={
+    "flex items-center w-full min-w-0 rounded-xl border bg-white h-11 px-3 overflow-hidden " +
+    (error
+      ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/40"
+      : "border-neutral-300 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/40")
+  }
+  onClick={() => setOpen(true)}
+>
+        <div className="flex items-center gap-1 flex-1 min-w-0 justify-center">
           <input
             ref={dayRef}
             value={parts.d}
@@ -847,8 +856,9 @@ function DateInput({ value, onChange, error }) {
             onFocus={() => setOpen(true)}
             placeholder="Ngày"
             inputMode="numeric"
-            className="w-8 sm:w-9 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400" />
-          <span className="text-neutral-300 text-sm">/</span>
+            style={{ fontSize: 'clamp(0.625rem, 1.5vw + 0.5rem, 0.875rem)' }}
+            className="min-w-[1.25rem] flex-1 max-w-[2.5rem] bg-transparent border-none outline-none text-center placeholder:text-neutral-400"          />
+<span className="text-neutral-300 shrink-0" style={{ fontSize: 'clamp(0.625rem, 1.5vw + 0.5rem, 0.875rem)' }}>/</span>
           <input
             ref={monthRef}
             value={parts.m}
@@ -857,8 +867,9 @@ function DateInput({ value, onChange, error }) {
             onFocus={() => setOpen(true)}
             placeholder="Tháng"
             inputMode="numeric"
-            className="w-9 sm:w-10 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400" />
-          <span className="text-neutral-300 text-sm">/</span>
+            style={{ fontSize: 'clamp(0.625rem, 1.5vw + 0.5rem, 0.875rem)' }}
+            className="min-w-[1.25rem] flex-1 max-w-[2.5rem] bg-transparent border-none outline-none text-center placeholder:text-neutral-400"         />
+          <span className="text-neutral-300 shrink-0" style={{ fontSize: 'clamp(0.625rem, 1.5vw + 0.5rem, 0.875rem)' }}>/</span>
           <input
             ref={yearRef}
             value={parts.y}
@@ -867,29 +878,21 @@ function DateInput({ value, onChange, error }) {
             onFocus={() => setOpen(true)}
             placeholder="Năm"
             inputMode="numeric"
-            className="w-11 sm:w-12 bg-transparent border-none outline-none text-xs sm:text-sm text-center placeholder:text-neutral-400"
+            style={{ fontSize: 'clamp(0.625rem, 1.5vw + 0.5rem, 0.875rem)' }}
+            className="min-w-[2rem] flex-1 max-w-[3.5rem] bg-transparent border-none outline-none text-center placeholder:text-neutral-400"
           />
         </div>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            setOpen((v) => !v);
-          }}
-          className="ml-2 inline-flex items-center justify-center"
-        >
-          <CalIcon className="w-4 h-4 text-neutral-500" />
-        </button>
       </div>
 
       {open && (
         <div
-          className="absolute left-0 mt-1 w-full max-w-[18rem] rounded-xl border bg-white shadow-xl z-[1600] p-3"          // Chặn Enter trong popup lịch không cho bubble lên window
+ className="absolute left-0 mt-1 w-full max-w-[18rem] min-w-[16rem] rounded-xl border bg-white shadow-xl z-[1600] p-3 overflow-hidden"          // Chặn Enter trong popup lịch không cho bubble lên window
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.stopPropagation();
             }
           }}
+          style={{ maxWidth: 'min(18rem, calc(100vw - 2rem))' }}
         >
           <div className="flex items-center justify-between mb-2">
             <button
@@ -975,7 +978,7 @@ function DateInput({ value, onChange, error }) {
       )}
 
       {error && (
-        <p className="mt-1 text-xs text-red-500">
+        <p className="mt-1 text-xs text-red-500 break-words min-w-0">
           {error}
         </p>
       )}
@@ -1014,10 +1017,10 @@ export default function AddTreeNewScreen() {
             Array.isArray(data)
               ? data
               : [
-                { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
-                { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
-                { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
-              ]
+                  { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
+                  { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
+                  { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
+                ]
           );
         } else {
           setGardens([
@@ -1079,14 +1082,14 @@ export default function AddTreeNewScreen() {
   const [userEditedCode, setUserEditedCode] = useState(false);
   const [speciesKey, setSpeciesKey] = useState("");
   const [treeTypes, setTreeTypes] = useState([]);
-  const [treeTypeId, setTreeTypeId] = useState("");
+  const [treeTypeId, setTreeTypeId] = useState("");  
   const [variety, setVariety] = useState("");
   const [varietiesAll, setVarietiesAll] = useState([]);
   const [varietiesByType, setVarietiesByType] = useState({});
   const [selectedVarietyId, setSelectedVarietyId] = useState("");
   const [status, setStatus] = useState(""); // GIỮ để bảo toàn payload (không render form)
   //const [soil, setSoil] = useState("");
-  const [gardenSoils, setGardenSoils] = useState([]);
+  const [gardenSoils, setGardenSoils] = useState([]);     
   const [gardenSoilId, setGardenSoilId] = useState("");
   const [treeLocation, setTreeLocation] = useState("");
   const [plantDate, setPlantDate] = useState("");
@@ -1103,8 +1106,9 @@ export default function AddTreeNewScreen() {
   const [lastCreatedSpecies, setLastCreatedSpecies] = useState("");
   const [lastCreatedVariety, setLastCreatedVariety] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+const imagePickerRef = useRef(null);
 
-  // ✅ CHẶN ENTER TRONG CÁC Ô INPUT TEXT 1 DÒNG
+// ✅ CHẶN ENTER TRONG CÁC Ô INPUT TEXT 1 DÒNG
   const handleTextInputKeyDown = (e) => {
     if (e.key === "Enter") {
       // Không cho form / header nhận phím Enter
@@ -1115,7 +1119,7 @@ export default function AddTreeNewScreen() {
     }
   };
 
-
+  
 
   // Morphology fields
   const [branchInfo, setBranchInfo] = useState("");
@@ -1150,7 +1154,7 @@ export default function AddTreeNewScreen() {
     }
   };
 
-  const speciesOptions = useMemo(() => {
+    const speciesOptions = useMemo(() => {
     if (treeTypes.length) {
       return treeTypes.map((t) => ({
         value: String(t.treeTypeId),
@@ -1181,12 +1185,17 @@ export default function AddTreeNewScreen() {
   const [phaseOverride, setPhaseOverride] = useState("");
   useEffect(() => {
     setVariety("");
+    setSelectedVarietyId("");
     setGardenSoilId("");   // reset loại đất khi đổi loại cây
+  }, [treeTypeId]);
+
+  useEffect(() => {
+    setGardenSoilId(""); // fallback khi speciesKey đổi từ nguồn khác
   }, [speciesKey]);
 
   // Nếu chưa override tay, khi có ngày trồng thì seed lại phase theo lib (1 lần)
 
-
+  
 
   const ageAfterPlant = useMemo(() => monthsBetween(plantDate), [plantDate]);
   const preAgeNum = useMemo(() => parseInt(preAge || "0", 10) || 0, [preAge]);
@@ -1222,7 +1231,7 @@ export default function AddTreeNewScreen() {
     [totalAge, regionTag, speciesKey, soil, status]
   );
   const defaultPhase5 = useMemo(() => mapLegacyTo5(legacyPhase), [legacyPhase]);
-  const effectivePhase = phaseOverride || defaultPhase5;
+const effectivePhase = phaseOverride || defaultPhase5;
   // Can edit flower / fruit separately
   const canEditFlower = useMemo(() => {
     const idx = PHASE_ORDER.indexOf(effectivePhase);
@@ -1261,7 +1270,7 @@ export default function AddTreeNewScreen() {
   }, [speciesKey, variety, speciesLabel, userEditedCode]);
 
 
-  // Load TreeTypes từ API
+    // Load TreeTypes từ API
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1285,18 +1294,31 @@ export default function AddTreeNewScreen() {
       try {
         const res = await TreeRepository.getTreeVarieties(); // giả sử trả array TreeVarietyDto
         if (!mounted) return;
-        const arr = Array.isArray(res) ? res : (res.data || []);
+        const arr = Array.isArray(res) ? res : res.data || [];
         setVarietiesAll(arr);
 
         // build mapping by TreeTypeId
         const map = {};
-        arr.forEach(v => {
-          const key = String(v.treeTypeId ?? v.TreeTypeId ?? v.TreeTypeID ?? v.TreeTypeId ?? "0");
+        arr.forEach((v) => {
+          const normalizedTreeTypeId =
+            v.treeTypeId ?? v.TreeTypeId ?? v.TreeTypeID ?? null;
+          const normalizedVarietyId =
+            v.varietyId ?? v.VarietyId ?? v.VarietyID ?? null;
+          const normalizedVarietyName =
+            v.varietyName ??
+            v.VarietyName ??
+            v.treeVarietyName ??
+            v.TreeVarietyName ??
+            "";
+
+          if (normalizedTreeTypeId == null || normalizedVarietyId == null) return;
+
+          const key = String(normalizedTreeTypeId);
           if (!map[key]) map[key] = [];
           map[key].push({
-            value: v.varietyId ?? v.VarietyId ?? v.VarietyID ?? v.VarietyId,
-            label: v.treeVarietyName ?? v.TreeVarietyName ?? v.TreeVarietyName,
-            raw: v
+            value: String(normalizedVarietyId),
+            label: normalizedVarietyName,
+            raw: v,
           });
         });
         setVarietiesByType(map);
@@ -1306,7 +1328,9 @@ export default function AddTreeNewScreen() {
         setVarietiesByType({});
       }
     })();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Validate submit (remove gardenId requirement)
@@ -1316,7 +1340,7 @@ export default function AddTreeNewScreen() {
     variety: "Chọn giống",
     plantDate: "Chọn ngày trồng",
     soil: "Chọn loại đất",
-    phaseOverride: "Chọn giai đoạn phát triển của cây",
+      phaseOverride: "Chọn giai đoạn phát triển của cây",
   };
   function validateBasic() {
     const e = {};
@@ -1410,7 +1434,7 @@ export default function AddTreeNewScreen() {
         PlantDate: plantDate || null, // dạng "yyyy-MM-dd" → DateOnly? bên C#
 
         GardenSoilId: gardenSoilId ? Number(gardenSoilId) : null,
-        Location: treeLocation,
+        Location: treeLocation, 
 
         Notes: (note || userIntent || "").trim() || null,
         preMonths: preAgeNum,
@@ -1444,11 +1468,11 @@ export default function AddTreeNewScreen() {
         //await TreeRepository.uploadTreeImage(newTreeId, formData);
 
         // hoặc nếu backend /api/trees/{id}/images nhận JSON { url: "..."} thì:
-        const uploadRes = await GardenRepository.uploadGardenImage(imageFile);
-        const url = uploadRes?.url;
-        if (url) {
-          await TreeRepository.uploadTreeImage(newTreeId, { imageUrl: url });
-        }
+         const uploadRes = await GardenRepository.uploadGardenImage(imageFile);
+         const url = uploadRes?.url;
+         if (url) {
+           await TreeRepository.uploadTreeImage(newTreeId, { imageUrl: url });
+         }
       }
 
       // Show success như cũ
@@ -1502,12 +1526,18 @@ export default function AddTreeNewScreen() {
   const previewDone = Boolean(image);
   const noteDone = Boolean(userIntent);
 
+const openImagePicker = () => {
+  imagePickerRef.current?.open?.();
+};
+
   /* ------------------------------ UI ------------------------------ */
   return (
-    <div
-      className="min-h-screen relative overflow-hidden"
-      style={{ backgroundColor: "#1F302F", paddingTop: "calc(var(--mm-header-h, 88px) + 12px)" }}
-    >
+    <>
+      <style>{CLICKABLE_FORM_STYLES}</style>
+      <div
+        className="min-h-screen relative overflow-x-hidden mm-clickable-form"
+        style={{ backgroundColor: "#1F302F", paddingTop: "calc(var(--mm-header-h, 88px) + 12px)" }}
+      >
       {/* Background */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <LivingBackground
@@ -1522,353 +1552,366 @@ export default function AddTreeNewScreen() {
       </div>
 
       {/* ZOOM WRAPPER */}
-      <div style={zoomStyle}>
+      <div style={zoomStyle} className="w-full min-w-0">
         {/* Header */}
-        <section className="relative">
-          <div className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 pb-3">
-            <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-white">
+        <section className="relative w-full min-w-0">
+          <div className="mx-auto w-full px-4 sm:px-6 lg:px-10 pb-3 min-w-0">
+            <div className="mt-2 flex flex-wrap items-end justify-between gap-4 min-w-0">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-semibold tracking-tight text-white break-words">
                   Thêm cây mới
                 </h1>
-                <p className="text-emerald-100/80 text-sm mt-1">
+                <p className="text-emerald-100/80 text-xs sm:text-sm mt-1 break-words">
                   Tạo cây với các thông tin chi tiết giúp AI đưa ra gợi ý chăm sóc tốt nhất cho bạn.
                 </p>
                 {currentGarden ? (
-                  <div className="mt-2 inline-flex items-center gap-2 text-emerald-100/80 text-xs">
-                    <MapPin className="w-3.5 h-3.5" />
-                    <span>
-                      Trong vườn: <b>{currentGarden.name}</b>{regionTag ? ` — ${regionTag}` : ""}
+                  <div className="mt-2 inline-flex items-center gap-2 text-emerald-100/80 text-xs flex-wrap">
+                    <MapPin className="w-3.5 h-3.5 shrink-0" />
+                    <span className="break-words min-w-0">
+                      Trong vườn: <b className="break-words">{currentGarden.name}</b>{regionTag ? ` — ${regionTag}` : ""}
                     </span>
                   </div>
                 ) : (
                   <div className="mt-2 text-emerald-100/60 text-xs">
-
+                   
                   </div>
                 )}
               </div>
 
               {/* Progress mini-stepper */}
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-5">
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="flex items-center gap-2 sm:gap-5 flex-wrap justify-end">
                   <StepDot label="Thông tin" active={!infoDone} done={infoDone} />
                   <StepDot label="Ảnh & Preview" active={infoDone && !previewDone} done={previewDone} />
                   <StepDot label="Ghi chú" active={true} done={noteDone} />
                 </div>
-                <div className="w-[360px] h-2 rounded-full bg-white/10 overflow-hidden ring-1 ring-white/10">
+                <div className="w-full sm:w-[280px] lg:w-[360px] max-w-full h-2 rounded-full bg-white/10 overflow-hidden ring-1 ring-white/10">
                   <div
                     className="h-full bg-gradient-to-r from-emerald-400 via-yellow-300 to-sky-400 transition-all duration-500"
                     style={{ width: `${Math.max(8, progress)}%` }}
                   />
                 </div>
-                <div className="text-emerald-100/80 text-xs">{progress}% hoàn thành</div>
+                <div className="text-emerald-100/80 text-xs whitespace-nowrap">{progress}% hoàn thành</div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Main */}
-        <main className="mx-auto max-w-[1760px] 2xl:max-w-[1920px] px-6 lg:px-10 py-6 space-y-6">
-          <div className="grid lg:grid-cols-12 gap-6 items-start">
+        <main className="mx-auto w-full px-4 sm:px-6 lg:px-10 py-6 space-y-6 min-w-0">
+          <div className="grid lg:grid-cols-12 gap-4 lg:gap-6 items-start min-w-0">
             {/* LEFT – form */}
-            <div className="lg:col-span-8 space-y-6">
-              <Card className="relative z-20 rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
+            <div className="lg:col-span-8 space-y-6 min-w-0">
+              <Card className="relative z-20 rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5 overflow-visible">
 
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700">
+                  <CardTitle className="flex items-center gap-2 break-words">
+                    <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
                       <Sprout className="w-4 h-4" />
                     </span>
-                    Thông tin cơ bản
+                    <span className="break-words min-w-0">Thông tin cơ bản</span>
                   </CardTitle>
                 </CardHeader>
 
                 {/* Balanced grid: 12 cols */}
-                <CardContent className="grid grid-cols-12 gap-5 text-sm">
+                <CardContent className="grid grid-cols-12 gap-4 lg:gap-5 text-sm min-w-0 overflow-visible">
                   {/* 1. Mã cây */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label htmlFor="code" className="text-neutral-700">Mã cây</Label>
-                    <div className="relative">
-                      <Input
-                        id="code"
-                        value={code}
-                        placeholder="Mã cây duy nhất (VD: BD-03)."
-                        maxLength={15}                         // ✅ GIỚI HẠN TỐI ĐA 15 KÝ TỰ
-                        onChange={(e) => {
-                          setCode(e.target.value);
-                          setUserEditedCode(true);
-                          setErrors((x) => ({ ...x, code: undefined }));
-                        }}
-                        onKeyDown={handleTextInputKeyDown}
-                        className={`rounded-xl h-11 w-full bg-white border-neutral-300 placeholder:text-neutral-400
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+                    <Label htmlFor="code" className="text-neutral-700 break-words">Mã cây</Label>
+                    <div className="relative min-w-0">
+<Input
+  id="code"
+  value={code}
+  placeholder="Mã cây duy nhất (VD: BD-03)."
+  maxLength={15}                         // ✅ GIỚI HẠN TỐI ĐA 15 KÝ TỰ
+  onChange={(e) => {
+    setCode(e.target.value);
+    setUserEditedCode(true);
+    setErrors((x) => ({ ...x, code: undefined }));
+  }}
+  onKeyDown={handleTextInputKeyDown}
+  className={`rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400
     focus:ring-emerald-500/40 focus:border-emerald-500
     ${errors.code ? "border-red-500 focus:border-red-500 focus:ring-red-500/40" : ""}`}
-                      />
+/>
 
-                    </div>
-                    {errors.code && <p className="text-xs text-red-500 mt-1">{errors.code}</p>}
+</div>
+                    {errors.code && <p className="text-xs text-red-500 mt-1 break-words">{errors.code}</p>}
                   </div>
 
                   {/* 2. Loại cây */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label className="text-neutral-700">Loại cây</Label>
-                    <SearchableSelect
-                      value={treeTypeId}
-                      onChange={(val) => {
-                        setTreeTypeId(val);
-                        setErrors((x) => ({ ...x, speciesKey: undefined }));
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+  <Label className="text-neutral-700 break-words">Loại cây</Label>
+  <div className="min-w-0">
+  <SearchableSelect
+  value={treeTypeId}
+  onChange={(val) => {
+    setTreeTypeId(val);
+    setErrors((x) => ({ ...x, speciesKey: undefined }));
 
-                        // map sang speciesKey (mango/grapefruit/...) để giữ heuristic cũ
-                        const t = treeTypes.find(
-                          (x) => String(x.treeTypeId) === String(val)
-                        );
-                        const label = t?.treeTypeName || "";
-                        setSpeciesKey(normalizeSpecies(label)); // dùng hàm normalizeSpecies có sẵn
-                      }}
-                      options={speciesOptions}
-                      placeholder="— Chọn loại cây —"
-                      disabled={false}
-                      error={errors.speciesKey}
-                      inputPlaceholder="Gõ tên loại cây (xoài, bưởi, nhãn...)"
-                    />
-                  </div>
+    // map sang speciesKey (mango/grapefruit/...) để giữ heuristic cũ
+    const t = treeTypes.find(
+      (x) => String(x.treeTypeId) === String(val)
+    );
+    const label = t?.treeTypeName || "";
+    setSpeciesKey(normalizeSpecies(label)); // dùng hàm normalizeSpecies có sẵn
+  }}
+  options={speciesOptions}
+  placeholder="— Chọn loại cây —"
+  disabled={false}
+  error={errors.speciesKey}
+  inputPlaceholder="Gõ tên loại cây (xoài, bưởi, nhãn...)"
+/>
+</div>
+</div>
 
 
                   {/* 3. Giống */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label className="text-neutral-700">Giống</Label>
-                    <SearchableSelect
-                      value={selectedVarietyId}
-                      onChange={(val) => {
-                        const opts = treeTypeId ? (varietiesByType[String(treeTypeId)] || []).map((v) => ({ value: v.value, label: v.label })) : [];
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+  <Label className="text-neutral-700 break-words">Giống</Label>
+  <div className="min-w-0">
+  <SearchableSelect
+    value={selectedVarietyId}
+    onChange={(val) => {
+      const opts = treeTypeId ? (varietiesByType[String(treeTypeId)] || []).map((v) => ({ value: v.value, label: v.label })) : [];
 
-                        // if the select returns an object like { value, label }
-                        if (val && typeof val === "object" && "value" in val && "label" in val) {
-                          setSelectedVarietyId(val.value);
-                          setVariety(val.label);
-                          setErrors((x) => ({ ...x, variety: undefined }));
-                          return;
-                        }
+    // if the select returns an object like { value, label }
+    if (val && typeof val === "object" && "value" in val && "label" in val) {
+      setSelectedVarietyId(val.value);
+      setVariety(val.label);
+      setErrors((x) => ({ ...x, variety: undefined }));
+      return;
+    }
 
-                        // if the select returns just the value (id), look up the label
-                        if (val != null) {
-                          const found = opts.find((o) => String(o.value) === String(val));
-                          setSelectedVarietyId(val);
-                          setVariety(found ? found.label : ""); // set empty string if not found
-                          setErrors((x) => ({ ...x, variety: undefined }));
-                          return;
-                        }
+    // if the select returns just the value (id), look up the label
+    if (val != null) {
+      const found = opts.find((o) => String(o.value) === String(val));
+      setSelectedVarietyId(val);
+      setVariety(found ? found.label : ""); // set empty string if not found
+      setErrors((x) => ({ ...x, variety: undefined }));
+      return;
+    }
 
-                        // cleared
-                        setSelectedVarietyId(null);
-                        setVariety("");
-                        setErrors((x) => ({ ...x, variety: undefined }));
-                      }}
-                      options={
-                        treeTypeId
-                          ? (varietiesByType[String(treeTypeId)] || []).map((v) => ({ value: v.value, label: v.label }))
-                          : []
-                      }
-                      placeholder={treeTypeId ? "— Chọn giống —" : "Chọn loại cây trước"}
-                      disabled={!treeTypeId}
-                      error={errors.variety}
-                      inputPlaceholder="Gõ tên giống (Cát Chu, Ri6...)"
-                    />
-                  </div>
+    // cleared
+    setSelectedVarietyId(null);
+    setVariety("");
+    setErrors((x) => ({ ...x, variety: undefined }));
+    }}
+    options={
+      treeTypeId
+      ? (varietiesByType[String(treeTypeId)] || []).map((v) => ({ value: v.value, label: v.label }))
+      : []
+    }
+    placeholder={treeTypeId  ? "— Chọn giống —" : "Chọn loại cây trước"}
+    disabled={!treeTypeId}
+    error={errors.variety}
+    inputPlaceholder="Gõ tên giống (Cát Chu, Ri6...)"
+  />
+  </div>
+</div>
 
 
                   {/* 4. Tuổi trước khi trồng */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label className="text-neutral-700">Tuổi trước khi trồng (tháng)</Label>
-                    <div className="relative">
-                      <Input
-                        type="number"
-                        min={0}
-                        value={preAge}
-                        onChange={(e) => setPreAge(e.target.value)}
-                        onKeyDown={handleTextInputKeyDown}   // ✅ THÊM
-                        className="rounded-xl h-11 pr-12 w-full bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
-                      />
+                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+                    <Label className="text-neutral-700 break-words">Tuổi trước khi trồng (tháng)</Label>
+                    <div className="relative min-w-0">
+                     <Input
+  type="number"
+  min={0}
+  value={preAge}
+  onChange={(e) => setPreAge(e.target.value)}
+  onKeyDown={handleTextInputKeyDown}   // ✅ THÊM
+  className="rounded-xl h-11 pr-12 w-full min-w-0 bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
+/>
 
-                      <span className="absolute right-3 top-2.5 text-sm text-neutral-600">tháng</span>
+                      <span className="absolute right-3 top-2.5 text-sm text-neutral-600 pointer-events-none">tháng</span>
                     </div>
                   </div>
 
-                  {/* 5. Ngày trồng */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
-                    <Label className="text-neutral-700">Ngày trồng</Label>
-                    <DateInput
-                      value={plantDate}
-                      onChange={(val) => {
-                        setPlantDate(val);
-                        setErrors((x) => ({ ...x, plantDate: undefined }));
-                      }}
-                      error={errors.plantDate}
-                    />
-                  </div>
+                 {/* 5. Ngày trồng */}
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+  <Label className="text-neutral-700">Ngày trồng</Label>
+  <DateInput
+    value={plantDate}
+    onChange={(val) => {
+      setPlantDate(val);
+      setErrors((x) => ({ ...x, plantDate: undefined }));
+    }}
+    error={errors.plantDate}
+  />
+</div>
 
 
 
 
-                  {/* 6. Mô tả tình trạng lá */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label className="text-neutral-700">Mô tả tình trạng lá</Label>
-                    <Input
-                      value={leafInfo}
-                      onChange={handleMorphChange("leaf", setLeafInfo)}
-                      onFocus={() => {
-                        if (
-                          leafInfo &&
-                          leafInfo.length > MORPH_INLINE_LIMIT &&
-                          !editingMorphField
-                        ) {
-                          startMorphEdit("leaf", leafInfo);
-                        }
-                      }}
-                      onKeyDown={handleTextInputKeyDown}
-                      placeholder="VD: lá xanh tốt, vàng nhẹ, sâu…"
-                      className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
-                    />
-                  </div>
+                {/* 6. Mô tả tình trạng lá */}
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+  <Label className="text-neutral-700 break-words">Mô tả tình trạng lá</Label>
+  <div className="min-w-0">
+  <Input
+    value={leafInfo}
+    onChange={handleMorphChange("leaf", setLeafInfo)}
+    onFocus={() => {
+      if (
+        leafInfo &&
+        leafInfo.length > MORPH_INLINE_LIMIT &&
+        !editingMorphField
+      ) {
+        startMorphEdit("leaf", leafInfo);
+      }
+    }}
+    onKeyDown={handleTextInputKeyDown}
+    placeholder="VD: lá xanh tốt, vàng nhẹ, sâu…"
+    className="rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
+  />
+  </div>
+</div>
 
 
-                  {/* 7. Mô tả tình trạng cành */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label className="text-neutral-700">Mô tả tình trạng cành</Label>
-                    <Input
-                      value={branchInfo}
-                      onChange={handleMorphChange("branch", setBranchInfo)}
-                      onFocus={() => {
-                        if (
-                          branchInfo &&
-                          branchInfo.length > MORPH_INLINE_LIMIT &&
-                          !editingMorphField
-                        ) {
-                          startMorphEdit("branch", branchInfo);
-                        }
-                      }}
-                      onKeyDown={handleTextInputKeyDown}
-                      placeholder="Tình trạng cành, ..."
-                      className="rounded-xl h-11 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
-                    />
-                  </div>
+                {/* 7. Mô tả tình trạng cành */}
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+  <Label className="text-neutral-700 break-words">Mô tả tình trạng cành</Label>
+  <div className="min-w-0">
+  <Input
+    value={branchInfo}
+    onChange={handleMorphChange("branch", setBranchInfo)}
+    onFocus={() => {
+      if (
+        branchInfo &&
+        branchInfo.length > MORPH_INLINE_LIMIT &&
+        !editingMorphField
+      ) {
+        startMorphEdit("branch", branchInfo);
+      }
+    }}
+    onKeyDown={handleTextInputKeyDown}
+    placeholder="Tình trạng cành, ..."
+    className="rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
+  />
+  </div>
+</div>
 
 
 
                   {/* 8. Loại đất */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label className="text-neutral-700">Loại đất</Label>
-                    <SearchableSelect
-                      value={gardenSoilId}
-                      onChange={(val) => {
-                        const selected = gardenSoils.find((s) => String(s.gardenSoilId) === String(val));
-                        setGardenSoilId(val);
-                        setErrors((x) => ({ ...x, soil: undefined }));
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+  <Label className="text-neutral-700 break-words">Loại đất</Label>
+  <div className="min-w-0">
+  <SearchableSelect
+  value={gardenSoilId}
+  onChange={(val) => {
+    const selected = gardenSoils.find((s) => String(s.gardenSoilId) === String(val));
+    setGardenSoilId(val);
+    setErrors((x) => ({ ...x, soil: undefined }));
 
-                        // Set tree location using the label/customLabel
-                        setTreeLocation(selected ? selected.customLabel || `Đất #${selected.gardenSoilId}` : "");
-                      }}
-                      options={gardenSoils.map((s) => ({
-                        value: String(s.gardenSoilId),
-                        label: s.customLabel || `Đất #${s.gardenSoilId}`,
-                      }))}
-                      placeholder={
-                        currentGarden?.id
-                          ? gardenSoils.length
-                            ? "— Chọn loại đất —"
-                            : "Vườn chưa cấu hình loại đất"
-                          : "Chọn vườn trước"
-                      }
-                      disabled={!currentGarden?.id || !gardenSoils.length}
-                      error={errors.soil}
-                      inputPlaceholder="Gõ để lọc loại đất (đất đỏ, phù sa...)"
-                    />
-
-                  </div>
+    // Set tree location using the label/customLabel
+    setTreeLocation(selected ? selected.customLabel || `Đất #${selected.gardenSoilId}` : "");
+  }}
+  options={gardenSoils.map((s) => ({
+    value: String(s.gardenSoilId),
+    label: s.customLabel || `Đất #${s.gardenSoilId}`,
+  }))}
+  placeholder={
+    currentGarden?.id
+      ? gardenSoils.length
+        ? "— Chọn loại đất —"
+        : "Vườn chưa cấu hình loại đất"
+      : "Chọn vườn trước"
+  }
+  disabled={!currentGarden?.id || !gardenSoils.length}
+  error={errors.soil}
+  inputPlaceholder="Gõ để lọc loại đất (đất đỏ, phù sa...)"
+/>
+  </div>
+</div>
 
 
                   {/* 9. Giai đoạn */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label className="text-neutral-700">Giai đoạn</Label>
-                    <div className="relative">
-                      <select
-                        value={phaseOverride}
-                        onChange={(e) => {
-                          setPhaseOverride(e.target.value);
-                          setErrors((x) => ({ ...x, phaseOverride: undefined }));
-                          e.target.blur(); // chọn xong thì bỏ focus, tắt viền xanh
-                        }}
-                        className={
-                          "h-11 w-full rounded-xl border bg-white px-3 text-sm appearance-none " +
-                          (errors.phaseOverride
-                            ? "border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500"
-                            : "border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500")
-                        }
-                      >
-                        <option value="">— Hãy chọn giai đoạn —</option>
-                        {PHASES5.map((p) => (
-                          <option key={p} value={p}>
-                            {p}
-                          </option>
-                        ))}
-                      </select>
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+  <Label className="text-neutral-700 break-words">Giai đoạn</Label>
+  <div className="relative min-w-0">
+    <select
+  value={phaseOverride}
+  onChange={(e) => {
+    setPhaseOverride(e.target.value);
+    setErrors((x) => ({ ...x, phaseOverride: undefined }));
+    e.target.blur(); // chọn xong thì bỏ focus, tắt viền xanh
+  }}
+  className={
+    "h-11 w-full min-w-0 rounded-xl border bg-white px-3 text-sm appearance-none truncate " +
+    (errors.phaseOverride
+      ? "border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500"
+      : "border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500")
+  }
+>
+  <option value="">— Hãy chọn giai đoạn —</option>
+  {PHASES5.map((p) => (
+    <option key={p} value={p}>
+      {p}
+    </option>
+  ))}
+</select>
 
-                    </div>
-                    {errors.phaseOverride && (
-                      <p className="mt-1 text-xs text-red-500">{errors.phaseOverride}</p>
-                    )}
-
-                  </div>
+  </div>
+  {errors.phaseOverride && (
+    <p className="mt-1 text-xs text-red-500 break-words">{errors.phaseOverride}</p>
+  )}
+  
+</div>
 
 
                   {/* 10. Mô tả tình trạng hoa (always visible, gated) */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label className="text-neutral-700">Mô tả tình trạng hoa</Label>
-                    <Input
-                      value={flowerInfo}
-                      onChange={handleMorphChange("flower", setFlowerInfo)}
-                      onFocus={() => {
-                        if (
-                          canEditFlower &&
-                          flowerInfo &&
-                          flowerInfo.length > MORPH_INLINE_LIMIT &&
-                          !editingMorphField
-                        ) {
-                          startMorphEdit("flower", flowerInfo);
-                        }
-                      }}
-                      onKeyDown={handleTextInputKeyDown}
-                      disabled={!canEditFlower}
-                      placeholder="Mô tả tình trạng, tỉ lệ ra hoa, ..."
-                      className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+  <Label className="text-neutral-700 break-words">Mô tả tình trạng hoa</Label>
+  <div className="min-w-0">
+  <Input
+    value={flowerInfo}
+    onChange={handleMorphChange("flower", setFlowerInfo)}
+    onFocus={() => {
+      if (
+        canEditFlower &&
+        flowerInfo &&
+        flowerInfo.length > MORPH_INLINE_LIMIT &&
+        !editingMorphField
+      ) {
+        startMorphEdit("flower", flowerInfo);
+      }
+    }}
+    onKeyDown={handleTextInputKeyDown}
+    disabled={!canEditFlower}
+    placeholder="Mô tả tình trạng, tỉ lệ ra hoa, ..."
+    className={`rounded-xl h-11 w-full min-w-0 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
       border-neutral-300 ${!canEditFlower ? "opacity-60 cursor-not-allowed" : ""}`}
-                    />
-                  </div>
+  />
+  </div>
+</div>
 
 
                   {/* 11. Mô tả tình trạng quả (always visible, gated) */}
-                  <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1">
-                    <Label className="text-neutral-700">Mô tả tình trạng quả</Label>
-                    <Input
-                      value={fruitInfo}
-                      onChange={handleMorphChange("fruit", setFruitInfo)}
-                      onFocus={() => {
-                        if (
-                          canEditFruit &&
-                          fruitInfo &&
-                          fruitInfo.length > MORPH_INLINE_LIMIT &&
-                          !editingMorphField
-                        ) {
-                          startMorphEdit("fruit", fruitInfo);
-                        }
-                      }}
-                      onKeyDown={handleTextInputKeyDown}
-                      disabled={!canEditFruit}
-                      placeholder="Số lượng, kích thước, tình trạng, ..."
-                      className={`rounded-xl h-11 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
+<div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+  <Label className="text-neutral-700 break-words">Mô tả tình trạng quả</Label>
+  <div className="min-w-0">
+  <Input
+    value={fruitInfo}
+    onChange={handleMorphChange("fruit", setFruitInfo)}
+    onFocus={() => {
+      if (
+        canEditFruit &&
+        fruitInfo &&
+        fruitInfo.length > MORPH_INLINE_LIMIT &&
+        !editingMorphField
+      ) {
+        startMorphEdit("fruit", fruitInfo);
+      }
+    }}
+    onKeyDown={handleTextInputKeyDown}
+    disabled={!canEditFruit}
+    placeholder="Số lượng, kích thước, tình trạng, ..."
+    className={`rounded-xl h-11 w-full min-w-0 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
       border-neutral-300 ${!canEditFruit ? "opacity-60 cursor-not-allowed" : ""}`}
-                    />
-                  </div>
+  />
+  </div>
+</div>
 
 
                   {/* NOTE cuối card */}
@@ -1881,54 +1924,67 @@ export default function AddTreeNewScreen() {
               </Card>
 
               {/* Hướng dẫn */}
-              <Card className="relative z-0 rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
+              <Card className="relative z-0 rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5 overflow-hidden">
 
-                <CardHeader className="pb-3"><CardTitle>Hướng dẫn điền & sử dụng</CardTitle></CardHeader>
-                <CardContent className="text-sm text-neutral-700">
-                  <ol className="list-decimal ml-5 space-y-1">
-                    <li><b>Mã cây</b> tự gợi ý sau khi chọn <b>Loại</b> & <b>Giống</b>; có thể chỉnh tay.</li>
-                    <li>Nhập <b>Tuổi trước khi trồng</b> (tháng) và <b>Ngày trồng</b> để ước tính tuổi tổng.</li>
-                    <li><b>Mô tả lá/cành</b> giúp AI hiểu cây; nếu bỏ trống, hệ thống hiểu là <i>bình thường</i>.</li>
-                    <li><b>Giai đoạn</b>: <b>Hoa</b> cho nhập từ <b>Ra hoa</b>; <b>Quả</b> cho nhập từ <b>Ra quả</b>.</li>
-                    <li>Nếu đi từ trang danh sách vườn → danh sách cây → tạo cây, màn này sẽ tự nhận <b>Vườn</b>.</li>
+                <CardHeader className="pb-3"><CardTitle className="break-words">Hướng dẫn điền & sử dụng</CardTitle></CardHeader>
+                <CardContent className="text-sm text-neutral-700 min-w-0">
+                  <ol className="list-decimal ml-5 space-y-1.5 break-words">
+                    <li>
+                      <b>Mã cây</b> tự gợi ý sau khi chọn <b>Loại cây</b> và <b>Giống</b>; click khung để sửa thủ công khi cần.
+                    </li>
+                    <li>
+                      <b>Giống</b> chỉ mở khi bạn đã chọn <b>Loại cây</b>; nếu thay đổi loại, hệ thống sẽ reset danh sách giống và yêu cầu chọn lại.
+                    </li>
+                    <li>
+                      <b>Tuổi trước khi trồng</b> (tính theo tháng) và <b>Ngày trồng</b> giúp tính tuổi tổng + gợi ý giai đoạn, hãy nhập dữ liệu thực tế.
+                    </li>
+                    <li>
+                      <b>Loại đất</b> chỉ khả dụng khi màn hình được mở từ một vườn đã cấu hình danh sách đất; nếu dropdown bị khoá, hãy kiểm tra lại cấu hình đất ở trang vườn.
+                    </li>
+                    <li>
+                      <b>Giai đoạn</b> quyết định khả năng nhập <b>Hoa</b>/<b>Quả</b>: trường Hoa chỉ cho nhập từ giai đoạn “Ra hoa”, trường Quả từ “Ra quả” trở lên.
+                    </li>
+                    <li>
+                      <b>Ảnh & Preview</b>: click trực tiếp vào khung ảnh hoặc phần preview để chọn/thay ảnh nhanh, đồng thời xem lại các thông tin tóm tắt.
+                    </li>
                   </ol>
                 </CardContent>
               </Card>
 
               {/* Ghi chú bổ sung cho AI */}
-              <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-                <CardHeader className="pb-3"><CardTitle>Ghi chú bổ sung cho AI</CardTitle></CardHeader>
-                <CardContent className="grid gap-4">
-                  <div className="grid gap-1">
-                    <Label className="text-neutral-700">Ghi chú bổ sung</Label>
+              <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5 overflow-hidden">
+                <CardHeader className="pb-3"><CardTitle className="break-words">Ghi chú bổ sung cho AI</CardTitle></CardHeader>
+                <CardContent className="grid gap-4 min-w-0">
+                  <div className="grid gap-1 min-w-0">
+                    <Label className="text-neutral-700 break-words">Ghi chú bổ sung</Label>
                     <Textarea
                       value={userIntent}
                       onChange={(e) => setUserIntent(e.target.value)}
                       placeholder="Nguồn giống, lịch tưới/bón, mục tiêu, vấn đề đang gặp…"
-                      className="rounded-xl bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500"
+                      className="rounded-xl w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 resize-y"
                     />
                   </div>
                 </CardContent>
               </Card>
 
               {/* Action bar dính */}
-              <div className="sticky bottom-4 z-30">
-                <div className="flex justify-end gap-3">
+              <div className="sticky bottom-4 z-30 mt-6">
+                <div className="flex flex-wrap justify-end gap-3 min-w-0">
                   <Button
-                    className="bg-emerald-600 hover:bg-emerald-700 rounded-xl"
+                    className="bg-emerald-600 hover:bg-emerald-700 rounded-xl shrink-0"
                     onClick={handleCreate}
                     disabled={isSubmitting}
                   >
-                    <CheckCircle2 className="w-4 h-4 mr-1" />
-                    Tạo cây
+                    <CheckCircle2 className="w-4 h-4 mr-1 shrink-0" />
+                    <span className="whitespace-nowrap">Tạo cây</span>
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
                     onClick={resetAll}
-                    className="rounded-xl bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100"
+                    className="rounded-xl bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100 shrink-0"
                   >
-                    Xóa nội dung
+                    <span className="whitespace-nowrap">Xóa nội dung</span>
                   </Button>
                 </div>
               </div>
@@ -1936,70 +1992,90 @@ export default function AddTreeNewScreen() {
 
             {/* RIGHT – preview */}
             <div
-              className="lg:col-span-4 space-y-6 lg:sticky"
-              style={{ top: "calc(var(--mm-header-h, 88px) + 8px)" }}
+              className="lg:col-span-4 space-y-6 lg:sticky min-w-0"
+              style={{ top: "calc(var(--mm-header-h, 88px) + 8px)", maxHeight: "calc(100vh - var(--mm-header-h, 88px) - 20px)", overflowY: "auto" }}
             >
               <Card className="rounded-2xl overflow-hidden bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
-                <CardHeader className="pb-3"><CardTitle>Ảnh & Preview</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                  <ImagePicker code={code} value={image} onChange={setImage} onFileSelected={setImageFile} />
-                  <div className="rounded-xl border bg-white overflow-hidden ring-1 ring-black/5">
-                    <div className="h-52 w-full bg-neutral-100 grid place-items-center">
+                <CardHeader className="pb-3"><CardTitle className="break-words">Ảnh & Preview</CardTitle></CardHeader>
+                <CardContent className="space-y-4 min-w-0">
+                  <div className="min-w-0">
+                  <ImagePicker
+                    ref={imagePickerRef}
+                    code={code}
+                    value={image}
+                    onChange={setImage}
+                    onFileSelected={setImageFile}
+                  />
+                  </div>
+                  <div className="rounded-xl border bg-white overflow-hidden ring-1 ring-black/5 min-w-0">
+                    <div
+                      className="h-52 w-full bg-neutral-100 grid place-items-center min-w-0 overflow-hidden cursor-pointer"
+                      onClick={openImagePicker}
+                      role="button"
+                      tabIndex={0}
+                      title="Click để chọn hoặc thay ảnh"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openImagePicker();
+                        }
+                      }}
+                    >
                       {image && image.trim() ? (
                         <SafeImage src={image} alt="tree" className="w-full h-52 object-cover" />
                       ) : (
                         <ImageIcon className="h-7 w-7 text-neutral-400" />
                       )}
                     </div>
-                    <div className="p-4 space-y-2">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                        {/* Tên cây */}
-                        <div className="font-semibold text-center sm:text-left">
-                          {speciesLabel || "Chưa đặt tên"}
-                        </div>
+                    <div className="p-4 space-y-2 min-w-0">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 min-w-0">
+  {/* Tên cây */}
+  <div className="font-semibold text-center sm:text-left break-words min-w-0 flex-1">
+    {speciesLabel || "Chưa đặt tên"}
+  </div>
 
-                        {/* Pill giai đoạn */}
-                        <div className="w-full sm:w-auto flex justify-center sm:justify-end">
-                          <Badge className="rounded-full bg-emerald-600 text-white border-emerald-600 shadow">
-                            {effectivePhase}
-                          </Badge>
-                        </div>
-                      </div>
+  {/* Pill giai đoạn */}
+  <div className="w-full sm:w-auto flex justify-center sm:justify-end shrink-0">
+    <Badge className="rounded-full bg-emerald-600 text-white border-emerald-600 shadow break-words whitespace-nowrap">
+      {effectivePhase}
+    </Badge>
+  </div>
+</div>
 
 
                       {/* Chips */}
-                      <div className="flex flex-wrap gap-2 text-xs mt-1">
-                        <span className="inline-flex items-center rounded-full border px-2 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200">
+                      <div className="flex flex-wrap gap-2 text-xs mt-1 min-w-0">
+                        <span className="inline-flex items-center rounded-full border px-2 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200 shrink-0">
                           <span>Tổng tuổi:</span>
                           <span className="ml-1 font-semibold">{totalAge}</span>
                           <span className="ml-1">tháng</span>
                         </span>
-                        <span className="inline-flex items-center rounded-full border px-2 py-0.5">
-                          <CalIcon className="w-3.5 h-3.5 mr-1" />
-                          <span>Sau trồng:&nbsp;{plantDate ? ageAfterPlant : 0}m</span>
+                        <span className="inline-flex items-center rounded-full border px-2 py-0.5 shrink-0">
+                          <CalIcon className="w-3.5 h-3.5 mr-1 shrink-0" />
+                          <span className="whitespace-nowrap">Sau trồng:&nbsp;{plantDate ? ageAfterPlant : 0}m</span>
                         </span>
                         {regionTag ? (
-                          <span className="inline-flex items-center rounded-full border px-2 py-0.5">
-                            <MapPin className="w-3.5 h-3.5 mr-1" />
-                            <span>{regionTag}</span>
+                          <span className="inline-flex items-center rounded-full border px-2 py-0.5 shrink-0">
+                            <MapPin className="w-3.5 h-3.5 mr-1 shrink-0" />
+                            <span className="break-words">{regionTag}</span>
                           </span>
                         ) : null}
                       </div>
 
-                      <div className="text-xs text-neutral-600">#{code || "—"}</div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
-                        <Field label="Tuổi" value={`${totalAge} tháng`} />
-                        <Field label="Vườn" value={currentGarden?.name || "—"} />
-                        <Field label="Giống" value={variety || "—"} />
-                        {branchInfo ? <Field label="Cành" value={shortPreview(branchInfo)} /> : null}
-                        {leafInfo ? <Field label="Lá" value={shortPreview(leafInfo)} /> : null}
-                        {canEditFlower && flowerInfo ? (
-                          <Field label="Hoa" value={shortPreview(flowerInfo)} />
-                        ) : null}
-                        {canEditFruit && fruitInfo ? (
-                          <Field label="Quả" value={shortPreview(fruitInfo)} />
-                        ) : null}
-                      </div>
+                      <div className="text-xs text-neutral-600 break-words min-w-0">#{code || "—"}</div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm min-w-0">
+  <Field label="Tuổi" value={`${totalAge} tháng`} />
+  <Field label="Vườn" value={currentGarden?.name || "—"} />
+  <Field label="Giống" value={variety || "—"} />
+  {branchInfo ? <Field label="Cành" value={shortPreview(branchInfo)} /> : null}
+  {leafInfo ? <Field label="Lá" value={shortPreview(leafInfo)} /> : null}
+  {canEditFlower && flowerInfo ? (
+    <Field label="Hoa" value={shortPreview(flowerInfo)} />
+  ) : null}
+  {canEditFruit && fruitInfo ? (
+    <Field label="Quả" value={shortPreview(fruitInfo)} />
+  ) : null}
+</div>
 
                     </div>
                   </div>
@@ -2007,20 +2083,20 @@ export default function AddTreeNewScreen() {
               </Card>
 
               {/* Lưu ý nhập liệu */}
-              <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5">
+              <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5 overflow-hidden">
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2">
-                    <Info className="h-4 w-4" />
-                    Lưu ý khi nhập liệu
+                  <CardTitle className="flex items-center gap-2 break-words min-w-0">
+                    <Info className="h-4 w-4 shrink-0" />
+                    <span className="break-words min-w-0">Lưu ý khi nhập liệu</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="text-sm text-neutral-700">
-                  <ul className="list-disc ml-5 space-y-1">
+                <CardContent className="text-sm text-neutral-700 min-w-0">
+                  <ul className="list-disc ml-5 space-y-1 break-words">
                     <li><b>Mã cây</b> là duy nhất; tự gợi ý theo <b>Loại</b> + <b>Giống</b> nhưng vẫn có thể chỉnh tay.</li>
                     <li>
-                      Có thể <b>gõ để lọc</b> <i>Loại cây / Giống / Loại đất</i>,
-                      cách dùng giống ô chọn <b>Tỉnh / Thành phố</b> khi thêm vườn.
-                    </li>
+  Có thể <b>gõ để lọc</b> <i>Loại cây / Giống / Loại đất</i>,
+  cách dùng giống ô chọn <b>Tỉnh / Thành phố</b> khi thêm vườn.
+</li>
 
                     <li><b>Giai đoạn</b> quyết định khả năng nhập <b>Hoa</b>/<b>Quả</b> (xem mô tả ở thẻ hướng dẫn).</li>
                     <li><b>Ngày trồng</b> dùng để ước tính tuổi & giai đoạn.</li>
@@ -2033,7 +2109,7 @@ export default function AddTreeNewScreen() {
         </main>
       </div>
 
-      {/* Popup nhập mô tả chi tiết lá / cành / hoa / quả */}
+          {/* Popup nhập mô tả chi tiết lá / cành / hoa / quả */}
       {editingMorphField && (
         <MorphologyEditorOverlay
           fieldKey={editingMorphField}
@@ -2103,16 +2179,16 @@ export default function AddTreeNewScreen() {
 
               <div className="pointer-events-none absolute inset-0 overflow-hidden">
                 {[
-                  ["10%", "12%", "0s", "bg-emerald-500"], ["18%", "78%", "0.1s", "bg-yellow-400"],
-                  ["28%", "8%", "0.2s", "bg-sky-400"], ["30%", "90%", "0.15s", "bg-rose-400"],
-                  ["-6%", "45%", "0.05s", "bg-violet-500"], ["-4%", "65%", "0.25s", "bg-emerald-500"],
-                  ["22%", "30%", "0.18s", "bg-yellow-400"], ["14%", "60%", "0.28s", "bg-sky-400"],
-                  ["6%", "38%", "0.33s", "bg-rose-400"], ["-8%", "20%", "0.4s", "bg-violet-500"],
-                  ["24%", "50%", "0.12s", "bg-emerald-500"], ["-10%", "72%", "0.22s", "bg-sky-400"],
-                ].map((p, i) => (
+                  ["10%","12%","0s","bg-emerald-500"],["18%","78%","0.1s","bg-yellow-400"],
+                  ["28%","8%","0.2s","bg-sky-400"],["30%","90%","0.15s","bg-rose-400"],
+                  ["-6%","45%","0.05s","bg-violet-500"],["-4%","65%","0.25s","bg-emerald-500"],
+                  ["22%","30%","0.18s","bg-yellow-400"],["14%","60%","0.28s","bg-sky-400"],
+                  ["6%","38%","0.33s","bg-rose-400"],["-8%","20%","0.4s","bg-violet-500"],
+                  ["24%","50%","0.12s","bg-emerald-500"],["-10%","72%","0.22s","bg-sky-400"],
+                ].map((p,i)=>(
                   <span key={i}
                     className={`absolute w-2 h-3 ${p[3]} rounded-[2px]`}
-                    style={{ top: p[0], left: p[1], animation: "mm-confetti 1.2s ease-in-out infinite", animationDelay: p[2] }}
+                    style={{ top:p[0], left:p[1], animation:"mm-confetti 1.2s ease-in-out infinite", animationDelay:p[2] }}
                   />
                 ))}
               </div>
@@ -2120,7 +2196,8 @@ export default function AddTreeNewScreen() {
           </div>
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -2207,8 +2284,8 @@ function StepDot({ active, done, label }) {
           (done
             ? "bg-emerald-600 border-emerald-600 text-white"
             : active
-              ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-              : "bg-white/70 border-white/60 text-neutral-500")
+            ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+            : "bg-white/70 border-white/60 text-neutral-500")
         }
       >
         <Sprout className={"w-4 h-4 " + (done ? "opacity-100" : "opacity-70")} />
@@ -2249,12 +2326,12 @@ function shortPreview(value, max = 40) {
 
 function Field({ label, value }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-start sm:gap-2">
-      <div className="text-neutral-500 text-xs sm:w-28 flex-shrink-0">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:gap-2 min-w-0">
+      <div className="text-neutral-500 text-xs sm:w-28 flex-shrink-0 break-words">
         {label}
       </div>
       <div className="text-neutral-900 text-sm font-medium sm:flex-1 min-w-0">
-        <span className="block truncate break-words">{value}</span>
+        <span className="block break-words min-w-0">{value}</span>
       </div>
     </div>
   );

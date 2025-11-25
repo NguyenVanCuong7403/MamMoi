@@ -4415,34 +4415,26 @@ export default function TreeDetail() {
     const note = (completeModal.note || "").trim();
 
     try {
-      // ✅ Payload gửi cho MarkTaskCompleteDto
-      const payload = {
-        // Đặt đúng tên theo MarkTaskCompleteDto
-        // Ví dụ (bạn chỉnh theo Swagger):
-        completedNote: note || null,
-        completedDate: today(), // "YYYY-MM-DD" hoặc new Date().toISOString().slice(0,10)
-      };
+    const payload = {
+      completedNote: note || null,
+      completedDate: today(),
+    };
 
-      await CareScheduleRepository.markTaskComplete(id, payload);
+    await CareScheduleRepository.markTaskComplete(id, payload);
 
-      // ✅ Cập nhật UI local: move từ planned → history
-      setPlanned((prev) => {
-        const task = prev.find((t) => t.id === id);
-        const rest = prev.filter((t) => t.id !== id);
-
-        if (!task) return rest;
-
-        const completedTask = {
-          ...task,
-          status: "done",
-          completedAt: payload.completedDate,
-          completedNote: note,
-        };
-
-        // đẩy vào history
-        setHistory((h) => [completedTask, ...h]);
-        return rest;
-      });
+    setPlanned((prev) =>
+      prev.map((task) =>
+        task.id === id
+          ? {
+              ...task,
+              completed: true,
+              status: "done",
+              completedAt: payload.completedDate,
+              completedNote: note,
+            }
+          : task
+      )
+    );
 
       setCompleteModal({ open: false, forId: null, note: "" });
       showToast("Đã đánh dấu hoàn thành");

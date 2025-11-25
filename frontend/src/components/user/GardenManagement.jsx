@@ -9,6 +9,7 @@ import {
   X,
   Upload,
   Image as ImageIcon,
+  Check,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useNavigate } from "react-router-dom";
 import GardenRepository from "../../API/repositories/GardenRepository";
+import GardenSoilRepository from "../../API/repositories/GardenSoilRepository";
 // ⬇⬇ Nền sống
 import { LivingBackground } from "@/components/background";
 import AddressPicker from "@/components/AddressPicker";
@@ -34,6 +36,18 @@ const LS_GARDENS = "mm_user_gardens_v3";
 
 const MAX_GARDEN_NAME = 60;      // tối đa 60 ký tự cho tên vườn
 const MAX_GARDEN_ADDRESS = 120;  // tối đa 120 ký tự cho địa chỉ chi tiết
+const CLICKABLE_FORM_STYLES = `
+.mm-clickable-form input:not(:disabled):not([readonly]),
+.mm-clickable-form textarea:not(:disabled):not([readonly]),
+.mm-clickable-form select:not(:disabled),
+.mm-clickable-form button:not(:disabled) {
+  cursor: pointer;
+}
+.mm-clickable-form input:focus,
+.mm-clickable-form textarea:focus {
+  cursor: text;
+}
+`;
 
 
 /* ===== Default gardens (demo) ===== */
@@ -323,17 +337,140 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
     address: "",
     status: "Đang hoạt động",
     coverUrl: "",
+    soilIds: [],
+    soilNames: [],
   };
 
   const [form, setForm] = useState(initial || blank);
   const [touched, setTouched] = useState({});
+  const [soilPickerOpen, setSoilPickerOpen] = useState(false);
+  const [soilOptions, setSoilOptions] = useState([]);
+  const [soilLoading, setSoilLoading] = useState(false);
+  const [soilError, setSoilError] = useState("");
+  const [soilSearch, setSoilSearch] = useState("");
+  const [soilDraft, setSoilDraft] = useState([]);
+  const [soilReloadKey, setSoilReloadKey] = useState(0);
 
   useEffect(() => {
     if (open) {
       setForm(initial || blank);
       setTouched({});
+      setSoilSearch("");
+      setSoilError("");
     }
   }, [open, initial]);
+
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    setSoilLoading(true);
+    setSoilError("");
+    (async () => {
+      try {
+        const res = await GardenSoilRepository.getAllGardenSoils();
+        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        if (!cancelled) setSoilOptions(list);
+      } catch (err) {
+        console.error("Failed to load soils:", err);
+        if (!cancelled) setSoilError("Không tải được danh sách loại đất. Vui lòng thử lại.");
+      } finally {
+        if (!cancelled) setSoilLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, soilReloadKey]);
+
+  useEffect(() => {
+    if (soilPickerOpen) {
+      const selectedIds = (form.soilIds || []).map(String);
+      setSoilDraft(selectedIds);
+      setSoilSearch("");
+    }
+  }, [soilPickerOpen, form.soilIds]);
+
+  const normalizedSoils = useMemo(() => {
+    return soilOptions
+      .map((soil) => {
+        const id =
+          soil?.gardenSoilId ??
+          soil?.GardenSoilId ??
+          soil?.soilMasterId ??
+          soil?.SoilMasterId ??
+          soil?.SoilMasterID ??
+          soil?.id ??
+          soil?.Id ??
+          soil?.ID ??
+          null;
+        if (id == null) return null;
+        const label =
+          soil?.customLabel ||
+          soil?.SoilName ||
+          soil?.soilName ||
+          soil?.name ||
+          soil?.label ||
+          `Đất #${id}`;
+        const subtitle =
+          soil?.description ||
+          soil?.Description ||
+          soil?.texture ||
+          soil?.Texture ||
+          soil?.notes ||
+          soil?.Notes ||
+          "";
+        return {
+          id: String(id),
+          label,
+          subtitle,
+        };
+      })
+      .filter(Boolean);
+  }, [soilOptions]);
+
+  const filteredSoils = useMemo(() => {
+    const term = soilSearch.trim().toLowerCase();
+    if (!term) return normalizedSoils;
+    return normalizedSoils.filter((soil) => {
+      const haystack = `${soil.label} ${soil.subtitle}`.toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [soilSearch, normalizedSoils]);
+
+  const selectedSoils = useMemo(() => {
+    const ids = (form.soilIds || []).map(String);
+    if (!ids.length) return [];
+    return normalizedSoils.filter((soil) => ids.includes(soil.id));
+  }, [form.soilIds, normalizedSoils]);
+  const chipNames = selectedSoils.length
+    ? selectedSoils.map((soil) => soil.label)
+    : toArray(form.soilNames);
+  const selectedCount = form.soilIds?.length || 0;
+
+  const toggleSoilDraft = (id) => {
+    setSoilDraft((prev) => {
+      const exists = prev.includes(id);
+      return exists ? prev.filter((x) => x !== id) : [...prev, id];
+    });
+  };
+
+  const handleApplySoils = () => {
+    const unique = Array.from(new Set(soilDraft));
+    setForm((prev) => ({
+      ...prev,
+      soilIds: unique,
+      soilNames: unique
+        .map((soilId) => normalizedSoils.find((soil) => soil.id === soilId)?.label)
+        .filter(Boolean),
+    }));
+    setSoilPickerOpen(false);
+  };
+
+  const handleCloseSoilPicker = () => {
+    setSoilPickerOpen(false);
+  };
+
+  const requestSoilReload = () => setSoilReloadKey((key) => key + 1);
 
   const errs = {
     name: !String(form.name || "").trim() ? "Tên vườn là bắt buộc" : "",
@@ -377,7 +514,9 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[1200] grid place-items-center">
+    <>
+      <style>{CLICKABLE_FORM_STYLES}</style>
+      <div className="fixed inset-0 z-[1200] grid place-items-center mm-clickable-form">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div
         className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
@@ -430,22 +569,41 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
 </div>
 
 
-          {/* Trạng thái */}
-          <div>
-            <FieldLabel>Trạng thái</FieldLabel>
-            <select
-              value={form.status}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  status: e.target.value,
-                })
-              }
-              className="h-12 w-full rounded-xl border bg-white px-3 text-[15px] md:text-base"
+          {/* Soil picker trigger */}
+          <div className="md:col-span-1">
+            <FieldLabel>Loại đất áp dụng</FieldLabel>
+            <button
+              type="button"
+              onClick={() => setSoilPickerOpen(true)}
+              className="w-full h-12 rounded-xl border border-neutral-300 bg-white px-4 text-left text-[15px] md:text-base flex items-center justify-between hover:border-emerald-500 transition"
             >
-              <option>Đang hoạt động</option>
-              <option>Dừng hoạt động</option>
-            </select>
+              <span
+                className={`truncate ${
+                  selectedCount ? "text-[#0f1f1e]" : "text-neutral-400"
+                }`}
+              >
+                {selectedCount
+                  ? `${selectedCount} loại đất đã chọn`
+                  : "Chọn loại đất phù hợp"}
+              </span>
+              <span className="text-sm text-emerald-600 font-semibold">Chọn</span>
+            </button>
+            {chipNames.length ? (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {chipNames.map((label, index) => (
+                  <span
+                    key={`${label}-${index}`}
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 text-xs font-medium"
+                  >
+                    {label}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-500 mt-2">
+                
+              </p>
+            )}
           </div>
 
           {/* AddressPicker */}
@@ -507,7 +665,123 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
 </Button>
         </div>
       </div>
-    </div>
+      {soilPickerOpen && (
+        <div className="fixed inset-0 z-[1350] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/70" onClick={handleCloseSoilPicker} />
+          <div className="relative w-full max-w-3xl rounded-3xl bg-[#F7F9F2] p-6 shadow-2xl border border-emerald-100">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase tracking-[0.3em] text-emerald-500 font-semibold">
+                  Chọn loại đất
+                </p>
+                <h3 className="text-2xl font-semibold text-[#0f1f1e] mt-1">
+                  Áp dụng cho vườn này
+                </h3>
+                <p className="text-sm text-neutral-600 mt-1">
+                  Có thể chọn nhiều loại đất để gợi ý khi tạo cây. Các mục đã chọn sẽ có viền xanh và biểu tượng tick.
+                </p>
+              </div>
+              <button
+                className="p-2 rounded-full hover:bg-white text-neutral-500"
+                onClick={handleCloseSoilPicker}
+                aria-label="Đóng chọn đất"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-6">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <Input
+                  value={soilSearch}
+                  onChange={(e) => setSoilSearch(e.target.value)}
+                  placeholder="Tìm kiếm loại đất..."
+                  className="pl-9 pr-3 h-12 rounded-full border border-emerald-200 bg-white"
+                />
+              </div>
+              <div className="mt-4 h-[340px] overflow-y-auto pr-1 space-y-3">
+                {soilLoading ? (
+                  <div className="h-full grid place-items-center text-sm text-neutral-500">
+                    Đang tải dữ liệu loại đất...
+                  </div>
+                ) : soilError ? (
+                  <div className="h-full grid place-items-center text-sm text-rose-600 text-center px-6">
+                    {soilError}
+                    <button
+                      className="mt-3 text-emerald-600 font-semibold underline underline-offset-2"
+                      onClick={requestSoilReload}
+                    >
+                      Thử lại
+                    </button>
+                  </div>
+                ) : filteredSoils.length ? (
+                  filteredSoils.map((soil) => {
+                    const selected = soilDraft.includes(soil.id);
+                return (
+                  <button
+                    type="button"
+                    key={soil.id}
+                    onClick={() => toggleSoilDraft(soil.id)}
+                    className={`w-full text-left rounded-2xl border p-4 transition flex items-start gap-4 bg-white ${
+                      selected
+                        ? "border-emerald-500 bg-emerald-50"
+                        : "border-neutral-200 hover:border-emerald-200"
+                    }`}
+                  >
+                        <span
+                          className={`mt-1 flex h-6 w-6 items-center justify-center rounded-full border ${
+                            selected
+                              ? "border-emerald-500 bg-emerald-500 text-white"
+                              : "border-neutral-300 text-transparent"
+                          }`}
+                        >
+                          <Check className={`h-4 w-4 ${selected ? "opacity-100" : "opacity-0"}`} />
+                        </span>
+                        <div>
+                          <div className="font-semibold text-[#0f1f1e]">{soil.label}</div>
+                          {soil.subtitle ? (
+                            <p className="text-sm text-neutral-600 mt-1">{soil.subtitle}</p>
+                          ) : null}
+                        </div>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="h-full grid place-items-center text-sm text-neutral-500">
+                    Không tìm thấy loại đất phù hợp với từ khóa.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+              <div className="text-sm text-neutral-600">
+                Đã chọn{" "}
+                <span className="font-semibold text-emerald-600">{soilDraft.length}</span> loại đất.
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  className="rounded-full h-11 px-5 border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
+                  type="button"
+                  onClick={handleCloseSoilPicker}
+                >
+                  Huỷ
+                </Button>
+                <Button
+                  className="rounded-full h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-[0_14px_30px_rgba(16,185,129,0.35)]"
+                  type="button"
+                  onClick={handleApplySoils}
+                >
+                  Lưu
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      </div>
+    </>
   );
 }
 
@@ -523,6 +797,64 @@ function clampText(str, max) {
 function formatGardenLocation(g) {
   const full = [g.address, g.ward, g.province].filter(Boolean).join(", ");
   return full;
+}
+
+function toArray(value) {
+  return Array.isArray(value) ? value : [];
+}
+
+function extractSoilId(soil) {
+  return (
+    soil?.gardenSoilId ??
+    soil?.GardenSoilId ??
+    soil?.soilMasterId ??
+    soil?.SoilMasterId ??
+    soil?.SoilMasterID ??
+    soil?.id ??
+    soil?.Id ??
+    soil?.ID ??
+    null
+  );
+}
+
+function extractSoilLabel(soil) {
+  return (
+    soil?.customLabel ||
+    soil?.SoilName ||
+    soil?.soilName ||
+    soil?.name ||
+    soil?.label ||
+    ""
+  );
+}
+
+function normalizeGardenRecord(g) {
+  if (!g) return g;
+  const inlineSoils = Array.isArray(g.soils)
+    ? g.soils
+    : Array.isArray(g.gardenSoils)
+    ? g.gardenSoils
+    : [];
+
+  const fallbackIds = inlineSoils
+    .map((soil) => {
+      const id = extractSoilId(soil);
+      return id != null ? String(id) : null;
+    })
+    .filter(Boolean);
+
+  const fallbackNames = inlineSoils
+    .map((soil) => extractSoilLabel(soil))
+    .filter(Boolean);
+
+  const soilIds = toArray(g.soilIds).map(String);
+  const soilNames = toArray(g.soilNames);
+
+  return {
+    ...g,
+    soilIds: soilIds.length ? soilIds : fallbackIds,
+    soilNames: soilNames.length ? soilNames : fallbackNames,
+  };
 }
 
 
@@ -559,7 +891,7 @@ export default function GardenManagement() {
   // ===== data vườn =====
   // 1) Khởi tạo từ localStorage + defaultGardens (offline/fallback)
   const [gardens, setGardens] = useState(() =>
-    ensureIds(load(LS_GARDENS, defaultGardens))
+    ensureIds(load(LS_GARDENS, defaultGardens)).map(normalizeGardenRecord)
   );
 
   // 2) Lấy danh sách vườn từ backend, đồng bộ lại state + localStorage
@@ -606,7 +938,7 @@ export default function GardenManagement() {
             };
           });
 
-          const apiGardens = ensureIds(apiGardensRaw);
+          const apiGardens = ensureIds(apiGardensRaw).map(normalizeGardenRecord);
           setGardens(apiGardens);
           save(LS_GARDENS, apiGardens); // sync localStorage cho lần load sau
         }
@@ -722,6 +1054,15 @@ export default function GardenManagement() {
     // Prepare updated form with coverUrl
     const updatedForm = { ...form, coverUrl };
     delete updatedForm.file; 
+    updatedForm.soilIds = Array.isArray(updatedForm.soilIds)
+      ? updatedForm.soilIds.map((id) => String(id)).filter(Boolean)
+      : [];
+    updatedForm.soilNames = Array.isArray(updatedForm.soilNames)
+      ? updatedForm.soilNames
+      : [];
+    const payloadSoilIds = updatedForm.soilIds
+      .map((id) => Number(id))
+      .filter((id) => !Number.isNaN(id));
 
     if (editingIdx >= 0) {
 
@@ -731,7 +1072,8 @@ export default function GardenManagement() {
         Status: form.status ?? "Đang hoạt động",
         CoverUrl: coverUrl,                               // uploaded file or existing URL
         TimeZone: form.timeZone ?? null,                  // optional
-        ClimateZone: form.climateZone ?? null             // optional
+        ClimateZone: form.climateZone ?? null,            // optional
+        GardenSoilIds: payloadSoilIds,
       };
       const res = await GardenRepository.updateGarden(updatedForm.id, payload);
         if (!res?.success) { alert("Cập nhật vườn thất bại"); return; }
@@ -740,7 +1082,7 @@ export default function GardenManagement() {
       setGardens((gs) => {
         const prev = gs[editingIdx];
         const next = [...gs];
-        next[editingIdx] = { ...prev, ...updatedForm };
+        next[editingIdx] = normalizeGardenRecord({ ...prev, ...updatedForm });
 
         // Nếu tên đổi → phát event để TreeManagement cập nhật title
         if (prev.name !== updatedForm.name) {
@@ -776,7 +1118,8 @@ export default function GardenManagement() {
         Status: updatedForm.status ?? "Đang hoạt động",
         CoverUrl: updatedForm.coverUrl,
         TimeZone: null,
-        ClimateZone: null
+        ClimateZone: null,
+        GardenSoilIds: payloadSoilIds,
       };
       const res = await GardenRepository.createGarden(payload);
         if (!res?.success) {
@@ -787,7 +1130,7 @@ export default function GardenManagement() {
 
       // thêm mới
       setGardens((gs) => {
-        const next = [{ ...updatedForm }, ...gs];
+        const next = [normalizeGardenRecord({ ...updatedForm }), ...gs];
         save(LS_GARDENS, next);
         return next;
       });

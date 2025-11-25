@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Play, VolumeX } from "lucide-react";
 import { motion, AnimatePresence, useScroll, useTransform, useInView } from "framer-motion";
 
@@ -35,11 +36,11 @@ const HERO_SLOGAN = {
 
 // Vietnamese hero strings
 const HERO_TITLE = "Mầm Mới".normalize("NFC");
-const HERO_TOPLINE = "Hệ thống quản lý & chăm sóc cây ăn quả".normalize("NFC");
-const HERO_TAGLINE = "Đồng hành cùng nhà vườn Việt Nam".normalize("NFC");
+const HERO_TOPLINE = "Studio trải nghiệm cho vườn cây ăn quả Việt".normalize("NFC");
+const HERO_TAGLINE = "Đánh thức mỗi mùa vụ bằng ánh sáng, dữ liệu và cảm hứng".normalize("NFC");
 
 // Rotating copy for the intro-split section (VI)
-const ROTATE_PARTS = ["theo mùa", "chuẩn hóa", "thực tiễn", "bền vững"];
+const ROTATE_PARTS = ["dữ liệu cây", "quản lý cây", "cảnh báo thời tiết", "quản lý vườn","hỗ trợ AI"];
 
 /* =========================================================================
    TYPE-&-ERASE Rotator (thay cho reveal cũ) — KHÔNG blur
@@ -242,7 +243,7 @@ export default function Home() {
       console.assert(!!document.querySelector('[data-testid="intro-split"]'), "Intro split section should exist");
       console.assert(!!document.querySelector('[data-testid="rotating-text"]'), "Rotating text should exist");
       console.assert(!!document.querySelector('[data-testid="territory-teaser"]'), "Territory teaser section should exist");
-      console.assert(!!document.querySelector('[data-testid="map-section"]'), "Map section should exist");
+      console.assert(!!document.querySelector('[data-testid="support-section"]'), "Support section should exist");
       console.assert(!!document.querySelector('[data-testid="strapline"]'), "Strapline should exist");
       console.assert(!!document.querySelector('[data-testid="colloque-card"]'), "Colloque card should exist");
       console.assert(!!document.querySelector('[data-testid="intro-img-1"]'), "Intro image 1 should exist");
@@ -374,19 +375,26 @@ export default function Home() {
       {/* Strapline */}
       <section data-testid="strapline" className="cv-auto bg-[#1F302F] text-[#D1DFB6] py-6">
         <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px]">
-          <p className="mm-fluid-text text-center text-[clamp(16px,2.1vw,22px)] opacity-90">Chuẩn hóa quy trình – nắm bắt mùa vụ – tăng năng suất bền vững.</p>
+          <p className="mm-fluid-text text-center text-[clamp(16px,2.1vw,22px)] opacity-90">Thiết lập vườn, cấp mã cây, rồi quản lý lá – cành – hoa – quả ngay tại một bảng điều khiển đồng nhất.</p>
         </div>
       </section>
 
       {/* Colloque / Event card */}
       <section data-testid="colloque-card" className="cv-auto bg-[#1F302F] py-12 md:py-20">
         <div className="mm-fluid-shell mx-auto max-w-[1150px] px-4">
-          <div className="rounded-[18px] md:rounded-[20px] bg-[#D1DFB6] ring-1 ring-black/10 shadow-[0_12px_36px_rgba(0,0,0,0.25)] p-6 md:p-8 md:min-h-[420px] flex flex-col md:flex-row gap-8 md:gap-10 items-center">
-            <div className="md:w-[46%]"><img src="https://images.unsplash.com/photo-1533240332313-0db49b459ad6?q=80&w=1600&auto=format&fit=crop" alt="Sự kiện Mầm Mới" className="w-full h-[280px] md:h-[420px] object-cover rounded-[18px]" /></div>
-            <div className="md:w-[54%] flex flex-col">
-              <h3 className="text-[clamp(26px,3vw,38px)] leading-snug text-[#1F302F] font-semibold">Hội thảo Mầm Mới 2025: Số hóa vườn cây ăn quả</h3>
-              <p className="mm-fluid-text mt-3 text-[15px] md:text-[16px] text-[#1F302F]/85">Kết nối chuyên gia – hợp tác xã – nhà vườn để bàn về chuẩn quy trình chăm sóc, cảnh báo thời tiết và quản lý vườn bằng dữ liệu. Cùng định hình một cách làm nông bền vững, hiệu quả hơn.</p>
-              <div className="mt-5"><a href="#register" className="inline-flex items-center rounded-full bg-[#FFFFA5] text-[#1F302F] px-4 py-2 text-sm font-medium shadow hover:shadow-md transition">Xem chi tiết</a></div>
+          <div className="rounded-[18px] md:rounded-[20px] bg-[#D1DFB6] ring-1 ring-black/10 shadow-[0_12px_36px_rgba(0,0,0,0.25)] p-6 md:p-10 md:min-h-[440px] flex flex-col md:flex-row gap-8 md:gap-12 items-center">
+            <div className="md:w-[46%]"><img src="https://images.unsplash.com/photo-1533240332313-0db49b459ad6?q=80&w=1600&auto=format&fit=crop" alt="Sự kiện Mầm Mới" className="w-full h-[280px] md:h-[440px] object-cover rounded-[18px]" /></div>
+            <div className="md:w-[54%] flex flex-col gap-4 md:gap-5">
+              <h3 className="text-[clamp(32px,4vw,50px)] leading-tight text-[#1F302F] font-semibold">Đồng hành cùng Mầm mới</h3>
+              <p className="mm-fluid-text text-[16px] md:text-[18px] leading-relaxed text-[#1F302F]/85">Mục tiêu sứ mệnh của chúng tôi luôn mong muốn đưa ra hệ thống chăm sóc cây ăn quả tốt nhất và hiệu quả nhất cho người dùng.</p>
+              <div>
+                <a
+                  href="#register"
+                  className="inline-flex items-center justify-center rounded-full bg-[#FFFFA5] text-[#1F302F] px-7 py-3.5 text-lg md:text-xl font-semibold shadow hover:shadow-md transition"
+                >
+                  Tìm hiểu về Mầm Mới
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -398,15 +406,19 @@ export default function Home() {
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div>
               <h2 className="text-[clamp(28px,3.2vw,42.5px)] leading-[1.15] font-medium">
-                <span className="opacity-90">Chăm cây </span>
-                {/* ĐÃ ĐỔI: Rotator giờ là gõ/chạy/xoá */}
+                <span className="opacity-90">Chúng tôi luôn đồng hành cùng bạn từ </span>
                 <span className="font-semibold">
                   <Rotator items={ROTATE_PARTS} />
                 </span>
                 <br/>
-                <span className="opacity-90">đúng việc, đúng lúc – đó là tinh thần của Mầm Mới.</span>
+                <span className="opacity-90">Mầm Mới luôn đồng hành cùng người dùng sẵn sàng đem đến dịch tốt nhất và nhanh nhất</span>
               </h2>
-              <a href="#about" className="inline-block mt-8 rounded-full bg-[#FFFFA5] text-[#1F302F] px-5 py-3 font-medium shadow hover:shadow-md transition">Tìm hiểu thêm</a>
+              <Link
+                to="/plants"
+                className="inline-flex items-center justify-center mt-8 rounded-full bg-[#FFFFA5] text-[#1F302F] px-7 py-3.5 text-lg font-semibold shadow hover:shadow-md transition"
+              >
+                Xem Thư viện cây
+              </Link>
             </div>
             <div className="grid grid-cols-2 gap-4 md:gap-6">
               <div className="rounded-[18px] overflow-hidden aspect-[4/3] md:aspect-[5/4] ring-1 ring-black/10 shadow-lg">
@@ -435,9 +447,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <p className="mm-fluid-text mt-10 text-[12.5px] md:text-[13.5px] text-[#D1DFB6]/80 md:text-right md:max-w-3xl md:ml-auto">
-            Tại đây, quy trình chăm sóc được chuẩn hóa, việc mùa nào làm việc nấy; dữ liệu tăng trưởng, lịch tưới – bón – tỉa – phòng bệnh đều được ghi chép rõ ràng để nâng năng suất một cách bền vững.
-          </p>
+          
         </div>
       </section>
 
@@ -477,23 +487,48 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Territory map */}
-      <section id="territory-map" data-testid="map-section" className="cv-auto bg-[#EEF3CC]">
-        <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px] py-16 md:py-24 grid md:grid-cols-2 gap-10 items-center">
-          <div>
-            <h2 className="text-[clamp(32px,3.6vw,56px)] leading-tight text-[#243833] font-medium">Bản đồ canh tác & thời tiết địa phương</h2>
-            <p className="mm-fluid-text mt-6 text-[#243833]/80 max-w-2xl">Theo dõi khu vườn của bạn trên một nền tảng thống nhất: cây nào, trồng khi nào, đang ở giai đoạn nào – tất cả đều rõ ràng.</p>
-            <p className="mm-fluid-text mt-4 text-[#243833]/80 max-w-2xl">Kết hợp dữ liệu thời tiết để nhắc điều chỉnh tưới tiêu, che phủ, cắt tỉa và phòng bệnh trước những đợt mưa lớn hay nắng gắt.</p>
-            <p className="mm-fluid-text mt-4 text-[#243833]/80 max-w-2xl">Bức tranh tổng thể giúp bạn ra quyết định nhanh, chính xác – từ hộ gia đình đến trang trại quy mô.</p>
-          </div>
-          <div className="relative">
-            <div className="rounded-[28px] overflow-hidden bg-[#F4F7DF] ring-1 ring-black/5">
-              <SafeImage
-                srcs={["https://sgp1.digitaloceanspaces.com/e-magazine.asiamedia.vn/wp-content/uploads/2023/07/09195001/46-768x938.jpg"]}
-                alt="Bản đồ canh tác & thời tiết"
-                className="w-full h-[420px] md:h-[520px] object-cover"
-                testId="map-img"
-              />
+      {/* Always-on support */}
+      <section id="support-now" data-testid="support-section" className="cv-auto bg-[#EEF3CC]">
+        <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px] py-16 md:py-24">
+          <div className="rounded-[28px] bg-[#F8FBEA] ring-1 ring-black/5 shadow-[0_14px_40px_rgba(0,0,0,0.08)] p-8 md:p-12 space-y-8">
+            <div>
+              <p className="text-sm uppercase tracking-[0.2em] text-[#5B6B4E] font-semibold">Mầm Mới Care Desk</p>
+              <h2 className="text-[clamp(32px,3.6vw,56px)] leading-tight text-[#243833] font-medium mt-3">Luôn hỗ trợ ngay lập tức khi bạn cần</h2>
+            </div>
+            <p className="mm-fluid-text text-[#243833]/85 max-w-4xl">
+              Chúng tôi duy trì đội hỗ trợ có mặt 24/7, sẵn sàng phản hồi mọi yêu cầu từ nhập liệu, cấu hình thiết bị đến xử lý cảnh báo sâu bệnh, đảm bảo bạn không bao giờ bị bỏ lại cùng câu hỏi chưa được giải đáp.
+            </p>
+            <div className="grid md:grid-cols-3 gap-5">
+              {[
+                {
+                  title: "Xử lý sự cố tức thời",
+                  body: "Gửi mô tả và ảnh tình trạng cây để nhận quy trình giải quyết theo từng bước, đồng bộ trực tiếp với đội kỹ thuật nếu cần can thiệp tại vườn.",
+                },
+                {
+                  title: "Tự trợ giúp với AI",
+                  body: "AI Mầm Mới đọc nội dung bạn nhập, đề xuất lệnh thao tác, checklist và lưu ý an toàn để bạn có thể tự xử lý ngay trên ứng dụng.",
+                },
+                {
+                  title: "Cảnh báo thời tiết chủ động",
+                  body: "Hệ thống tự quét radar, cảm biến và so khớp vị trí lô cây; khi phát hiện mưa đá, gió mạnh hay nắng gắt sẽ gửi cảnh báo và hướng dẫn phòng vệ.",
+                },
+              ].map((card) => (
+                <div key={card.title} className="rounded-2xl bg-white/85 p-5 shadow-inner border border-[#E0E7C6]/70">
+                  <h3 className="text-[20px] font-semibold text-[#1F302F]">{card.title}</h3>
+                  <p className="mm-fluid-text mt-3 text-[#1F302F]/80">{card.body}</p>
+                </div>
+              ))}
+            </div>
+            <p className="mm-fluid-text text-[#243833]/80 max-w-4xl">
+              Từng cuộc trò chuyện và hướng dẫn đều được gắn với mã cây, giúp bạn xem lại lịch sử hỗ trợ, báo cáo cho đối tác hoặc đào tạo đội ngũ mới chỉ với vài thao tác.
+            </p>
+            <div className="flex justify-end">
+              <Link
+                to="/report"
+                className="inline-flex items-center justify-center rounded-full bg-[#243833] text-[#FBFFDF] px-7 py-3 text-lg font-semibold shadow-lg hover:shadow-xl transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#243833]"
+              >
+                Liên hệ hỗ trợ
+              </Link>
             </div>
           </div>
         </div>
@@ -512,18 +547,18 @@ export default function Home() {
             <div className="mt-10 grid md:grid-cols-2 gap-8 md:gap-10 place-items-center" data-testid="news-overlay">
               {[
                 {
-                  title: "Quy trình chăm sóc chuẩn – từ giống đến thu hoạch",
+                  title: "Tạo vườn & tạo cây trong 5 phút",
                   body:
-                    "Làm đúng ngay từ đầu: lịch tưới – bón – tỉa – che phủ, kiểm soát sâu bệnh theo mùa để cây khỏe, trái ngọt.",
+                    "Điền thông tin đất, gán lô, cấp mã cây và QR ngay trên web – dữ liệu tự động chảy sang TreeDetail và RouteManager.",
                   image:
                     "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=1600&auto=format&fit=crop",
                   fallback: "https://picsum.photos/seed/bleuet/1200/1600",
                   href: "#news-a",
                 },
                 {
-                  title: "Quản vườn bằng dữ liệu – quyết định nhanh & chính xác",
+                  title: "TreeDetail gom đủ sức khỏe, công việc, AI",
                   body:
-                    "Theo dõi tăng trưởng, sức khỏe, chi phí và năng suất theo từng cây; nhìn rõ để tối ưu công việc mỗi ngày.",
+                    "Modal cập nhật lá/cành/hoa/quả mở hằng ngày, CareSchedule đồng bộ sau mỗi thao tác, AI đề xuất việc theo giai đoạn.",
                   image:
                     "https://images.unsplash.com/photo-1502680390469-be75c86b636f?q=80&w=1600&auto=format&fit=crop",
                   fallback: "https://picsum.photos/seed/silo/1200/1600",
