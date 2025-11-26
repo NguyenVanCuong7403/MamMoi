@@ -15,7 +15,7 @@ import NotificationRepository from "@/API/repositories/NotificationRepository";
 const DEFAULT_MENU = [
   { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
   { id: "quan-ly", label: "Quản lý vườn & cây", href: "/garden" },
-  { id: "dang-ky", label: "Đăng ký dịch vụ", href: "#register" },
+  { id: "dang-ky", label: "Đăng ký dịch vụ", href: "/price" },
   { id: "lien-he", label: "Liên hệ & Hỗ trợ", href: "/report" },
 ];
 
@@ -766,6 +766,16 @@ export default function MMHeader({
                       }}
                     >
                       Hồ sơ
+                    </button>
+
+                    <button
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                      onClick={() => {
+                        navigate("/reports");
+                        setAvatarMenu((prev) => !prev);
+                      }}
+                    >
+                      Quản lý báo cáo
                     </button>
 
                     <button

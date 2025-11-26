@@ -414,5 +414,100 @@ YÊU CẦU ĐẦU RA: Một object JSON duy nhất đúng cấu trúc:
 
             return results.OrderBy(r => r.ForDate).ToList();
         }
+
+        /// <summary>
+        /// Get or generate recommendation for a single day (used for progressive loading)
+        /// </summary>
+        public async Task<AirecommendationDto> GetSingleDayRecommendationAsync(
+            int treeId,
+            DateOnly forDate,
+            CancellationToken ct = default)
+        {
+            return await EnsureRecommendationForDateAsync(treeId, forDate, ct);
+        }
+
+        /// <summary>
+        /// Refresh recommendations for a tree - delete old ones for today+2 days and regenerate
+        /// Only regenerates if deletion was successful; keeps old data if AI fails
+        /// </summary>
+        public async Task RefreshRecommendationsAsync(int treeId, CancellationToken ct = default)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var dates = new[] { today, today.AddDays(1), today.AddDays(2) };
+
+            // First cleanup past recommendations
+            await CleanupPastRecommendationsAsync(treeId, ct);
+
+            // For each date, try to delete and regenerate
+            foreach (var date in dates)
+            {
+                var key = $"{treeId}:{date:yyyy-MM-dd}";
+                var sem = GetLockForKey(key);
+                await sem.WaitAsync(ct);
+                try
+                {
+                    // Find existing recommendation for this date
+                    var existing = await _db.Airecommendations
+                        .FirstOrDefaultAsync(a => a.TreeId == treeId && a.ForDate == date, ct);
+
+                    if (existing != null)
+                    {
+                        // Try to generate new recommendation first
+                        try
+                        {
+                            Console.WriteLine($"[AI Refresh]: Regenerating for tree={treeId} date={date}");
+                            
+                            // Delete old one
+                            _db.Airecommendations.Remove(existing);
+                            await _db.SaveChangesAsync(ct);
+
+                            // Generate new one
+                            await GenerateRecommendationForTreeAsync(treeId, date, ct);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[AI Refresh]: Failed to regenerate for tree={treeId} date={date}: {ex.Message}");
+                            // If generation fails, the old one is already deleted, so we just continue
+                            // The next GetSingleDayRecommendationAsync call will try again
+                        }
+                    }
+                    else
+                    {
+                        // No existing recommendation, just generate
+                        try
+                        {
+                            await GenerateRecommendationForTreeAsync(treeId, date, ct);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[AI Refresh]: Failed to generate new for tree={treeId} date={date}: {ex.Message}");
+                        }
+                    }
+                }
+                finally
+                {
+                    sem.Release();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Cleanup past recommendations (before today) to prevent database bloat
+        /// </summary>
+        public async Task CleanupPastRecommendationsAsync(int treeId, CancellationToken ct = default)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            
+            var oldRecommendations = await _db.Airecommendations
+                .Where(a => a.TreeId == treeId && a.ForDate < today)
+                .ToListAsync(ct);
+
+            if (oldRecommendations.Any())
+            {
+                Console.WriteLine($"[AI Cleanup]: Removing {oldRecommendations.Count} old recommendations for tree={treeId}");
+                _db.Airecommendations.RemoveRange(oldRecommendations);
+                await _db.SaveChangesAsync(ct);
+            }
+        }
     }
 }

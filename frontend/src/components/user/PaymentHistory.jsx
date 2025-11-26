@@ -23,61 +23,10 @@ function PaymentHistory({
   dateFrom = "",
   dateTo = "",
   onPageChange,
+  loading = false,
 }) {
-  const defaultTransactions = [
-    {
-      id: "SUB-STARTER-58723",
-      time: "2025-10-11 09:35",
-      package: "Starter",
-      amount: "490,000 đ",
-      method: "QR (VNPay)",
-      status: "Thành công",
-      statusColor: "bg-green-50 text-green-700 border-green-200",
-      txId: "TX9X2H1",
-    },
-    {
-      id: "SUB-PRO-20144",
-      time: "2025-10-08 14:12",
-      package: "Pro",
-      amount: "990,000 đ",
-      method: "Ghi nợ (VNPay)",
-      status: "Đang xử lý",
-      statusColor: "bg-yellow-50 text-yellow-700 border-yellow-200",
-      txId: "PRX1234",
-    },
-    {
-      id: "SUB-FARM-11102",
-      time: "2025-09-28 10:01",
-      package: "Farmer",
-      amount: "1,990,000 đ",
-      method: "Bank Transfer",
-      status: "Hoàn tiền",
-      statusColor: "bg-blue-50 text-blue-700 border-blue-200",
-      txId: "FM9876",
-    },
-    {
-      id: "SUB-STARTER-11092",
-      time: "2025-09-20 20:51",
-      package: "Starter",
-      amount: "490,000 đ",
-      method: "QR (VNPay)",
-      status: "Thất bại",
-      statusColor: "bg-red-50 text-red-700 border-red-200",
-      txId: "STFAIL01",
-    },
-    {
-      id: "SUB-STARTER-11011",
-      time: "2025-09-10 07:25",
-      package: "Starter",
-      amount: "490,000 đ",
-      method: "Card",
-      status: "Thành công",
-      statusColor: "bg-green-50 text-green-700 border-green-200",
-      txId: "ST11011",
-    },
-  ];
-
-  const data = transactions.length > 0 ? transactions : defaultTransactions;
+  // Use transactions from API directly (no more demo data fallback)
+  const data = transactions;
 
   // ── States ─────────────────────────────────────
   const [page, setPage] = useState(1);
@@ -150,6 +99,21 @@ function PaymentHistory({
   };
 
   // ── Render ─────────────────────────────────────
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="w-full">
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8">
+          <div className="flex flex-col items-center justify-center py-12">
+            <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <p className="text-gray-600 text-lg">Đang tải lịch sử giao dịch...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       {/* Table */}

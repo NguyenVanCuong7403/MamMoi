@@ -45,6 +45,28 @@ export default class TreeRepository {
   }
 
   /**
+   * Get AI recommendation for a single day (for progressive loading)
+   * @param {number} id - tree id
+   * @param {string} forDate - date string in yyyy-MM-dd format
+   * @returns {Promise} ApiClient.get promise
+   */
+  static async getSingleDayRecommendation(id, forDate) {
+    if (!id) throw new Error("Missing tree id");
+    if (!forDate) throw new Error("Missing forDate");
+    return ApiClient.get(`/api/trees/${id}/recommendation/single?forDate=${forDate}`);
+  }
+
+  /**
+   * Refresh AI recommendations for a tree (triggers backend to regenerate)
+   * @param {number} id - tree id
+   * @returns {Promise} ApiClient.post promise
+   */
+  static async refreshAiRecommendations(id) {
+    if (!id) throw new Error("Missing tree id");
+    return ApiClient.post(`/api/trees/${id}/recommendation/refresh`);
+  }
+
+  /**
    * Get tree varieties
    * @param {number} [treeTypeId] - Optional tree type ID to filter varieties
    */
@@ -252,5 +274,13 @@ export default class TreeRepository {
    */
   static async updateLifecycle(id, data) {
     return ApiClient.patch(`/api/trees/${id}/lifecycle`, data);
+  }
+
+  /**
+   * Get growth stages by tree type ID
+   * @param {number} treeTypeId
+   */
+  static async getStagesByTreeType(treeTypeId) {
+    return ApiClient.get(`/api/admin/tree-growth-stages/by-tree-type/${treeTypeId}`);
   }
 }

@@ -219,8 +219,8 @@ public class UsersController : ControllerBase
                 await file.CopyToAsync(memoryStream);
                 imageData = memoryStream.ToArray();
             }
-
-            var response = await _userService.UploadAvatarAsync(userId, imageData, file.ContentType);
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+            var response = await _userService.UploadAvatarAsync(userId, imageData, file.ContentType, baseUrl);
 
             if (!response.Success)
                 return BadRequest(response);

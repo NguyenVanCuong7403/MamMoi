@@ -28,6 +28,7 @@ namespace MamMoi.Infrastructure.Services.GardenSoils
                     x.GardenSoilId,
                     x.GardenId,
                     x.SoilMasterId,
+                    null,
                     x.CustomLabel,
                     x.Notes
                 ))
@@ -38,11 +39,13 @@ namespace MamMoi.Infrastructure.Services.GardenSoils
         {
             return await _db.Set<GardenSoil>()
                 .AsNoTracking()
+                .Include(x => x.SoilMaster)
                 .Where(x => x.GardenId == gardenId)
                 .Select(x => new GardenSoilDto(
                     x.GardenSoilId,
                     x.GardenId,
                     x.SoilMasterId,
+                    x.SoilMaster != null ? x.SoilMaster.SoilName : null,
                     x.CustomLabel,
                     x.Notes
                 ))
@@ -62,6 +65,7 @@ namespace MamMoi.Infrastructure.Services.GardenSoils
             gs.GardenSoilId,
             gs.GardenId,
             gs.SoilMasterId,
+            null,
             gs.CustomLabel,
             gs.Notes
         );
@@ -82,6 +86,7 @@ namespace MamMoi.Infrastructure.Services.GardenSoils
             gs.GardenSoilId,
             gs.GardenId,
             gs.SoilMasterId,
+            null,
             gs.CustomLabel,
             gs.Notes
         );
@@ -99,6 +104,7 @@ namespace MamMoi.Infrastructure.Services.GardenSoils
                     x.GardenSoilId,
                     x.GardenId,
                     x.SoilMasterId,
+                    null,
                     x.CustomLabel,
                     x.Notes
                 ))

@@ -77,4 +77,37 @@ public interface IPaymentService
     /// <param name="userId">User ID</param>
     /// <returns>Total amount paid</returns>
     Task<decimal> GetTotalAmountPaidAsync(int userId);
+
+    #region PayOS Integration
+
+    /// <summary>
+    /// Create a PayOS checkout session for subscription payment
+    /// </summary>
+    /// <param name="userId">User ID</param>
+    /// <param name="request">Checkout request with plan ID</param>
+    /// <returns>Checkout response with QR code and bank info</returns>
+    Task<CheckoutResponseDto> CreateCheckoutAsync(int userId, CreateCheckoutRequestDto request);
+
+    /// <summary>
+    /// Check payment status by order code
+    /// </summary>
+    /// <param name="orderCode">Order code to check</param>
+    /// <returns>Payment status</returns>
+    Task<PaymentStatusResponseDto> CheckPaymentStatusAsync(string orderCode);
+
+    /// <summary>
+    /// Handle PayOS webhook callback
+    /// </summary>
+    /// <param name="webhook">Webhook payload</param>
+    /// <returns>True if processed successfully</returns>
+    Task<bool> HandleWebhookAsync(PayOSWebhookDto webhook);
+
+    /// <summary>
+    /// Cancel a pending payment
+    /// </summary>
+    /// <param name="orderCode">Order code to cancel</param>
+    /// <returns>True if cancelled successfully</returns>
+    Task<bool> CancelPaymentAsync(string orderCode);
+
+    #endregion
 }

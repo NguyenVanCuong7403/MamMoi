@@ -217,6 +217,61 @@ public class TreesController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get AI recommendation for a single day (for progressive loading)
+    /// GET api/trees/{id}/recommendation/single?forDate=2025-11-23
+    /// </summary>
+    [HttpGet("{id:int}/recommendation/single")]
+    public async Task<IActionResult> GetSingleDayRecommendation([FromRoute] int id, [FromQuery] string? forDate, CancellationToken ct = default)
+    {
+        DateOnly targetDate;
+        if (string.IsNullOrWhiteSpace(forDate))
+        {
+            targetDate = DateOnly.FromDateTime(DateTime.UtcNow.Date);
+        }
+        else if (!DateOnly.TryParse(forDate, out targetDate) &&
+                 !DateOnly.TryParseExact(forDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out targetDate))
+        {
+            return BadRequest("Ngày không hợp lệ. Vui lòng truyền ?forDate=yyyy-MM-dd");
+        }
+
+        try
+        {
+            var dto = await _aiRecommendationService.GetSingleDayRecommendationAsync(id, targetDate, ct);
+            return Ok(dto);
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Lỗi khi gọi AI recommendation: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Refresh AI recommendations for a tree (delete old ones and regenerate for today+2 days)
+    /// POST api/trees/{id}/recommendation/refresh
+    /// </summary>
+    [HttpPost("{id:int}/recommendation/refresh")]
+    public async Task<IActionResult> RefreshRecommendations([FromRoute] int id, CancellationToken ct = default)
+    {
+        try
+        {
+            await _aiRecommendationService.RefreshRecommendationsAsync(id, ct);
+            return Ok(new { message = "AI recommendations refreshed" });
+        }
+        catch (OperationCanceledException)
+        {
+            return StatusCode(499);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Lỗi khi refresh AI recommendation: {ex.Message}");
+        }
+    }
+
 
     // ===================== 7) Update Status =====================
     [HttpPatch("{id:int}/status")]

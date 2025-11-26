@@ -1091,6 +1091,7 @@ export default function AddTreeNewScreen() {
   //const [soil, setSoil] = useState("");
   const [gardenSoils, setGardenSoils] = useState([]);     
   const [gardenSoilId, setGardenSoilId] = useState("");
+  const [stagesByType, setStagesByType] = useState([]);
   const [treeLocation, setTreeLocation] = useState("");
   const [plantDate, setPlantDate] = useState("");
   const [preAge, setPreAge] = useState("");
@@ -1187,6 +1188,21 @@ const imagePickerRef = useRef(null);
     setVariety("");
     setSelectedVarietyId("");
     setGardenSoilId("");   // reset loại đất khi đổi loại cây
+    setStagesByType([]);   // reset stages khi đổi loại cây
+
+    // Fetch stages for this tree type
+    if (treeTypeId) {
+      (async () => {
+        try {
+          const res = await TreeRepository.getStagesByTreeType(treeTypeId);
+          const stages = res?.data || res || [];
+          setStagesByType(Array.isArray(stages) ? stages : []);
+        } catch (err) {
+          console.error("Failed to load stages for tree type", err);
+          setStagesByType([]);
+        }
+      })();
+    }
   }, [treeTypeId]);
 
   useEffect(() => {
@@ -1418,9 +1434,13 @@ const effectivePhase = phaseOverride || defaultPhase5;
       const payload = normalizePhaseBeforeSave(base);
       console.log("Create Tree Payload (debug)", payload);
 
-      // Map phase → StageId 1..5
+      // Map phase → StageId using minStageId from fetched stages
       var tempSId = Math.max(1, PHASES5.indexOf(effectivePhase) + 1);
-      const stageIndex = (Number(treeTypeId) - 1) * 5 + (tempSId);
+      // Find minStageId from the stages for this tree type
+      const minStageId = stagesByType.length > 0
+        ? Math.min(...stagesByType.map(s => s.stageId))
+        : 1;
+      const stageIndex = minStageId + tempSId - 1;
 
       // Chuẩn CreateTreeRequest đúng backend
       const createReq = {
@@ -1809,7 +1829,9 @@ const openImagePicker = () => {
   }}
   options={gardenSoils.map((s) => ({
     value: String(s.gardenSoilId),
-    label: s.customLabel || `Đất #${s.gardenSoilId}`,
+    label: s.customLabel && s.soilName
+      ? `${s.customLabel} - ${s.soilName}`
+      : s.customLabel || s.soilName || `Đất #${s.gardenSoilId}`,
   }))}
   placeholder={
     currentGarden?.id

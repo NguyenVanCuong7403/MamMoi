@@ -1877,7 +1877,7 @@ function PlannedRow({ p, theme, disabled, openEditMain, openComplete, openEditNo
 const NOTE_PREVIEW_MAX = 230;
 
 
-function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed,  loai, giong  }) {
+function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed, loai, giong, treeId, treeOwnerId }) {
   const [editNote, setEditNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || "");
   // Chuẩn bị text hiển thị cho khung "Ghi chú" (chỉ xem)
@@ -2096,8 +2096,8 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
             cycleCount={cycleCount}
             phase1Completed={phase1Completed}
             disabled={meta.status === "stopped"}
-            treeId={resolvedTreeId}
-            treeOwnerId={resolvedTreeOwnerId}
+            treeId={treeId}
+            treeOwnerId={treeOwnerId}
             treeType={loai}         // 👈 thêm
             treeVariety={giong}
           />
@@ -2730,6 +2730,9 @@ export default function TreeDetail() {
   }, []);
 
   const [saving, setSaving] = useState(false);
+  
+  // Ref for AI refresh function (defined later but used in persistTreePatch)
+  const refreshAiRecommendationsRef = React.useRef(null);
 
   async function persistTreePatch(partial) {
     if (!treeId) return;
@@ -2804,6 +2807,14 @@ export default function TreeDetail() {
         ...prev,
         ...partial,
       }));
+
+      // Refresh AI recommendations after tree update
+      // Run in background, don't block the UI
+      if (refreshAiRecommendationsRef.current) {
+        refreshAiRecommendationsRef.current().catch(err => {
+          console.error("Failed to refresh AI after tree update:", err);
+        });
+      }
     } catch (err) {
       console.error("Update tree failed", err);
       // TODO: show toast / message
@@ -3066,6 +3077,29 @@ export default function TreeDetail() {
   // ⛑️ GUARD: thiếu/không tìm thấy cây → render trạng thái an toàn, tránh crash
   const isEmptyBaseTree = !baseTree || Object.keys(baseTree).length === 0;
 
+  // Daily health update modal (must be declared before the useEffect that uses it)
+  const [dailyHealthModal, setDailyHealthModal] = useState({
+    open: false,
+    values: { leaf: "", branch: "", flower: "", fruit: "" },
+    initialValues: { leaf: "", branch: "", flower: "", fruit: "" },
+  });
+
+  // Confirm modal for daily health changes
+  const [confirmModal, setConfirmModal] = useState({
+    open: false,
+    oldValues: { leaf: "", branch: "", flower: "", fruit: "" },
+    newValues: { leaf: "", branch: "", flower: "", fruit: "" },
+  });
+
+  // Helper function to get today's date string
+  function getTodayDateString() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
   // Check if daily health update modal should be shown
   // Check every time component mounts, treeId/baseTree changes, or date changes (midnight)
   // Modal will show if user hasn't confirmed today (localStorage doesn't have "true" for today)
@@ -3117,14 +3151,6 @@ export default function TreeDetail() {
     if (dailyHealthModal.open) {
       console.log("[DailyHealthModal] Modal already open, returning");
       return;
-    }
-
-    function getTodayDateString() {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
     }
 
     const today = getTodayDateString();
@@ -3752,22 +3778,133 @@ useEffect(() => {
 
 
   const [aiSuggestions, setAiSuggestions] = useState([]);
+  const [aiLoading, setAiLoading] = useState({ day0: false, day1: false, day2: false });
 
+  // Progressive AI loading - load one day at a time
   useEffect(() => {
+    if (!baseTree?.treeId) return;
     let cancelled = false;
 
-    (async () => {
-      try {
-        const result = await getAISuggestions(baseTree, currentPhaseId);
-        if (!cancelled) setAiSuggestions(result ?? []);
-      } catch (err) {
-        console.error("Failed to update AI suggestions:", err);
-        if (!cancelled) setAiSuggestions([]);
-      }
-    })();
+    const loadProgressively = async () => {
+      const today = new Date();
+      const dates = [0, 1, 2].map(offset => {
+        const d = new Date(today);
+        d.setDate(d.getDate() + offset);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      });
 
+      for (let i = 0; i < dates.length; i++) {
+        if (cancelled) return;
+        
+        const dayKey = `day${i}`;
+        setAiLoading(prev => ({ ...prev, [dayKey]: true }));
+
+        try {
+          const resp = await TreeRepository.getSingleDayRecommendation(baseTree.treeId, dates[i]);
+          if (cancelled) return;
+
+          const dto = resp?.data ?? resp;
+          const suggestions = parseSingleDayDto(dto);
+          
+          // Append to existing suggestions
+          setAiSuggestions(prev => {
+            // Remove any existing suggestions for this date
+            const filtered = prev.filter(s => s._sourceForDate !== dates[i]);
+            return [...filtered, ...suggestions].sort((a, b) => 
+              (a.due || "").localeCompare(b.due || "")
+            );
+          });
+        } catch (err) {
+          console.error(`Failed to load AI for ${dates[i]}:`, err);
+        } finally {
+          if (!cancelled) {
+            setAiLoading(prev => ({ ...prev, [dayKey]: false }));
+          }
+        }
+      }
+    };
+
+    loadProgressively();
     return () => { cancelled = true; };
   }, [baseTree.treeId]);
+
+  // Helper to parse a single day DTO into suggestions
+  const parseSingleDayDto = (dto) => {
+    if (!dto) return [];
+    
+    const dtoForDate = dto?.ForDate ?? dto?.forDate ?? null;
+    const baseDate = toYmd(dtoForDate);
+    const rawActions = dto?.ActionsJson ?? dto?.actionsJson ?? "[]";
+    const actions = safeParseActions(rawActions);
+
+    if (!actions || actions.length === 0) return [];
+
+    return actions.map(a => {
+      const scheduled = a.scheduledDate ?? a.scheduled ?? baseDate ?? null;
+      const due = toYmd(scheduled) ?? baseDate ?? toYmd(new Date());
+      const details = Array.isArray(a.details) ? a.details : (a.details ? [String(a.details)] : []);
+
+      return {
+        type: mapTaskTypeFromApi(a.type ?? a.actionType ?? a.typeName),
+        title: a.title ?? a.name ?? "Không rõ",
+        due,
+        details,
+        _sourceForDate: baseDate,
+        _createdAt: dto?.CreatedAt ?? dto?.createdAt ?? null
+      };
+    });
+  };
+
+  // Refresh AI recommendations when tree data changes
+  // Assign the function to the ref so it can be called from persistTreePatch
+  refreshAiRecommendationsRef.current = async () => {
+    if (!treeId) return;
+    
+    try {
+      // Clear current suggestions and show loading
+      setAiSuggestions([]);
+      setAiLoading({ day0: true, day1: true, day2: true });
+      
+      // Trigger backend refresh (this will delete old and regenerate)
+      await TreeRepository.refreshAiRecommendations(treeId);
+      
+      // Reload progressively
+      const today = new Date();
+      const dates = [0, 1, 2].map(offset => {
+        const d = new Date(today);
+        d.setDate(d.getDate() + offset);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, "0");
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+      });
+
+      for (let i = 0; i < dates.length; i++) {
+        try {
+          const resp = await TreeRepository.getSingleDayRecommendation(treeId, dates[i]);
+          const dto = resp?.data ?? resp;
+          const suggestions = parseSingleDayDto(dto);
+          
+          setAiSuggestions(prev => {
+            const filtered = prev.filter(s => s._sourceForDate !== dates[i]);
+            return [...filtered, ...suggestions].sort((a, b) => 
+              (a.due || "").localeCompare(b.due || "")
+            );
+          });
+        } catch (err) {
+          console.error(`Failed to reload AI for ${dates[i]}:`, err);
+        } finally {
+          setAiLoading(prev => ({ ...prev, [`day${i}`]: false }));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to refresh AI recommendations:", err);
+      setAiLoading({ day0: false, day1: false, day2: false });
+    }
+  };
 
 
 
@@ -5512,8 +5649,8 @@ useEffect(() => {
                 phase1Completed={phase1Completed}
                 loai={loai}
                 giong={giong}
-                resolvedTreeId={resolvedTreeId}
-                resolvedTreeOwnerId={resolvedTreeOwnerId}
+                treeId={resolvedTreeId}
+                treeOwnerId={resolvedTreeOwnerId}
                 onPhaseChange={(payload) => {
                   // payload: { phaseId, cycleCount, phase1Completed, stageId? }
                   // Lifecycle API already handles the update, so we just sync local state

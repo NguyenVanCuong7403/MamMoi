@@ -7,6 +7,7 @@ using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Security;
 using UserEntity = MamMoi.Infrastructure.Models.User;
+using Azure.Core;
 
 namespace MamMoi.Infrastructure.Services.Users;
 
@@ -218,7 +219,7 @@ public class UserService : IUserService
     /// <summary>
     /// Upload user avatar with validation
     /// </summary>
-    public async Task<AvatarUploadResponseDto> UploadAvatarAsync(int userId, byte[] imageData, string mimeType)
+    public async Task<AvatarUploadResponseDto> UploadAvatarAsync(int userId, byte[] imageData, string mimeType, string baseUrl)
     {
         // Validate user exists
         var user = await _userRepository.GetByIdAsync(userId);
@@ -278,8 +279,9 @@ public class UserService : IUserService
             // Save new avatar
             await File.WriteAllBytesAsync(filePath, imageData);
 
+            var fileUrl = $"{baseUrl}/uploads/avatars/{fileName}";
             // Update user profile image URL
-            userEntity.ProfileImageUrl = $"/uploads/avatars/{fileName}";
+            userEntity.ProfileImageUrl = fileUrl;
             userEntity.UpdatedAt = DateTime.UtcNow;
             await _userRepository.UpdateAsync(userEntity);
 
