@@ -14,7 +14,7 @@ export default class TreeRepository {
     return ApiClient.get("/api/trees/varieties");
   }
 
-    /**
+  /**
    * Get AI recommendation(s) for a tree.
    * The API returns recommendations for the requested date and the next 2 days (3 days total).
    * @param {number} id - tree id
@@ -41,7 +41,9 @@ export default class TreeRepository {
     }
 
     const qs = params.toString();
-    return ApiClient.get(`/api/trees/${id}/recommendation${qs ? `?${qs}` : ""}`);
+    return ApiClient.get(
+      `/api/trees/${id}/recommendation${qs ? `?${qs}` : ""}`
+    );
   }
 
   /**
@@ -242,6 +244,8 @@ export default class TreeRepository {
    * @param {string} data.phaseId - Phase ID: "growth_development", "flowering", "fruiting", "pre_harvest", "post_harvest"
    * @param {number} [data.cycleCount] - Optional cycle count
    * @param {boolean} [data.phase1Completed] - Optional phase 1 completed flag
+   * @param {boolean} [data.autoSyncEnabled] - Enable/disable automatic lifecycle sync
+   * @param {string} [data.overrideReason] - Optional note when disabling auto sync
    */
   static async updateLifecycle(id, data) {
     return ApiClient.patch(`/api/trees/${id}/lifecycle`, data);

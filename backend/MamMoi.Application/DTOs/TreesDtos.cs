@@ -56,7 +56,9 @@
     public record UpdateTreeLifecycleRequest(
         string PhaseId, // "growth_development", "flowering", "fruiting", "pre_harvest", "post_harvest"
         int? CycleCount = null,
-        bool? Phase1Completed = null
+        bool? Phase1Completed = null,
+        bool? AutoSyncEnabled = null,
+        string? OverrideReason = null
     );
 
     public record TreeLifecycleDto(
@@ -66,6 +68,8 @@
         string StageName,
         string PhaseId,
         bool Phase1Completed,
-        int CycleCount
+        int CycleCount,
+        bool LifecycleAutoEnabled,
+        DateTime? LifecycleAutoDisabledAt
     );
 }

@@ -181,7 +181,9 @@ public class TreeQueryService : ITreeQueryService
                 t.TreeId,
                 t.StageId,
                 StageOrder = t.Stage.StageOrder,
-                StageName = t.Stage.StageName
+                StageName = t.Stage.StageName,
+                t.LifecycleAutoEnabled,
+                t.LifecycleAutoDisabledAt
             })
             .FirstOrDefaultAsync(ct);
 
@@ -217,7 +219,9 @@ public class TreeQueryService : ITreeQueryService
             tree.StageName,
             phaseId,
             phase1Completed,
-            cycleCount
+            cycleCount,
+            tree.LifecycleAutoEnabled,
+            tree.LifecycleAutoDisabledAt
         );
     }
 }

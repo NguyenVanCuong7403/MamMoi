@@ -43,6 +43,7 @@ public interface ICareScheduleService
     /// </summary>
     Task<PagedResult<CareTaskSearchResultDto>> SearchTasksAsync(
         int? treeId = null,
+        int? gardenId = null,
         string? taskType = null,
         string? status = null,
         string? priority = null,

@@ -27,6 +27,10 @@ public partial class Tree
 
     public DateOnly? ExpectedHarvestDate { get; set; }
 
+    public bool LifecycleAutoEnabled { get; set; } = true;
+
+    public DateTime? LifecycleAutoDisabledAt { get; set; }
+
     public string? Notes { get; set; }
     public string? QrcodeUrl { get; set; }
 

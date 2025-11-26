@@ -8,6 +8,13 @@ import React, {
 import { createPortal } from "react-dom";
 import { ChevronDown, ArrowDown } from "lucide-react";
 import TreeRepository from "@/API/repositories/TreeRepository";
+import {
+  DEFAULT_PHASE_THEME,
+  getOrderedPhases,
+  LIFECYCLE_COLOR_LOOKUP,
+  normalizeLifecycleTheme,
+  PHASE_IDS,
+} from "@/lib/lifecycleTheme";
 
 // =========================================================================
 // Phase ID Aliases & Helpers
@@ -180,45 +187,140 @@ function LifecycleTimeline({
   isBackwardRun,
   postHideIdx,
   onPhaseGateChange,
+  phaseConfigs,
 }) {
-  const phase1 = {
+  const defaultPhase1 = {
     id: "growth_development",
     name: "Sinh trưởng & Phát triển",
     icon: "🌱",
     color: "emerald",
+    lineColorHex: LIFECYCLE_COLOR_LOOKUP.emerald,
   };
-  const cyclePhases = [
-    { id: "flowering", name: "Ra Hoa", icon: "🌸", color: "pink" },
-    { id: "fruiting", name: "Ra quả", icon: "🍎", color: "lime" },
-    { id: "pre_harvest", name: "Trước thu hoạch", icon: "🔍", color: "amber" },
-    { id: "post_harvest", name: "Sau thu hoạch", icon: "🌿", color: "teal" },
+  const defaultCyclePhases = [
+    {
+      id: "flowering",
+      name: "Ra Hoa",
+      icon: "🌸",
+      color: "pink",
+      lineColorHex: LIFECYCLE_COLOR_LOOKUP.pink,
+    },
+    {
+      id: "fruiting",
+      name: "Ra quả",
+      icon: "🍎",
+      color: "lime",
+      lineColorHex: LIFECYCLE_COLOR_LOOKUP.lime,
+    },
+    {
+      id: "pre_harvest",
+      name: "Trước thu hoạch",
+      icon: "🔍",
+      color: "amber",
+      lineColorHex: LIFECYCLE_COLOR_LOOKUP.amber,
+    },
+    {
+      id: "post_harvest",
+      name: "Sau thu hoạch",
+      icon: "🌿",
+      color: "teal",
+      lineColorHex: LIFECYCLE_COLOR_LOOKUP.teal,
+    },
   ];
-  const getColorClasses = (color, activeLike) => {
-    const m = {
-      emerald: {
-        active:
-          "bg-emerald-600 border-emerald-400 shadow-emerald-300 text-white",
-        default: "bg-white border-gray-200",
-      },
-      pink: {
-        active: "bg-pink-600 border-pink-400 shadow-pink-300 text-white",
-        default: "bg-white border-gray-200",
-      },
-      lime: {
-        active: "bg-lime-600 border-lime-400 shadow-lime-300 text-white",
-        default: "bg-white border-gray-200",
-      },
-      amber: {
-        active: "bg-amber-600 border-amber-400 shadow-amber-300 text-white",
-        default: "bg-white border-gray-200",
-      },
-      teal: {
-        active: "bg-teal-600 border-teal-400 shadow-teal-300 text-white",
-        default: "bg-white border-gray-200",
-      },
+
+  const phase1 = useMemo(() => {
+    if (!phaseConfigs?.phase1) return defaultPhase1;
+    const cfg = phaseConfigs.phase1;
+    const colorKey = (cfg.colorKey || defaultPhase1.color).toLowerCase();
+    return {
+      id: cfg.phaseId || defaultPhase1.id,
+      name: cfg.label || defaultPhase1.name,
+      icon: cfg.icon || defaultPhase1.icon,
+      color: colorKey,
+      lineColorHex:
+        LIFECYCLE_COLOR_LOOKUP[cfg.lineColorKey || colorKey] ||
+        defaultPhase1.lineColorHex,
     };
-    return activeLike ? m[color].active : m[color].default;
+  }, [phaseConfigs]);
+
+  const cyclePhases = useMemo(() => {
+    const source =
+      Array.isArray(phaseConfigs?.cycles) && phaseConfigs.cycles.length
+        ? phaseConfigs.cycles
+        : defaultCyclePhases;
+    return source.map((phase) => {
+      const phaseId = phase.phaseId || phase.id;
+      const colorKey = (
+        phase.colorKey ||
+        phase.color ||
+        "emerald"
+      ).toLowerCase();
+      const lineColorHex =
+        phase.lineColorHex ||
+        LIFECYCLE_COLOR_LOOKUP[phase.lineColorKey || colorKey] ||
+        LIFECYCLE_COLOR_LOOKUP[colorKey] ||
+        LIFECYCLE_COLOR_LOOKUP.emerald;
+      return {
+        id: phaseId,
+        name: phase.label || phase.name || phaseId,
+        icon: phase.icon || "🌿",
+        color: colorKey,
+        lineColorHex,
+      };
+    });
+  }, [phaseConfigs]);
+
+  const palette = {
+    emerald: {
+      active: "bg-emerald-600 border-emerald-400 shadow-emerald-300 text-white",
+      default: "bg-white border-gray-200",
+      badge: "bg-emerald-50 border-emerald-300 text-emerald-800",
+      solid: "bg-emerald-600 text-white",
+      ping: "bg-emerald-400/60",
+    },
+    pink: {
+      active: "bg-pink-600 border-pink-400 shadow-pink-300 text-white",
+      default: "bg-white border-gray-200",
+      badge: "bg-pink-50 border-pink-300 text-pink-800",
+      solid: "bg-pink-600 text-white",
+      ping: "bg-pink-400/60",
+    },
+    lime: {
+      active: "bg-lime-600 border-lime-400 shadow-lime-300 text-white",
+      default: "bg-white border-gray-200",
+      badge: "bg-lime-50 border-lime-300 text-lime-800",
+      solid: "bg-lime-600 text-white",
+      ping: "bg-lime-400/60",
+    },
+    amber: {
+      active: "bg-amber-600 border-amber-400 shadow-amber-300 text-white",
+      default: "bg-white border-gray-200",
+      badge: "bg-amber-50 border-amber-300 text-amber-800",
+      solid: "bg-amber-600 text-white",
+      ping: "bg-amber-400/60",
+    },
+    teal: {
+      active: "bg-teal-600 border-teal-400 shadow-teal-300 text-white",
+      default: "bg-white border-gray-200",
+      badge: "bg-teal-50 border-teal-300 text-teal-800",
+      solid: "bg-teal-600 text-white",
+      ping: "bg-teal-400/60",
+    },
+    slate: {
+      active: "bg-slate-700 border-slate-500 shadow-slate-300 text-white",
+      default: "bg-white border-gray-200",
+      badge: "bg-slate-50 border-slate-300 text-slate-800",
+      solid: "bg-slate-700 text-white",
+      ping: "bg-slate-500/60",
+    },
   };
+  const getToneKey = (color) => (palette[color] ? color : "emerald");
+  const getColorClasses = (color, activeLike) => {
+    const key = getToneKey(color);
+    return activeLike ? palette[key].active : palette[key].default;
+  };
+  const getBadgeTone = (color) => palette[getToneKey(color)].badge;
+  const getSolidTone = (color) => palette[getToneKey(color)].solid;
+  const getPingTone = (color) => palette[getToneKey(color)].ping;
 
   // ==== Geometry (đã thu gọn để vừa cột Aside) ====
   const RING_SIZE = 240; // ⟵ nhỏ hơn bản demo
@@ -233,14 +335,15 @@ function LifecycleTimeline({
 
   const GUIDE_ARROW_COUNT = 2,
     GUIDE_ARROW_SIZE = 7;
-  const PHASE_COLORS = {
-    flowering: "#ec4899",
-    fruiting: "#84cc16",
-    pre_harvest: "#f59e0b",
-    post_harvest: "#14b8a6",
-  };
+  const PHASE_COLORS = useMemo(() => {
+    return cyclePhases.reduce((acc, phase) => {
+      acc[phase.id] = phase.lineColorHex || "#10b981";
+      return acc;
+    }, {});
+  }, [cyclePhases]);
+  const cycleCount = cyclePhases.length || 1;
 
-  const getCirclePosition = (index, total) => {
+  const getCirclePosition = (index, total = cycleCount) => {
     const angle = index * ((2 * Math.PI) / total) - Math.PI / 2;
     return {
       x: centerX + radius * Math.cos(angle),
@@ -257,8 +360,9 @@ function LifecycleTimeline({
     return `M ${sx} ${sy} A ${r} ${r} 0 0 ${sweep} ${ex} ${ey}`;
   };
   const trimAngles = (iFrom, iTo) => {
-    const from = getCirclePosition(iFrom, 4).angle;
-    const to = getCirclePosition(iTo, 4).angle;
+    const total = cycleCount;
+    const from = getCirclePosition(iFrom, total).angle;
+    const to = getCirclePosition(iTo, total).angle;
     return { thetaStart: from + alphaGap, thetaEnd: to - alphaGap };
   };
   const tangentAngleAtEnd = (thetaEnd, r, eps = 0.04) => {
@@ -275,8 +379,8 @@ function LifecycleTimeline({
     const fromIdx = cyclePhases.findIndex((p) => p.id === transitionFlow.from);
     const toIdx = cyclePhases.findIndex((p) => p.id === transitionFlow.to);
     if (fromIdx > -1 && toIdx > -1) {
-      const forward = (fromIdx + 1) % 4 === toIdx;
-      const backward = (toIdx + 1) % 4 === fromIdx;
+      const forward = (fromIdx + 1) % cycleCount === toIdx;
+      const backward = (toIdx + 1) % cycleCount === fromIdx;
       if (forward || backward) {
         const { thetaStart, thetaEnd } = trimAngles(fromIdx, toIdx);
         const color =
@@ -316,8 +420,8 @@ function LifecycleTimeline({
         stroke="white"
         strokeWidth={STROKE * 6}
       />
-      {Array.from({ length: 4 }).map((_, idx) => {
-        const { x, y } = getCirclePosition(idx, 4);
+      {Array.from({ length: cycleCount }).map((_, idx) => {
+        const { x, y } = getCirclePosition(idx, cycleCount);
         return (
           <circle key={idx} cx={x} cy={y} r={nodeR + MASK_INSET} fill="black" />
         );
@@ -327,7 +431,7 @@ function LifecycleTimeline({
 
   const renderGuideArrows = () => {
     return cyclePhases.map((_, i) => {
-      let { thetaStart, thetaEnd } = trimAngles(i, (i + 1) % 4);
+      let { thetaStart, thetaEnd } = trimAngles(i, (i + 1) % cycleCount);
       if (thetaEnd <= thetaStart) thetaEnd += Math.PI * 2;
       const color = PHASE_COLORS[cyclePhases[i].id];
       const seg = buildArcD(thetaStart, thetaEnd, radius, 1);
@@ -420,6 +524,8 @@ function LifecycleTimeline({
     // rất dài → nhỏ lại
     return baseCls + " text-[9px]";
   };
+  const connectorColor =
+    PHASE_COLORS[cyclePhases[0]?.id] || phase1.lineColorHex || "#ec4899";
 
   return (
     <div className="w-full">
@@ -435,9 +541,9 @@ function LifecycleTimeline({
 
             {/* pill cho phép wrap + giới hạn rộng để không đè icon */}
             <span
-              className="inline-flex items-center rounded-full border px-2.5 py-0.5
-               bg-emerald-50 border-emerald-300 text-emerald-800 font-semibold
-               max-w-[240px] whitespace-normal break-words leading-tight text-center"
+              className={`inline-flex items-center rounded-full border px-2.5 py-0.5 font-semibold
+               ${getBadgeTone(phase1.color)}
+               max-w-[240px] whitespace-normal break-words leading-tight text-center`}
               title={currentLabel}
             >
               {currentLabel}
@@ -451,13 +557,17 @@ function LifecycleTimeline({
 
           <div
             className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg mb-1.5 pointer-events-none
-              ${getColorClasses("emerald", activePhase === phase1.id)} ${
+              ${getColorClasses(phase1.color, activePhase === phase1.id)} ${
               isPhase1Completed ? "opacity-40 grayscale" : ""
             }`}
           >
             {phase1.icon}
             {activePhase === phase1.id && !isPhase1Completed && (
-              <span className="absolute inset-0 rounded-full animate-ping bg-emerald-400/60" />
+              <span
+                className={`absolute inset-0 rounded-full animate-ping ${getPingTone(
+                  phase1.color
+                )}`}
+              />
             )}
           </div>
           <div
@@ -465,10 +575,10 @@ function LifecycleTimeline({
   ${
     isPhase1Completed
       ? "bg-white text-gray-700 border border-gray-200 opacity-70"
-      : "bg-emerald-600 text-white"
+      : getSolidTone(phase1.color)
   }`}
           >
-            {phase1.name} {/* luôn là "Sinh trưởng & Phát triển" */}
+            {phase1.name}
           </div>
         </div>
 
@@ -486,7 +596,7 @@ function LifecycleTimeline({
                 y1="6"
                 x2={centerX}
                 y2="48"
-                stroke="#ec4899"
+                stroke={connectorColor}
                 strokeWidth="3"
                 strokeDasharray="10,8"
                 strokeLinecap="round"
@@ -495,7 +605,7 @@ function LifecycleTimeline({
               />
               <polygon
                 points={`${centerX},54 ${centerX - 8},46 ${centerX + 8},46`}
-                fill="#ec4899"
+                fill={connectorColor}
                 opacity={0.95}
               />
             </>
@@ -504,7 +614,7 @@ function LifecycleTimeline({
             <LCTransientPath
               key={`p1-${p1Key}`}
               d={`M ${centerX} 6 L ${centerX} 48`}
-              color="#ec4899"
+              color={connectorColor}
               duration={950}
               headSize={10}
               headPad={6}
@@ -723,16 +833,9 @@ function LifecycleTimeline({
                           phase.id !== suppressId) ||
                           isPreview) && (
                           <span
-                            className={`pointer-events-none absolute inset-0 rounded-full animate-ping opacity-60
-                            ${
-                              phase.color === "pink"
-                                ? "bg-pink-400"
-                                : phase.color === "lime"
-                                ? "bg-lime-400"
-                                : phase.color === "amber"
-                                ? "bg-amber-400"
-                                : "bg-teal-400"
-                            }`}
+                            className={`pointer-events-none absolute inset-0 rounded-full animate-ping opacity-60 ${getPingTone(
+                              phase.color
+                            )}`}
                           />
                         )}
                       </div>
@@ -820,14 +923,29 @@ function LCConfirmModal({
 // =========================================================================
 // LCPhaseDropdown Component
 // =========================================================================
-function LCPhaseDropdown({ activePhase, onPickPhase, onStartNewCycle }) {
+function LCPhaseDropdown({
+  activePhase,
+  onPickPhase,
+  onStartNewCycle,
+  phaseConfigs,
+}) {
   const [open, setOpen] = useState(false);
-  const items = [
+  const fallbackItems = [
     { id: "flowering", name: "Ra Hoa", icon: "🌸" },
     { id: "fruiting", name: "Đậu quả", icon: "🍏" },
     { id: "pre_harvest", name: "Trước thu hoạch", icon: "🔍" },
     { id: "post_harvest", name: "Sau thu hoạch", icon: "🌿" },
   ];
+  const items = useMemo(() => {
+    if (Array.isArray(phaseConfigs?.cycles) && phaseConfigs.cycles.length) {
+      return phaseConfigs.cycles.map((phase) => ({
+        id: phase.phaseId,
+        name: phase.label,
+        icon: phase.icon || "🌿",
+      }));
+    }
+    return fallbackItems;
+  }, [phaseConfigs]);
   return (
     <div className="mm-fluid-shell relative">
       <button
@@ -901,6 +1019,9 @@ export default function LifecycleWidget({
   treeType,
   treeVariety,
   onPhaseGateChange,
+  autoLifecycleEnabled,
+  autoLifecycleDisabledAt,
+  phaseTheme,
 }) {
   const labelOf = (id) =>
     ({
@@ -940,8 +1061,110 @@ export default function LifecycleWidget({
       )
     );
 
-  const cyclePhases = ["flowering", "fruiting", "pre_harvest", "post_harvest"];
-  const isCyclePhase = (p) => cyclePhases.includes(p);
+  const themeSource =
+    phaseTheme ?? meta?.seasonalRoadmap ?? tree?.seasonalRoadmap;
+  const normalizedTheme = useMemo(
+    () => normalizeLifecycleTheme(themeSource),
+    [phaseTheme, meta?.seasonalRoadmap, tree?.seasonalRoadmap]
+  );
+
+  const mergedThemeMap = useMemo(() => {
+    return PHASE_IDS.reduce((acc, phaseId, index) => {
+      const base = DEFAULT_PHASE_THEME[phaseId] || {};
+      const override = normalizedTheme[phaseId] || {};
+      const colorKey = (override.colorKey || base.colorKey || "emerald")
+        .toString()
+        .toLowerCase();
+      const lineColorKey = (
+        override.lineColorKey ||
+        override.colorKey ||
+        base.lineColorKey ||
+        base.colorKey ||
+        "emerald"
+      )
+        .toString()
+        .toLowerCase();
+      acc[phaseId] = {
+        phaseId,
+        label: override.label || base.label,
+        subtitle: override.subtitle || "",
+        description: override.description || "",
+        icon: override.icon || base.icon,
+        colorKey,
+        lineColorKey,
+        lineStyle: override.lineStyle || base.lineStyle || "solid",
+        durationMs: override.durationMs || base.durationMs || 1150,
+        order: typeof override.order === "number" ? override.order : index,
+      };
+      return acc;
+    }, {});
+  }, [normalizedTheme]);
+
+  const orderedPhaseConfigs = useMemo(
+    () => getOrderedPhases(mergedThemeMap),
+    [mergedThemeMap]
+  );
+
+  const defaultCycleConfigs = useMemo(
+    () =>
+      PHASE_IDS.filter((id) => id !== "growth_development").map(
+        (phaseId, index) => ({
+          phaseId,
+          label: DEFAULT_PHASE_THEME[phaseId].label,
+          subtitle: "",
+          description: "",
+          icon: DEFAULT_PHASE_THEME[phaseId].icon,
+          colorKey: DEFAULT_PHASE_THEME[phaseId].colorKey,
+          lineColorKey: DEFAULT_PHASE_THEME[phaseId].colorKey,
+          lineStyle: DEFAULT_PHASE_THEME[phaseId].lineStyle || "solid",
+          durationMs: 1150,
+          order: index + 1,
+        })
+      ),
+    []
+  );
+
+  const phase1Config = useMemo(() => {
+    const found = orderedPhaseConfigs.find(
+      (phase) => phase.phaseId === "growth_development"
+    );
+    if (found) return found;
+    const base = DEFAULT_PHASE_THEME.growth_development;
+    return {
+      phaseId: "growth_development",
+      label: base.label,
+      subtitle: "",
+      description: "",
+      icon: base.icon,
+      colorKey: base.colorKey,
+      lineColorKey: base.colorKey,
+      lineStyle: base.lineStyle || "solid",
+      durationMs: 1150,
+      order: 0,
+    };
+  }, [orderedPhaseConfigs]);
+
+  const cyclePhaseConfigs = useMemo(() => {
+    const filtered = orderedPhaseConfigs.filter(
+      (phase) => phase.phaseId !== "growth_development"
+    );
+    return filtered.length ? filtered : defaultCycleConfigs;
+  }, [orderedPhaseConfigs, defaultCycleConfigs]);
+
+  const cyclePhaseIds = useMemo(
+    () => cyclePhaseConfigs.map((phase) => phase.phaseId),
+    [cyclePhaseConfigs]
+  );
+
+  const phaseConfigs = useMemo(
+    () => ({
+      phase1: phase1Config,
+      cycles: cyclePhaseConfigs,
+    }),
+    [phase1Config, cyclePhaseConfigs]
+  );
+
+  const isCyclePhase = (p) => cyclePhaseIds.includes(p);
 
   const displayType = treeType || getLoai(meta) || getLoai(tree);
 
@@ -970,7 +1193,7 @@ export default function LifecycleWidget({
   // Nếu đã qua giai đoạn 1 thì trailIndex = index của phase hiện tại
   // (VD: pre_harvest -> 2; fruiting -> 1; flowering -> 0)
   const initialTrailIndex = initialPhase1Completed
-    ? Math.max(0, cyclePhases.indexOf(initPhase))
+    ? Math.max(0, cyclePhaseIds.indexOf(initPhase))
     : -1;
 
   // Phase controlled
@@ -997,6 +1220,40 @@ export default function LifecycleWidget({
       setCycleCount(Number(cycleCountProp));
     }
   }, [cycleCountProp]);
+
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(
+    typeof autoLifecycleEnabled === "boolean" ? autoLifecycleEnabled : true
+  );
+  useEffect(() => {
+    if (typeof autoLifecycleEnabled === "boolean") {
+      setAutoSyncEnabled(autoLifecycleEnabled);
+    }
+  }, [autoLifecycleEnabled]);
+
+  const [autoDisabledAt, setAutoDisabledAt] = useState(
+    autoLifecycleDisabledAt || null
+  );
+  useEffect(() => {
+    setAutoDisabledAt(autoLifecycleDisabledAt || null);
+  }, [autoLifecycleDisabledAt]);
+
+  const [togglingAuto, setTogglingAuto] = useState(false);
+
+  const autoStatusText = useMemo(() => {
+    if (autoSyncEnabled) {
+      return "Đang tự động chuyển giai đoạn theo tuổi và loại cây.";
+    }
+    if (!autoDisabledAt) {
+      return "Đang ghi đè thủ công (tạm dừng tự động).";
+    }
+    const dt = new Date(autoDisabledAt);
+    if (Number.isNaN(dt.getTime())) {
+      return "Đang ghi đè thủ công (tạm dừng tự động).";
+    }
+    return `Đang ghi đè thủ công từ ${dt.toLocaleString("vi-VN")}.`;
+  }, [autoSyncEnabled, autoDisabledAt]);
+
+  const toggleButtonDisabled = disabled || togglingAuto || !treeId;
 
   // Giữ nguyên các state còn lại của bạn ngay sau đây:
   const [previewPhase, setPreviewPhase] = useState(null);
@@ -1040,9 +1297,9 @@ export default function LifecycleWidget({
       return;
     }
 
-    const idx = cyclePhases.indexOf(externalPhase);
+    const idx = cyclePhaseIds.indexOf(externalPhase);
     if (idx >= 0) setTrailIndex(idx);
-  }, [value, phase1CompletedProp]);
+  }, [value, phase1CompletedProp, cyclePhaseIds]);
 
   // Modal xác nhận (nhỏ)
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -1062,22 +1319,26 @@ export default function LifecycleWidget({
 
   const buildSteps = (from, to) => {
     const steps = [];
-    const N = cyclePhases.length;
+    const N = cyclePhaseIds.length;
+    if (N <= 0) return steps;
     if (from === "growth_development" && isCyclePhase(to)) {
       steps.push({ type: "p1" });
-      from = "flowering";
+      from = cyclePhaseIds[0] || "flowering";
     }
     if (isCyclePhase(from) && isCyclePhase(to) && from !== to) {
-      let i = cyclePhases.indexOf(from),
-        j = cyclePhases.indexOf(to);
-      let dir =
-        from === "post_harvest" && to === "flowering" ? +1 : j > i ? +1 : -1;
+      let i = cyclePhaseIds.indexOf(from),
+        j = cyclePhaseIds.indexOf(to);
+      if (i === -1 || j === -1) return steps;
+      let dir;
+      if ((i + 1) % N === j) dir = +1;
+      else if ((j + 1) % N === i) dir = -1;
+      else dir = j > i ? +1 : -1;
       while (i !== j) {
         const next = (i + dir + N) % N;
         steps.push({
           type: "arc",
-          from: cyclePhases[i],
-          to: cyclePhases[next],
+          from: cyclePhaseIds[i],
+          to: cyclePhaseIds[next],
         });
         i = next;
       }
@@ -1098,11 +1359,12 @@ export default function LifecycleWidget({
       DWELL = 200;
 
     const firstArc = steps.find((s) => s.type === "arc");
-    if (firstArc) {
-      const N = cyclePhases.length;
-      const iFrom = cyclePhases.indexOf(firstArc.from);
-      const iTo = cyclePhases.indexOf(firstArc.to);
-      setIsBackwardRun((iFrom + 1) % N !== iTo);
+    if (firstArc && cyclePhaseIds.length > 0) {
+      const N = cyclePhaseIds.length;
+      const iFrom = cyclePhaseIds.indexOf(firstArc.from);
+      const iTo = cyclePhaseIds.indexOf(firstArc.to);
+      if (iFrom === -1 || iTo === -1) setIsBackwardRun(false);
+      else setIsBackwardRun((iFrom + 1) % N !== iTo);
     } else setIsBackwardRun(false);
 
     for (let idx = 0; idx < steps.length; idx++) {
@@ -1113,15 +1375,19 @@ export default function LifecycleWidget({
         await wait(950);
         setP1Transition(false);
         if (!isPhase1Completed) setIsPhase1Completed(true);
-        setTrailIndex(0);
-        setPreviewPhase("flowering");
+        if (cyclePhaseIds.length > 0) {
+          setTrailIndex(0);
+          setPreviewPhase(cyclePhaseIds[0]);
+        }
         await wait(DWELL);
         setPreviewPhase(null);
         continue;
       }
-      const N = cyclePhases.length;
-      const iFrom = cyclePhases.indexOf(s.from),
-        iTo = cyclePhases.indexOf(s.to);
+      const N = cyclePhaseIds.length;
+      if (N <= 0) break;
+      const iFrom = cyclePhaseIds.indexOf(s.from),
+        iTo = cyclePhaseIds.indexOf(s.to);
+      if (iFrom === -1 || iTo === -1) continue;
       const dir = (iFrom + 1) % N === iTo ? +1 : -1;
 
       if (dir === -1) {
@@ -1172,7 +1438,8 @@ export default function LifecycleWidget({
     if (cause === "start-new-cycle") {
       title = "Bắt đầu giai đoạn mới";
       message = "Chu kỳ mới sẽ khởi động và vòng xoay 1s.";
-      highlight = "Điểm bắt đầu: Ra Hoa.";
+      const startLabel = cyclePhaseConfigs[0]?.label || labelOf("flowering");
+      highlight = `Điểm bắt đầu: ${startLabel}.`;
     }
     setPendingPhase(to);
     setConfirmText({ title, message, highlight });
@@ -1182,7 +1449,12 @@ export default function LifecycleWidget({
   /**
    * Update lifecycle using dedicated lifecycle API
    */
-  async function updateLifecyclePhase(phaseId, cycleCount, phase1Completed) {
+  async function updateLifecyclePhase(
+    phaseId,
+    cycleCount,
+    phase1Completed,
+    extra = {}
+  ) {
     if (!treeId) return;
 
     try {
@@ -1192,11 +1464,75 @@ export default function LifecycleWidget({
         ...(phase1Completed != null && { phase1Completed }),
       };
 
+      if (Object.prototype.hasOwnProperty.call(extra, "autoSyncEnabled")) {
+        payload.autoSyncEnabled = extra.autoSyncEnabled;
+      }
+      if (extra?.overrideReason) {
+        payload.overrideReason = extra.overrideReason;
+      }
+
       const response = await TreeRepository.updateLifecycle(treeId, payload);
       return response?.data ?? response;
     } catch (err) {
       console.error("Update lifecycle failed", err);
       throw err; // Re-throw to allow caller to handle
+    }
+  }
+
+  async function handleToggleAutoSync() {
+    if (!treeId || togglingAuto || disabled) return;
+
+    const nextState = !autoSyncEnabled;
+    let overrideReason = undefined;
+    if (!nextState) {
+      overrideReason =
+        window.prompt("Nhập lý do ghi đè thủ công (tuỳ chọn).") || undefined;
+    }
+
+    setTogglingAuto(true);
+    try {
+      const lifecycleResponse = await updateLifecyclePhase(
+        activePhase,
+        cycleCount,
+        isPhase1Completed,
+        { autoSyncEnabled: nextState, overrideReason }
+      );
+
+      const resolvedPhaseId = normalizePhaseId(
+        lifecycleResponse?.phaseId ?? activePhase
+      );
+      const resolvedCycleCount = lifecycleResponse?.cycleCount ?? cycleCount;
+      const resolvedPhase1Completed =
+        lifecycleResponse?.phase1Completed ?? isPhase1Completed;
+      const resolvedStageId = lifecycleResponse?.stageId ?? null;
+      const resolvedAutoEnabled =
+        typeof lifecycleResponse?.lifecycleAutoEnabled === "boolean"
+          ? lifecycleResponse.lifecycleAutoEnabled
+          : nextState;
+      const resolvedAutoDisabledAt =
+        lifecycleResponse?.lifecycleAutoDisabledAt ??
+        (resolvedAutoEnabled ? null : new Date().toISOString());
+
+      setActivePhase(resolvedPhaseId);
+      setCycleCount(resolvedCycleCount);
+      setIsPhase1Completed(resolvedPhase1Completed);
+      setAutoSyncEnabled(resolvedAutoEnabled);
+      setAutoDisabledAt(resolvedAutoDisabledAt);
+
+      if (typeof onChange === "function") {
+        onChange({
+          phaseId: resolvedPhaseId,
+          cycleCount: resolvedCycleCount,
+          phase1Completed: resolvedPhase1Completed,
+          stageId: resolvedStageId,
+          lifecycleAutoEnabled: resolvedAutoEnabled,
+          lifecycleAutoDisabledAt: resolvedAutoDisabledAt,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to toggle lifecycle automation", err);
+    } finally {
+      setTogglingAuto(false);
     }
   }
 
@@ -1240,11 +1576,20 @@ export default function LifecycleWidget({
         const apiCycleCount = lifecycleResponse.cycleCount ?? nextCount;
         const apiPhase1Completed = lifecycleResponse.phase1Completed ?? nextP1;
         const apiStageId = lifecycleResponse.stageId;
+        const apiAutoEnabled =
+          typeof lifecycleResponse.lifecycleAutoEnabled === "boolean"
+            ? lifecycleResponse.lifecycleAutoEnabled
+            : autoSyncEnabled;
+        const apiAutoDisabledAt =
+          lifecycleResponse.lifecycleAutoDisabledAt ??
+          (apiAutoEnabled ? null : autoDisabledAt);
 
         // Cập nhật state với dữ liệu từ API
         setActivePhase(apiPhaseId);
         setCycleCount(apiCycleCount);
         setIsPhase1Completed(apiPhase1Completed);
+        setAutoSyncEnabled(apiAutoEnabled);
+        setAutoDisabledAt(apiAutoDisabledAt);
 
         // Nếu không có bước animation, vẫn phải tự cập nhật trail hợp lý
         if (steps.length === 0) {
@@ -1254,7 +1599,7 @@ export default function LifecycleWidget({
             setTrailIndex(0);
             runSpinReset();
           } else {
-            setTrailIndex(cyclePhases.indexOf(apiPhaseId));
+            setTrailIndex(cyclePhaseIds.indexOf(apiPhaseId));
           }
         } else {
           await playSteps(steps, apiPhaseId, shouldSpin);
@@ -1267,6 +1612,8 @@ export default function LifecycleWidget({
             cycleCount: apiCycleCount,
             phase1Completed: apiPhase1Completed,
             stageId: apiStageId,
+            lifecycleAutoEnabled: apiAutoEnabled,
+            lifecycleAutoDisabledAt: apiAutoDisabledAt,
           });
         }
       } else {
@@ -1282,7 +1629,7 @@ export default function LifecycleWidget({
             setTrailIndex(0);
             runSpinReset();
           } else {
-            setTrailIndex(cyclePhases.indexOf(nextPhaseId));
+            setTrailIndex(cyclePhaseIds.indexOf(nextPhaseId));
           }
         } else {
           await playSteps(steps, nextPhaseId, shouldSpin);
@@ -1293,6 +1640,8 @@ export default function LifecycleWidget({
             phaseId: nextPhaseId,
             cycleCount: nextCount,
             phase1Completed: nextP1,
+            lifecycleAutoEnabled: autoSyncEnabled,
+            lifecycleAutoDisabledAt: autoDisabledAt,
           });
         }
       }
@@ -1328,6 +1677,7 @@ export default function LifecycleWidget({
               onStartNewCycle={() =>
                 requestChangePhase("flowering", "start-new-cycle")
               }
+              phaseConfigs={phaseConfigs}
             />,
             portalEl
           )
@@ -1339,6 +1689,7 @@ export default function LifecycleWidget({
               onStartNewCycle={() =>
                 requestChangePhase("flowering", "start-new-cycle")
               }
+              phaseConfigs={phaseConfigs}
             />
           </div>
         ))}
@@ -1352,6 +1703,32 @@ export default function LifecycleWidget({
           </span>
         </div>
       )}
+
+      <div className="mb-5 flex flex-col gap-2 rounded-2xl bg-neutral-50/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <p
+          className={`text-xs sm:text-sm ${
+            autoSyncEnabled ? "text-emerald-700" : "text-amber-700"
+          }`}
+        >
+          {autoStatusText}
+        </p>
+        <button
+          type="button"
+          className={`inline-flex items-center justify-center rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+            autoSyncEnabled
+              ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
+              : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+          } ${toggleButtonDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
+          onClick={handleToggleAutoSync}
+          disabled={toggleButtonDisabled}
+        >
+          {togglingAuto
+            ? "Đang xử lý..."
+            : autoSyncEnabled
+            ? "Chuyển sang ghi đè tay"
+            : "Bật tự động"}
+        </button>
+      </div>
 
       <div className="flex justify-center">
         <LifecycleTimeline
@@ -1372,6 +1749,7 @@ export default function LifecycleWidget({
           isBackwardRun={isBackwardRun}
           postHideIdx={postHideIdx}
           onPhaseGateChange={onPhaseGateChange}
+          phaseConfigs={phaseConfigs}
         />
       </div>
 

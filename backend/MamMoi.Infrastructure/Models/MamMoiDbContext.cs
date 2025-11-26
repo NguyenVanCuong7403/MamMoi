@@ -486,6 +486,11 @@ public partial class MamMoiDbContext : DbContext
 
             entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.Property(e => e.LifecycleAutoEnabled)
+                  .HasColumnName("LifecycleAutoEnabled")
+                  .HasDefaultValue(true);
+            entity.Property(e => e.LifecycleAutoDisabledAt)
+                  .HasPrecision(0);
 
             entity.HasOne(d => d.Garden).WithMany(p => p.Trees)
                   .HasForeignKey(d => d.GardenId)

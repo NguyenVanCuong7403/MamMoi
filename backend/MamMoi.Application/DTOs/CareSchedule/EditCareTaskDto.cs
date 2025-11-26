@@ -79,4 +79,9 @@ public class EditCareTaskDto
     /// Additional notes
     /// </summary>
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// Task status: Pending, InProgress, Completed, Cancelled,...
+    /// </summary>
+    public string? Status { get; set; }
 }

@@ -207,7 +207,14 @@ namespace MamMoi.Infrastructure.Services
 
             // Update tree stage
             tree.StageId = targetStage.StageId;
-            tree.UpdatedAt = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
+            tree.UpdatedAt = now;
+
+            if (req.AutoSyncEnabled.HasValue)
+            {
+                tree.LifecycleAutoEnabled = req.AutoSyncEnabled.Value;
+                tree.LifecycleAutoDisabledAt = req.AutoSyncEnabled.Value ? null : now;
+            }
 
             await _db.SaveChangesAsync(ct);
 
@@ -217,8 +224,8 @@ namespace MamMoi.Infrastructure.Services
                 UserId = userId,
                 TreeId = treeId,
                 ActivityType = "UpdateLifecycle",
-                ActivityDescription = $"Updated lifecycle phase to {req.PhaseId} (Stage: {targetStage.StageName})",
-                CreatedAt = DateTime.UtcNow
+                ActivityDescription = BuildLifecycleActivityDescription(req, targetStage.StageName),
+                CreatedAt = now
             });
             await _db.SaveChangesAsync(ct);
 
@@ -233,8 +240,27 @@ namespace MamMoi.Infrastructure.Services
                 targetStage.StageName,
                 req.PhaseId,
                 phase1Completed,
-                req.CycleCount ?? 0 // TODO: Store cycleCount in database if needed
+                req.CycleCount ?? 0, // TODO: Store cycleCount in database if needed
+                tree.LifecycleAutoEnabled,
+                tree.LifecycleAutoDisabledAt
             );
+        }
+
+        private static string BuildLifecycleActivityDescription(UpdateTreeLifecycleRequest req, string stageName)
+        {
+            var baseMessage = $"Updated lifecycle phase to {req.PhaseId} (Stage: {stageName})";
+
+            if (req.AutoSyncEnabled.HasValue)
+            {
+                var togglePart = req.AutoSyncEnabled.Value ? "Auto-sync enabled" : "Auto-sync disabled";
+                if (!string.IsNullOrWhiteSpace(req.OverrideReason))
+                {
+                    return $"{baseMessage}. {togglePart}. Reason: {req.OverrideReason}";
+                }
+                return $"{baseMessage}. {togglePart}.";
+            }
+
+            return baseMessage;
         }
 
         public async Task<bool> DeleteAsync(int userId, int treeId, CancellationToken ct)
