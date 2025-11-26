@@ -172,7 +172,7 @@ public class AdminTreeTypeService : IAdminTreeTypeService
 
         _dbContext.TreeTypes.Add(treeType);
         await _dbContext.SaveChangesAsync();
-        await AddDefaultTreeGrowthStagesAsync(treeType.TreeTypeId);
+        //await AddDefaultTreeGrowthStagesAsync(treeType.TreeTypeId);
 
         return await GetTreeTypeByIdAsync(treeType.TreeTypeId) ?? throw new Exception("Failed to create tree type");
     }
