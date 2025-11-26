@@ -172,9 +172,12 @@ export default function NotificationManagement() {
       setError(null);
 
       const response = await NotificationRepository.getBroadcastNotifications();
+      console.log("Broadcast notifications response:", response);
 
       if (response.success) {
-        setBroadcasts(response.data || []);
+        const broadcastData = Array.isArray(response.data) ? response.data : [];
+        console.log("Setting broadcasts:", broadcastData);
+        setBroadcasts(broadcastData);
       } else {
         setError(
           response.message || "Có lỗi xảy ra khi tải danh sách thông báo"

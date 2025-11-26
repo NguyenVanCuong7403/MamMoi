@@ -11,6 +11,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/API/context/AuthContext";
 import NotificationRepository from "@/API/repositories/NotificationRepository";
+import { getNotificationRoute } from "@/lib/notificationRoutes";
 
 const DEFAULT_MENU = [
   { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
@@ -571,11 +572,12 @@ export default function MMHeader({
                                   !notification.isRead && "bg-blue-50/50",
                                 ].join(" ")}
                                 onClick={() => {
-                                  if (notification.actionUrl) {
-                                    navigate(notification.actionUrl);
-                                  } else {
-                                    navigate("/notifications");
-                                  }
+                                  // Get route based on notification type and user role
+                                  const route = getNotificationRoute(
+                                    notification,
+                                    user
+                                  );
+                                  navigate(route || "/notifications");
                                   setNotificationMenu(false);
                                   if (!notification.isRead) {
                                     NotificationRepository.markNotificationsAsRead(
