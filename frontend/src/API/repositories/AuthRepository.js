@@ -36,4 +36,8 @@ export default class AuthRepository {
   static async logout() {
     return ApiClient.post("/api/auth/logout");
   }
+
+  static async loginWithGoogle(idToken) {
+    return ApiClient.post("/api/auth/google-login", { idToken });
+  }
 };
