@@ -5,8 +5,10 @@ using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 namespace MamMoi.Infrastructure.Services.Auth;
 
@@ -565,6 +567,169 @@ public class AuthService : IAuthService
             Success = true,
             Message = "Password đã được thay đổi thành công. Vui lòng đăng nhập lại."
         };
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 9: Đăng nhập hoặc đăng ký với Google OAuth
+    /// </summary>
+    public async Task<AuthResponseDto> LoginWithGoogleAsync(string idToken)
+    {
+        if (string.IsNullOrWhiteSpace(idToken))
+        {
+            throw new InvalidOperationException("Google ID token is required");
+        }
+
+        // Decode Google ID token to get user info
+        // Note: In production, you should verify the token with Google's API
+        var googleUserInfo = DecodeGoogleToken(idToken);
+        if (googleUserInfo == null)
+        {
+            throw new InvalidOperationException("Invalid Google ID token");
+        }
+
+        var email = googleUserInfo.Email;
+        var fullName = googleUserInfo.Name ?? googleUserInfo.GivenName ?? "User";
+        var googleId = googleUserInfo.Sub;
+
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            throw new InvalidOperationException("Email not found in Google account");
+        }
+
+        // Check if user already exists
+        var existingUser = await _userRepository.GetByEmailAsync(email);
+        User userEntity;
+
+        if (existingUser != null)
+        {
+            // User exists - log them in
+            userEntity = (User)existingUser;
+            
+            // Update last login
+            userEntity.LastLoginAt = DateTime.Now;
+            if (string.IsNullOrEmpty(userEntity.ProfileImageUrl) && !string.IsNullOrEmpty(googleUserInfo.Picture))
+            {
+                userEntity.ProfileImageUrl = googleUserInfo.Picture;
+            }
+            await _userRepository.UpdateAsync(userEntity);
+        }
+        else
+        {
+            // User doesn't exist - create new user (auto-verified since Google verified)
+            // Get default role (Farmer/User role, typically roleId = 2 or 3)
+            var defaultRole = await _context.Roles
+                .FirstOrDefaultAsync(r => r.RoleName == "Farmer" || r.RoleName == "User");
+            
+            if (defaultRole == null)
+            {
+                // Fallback to roleId 2 if Farmer role doesn't exist
+                defaultRole = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == 2);
+            }
+
+            if (defaultRole == null)
+            {
+                throw new InvalidOperationException("Default role not found. Please contact administrator.");
+            }
+
+            // Generate a random password hash (user won't need password for Google login)
+            var randomPassword = Guid.NewGuid().ToString();
+            var passwordHash = HashPassword(randomPassword);
+
+            var newUser = new User
+            {
+                Email = email,
+                FullName = fullName,
+                PasswordHash = passwordHash,
+                RoleId = defaultRole.RoleId,
+                IsActive = true, // Auto-verified via Google
+                ProfileImageUrl = googleUserInfo.Picture,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+
+            userEntity = (User)await _userRepository.AddAsync(newUser);
+        }
+
+        // Generate tokens
+        var accessToken = _tokenService.GenerateToken(
+            userEntity.UserId.ToString(),
+            userEntity.FullName,
+            userEntity.Email,
+            new[] { userEntity.Role?.RoleName ?? "User" }
+        );
+
+        var refreshToken = GenerateRefreshToken();
+
+        // Save refresh token
+        var refreshTokenKey = $"refresh_{userEntity.UserId}";
+        var tokenToUserKey = $"token_{refreshToken}";
+        _cache.Set(refreshTokenKey, refreshToken, TimeSpan.FromDays(7));
+        _cache.Set(tokenToUserKey, userEntity.UserId, TimeSpan.FromDays(7));
+
+        return new AuthResponseDto
+        {
+            UserId = userEntity.UserId,
+            Email = userEntity.Email,
+            FullName = userEntity.FullName,
+            IsEmailVerified = true,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            ProfileImageUrl = userEntity.ProfileImageUrl,
+            TokenExpiresAt = DateTime.Now.AddMinutes(60),
+            Message = existingUser != null ? "Đăng nhập thành công!" : "Đăng ký và đăng nhập thành công!",
+            RoleId = userEntity.RoleId
+        };
+    }
+
+    /// <summary>
+    /// Decode Google ID token (simple JWT decode - in production, verify with Google)
+    /// </summary>
+    private GoogleUserInfo? DecodeGoogleToken(string idToken)
+    {
+        try
+        {
+            var parts = idToken.Split('.');
+            if (parts.Length != 3) return null;
+
+            var payload = parts[1];
+            // Add padding if needed
+            var padding = 4 - (payload.Length % 4);
+            if (padding != 4)
+            {
+                payload += new string('=', padding);
+            }
+            payload = payload.Replace('-', '+').Replace('_', '/');
+
+            var jsonBytes = Convert.FromBase64String(payload);
+            var json = Encoding.UTF8.GetString(jsonBytes);
+            var tokenData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(json);
+
+            if (tokenData == null) return null;
+
+            return new GoogleUserInfo
+            {
+                Sub = tokenData.GetValueOrDefault("sub")?.ToString() ?? "",
+                Email = tokenData.GetValueOrDefault("email")?.ToString() ?? "",
+                Name = tokenData.GetValueOrDefault("name")?.ToString(),
+                GivenName = tokenData.GetValueOrDefault("given_name")?.ToString(),
+                FamilyName = tokenData.GetValueOrDefault("family_name")?.ToString(),
+                Picture = tokenData.GetValueOrDefault("picture")?.ToString()
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private class GoogleUserInfo
+    {
+        public string Sub { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? Name { get; set; }
+        public string? GivenName { get; set; }
+        public string? FamilyName { get; set; }
+        public string? Picture { get; set; }
     }
 
     #region Helper Methods

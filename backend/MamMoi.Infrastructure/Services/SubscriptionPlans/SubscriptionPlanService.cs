@@ -244,6 +244,30 @@ public class SubscriptionPlanService : ISubscriptionPlanService
     }
 
     /// <summary>
+    /// Get current user's active subscription plan
+    /// </summary>
+    public async Task<SubscriptionPlanDto?> GetCurrentUserSubscriptionAsync(int userId)
+    {
+        if (userId <= 0)
+            return null;
+
+        // Get the most recent active subscription for the user
+        var subscription = await _dbContext.Subscriptions
+            .Where(s => s.UserId == userId && s.Status == "Active")
+            .OrderByDescending(s => s.StartDate)
+            .FirstOrDefaultAsync();
+
+        if (subscription == null)
+            return null;
+
+        // Match the subscription's PlanName to a SubscriptionPlan
+        var plan = await _dbContext.SubscriptionPlans
+            .FirstOrDefaultAsync(p => p.PlanName == subscription.PlanName);
+
+        return plan == null ? null : MapToDto(plan);
+    }
+
+    /// <summary>
     /// Map entity to DTO
     /// </summary>
     private static SubscriptionPlanDto MapToDto(SubscriptionPlan plan)

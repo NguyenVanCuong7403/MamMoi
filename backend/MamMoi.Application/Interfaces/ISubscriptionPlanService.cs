@@ -52,5 +52,10 @@ public interface ISubscriptionPlanService
     /// Check if plan name exists
     /// </summary>
     Task<bool> PlanNameExistsAsync(string planName, int? excludePlanId = null);
+
+    /// <summary>
+    /// Get current user's active subscription plan
+    /// </summary>
+    Task<SubscriptionPlanDto?> GetCurrentUserSubscriptionAsync(int userId);
 }
 
