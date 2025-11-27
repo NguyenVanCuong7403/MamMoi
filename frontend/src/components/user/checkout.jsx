@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -190,6 +190,7 @@ export default function MamMoiQrCheckout() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [checkoutData, setCheckoutData] = useState(null);
+  const hasFetchedRef = useRef(false);
   
   // Derived data from API response
   const order = checkoutData?.orderInfo || {
@@ -216,12 +217,19 @@ export default function MamMoiQrCheckout() {
 
   // Fetch checkout data from API
   useEffect(() => {
+    // Prevent double calls (React StrictMode in development runs effects twice)
+    if (hasFetchedRef.current || checkoutData) {
+      return;
+    }
+    
     const fetchCheckout = async () => {
       if (!planId) {
         setError("Không tìm thấy thông tin gói đăng ký. Vui lòng chọn gói từ trang giá.");
         setLoading(false);
         return;
       }
+      
+      hasFetchedRef.current = true;
       
       try {
         const response = await PaymentRepository.createCheckout({
@@ -239,13 +247,14 @@ export default function MamMoiQrCheckout() {
       } catch (err) {
         console.error("Error creating checkout:", err);
         setError("Lỗi kết nối. Vui lòng thử lại sau.");
+        hasFetchedRef.current = false; // Allow retry on error
       } finally {
         setLoading(false);
       }
     };
     
     fetchCheckout();
-  }, [planId]);
+  }, [planId, isYearly]);
 
   const total = useMemo(() => Number(order.subtotal || 0) + Number(order.fee || 0), [order.subtotal, order.fee]);
 
@@ -268,7 +277,8 @@ export default function MamMoiQrCheckout() {
 
   // ====== Payment Status Polling ======
   const [isPolling, setIsPolling] = useState(false);
-  const [autoReconcile, setAutoReconcile] = useState(false);
+  const [autoReconcile, setAutoReconcile] = useState(true); // Enable by default
+  const pollingRef = useRef(null);
 
   // ====== Cancel Payment Dialog ======
   const [showCancelDialog, setShowCancelDialog] = useState(false);
@@ -339,21 +349,58 @@ export default function MamMoiQrCheckout() {
   };
 
   useEffect(() => {
-    if (!autoReconcile || isPolling || !orderCode) return;
+    // Debug: Log the current state
+    console.log("[Payment Poll] Effect triggered:", {
+      autoReconcile,
+      isPolling,
+      orderCode,
+      hasPollingRef: !!pollingRef.current,
+      checkoutData: !!checkoutData
+    });
     
+    // Only poll if autoReconcile is enabled, not already polling, and we have an orderCode
+    if (!autoReconcile) {
+      console.log("[Payment Poll] Skipping: autoReconcile is false");
+      return;
+    }
+    
+    if (isPolling) {
+      console.log("[Payment Poll] Skipping: already polling");
+      return;
+    }
+    
+    if (!orderCode || orderCode === "---") {
+      console.log("[Payment Poll] Skipping: no orderCode yet", orderCode);
+      return;
+    }
+    
+    if (pollingRef.current) {
+      console.log("[Payment Poll] Skipping: polling ref already exists");
+      return;
+    }
+    
+    console.log("[Payment Poll] Starting polling for orderCode:", orderCode);
     setIsPolling(true);
     let pollCount = 0;
-    const maxPolls = 180; // 3 minutes max
+    // Calculate maxPolls based on expiration time: expirationSeconds / pollInterval (10 seconds)
+    // Add 10% buffer to ensure we poll for the full expiration period
+    const maxPolls = Math.ceil((expirationSeconds / 10) * 1.1);
+    console.log("[Payment Poll] Max polls:", maxPolls, "Expiration seconds:", expirationSeconds);
     
-    const pollInterval = setInterval(async () => {
+    // Start polling immediately (don't wait 10 seconds for first check)
+    const checkStatus = async () => {
       pollCount++;
       
       try {
+        console.log(`[Payment Poll] Checking payment status (attempt ${pollCount}/${maxPolls})...`);
         const status = await PaymentRepository.checkPaymentStatus(orderCode);
+        console.log(`[Payment Poll] Payment status:`, status);
         
         if (status?.status === "Completed") {
+          console.log(`[Payment Poll] Payment completed! Navigating to invoice...`);
           clearInterval(pollInterval);
           setIsPolling(false);
+          pollingRef.current = null;
           
           // Navigate to invoice with data
           navigate("/invoice", {
@@ -378,19 +425,35 @@ export default function MamMoiQrCheckout() {
             },
             replace: true,
           });
+          return;
         }
       } catch (err) {
-        console.error("Error checking payment status:", err);
+        console.error("[Payment Poll] Error checking payment status:", err);
       }
       
       if (pollCount >= maxPolls) {
+        console.log(`[Payment Poll] Reached max polls (${maxPolls}), stopping...`);
         clearInterval(pollInterval);
         setIsPolling(false);
+        pollingRef.current = null;
       }
-    }, 10000); // Poll every 10 seconds
+    };
     
-    return () => clearInterval(pollInterval);
-  }, [autoReconcile, isPolling, orderCode, navigate, order, bank, transactionId]);
+    // Check immediately, then every 10 seconds
+    checkStatus();
+    const pollInterval = setInterval(checkStatus, 10000);
+    
+    pollingRef.current = pollInterval;
+    
+    return () => {
+      console.log("[Payment Poll] Cleaning up polling interval");
+      if (pollInterval) {
+        clearInterval(pollInterval);
+      }
+      pollingRef.current = null;
+      setIsPolling(false);
+    };
+  }, [autoReconcile, orderCode, expirationSeconds, navigate, checkoutData]);
 
   // ====== QR string ======
   const qrValue = useMemo(() => {
@@ -404,6 +467,14 @@ export default function MamMoiQrCheckout() {
   const handleRefresh = async () => {
     setLoading(true);
     setError(null);
+    hasFetchedRef.current = false; // Reset to allow new fetch
+    
+    // Stop any existing polling
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+      setIsPolling(false);
+    }
     
     try {
       const response = await PaymentRepository.createCheckout({
@@ -416,12 +487,20 @@ export default function MamMoiQrCheckout() {
       if (response?.success) {
         setCheckoutData(response);
         setRemain(response.expirationSeconds || 900);
+        hasFetchedRef.current = true;
+        // Reset autoReconcile to allow new polling if checkbox is still checked
+        if (autoReconcile) {
+          setAutoReconcile(false);
+          setTimeout(() => setAutoReconcile(true), 100);
+        }
       } else {
         setError(response?.message || "Không thể tạo phiên thanh toán mới");
+        hasFetchedRef.current = false;
       }
     } catch (err) {
       console.error("Error refreshing checkout:", err);
       setError("Lỗi kết nối. Vui lòng thử lại.");
+      hasFetchedRef.current = false;
     } finally {
       setLoading(false);
     }
@@ -594,7 +673,7 @@ export default function MamMoiQrCheckout() {
                 {autoReconcile && (
                   <Button
                     onClick={handleDemoComplete}
-                    className="mt-4 w-full bg-yellow-500/80 hover:bg-yellow-500 text-white text-sm sm:text-base min-w-0"
+                    className="hidden mt-4 w-full bg-yellow-500/80 hover:bg-yellow-500 text-white text-sm sm:text-base min-w-0"
                   >
                     Demo: Hoàn tất thanh toán
                   </Button>

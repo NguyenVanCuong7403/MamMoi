@@ -41,5 +41,22 @@ export default class SubscriptionPlanRepository {
     const response = await ApiClient.get(`/api/subscriptionplans/name/${planName}`);
     return response?.data || response;
   }
+
+  /**
+   * Get current user's active subscription plan
+   * @returns {Promise<Object|null>} Current user's subscription plan, or null if no active subscription
+   */
+  static async getCurrentUserSubscription() {
+    try {
+      const response = await ApiClient.get("/api/subscriptionplans/current");
+      return response?.data || response || null;
+    } catch (error) {
+      // If 404, user has no active subscription
+      if (error?.response?.status === 404) {
+        return null;
+      }
+      throw error;
+    }
+  }
 }
 

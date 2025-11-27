@@ -111,6 +111,44 @@ public class SubscriptionPlansController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Get current user's active subscription
+    /// GET /api/subscriptionplans/current
+    /// </summary>
+    [HttpGet("current")]
+    [ProducesResponseType(typeof(SubscriptionPlanDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCurrentUserSubscription()
+    {
+        try
+        {
+            // Get userId from claims
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out int userId))
+            {
+                return Unauthorized(new { success = false, message = "User ID not found in token" });
+            }
+
+            // Get current user's active subscription
+            var subscription = await _subscriptionPlanService.GetCurrentUserSubscriptionAsync(userId);
+            if (subscription == null)
+            {
+                return NotFound(new { success = false, message = "No active subscription found" });
+            }
+
+            return Ok(new
+            {
+                success = true,
+                data = subscription
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting current user subscription");
+            return StatusCode(500, new { success = false, message = "Internal server error" });
+        }
+    }
+
     #endregion
 
     #region Admin Only Endpoints

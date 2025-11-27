@@ -2188,6 +2188,29 @@ export default function UserProfile() {
     fetchPlans();
   }, []);
 
+  // Fetch current user subscription
+  useEffect(() => {
+    const fetchCurrentSubscription = async () => {
+      try {
+        const subscription = await SubscriptionPlanRepository.getCurrentUserSubscription();
+        if (subscription) {
+          setCurrentSubscription(subscription);
+          setCurrentPackage(subscription.planName); // Keep for backward compatibility
+        } else {
+          // No active subscription, default to free plan (ID 1)
+          setCurrentSubscription({ planId: 1, planName: "Free" });
+          setCurrentPackage("Free");
+        }
+      } catch (error) {
+        console.error("Error fetching current subscription:", error);
+        // Default to free plan on error
+        setCurrentSubscription({ planId: 1, planName: "Free" });
+        setCurrentPackage("Free");
+      }
+    };
+    fetchCurrentSubscription();
+  }, []);
+
   // Handle upgrade plan click
   const handleUpgradePlan = (plan) => {
     navigate('/checkout', { 
@@ -2250,7 +2273,8 @@ export default function UserProfile() {
   const [paymentDateTo, setPaymentDateTo] = useState("");
 
   const [activeMenu, setActiveMenu] = useState("account"); // "account" | "password" | "history" | "upgrade"
-  const [currentPackage, setCurrentPackage] = useState("Starter"); // Gói hiện tại
+  const [currentPackage, setCurrentPackage] = useState("Starter"); // Gói hiện tại (deprecated, use currentSubscription)
+  const [currentSubscription, setCurrentSubscription] = useState(null); // Current subscription plan object
   const [pwOpen, setPwOpen] = useState(false);
   const [pwModalTab, setPwModalTab] = useState("change"); // change | forgot
   const [addGardenOpen, setAddGardenOpen] = useState(false);
@@ -3492,7 +3516,11 @@ export default function UserProfile() {
                       ) : (
                         subscriptionPlans.map((plan, index) => {
                           const isPopular = index === 1;
-                          const isCurrentPlan = currentPackage === plan.planName;
+                          // Check if this is the current plan or a lower priority plan (lower ID)
+                          const currentPlanId = currentSubscription?.planId || 1;
+                          const isCurrentPlan = plan.planId === currentPlanId;
+                          const isLowerPlan = plan.planId < currentPlanId;
+                          const shouldDisable = isCurrentPlan || isLowerPlan;
                           const features = (() => {
                             if (!plan.features) return [];
                             // Handle JSON array string like "[\"item1\", \"item2\"]"
@@ -3551,14 +3579,20 @@ export default function UserProfile() {
                                 className={`w-full h-12 rounded-xl font-medium ${
                                   isCurrentPlan
                                     ? "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                    : isLowerPlan
+                                    ? "bg-neutral-500/50 hover:bg-neutral-500/50 text-white/50 cursor-not-allowed"
                                     : isPopular
                                     ? "bg-yellow-500 hover:bg-yellow-600 text-white"
                                     : "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
                                 }`}
-                                disabled={isCurrentPlan}
-                                onClick={() => !isCurrentPlan && handleUpgradePlan(plan)}
+                                disabled={shouldDisable}
+                                onClick={() => !shouldDisable && handleUpgradePlan(plan)}
                               >
-                                {isCurrentPlan ? "Gói hiện tại" : "Nâng cấp ngay"}
+                                {isCurrentPlan 
+                                  ? "Gói hiện tại" 
+                                  : isLowerPlan 
+                                  ? "Gói thấp hơn" 
+                                  : "Nâng cấp ngay"}
                               </Button>
                             </div>
                           );
