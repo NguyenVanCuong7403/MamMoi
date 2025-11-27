@@ -380,6 +380,7 @@ export default function MamMoiQrCheckout() {
   // ====== Cancel Payment Dialog ======
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showCancelledMessage, setShowCancelledMessage] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   // ====== Window width for responsive layout ======
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
@@ -443,20 +444,58 @@ export default function MamMoiQrCheckout() {
   }, []);
 
   // Handle cancel payment confirmation
-  const handleConfirmCancel = () => {
-    setShowCancelDialog(false);
-    setShowCancelledMessage(true);
-    
-    // After 1.5 seconds, navigate back to previous page
-    setTimeout(() => {
+  const handleConfirmCancel = async () => {
+    if (!orderCode || orderCode === "---") {
+      // If no order code, just navigate away
+      setShowCancelDialog(false);
       if (returnUrl) {
-        // Navigate to specific return URL if provided
         navigate(returnUrl);
       } else {
-        // Go back to previous page in history (e.g., UserProfile or Price page)
         navigate(-1);
       }
-    }, 1500);
+      return;
+    }
+
+    setIsCancelling(true);
+    
+    try {
+      // Stop polling if it's running
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+        pollingRef.current = null;
+        setIsPolling(false);
+      }
+
+      // Call the cancel payment API
+      const response = await PaymentRepository.cancelPayment(orderCode);
+      
+      if (response?.success !== false) {
+        // Success - show cancelled message
+        setShowCancelDialog(false);
+        setShowCancelledMessage(true);
+        
+        // After 1.5 seconds, navigate back to previous page
+        setTimeout(() => {
+          if (returnUrl) {
+            // Navigate to specific return URL if provided
+            navigate(returnUrl);
+          } else {
+            // Go back to previous page in history (e.g., UserProfile or Price page)
+            navigate(-1);
+          }
+        }, 1500);
+      } else {
+        // Error from API
+        setError(response?.message || "Không thể hủy thanh toán. Vui lòng thử lại.");
+        setShowCancelDialog(false);
+      }
+    } catch (err) {
+      console.error("Error cancelling payment:", err);
+      setError("Đã xảy ra lỗi khi hủy thanh toán. Vui lòng thử lại.");
+      setShowCancelDialog(false);
+    } finally {
+      setIsCancelling(false);
+    }
   };
 
   useEffect(() => {
@@ -912,9 +951,17 @@ export default function MamMoiQrCheckout() {
             </Button>
             <Button
               onClick={handleConfirmCancel}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2.5 w-full sm:w-auto sm:min-w-[160px] text-xs sm:text-sm shrink-0 transition-all duration-200 ease-out whitespace-normal sm:whitespace-nowrap hover:shadow-lg hover:shadow-red-500/50 hover:-translate-y-0.5 active:translate-y-0 h-auto sm:h-10"
+              disabled={isCancelling}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 w-full sm:w-auto text-sm sm:text-base disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="text-center w-full">Có, hủy thanh toán</span>
+              {isCancelling ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                  Đang hủy...
+                </>
+              ) : (
+                "Có, hủy thanh toán"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

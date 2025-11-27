@@ -400,7 +400,7 @@ public class PaymentService : IPaymentService
             
             var bankInfo = new BankInfoDto
             {
-                BankName =  _configuration["PayOS:BankName"] ?? "Vietcombank",
+                BankName = _configuration["PayOS:BankName"] ?? "Vietcombank",
                 AccountNumber = payosResponse?.AccountNumber ?? _configuration["PayOS:AccountNumber"] ?? "1234567890",
                 AccountHolder = payosResponse?.AccountName ?? _configuration["PayOS:AccountHolder"] ?? "CONG TY TNHH MAM MOI",
                 Amount = amountInt,
@@ -768,7 +768,7 @@ public class PaymentService : IPaymentService
                         QrCode = payosResponse.Data.QrCode,
                         AccountNumber = payosResponse.Data.AccountNumber,
                         AccountName = payosResponse.Data.AccountName,
-                        BankName = payosResponse.Data.Bin, // Bank identification number
+                        BankID = payosResponse.Data.Bin, // Bank identification number
                         Description = payosResponse.Data.Description ?? ""
                     };
                 }
@@ -939,7 +939,7 @@ public class PaymentService : IPaymentService
         public string QrCode { get; set; } = "";
         public string AccountNumber { get; set; } = "";
         public string AccountName { get; set; } = "";
-        public string BankName { get; set; } = "";
+        public string BankID { get; set; } = "";
         public string Description { get; set; } = "";
     }
 
