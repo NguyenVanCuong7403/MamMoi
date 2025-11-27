@@ -65,6 +65,10 @@ public static class DependencyInjection
         // Register notification service
         services.AddScoped<INotificationService, MamMoi.Infrastructure.Services.Notifications.NotificationService>();
 
+        // Register lifecycle automation components
+        services.AddScoped<ITreeLifecycleAutomationService, TreeLifecycleAutomationService>();
+        services.AddHostedService<TreeLifecycleAutomationBackgroundService>();
+
         // Register background service for task expiration notifications
         services.AddHostedService<MamMoi.Infrastructure.Services.Notifications.TaskExpirationNotificationBackgroundService>();
 

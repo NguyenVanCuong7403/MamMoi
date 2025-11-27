@@ -230,6 +230,7 @@ export default function PlantGallery() {
             category: tree.category,
             soilMasterId: tree.soilMasterId,
             isActive: tree.isActive,
+            // These fields might not be in current DTO, but we'll handle gracefully
             description: tree.description || null,
             imageUrl:
               tree.imageUrl ||
@@ -420,6 +421,7 @@ export default function PlantGallery() {
 
       {/* Plant Grid Section - Full width with natural decorative elements */}
       <section className="relative z-10 w-full bg-transparent py-20">
+
         <div className="w-full">
           {loading ? (
             <div className="flex min-h-[500px] items-center justify-center">
@@ -564,3 +566,4 @@ export default function PlantGallery() {
     </div>
   );
 }
+

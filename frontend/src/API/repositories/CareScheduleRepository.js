@@ -78,6 +78,7 @@ export default class CareScheduleRepository {
    */
   static async searchTasks({
     treeId,
+    gardenId,
     taskType,
     status,
     priority,
@@ -92,6 +93,8 @@ export default class CareScheduleRepository {
     params.append("pageSize", pageSize);
 
     if (typeof treeId === "number" && treeId > 0) params.append("treeId", treeId);
+    if (typeof gardenId === "number" && gardenId > 0)
+      params.append("gardenId", gardenId);
     if (taskType) params.append("taskType", taskType);
     if (status) params.append("status", status);
     if (priority) params.append("priority", priority);

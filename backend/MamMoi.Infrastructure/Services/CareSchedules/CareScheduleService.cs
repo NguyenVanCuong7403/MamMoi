@@ -381,6 +381,11 @@ public class CareScheduleService : ICareScheduleService
             careSchedule.Notes = dto.Notes;
         }
 
+        if (!string.IsNullOrWhiteSpace(dto.Status))
+        {
+            careSchedule.Status = dto.Status.Trim();
+        }
+
         careSchedule.UpdatedAt = DateTime.UtcNow;
         _dbContext.CareSchedules.Update(careSchedule);
         await _dbContext.SaveChangesAsync();
@@ -510,6 +515,7 @@ public class CareScheduleService : ICareScheduleService
     /// </summary>
     public async Task<PagedResult<CareTaskSearchResultDto>> SearchTasksAsync(
         int? treeId = null,
+        int? gardenId = null,
         string? taskType = null,
         string? status = null,
         string? priority = null,
@@ -527,12 +533,16 @@ public class CareScheduleService : ICareScheduleService
 
         var query = _dbContext.CareSchedules
             .Include(c => c.Tree)
+                .ThenInclude(t => t.Garden)
             .Include(c => c.CompletedByUser)
             .AsQueryable();
 
         // Apply filters
         if (treeId.HasValue && treeId > 0)
             query = query.Where(c => c.TreeId == treeId);
+
+        if (gardenId.HasValue && gardenId > 0)
+            query = query.Where(c => c.Tree.GardenId == gardenId);
 
         if (!string.IsNullOrWhiteSpace(taskType))
         {
@@ -576,11 +586,15 @@ public class CareScheduleService : ICareScheduleService
             {
                 ScheduleId = c.ScheduleId,
                 TreeId = c.TreeId,
+                TreeCode = c.Tree.TreeCode,
                 TreeName = c.Tree.TreeName,
+                GardenId = c.Tree.GardenId,
+                GardenName = c.Tree.Garden != null ? c.Tree.Garden.Name : null,
                 TaskType = c.TaskType,
                 TaskName = c.TaskName,
                 Description = c.Description,
                 ScheduledDate = c.ScheduledDate,
+                ScheduledTimeOfDay = c.ScheduledTimeOfDay,
                 Status = c.Status,
                 Priority = c.Priority,
                 CreatedAt = c.CreatedAt

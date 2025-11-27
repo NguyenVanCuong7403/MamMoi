@@ -15,14 +15,29 @@ import { Leaf, Sprout, Droplets } from "lucide-react";
  * - palette (string[]): array of hex colors to use for the icons. The
  *   icons cycle through this palette based on their index.
  */
-export default function LivingBackground({ density = 28, baseColor = "#1F302F", palette = ["#34d399", "#7dd3fc", "#a78bfa"] }) {
+export default function LivingBackground({
+  density = 28,
+  baseColor = "#1F302F",
+  palette = ["#34d399", "#7dd3fc", "#a78bfa"],
+}) {
+  const paletteList = useMemo(() => {
+    if (Array.isArray(palette) && palette.length > 0) return palette;
+    if (palette && typeof palette === "object") {
+      const values = Object.values(palette).filter(
+        (value) => typeof value === "string" && value.trim() !== ""
+      );
+      if (values.length > 0) return values;
+    }
+    return ["#34d399", "#7dd3fc", "#a78bfa"];
+  }, [palette]);
+
   // Precompute the floating items on initial render. We memoise the
   // calculation so that rerenders don't reposition everything.
   const items = useMemo(() => {
     const IconSet = [Leaf, Sprout, Droplets];
     return Array.from({ length: density }).map((_, i) => {
       const Icon = IconSet[i % IconSet.length];
-      const color = palette[i % palette.length];
+      const color = paletteList[i % paletteList.length];
       const size = Math.round(Math.random() * 16 + 14); // 14–30px
       const left = Math.round(Math.random() * 1000) / 10; // 0–100%
       const dur = Math.round(Math.random() * 18 + 18); // 18–36s
@@ -34,7 +49,7 @@ export default function LivingBackground({ density = 28, baseColor = "#1F302F", 
       return { id: i, Icon, color, size, left, dur, delay, swayDur, swayAmp, rot, opacity };
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [density, palette.join(",")]);
+  }, [density, paletteList.join(",")]);
 
   return (
     <>

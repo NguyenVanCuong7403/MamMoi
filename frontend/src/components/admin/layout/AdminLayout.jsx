@@ -2,14 +2,16 @@ import React from "react";
 import { NavLink, Navigate } from "react-router-dom";
 import {
   BarChart3,
-  CreditCard,
-  Users,
-  Sprout,
-  Leaf,
-  Flower2,
-  Package,
-  Layers,
   Bell,
+  ClipboardList,
+  CreditCard,
+  Flower2,
+  Layers,
+  Leaf,
+  Package,
+  RefreshCcw,
+  Sprout,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/API/context/AuthContext";
@@ -53,6 +55,18 @@ const ROLE_NAV_ITEMS = {
       label: "Quản lý báo cáo",
       icon: BarChart3,
       path: "/admin/business/reports",
+    },
+    {
+      key: "tasks",
+      label: "Quản lý công việc",
+      icon: ClipboardList,
+      path: "/admin/business/tasks",
+    },
+    {
+      key: "lifecycle",
+      label: "Quy trình vòng đời",
+      icon: RefreshCcw,
+      path: "/admin/business/lifecycle",
     },
     {
       key: "tree-types",

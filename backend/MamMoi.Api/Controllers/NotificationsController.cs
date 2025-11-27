@@ -214,16 +214,18 @@ public class NotificationsController : ControllerBase
         {
             var broadcasts = await _notificationService.GetBroadcastNotificationsAsync();
 
+            var result = broadcasts.Select(b => new
+            {
+                groupId = b.GroupId,
+                sentAt = b.SentAt,
+                recipientCount = b.RecipientCount,
+                title = b.Title
+            }).ToList();
+
             return Ok(new
             {
                 success = true,
-                data = broadcasts.Select(b => new
-                {
-                    groupId = b.GroupId,
-                    sentAt = b.SentAt,
-                    recipientCount = b.RecipientCount,
-                    title = b.Title
-                })
+                data = result
             });
         }
         catch (Exception ex)

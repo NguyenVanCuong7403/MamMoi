@@ -76,16 +76,16 @@ public class AdminTreeTypeService : IAdminTreeTypeService
                 FloodTolerance = t.FloodTolerance,
                 FrostTolerance = t.FrostTolerance,
                 WindTolerance = t.WindTolerance,
-            ImageUrl = t.ImageUrl,
-            IsActive = t.IsActive,
-            CareGuide = t.CareGuide,
-            LightRequirement = t.LightRequirement,
-            WaterRequirement = t.WaterRequirement,
-            Pests = t.Pests,
-            SeasonalRoadmap = t.SeasonalRoadmap,
-            VarietiesCount = t.TreeVarieties.Count,
-            TreesCount = t.Trees.Count,
-            GrowthStagesCount = t.TreeGrowthStages.Count
+                ImageUrl = t.ImageUrl,
+                IsActive = t.IsActive,
+                CareGuide = t.CareGuide,
+                LightRequirement = t.LightRequirement,
+                WaterRequirement = t.WaterRequirement,
+                Pests = t.Pests,
+                SeasonalRoadmap = t.SeasonalRoadmap,
+                VarietiesCount = t.TreeVarieties.Count,
+                TreesCount = t.Trees.Count,
+                GrowthStagesCount = t.TreeGrowthStages.Count
             })
             .ToListAsync();
 
@@ -346,13 +346,13 @@ public class AdminTreeTypeService : IAdminTreeTypeService
         if (dto.ImageUrl != null)
         {
             var newImageUrl = string.IsNullOrWhiteSpace(dto.ImageUrl) ? null : dto.ImageUrl;
-            
+
             // Delete old image if exists and is being changed or removed
             if (!string.IsNullOrEmpty(treeType.ImageUrl) && treeType.ImageUrl != newImageUrl)
             {
                 await _imageUploadService.DeleteImageAsync(treeType.ImageUrl);
             }
-            
+
             treeType.ImageUrl = newImageUrl;
         }
 
@@ -416,4 +416,3 @@ public class AdminTreeTypeService : IAdminTreeTypeService
         return await DeleteTreeTypeAsync(treeTypeId);
     }
 }
-

@@ -6,37 +6,37 @@ namespace MamMoi.Infrastructure.Models;
 
 public partial class MamMoiDbContext : DbContext
 {
-  public MamMoiDbContext() { }
+    public MamMoiDbContext() { }
 
-  public MamMoiDbContext(DbContextOptions<MamMoiDbContext> options)
-      : base(options) { }
+    public MamMoiDbContext(DbContextOptions<MamMoiDbContext> options)
+        : base(options) { }
 
-  public virtual DbSet<ActivityLog> ActivityLogs { get; set; }
-  public virtual DbSet<Aiconsultation> Aiconsultations { get; set; }
-  public virtual DbSet<Airecommendation> Airecommendations { get; set; }
-  public virtual DbSet<CareSchedule> CareSchedules { get; set; }
-  public virtual DbSet<DiseaseLibrary> DiseaseLibraries { get; set; }
-  public virtual DbSet<Garden> Gardens { get; set; }
-  public virtual DbSet<GardenMember> GardenMembers { get; set; }
-  public virtual DbSet<GardenSoil> GardenSoils { get; set; }
-  public virtual DbSet<Notification> Notifications { get; set; }
-  public virtual DbSet<Payment> Payments { get; set; }
-  public virtual DbSet<Role> Roles { get; set; }
-  public virtual DbSet<SoilMaster> SoilMasters { get; set; }
-  public virtual DbSet<Subscription> Subscriptions { get; set; }
-  public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
-  public virtual DbSet<SupportRequest> SupportRequests { get; set; }
-  public virtual DbSet<SystemSetting> SystemSettings { get; set; }
-  public virtual DbSet<Tree> Trees { get; set; }
-  public virtual DbSet<TreeGrowthStage> TreeGrowthStages { get; set; }
-  public virtual DbSet<TreeImage> TreeImages { get; set; }
-  public virtual DbSet<TreeType> TreeTypes { get; set; }
-  public virtual DbSet<TreeVariety> TreeVarietys { get; set; }
-  public virtual DbSet<User> Users { get; set; }
-  public virtual DbSet<WeatherAlert> WeatherAlerts { get; set; }
-  public virtual DbSet<WeatherHistory> WeatherHistories { get; set; }
+    public virtual DbSet<ActivityLog> ActivityLogs { get; set; }
+    public virtual DbSet<Aiconsultation> Aiconsultations { get; set; }
+    public virtual DbSet<Airecommendation> Airecommendations { get; set; }
+    public virtual DbSet<CareSchedule> CareSchedules { get; set; }
+    public virtual DbSet<DiseaseLibrary> DiseaseLibraries { get; set; }
+    public virtual DbSet<Garden> Gardens { get; set; }
+    public virtual DbSet<GardenMember> GardenMembers { get; set; }
+    public virtual DbSet<GardenSoil> GardenSoils { get; set; }
+    public virtual DbSet<Notification> Notifications { get; set; }
+    public virtual DbSet<Payment> Payments { get; set; }
+    public virtual DbSet<Role> Roles { get; set; }
+    public virtual DbSet<SoilMaster> SoilMasters { get; set; }
+    public virtual DbSet<Subscription> Subscriptions { get; set; }
+    public virtual DbSet<SubscriptionPlan> SubscriptionPlans { get; set; }
+    public virtual DbSet<SupportRequest> SupportRequests { get; set; }
+    public virtual DbSet<SystemSetting> SystemSettings { get; set; }
+    public virtual DbSet<Tree> Trees { get; set; }
+    public virtual DbSet<TreeGrowthStage> TreeGrowthStages { get; set; }
+    public virtual DbSet<TreeImage> TreeImages { get; set; }
+    public virtual DbSet<TreeType> TreeTypes { get; set; }
+    public virtual DbSet<TreeVariety> TreeVarietys { get; set; }
+    public virtual DbSet<User> Users { get; set; }
+    public virtual DbSet<WeatherAlert> WeatherAlerts { get; set; }
+    public virtual DbSet<WeatherHistory> WeatherHistories { get; set; }
 
-  protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -486,6 +486,11 @@ public partial class MamMoiDbContext : DbContext
 
             entity.Property(e => e.CreatedAt).HasPrecision(0).HasDefaultValueSql("(sysdatetime())");
             entity.Property(e => e.UpdatedAt).HasPrecision(0);
+            entity.Property(e => e.LifecycleAutoEnabled)
+                  .HasColumnName("LifecycleAutoEnabled")
+                  .HasDefaultValue(true);
+            entity.Property(e => e.LifecycleAutoDisabledAt)
+                  .HasPrecision(0);
 
             entity.HasOne(d => d.Garden).WithMany(p => p.Trees)
                   .HasForeignKey(d => d.GardenId)
@@ -539,10 +544,10 @@ public partial class MamMoiDbContext : DbContext
             entity.HasKey(e => e.VarietyId)
                   .HasName("PK_TreeVariety");
 
-      entity.Property(e => e.VarietyId)
-                .HasColumnName("VarietyID")
-                .ValueGeneratedOnAdd()
-                .UseIdentityColumn();
+            entity.Property(e => e.VarietyId)
+                      .HasColumnName("VarietyID")
+                      .ValueGeneratedOnAdd()
+                      .UseIdentityColumn();
 
             // TreeTypeId (nullable FK)
             entity.Property(e => e.TreeTypeId)

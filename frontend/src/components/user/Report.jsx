@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { HelpCircle, Upload, X, Send, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -65,24 +65,6 @@ export default function Report() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef(null);
-  const noticeTimeoutRef = useRef(null);
-  const [showLoginNotice, setShowLoginNotice] = useState(false);
-
-  useEffect(() => {
-    return () => {
-      if (noticeTimeoutRef.current) {
-        clearTimeout(noticeTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      setForm((prev) => ({ ...prev, email: "" }));
-      setTouched((prev) => ({ ...prev, email: false }));
-      setErrors((prev) => ({ ...prev, email: "" }));
-    }
-  }, [user]);
 
   // Validation
   const validate = () => {
@@ -92,9 +74,9 @@ export default function Report() {
       newErrors.category = "Vui lòng chọn phân loại";
     }
 
-    if (!user && form.category === "auth" && !form.email.trim()) {
+    if (form.category === "auth" && !form.email.trim()) {
       newErrors.email = "Vui lòng nhập email";
-    } else if (!user && form.category === "auth" && form.email.trim()) {
+    } else if (form.category === "auth" && form.email.trim()) {
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(form.email.trim())) {
         newErrors.email = "Email không hợp lệ";
@@ -122,24 +104,6 @@ export default function Report() {
 
   const handleCategoryChange = (e) => {
     const value = e.target.value;
-
-    if (!user && value && value !== "auth") {
-      setShowLoginNotice(true);
-      if (noticeTimeoutRef.current) {
-        clearTimeout(noticeTimeoutRef.current);
-      }
-      noticeTimeoutRef.current = setTimeout(() => {
-        setShowLoginNotice(false);
-      }, 1500);
-      setForm((prev) => ({
-        ...prev,
-        category: "",
-        email: "",
-      }));
-      setErrors((prev) => ({ ...prev, category: "" }));
-      return;
-    }
-
     setForm((prev) => ({
       ...prev,
       category: value,
@@ -196,7 +160,7 @@ export default function Report() {
     // Mark all fields as touched
     setTouched({
       category: true,
-      email: !user && form.category === "auth",
+      email: form.category === "auth",
       title: true,
       content: true,
     });
@@ -210,7 +174,7 @@ export default function Report() {
     try {
       // Prepare description with email if provided
       let description = form.content;
-      if (!user && form.category === "auth" && form.email) {
+      if (form.category === "auth" && form.email) {
         description = `${form.content}\n\nEmail liên hệ: ${form.email}`;
       }
 
