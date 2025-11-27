@@ -110,6 +110,7 @@ export default class PaymentRepository {
    * @param {number} data.planId - Subscription plan ID
    * @param {string} [data.returnUrl] - Return URL after payment
    * @param {string} [data.cancelUrl] - Cancel URL
+   * @param {number} [data.subscriptionMonth] - Number of months for subscription (e.g., 12 for yearly)
    * @returns {Promise<Object>} Checkout response with QR code and bank info
    */
   static async createCheckout(data) {

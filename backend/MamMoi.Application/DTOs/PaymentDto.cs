@@ -159,6 +159,9 @@ public class CreateCheckoutRequestDto
 
     /// <summary>Cancel URL if user cancels payment</summary>
     public string? CancelUrl { get; set; }
+
+    /// <summary>Cancel URL if user cancels payment</summary>
+    public int? SubscriptionMonth { get; set; }
 }
 
 /// <summary>

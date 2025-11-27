@@ -89,11 +89,12 @@ export default function MamMoiQrCheckout() {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Get planId from location state or URL params
+  // Get planId and subscription info from location state or URL params
   const searchParams = new URLSearchParams(location.search);
   const planIdFromUrl = searchParams.get("planId");
   const planIdFromState = location.state?.planId;
   const planId = planIdFromState || planIdFromUrl || null;
+  const isYearly = location.state?.isYearly || false; // Check if yearly subscription was selected
   
   // State for checkout data from API
   const [loading, setLoading] = useState(true);
@@ -137,6 +138,7 @@ export default function MamMoiQrCheckout() {
           planId: parseInt(planId),
           returnUrl: `${window.location.origin}/invoice`,
           cancelUrl: `${window.location.origin}/price`,
+          subscriptionMonth: isYearly ? 12 : null, // Pass 12 months for yearly, null for monthly
         });
         
         if (response?.success) {
@@ -227,7 +229,7 @@ export default function MamMoiQrCheckout() {
         clearInterval(pollInterval);
         setIsPolling(false);
       }
-    }, 2000); // Poll every 2 seconds
+    }, 10000); // Poll every 10 seconds
     
     return () => clearInterval(pollInterval);
   }, [autoReconcile, isPolling, orderCode, navigate, order, bank, transactionId]);
@@ -250,6 +252,7 @@ export default function MamMoiQrCheckout() {
         planId: parseInt(planId),
         returnUrl: `${window.location.origin}/invoice`,
         cancelUrl: `${window.location.origin}/price`,
+        subscriptionMonth: isYearly ? 12 : null, // Pass 12 months for yearly, null for monthly
       });
       
       if (response?.success) {

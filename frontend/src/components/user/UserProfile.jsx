@@ -2190,7 +2190,14 @@ export default function UserProfile() {
 
   // Handle upgrade plan click
   const handleUpgradePlan = (plan) => {
-    navigate('/checkout', { state: { planId: plan.planId, planName: plan.planName, price: plan.price } });
+    navigate('/checkout', { 
+      state: { 
+        planId: plan.planId, 
+        planName: plan.planName, 
+        price: plan.price,
+        isYearly: false // UserProfile shows monthly pricing
+      } 
+    });
   };
 
   // Helper function to map API status to Vietnamese display status

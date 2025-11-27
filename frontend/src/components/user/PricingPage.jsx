@@ -57,7 +57,15 @@ export default function PricingPage() {
 
   const handleSelectPlan = (plan) => {
     // Navigate to checkout with plan ID
-    navigate('/checkout', { state: { planId: plan.id, planName: plan.name, price: plan.monthlyPrice } });
+    // Since PricingPage shows yearlyPrice as the main price, pass isYearly: true
+    navigate('/checkout', { 
+      state: { 
+        planId: plan.id, 
+        planName: plan.name, 
+        price: plan.yearlyPrice,
+        isYearly: true // Indicates yearly subscription (12 months)
+      } 
+    });
   };
 
   const formatPrice = (price) => {

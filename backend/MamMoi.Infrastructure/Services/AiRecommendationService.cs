@@ -61,11 +61,16 @@ namespace MamMoi.Infrastructure.Services
 
             // TODO: nếu muốn thêm weather thì gọi IWeatherService ở đây
             object? weatherInfo = null;
-
-            weatherInfo = await _weatherService.GetCurrentByLocationAsync(tree.Garden.Location
-    ?.Split(',', StringSplitOptions.RemoveEmptyEntries)
-    ?.Last()
-    ?.Trim(), ct);
+            try
+            {
+                weatherInfo = await _weatherService.GetCurrentByLocationAsync(tree.Garden.Location
+        ?.Split(',', StringSplitOptions.RemoveEmptyEntries)
+        ?.Last()
+        ?.Trim(), ct);
+            } catch(Exception e)
+            {
+                Console.WriteLine($"[Weather API Error]: {e.Message}");
+            }
 
             // 2. Convert sang DTO nhẹ cho prompt (tránh ném cả EF nav)
             var dto = new

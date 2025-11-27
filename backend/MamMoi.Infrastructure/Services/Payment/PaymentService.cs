@@ -328,11 +328,13 @@ public class PaymentService : IPaymentService
             var displayOrderCode = GenerateDisplayOrderCode(plan.PlanName, numericOrderCode);
             var transactionId = GenerateTransactionId();
 
+            int totalMonth = (int)((plan.DurationInMonths.HasValue ? plan.DurationInMonths.Value : 0) + (request.SubscriptionMonth != null ? request.SubscriptionMonth : 0));
+
             // Calculate amounts (PayOS requires integer amount in VND)
             var subtotal = plan.Price;
             var fee = 0m; // VAT/fee if applicable
             var total = subtotal + fee;
-            var amountInt = (int)Math.Round(total);
+            var amountInt = (int)Math.Round(total) * ((totalMonth == 0) ? 1 : ((totalMonth == 12) ? 10 : totalMonth));
 
             // Create subscription record (pending)
             var subscription = new Subscription
@@ -341,8 +343,8 @@ public class PaymentService : IPaymentService
                 PlanName = plan.PlanName,
                 PlanType = plan.PlanType,
                 StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                EndDate = plan.DurationInMonths.HasValue 
-                    ? DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(plan.DurationInMonths.Value))
+                EndDate = (totalMonth != 0)
+                    ? DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(totalMonth))
                     : null,
                 Status = "Pending",
                 Price = plan.Price,
@@ -357,7 +359,7 @@ public class PaymentService : IPaymentService
                 SubscriptionId = subscription.SubscriptionId,
                 UserId = userId,
                 PaymentDate = DateTime.UtcNow,
-                Amount = total,
+                Amount = amountInt,
                 Currency = plan.Currency,
                 PaymentMethod = "QR (PayOS)",
                 PaymentProvider = "PayOS",
@@ -372,8 +374,8 @@ public class PaymentService : IPaymentService
             await _context.SaveChangesAsync();
 
             // Build response defaults
-            var period = plan.DurationInMonths.HasValue 
-                ? $"{plan.DurationInMonths} tháng" 
+            var period = (totalMonth != 0)
+                ? $"{totalMonth} tháng" 
                 : "Không giới hạn";
 
             var returnUrl = request.ReturnUrl ?? _configuration["PayOS:ReturnUrl"] ?? "http://localhost:5174/invoice";
@@ -396,7 +398,7 @@ public class PaymentService : IPaymentService
                 BankName = payosResponse?.BankName ?? _configuration["PayOS:BankName"] ?? "Vietcombank",
                 AccountNumber = payosResponse?.AccountNumber ?? _configuration["PayOS:AccountNumber"] ?? "1234567890",
                 AccountHolder = payosResponse?.AccountName ?? _configuration["PayOS:AccountHolder"] ?? "CONG TY TNHH MAM MOI",
-                Amount = total,
+                Amount = amountInt,
                 TransferNote = $"{displayOrderCode} {plan.PlanName} {transactionId}"
             };
 
@@ -419,7 +421,7 @@ public class PaymentService : IPaymentService
                     Period = period,
                     Subtotal = subtotal,
                     Fee = fee,
-                    Total = total
+                    Total = amountInt
                 }
             };
         }
