@@ -400,7 +400,7 @@ public class PaymentService : IPaymentService
             
             var bankInfo = new BankInfoDto
             {
-                BankName = payosResponse?.BankName ?? _configuration["PayOS:BankName"] ?? "Vietcombank",
+                BankName =  _configuration["PayOS:BankName"] ?? "Vietcombank",
                 AccountNumber = payosResponse?.AccountNumber ?? _configuration["PayOS:AccountNumber"] ?? "1234567890",
                 AccountHolder = payosResponse?.AccountName ?? _configuration["PayOS:AccountHolder"] ?? "CONG TY TNHH MAM MOI",
                 Amount = amountInt,

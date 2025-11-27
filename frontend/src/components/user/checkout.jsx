@@ -82,6 +82,11 @@ const RESPONSIVE_QR_STYLES = `
   .mm-qr-payment-card .mm-qr-content {
     display: flex !important;
     flex-direction: column !important;
+    grid-template-columns: none !important;
+  }
+  .mm-qr-payment-card .mm-qr-content > * {
+    width: 100% !important;
+    max-width: 100% !important;
   }
 }
 @media (max-width: 900px) {
@@ -283,6 +288,20 @@ export default function MamMoiQrCheckout() {
   // ====== Cancel Payment Dialog ======
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [showCancelledMessage, setShowCancelledMessage] = useState(false);
+
+  // ====== Window width for responsive layout ======
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowWidth(window.innerWidth);
+    };
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   // ====== QR Code Size (responsive) ======
   const [qrSize, setQrSize] = useState(320);
@@ -611,7 +630,10 @@ export default function MamMoiQrCheckout() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="flex flex-col xl:grid gap-4 sm:gap-6 md:gap-8 pt-2 px-4 sm:px-6 min-w-0 overflow-visible mm-qr-content" style={{ gridTemplateColumns: 'minmax(min-content, min(100%, 380px)) minmax(0, 1fr)' }}>
+            <CardContent 
+              className="flex flex-col xl:grid gap-4 sm:gap-6 md:gap-8 pt-2 px-4 sm:px-6 min-w-0 overflow-visible mm-qr-content" 
+              style={windowWidth >= 1280 ? { gridTemplateColumns: 'minmax(min-content, min(100%, 380px)) minmax(0, 1fr)' } : {}}
+            >
               {/* QR block */}
               <div className="flex flex-col items-center gap-3 sm:gap-4 relative w-full min-w-0">
                 <div 
