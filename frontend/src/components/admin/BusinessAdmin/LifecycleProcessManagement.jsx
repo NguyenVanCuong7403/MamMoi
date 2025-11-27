@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
-  ArrowDownCircle,
-  ArrowUpCircle,
   Loader2,
   RefreshCcw,
   Save,
@@ -23,6 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import LifecycleWidget from "@/components/user/LifecycleWidget";
 import AdminTreeRepository from "@/API/repositories/AdminTreeRepository";
 import {
@@ -154,6 +160,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
   const [notice, setNotice] = useState(null);
   const [saving, setSaving] = useState(false);
   const [pendingAddPhase, setPendingAddPhase] = useState("");
+  const [editingPhaseId, setEditingPhaseId] = useState(null);
 
   const handleSelectTreeType = useCallback(async (treeTypeId) => {
     if (!treeTypeId) return;
@@ -238,19 +245,37 @@ export default function BusinessAdminLifecycleProcessManagement() {
     );
   };
 
-  const handleReorder = (phaseId, direction) => {
+  const handleNodeReorder = useCallback((phaseId, targetIdx) => {
+    if (typeof targetIdx !== "number") return;
     setPhaseRows((prev) => {
       const ordered = [...prev].sort((a, b) => a.order - b.order);
-      const idx = ordered.findIndex((phase) => phase.phaseId === phaseId);
-      if (idx < 0) return prev;
-      const targetIdx = idx + direction;
-      if (ordered[idx].phaseId === "growth_development") return prev;
-      if (targetIdx < 1 || targetIdx >= ordered.length) return prev;
-      const clone = [...ordered];
-      [clone[idx], clone[targetIdx]] = [clone[targetIdx], clone[idx]];
-      return clone.map((phase, index) => ({ ...phase, order: index }));
+      const foundation = ordered.find(
+        (phase) => phase.phaseId === "growth_development"
+      );
+      const cycles = ordered.filter(
+        (phase) => phase.phaseId !== "growth_development"
+      );
+      if (!cycles.length) return prev;
+      const fromIdx = cycles.findIndex((phase) => phase.phaseId === phaseId);
+      if (fromIdx === -1) return prev;
+      const clampedIdx = Math.min(
+        Math.max(targetIdx, 0),
+        Math.max(cycles.length - 1, 0)
+      );
+      if (fromIdx === clampedIdx) return prev;
+      const updatedCycles = [...cycles];
+      const [moving] = updatedCycles.splice(fromIdx, 1);
+      updatedCycles.splice(clampedIdx, 0, moving);
+      const merged = foundation
+        ? [foundation, ...updatedCycles]
+        : updatedCycles;
+      return merged.map((phase, index) => ({ ...phase, order: index }));
     });
-  };
+  }, []);
+
+  const handlePhaseNodeClick = useCallback((phaseId) => {
+    setEditingPhaseId(phaseId);
+  }, []);
 
   const handleResetToOriginal = () => {
     if (!initialSerialized) return;
@@ -269,15 +294,35 @@ export default function BusinessAdminLifecycleProcessManagement() {
     [phaseRows]
   );
 
+  const editingPhase = useMemo(
+    () => phaseRows.find((phase) => phase.phaseId === editingPhaseId) || null,
+    [phaseRows, editingPhaseId]
+  );
+  const editingPhaseOrder = useMemo(() => {
+    if (!editingPhase) return null;
+    const idx = sortedPhaseRows.findIndex(
+      (phase) => phase.phaseId === editingPhase.phaseId
+    );
+    return idx >= 0 ? idx + 1 : null;
+  }, [editingPhase, sortedPhaseRows]);
+  const editingPhaseIsBase =
+    editingPhase?.phaseId === "growth_development" || false;
+  const isEditDialogOpen = Boolean(editingPhase);
+
   const handleAddPhase = () => {
     const targetId = pendingAddPhase || missingPhaseIds[0];
     if (!targetId) return;
+    let createdPhase = null;
     setPhaseRows((prev) => {
       const nextOrder =
         prev.length > 0 ? Math.max(...prev.map((phase) => phase.order)) + 1 : 0;
-      return [...prev, createPhaseRowFromId(targetId, nextOrder)];
+      createdPhase = createPhaseRowFromId(targetId, nextOrder);
+      return [...prev, createdPhase];
     });
     setPendingAddPhase("");
+    if (createdPhase) {
+      setEditingPhaseId(createdPhase.phaseId);
+    }
   };
 
   const handleRemovePhase = (phaseId) => {
@@ -300,6 +345,10 @@ export default function BusinessAdminLifecycleProcessManagement() {
     }
     setPhaseRows((prev) => prev.filter((phase) => phase.phaseId !== phaseId));
   };
+
+  const handleCloseDialog = useCallback(() => {
+    setEditingPhaseId(null);
+  }, []);
 
   const handleSave = async () => {
     if (!selectedTreeTypeId) return;
@@ -501,297 +550,273 @@ export default function BusinessAdminLifecycleProcessManagement() {
               </div>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                      Xem trước animation
-                    </p>
-                    <p className="text-sm text-slate-600">
-                      Thay đổi sẽ áp dụng trực tiếp lên widget bên phải.
-                    </p>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
-                  <LifecycleWidget
-                    disabled
-                    tree={{}}
-                    treeId={selectedTreeTypeId || "preview"}
-                    treeType={selectedTreeType?.treeTypeName || "Loại cây"}
-                    treeVariety={selectedTreeType?.scientificName || "Giống"}
-                    phaseTheme={sortedPhaseRows}
-                    phase1Completed
-                    value={
-                      sortedPhaseRows.find(
-                        (p) => p.phaseId !== "growth_development"
-                      )?.phaseId
-                    }
-                    autoLifecycleEnabled={false}
-                    autoLifecycleDisabledAt={null}
-                  />
-                </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                  Tuỳ chỉnh trực quan
+                </p>
+                <p className="text-sm text-slate-600">
+                  Giữ và kéo các node trên vòng đời để thay đổi thứ tự. Nhấn vào
+                  node để mở popup chỉnh sửa chi tiết.
+                </p>
               </div>
-
-              <div className="space-y-4">
-                {detailLoading && (
-                  <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Đang tải cấu hình quy trình...</span>
-                    </div>
+              {detailLoading && (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Đang tải cấu hình quy trình...</span>
                   </div>
-                )}
-                {sortedPhaseRows.map((phase, index) => {
-                  const isPhase1 = phase.phaseId === "growth_development";
-                  const colorOption =
-                    LIFECYCLE_COLOR_OPTIONS.find(
-                      (opt) => opt.value === phase.colorKey
-                    ) || LIFECYCLE_COLOR_OPTIONS[0];
-                  return (
-                    <div
-                      key={phase.phaseId}
-                      className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <p className="text-xs uppercase tracking-wide text-slate-400">
-                            Giai đoạn {index + 1}
-                          </p>
-                          <div className="flex items-center gap-2">
-                            <span className="text-2xl">{phase.icon}</span>
-                            <div>
-                              <p className="text-base font-semibold text-slate-900">
-                                {phase.label}
-                              </p>
-                              <p className="text-xs text-slate-500">
-                                ID hệ thống: <b>{phase.phaseId}</b>
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                        {!isPhase1 && (
-                          <div className="flex gap-2">
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={() => handleReorder(phase.phaseId, -1)}
-                              disabled={index <= 1}
-                              title="Di chuyển lên"
-                            >
-                              <ArrowUpCircle className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={() => handleReorder(phase.phaseId, +1)}
-                              disabled={index >= sortedPhaseRows.length - 1}
-                              title="Di chuyển xuống"
-                            >
-                              <ArrowDownCircle className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="outline"
-                              onClick={() => handleRemovePhase(phase.phaseId)}
-                              disabled={phase.phaseId === "growth_development"}
-                              title="Xoá giai đoạn"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase text-slate-500">
-                            Tên giai đoạn hiển thị
-                          </label>
-                          <Input
-                            value={phase.label}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                phase.phaseId,
-                                "label",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase text-slate-500">
-                            Ghi chú / thời điểm
-                          </label>
-                          <Input
-                            value={phase.subtitle}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                phase.phaseId,
-                                "subtitle",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-3 space-y-2">
-                        <label className="text-xs font-semibold uppercase text-slate-500">
-                          Nội dung mô tả
-                        </label>
-                        <Textarea
-                          value={phase.description}
-                          rows={3}
-                          onChange={(e) =>
-                            handleFieldChange(
-                              phase.phaseId,
-                              "description",
-                              e.target.value
-                            )
-                          }
-                        />
-                      </div>
-
-                      <div className="mt-3 grid gap-3 md:grid-cols-3">
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase text-slate-500">
-                            Icon / Emoji
-                          </label>
-                          <Input
-                            value={phase.icon}
-                            maxLength={4}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                phase.phaseId,
-                                "icon",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase text-slate-500">
-                            Màu nút
-                          </label>
-                          <Select
-                            value={phase.colorKey}
-                            onValueChange={(value) =>
-                              handleFieldChange(
-                                phase.phaseId,
-                                "colorKey",
-                                value
-                              )
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Chọn màu" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {LIFECYCLE_COLOR_OPTIONS.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  <span className="inline-flex items-center gap-2">
-                                    <span
-                                      className={`inline-block h-3 w-3 rounded-full ${opt.className}`}
-                                    />
-                                    {opt.label}
-                                  </span>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase text-slate-500">
-                            Màu đường nối
-                          </label>
-                          <Select
-                            value={phase.lineColorKey || phase.colorKey}
-                            onValueChange={(value) =>
-                              handleFieldChange(
-                                phase.phaseId,
-                                "lineColorKey",
-                                value
-                              )
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Chọn màu" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {LIFECYCLE_COLOR_OPTIONS.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  <span className="inline-flex items-center gap-2">
-                                    <span
-                                      className={`inline-block h-3 w-3 rounded-full ${opt.className}`}
-                                    />
-                                    {opt.label}
-                                  </span>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 grid gap-3 md:grid-cols-2">
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase text-slate-500">
-                            Kiểu đường chạy
-                          </label>
-                          <Select
-                            value={phase.lineStyle}
-                            onValueChange={(value) =>
-                              handleFieldChange(
-                                phase.phaseId,
-                                "lineStyle",
-                                value
-                              )
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Chọn kiểu đường" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {LIFECYCLE_LINE_STYLES.map((opt) => (
-                                <SelectItem key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-semibold uppercase text-slate-500">
-                            Thứ tự hiển thị
-                          </label>
-                          <Input
-                            type="number"
-                            value={phase.order}
-                            onChange={(e) =>
-                              handleFieldChange(
-                                phase.phaseId,
-                                "order",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-2 text-xs text-slate-500">
-                        Màu hiện tại:{" "}
-                        <span className="font-semibold">
-                          {colorOption.label}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                </div>
+              )}
+              <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3">
+                <LifecycleWidget
+                  disabled
+                  tree={{}}
+                  treeId={selectedTreeTypeId || "preview"}
+                  treeType={selectedTreeType?.treeTypeName || "Loại cây"}
+                  treeVariety={selectedTreeType?.scientificName || "Giống"}
+                  phaseTheme={sortedPhaseRows}
+                  phase1Completed
+                  value={
+                    sortedPhaseRows.find(
+                      (p) => p.phaseId !== "growth_development"
+                    )?.phaseId
+                  }
+                  autoLifecycleEnabled={false}
+                  autoLifecycleDisabledAt={null}
+                  enableNodeEditing
+                  onPhaseNodeClick={handlePhaseNodeClick}
+                  onPhaseNodeReorder={handleNodeReorder}
+                />
               </div>
             </div>
           </section>
         </div>
       </div>
+
+      <Dialog
+        open={isEditDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            handleCloseDialog();
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl space-y-4">
+          <DialogHeader>
+            <DialogTitle>
+              Chỉnh sửa {editingPhase?.label || "giai đoạn"}
+            </DialogTitle>
+            <DialogDescription>
+              Cập nhật nội dung hiển thị cho node này. Giữ và kéo node để đổi
+              thứ tự trực tiếp trên vòng đời.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingPhase && (
+            <div className="space-y-4">
+              <div className="rounded-xl bg-slate-50 px-3 py-2 text-xs text-slate-600 flex items-center justify-between">
+                <span>
+                  Giai đoạn hệ thống: <b>{editingPhase.phaseId}</b>
+                </span>
+                {editingPhaseOrder && (
+                  <span>
+                    Thứ tự hiển thị: <b>{editingPhaseOrder}</b>
+                  </span>
+                )}
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase text-slate-500">
+                    Tên giai đoạn hiển thị
+                  </label>
+                  <Input
+                    value={editingPhase.label}
+                    onChange={(e) =>
+                      handleFieldChange(
+                        editingPhase.phaseId,
+                        "label",
+                        e.target.value
+                      )
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase text-slate-500">
+                    Ghi chú / thời điểm
+                  </label>
+                  <Input
+                    value={editingPhase.subtitle}
+                    onChange={(e) =>
+                      handleFieldChange(
+                        editingPhase.phaseId,
+                        "subtitle",
+                        e.target.value
+                      )
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-semibold uppercase text-slate-500">
+                  Nội dung mô tả
+                </label>
+                <Textarea
+                  rows={4}
+                  value={editingPhase.description}
+                  onChange={(e) =>
+                    handleFieldChange(
+                      editingPhase.phaseId,
+                      "description",
+                      e.target.value
+                    )
+                  }
+                />
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase text-slate-500">
+                    Icon / Emoji
+                  </label>
+                  <Input
+                    value={editingPhase.icon}
+                    maxLength={4}
+                    onChange={(e) =>
+                      handleFieldChange(
+                        editingPhase.phaseId,
+                        "icon",
+                        e.target.value
+                      )
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase text-slate-500">
+                    Màu nút
+                  </label>
+                  <Select
+                    value={editingPhase.colorKey}
+                    onValueChange={(value) =>
+                      handleFieldChange(editingPhase.phaseId, "colorKey", value)
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn màu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LIFECYCLE_COLOR_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          <span className="inline-flex items-center gap-2">
+                            <span
+                              className={`inline-block h-3 w-3 rounded-full ${opt.className}`}
+                            />
+                            {opt.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase text-slate-500">
+                    Màu đường nối
+                  </label>
+                  <Select
+                    value={editingPhase.lineColorKey || editingPhase.colorKey}
+                    onValueChange={(value) =>
+                      handleFieldChange(
+                        editingPhase.phaseId,
+                        "lineColorKey",
+                        value
+                      )
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn màu" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LIFECYCLE_COLOR_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          <span className="inline-flex items-center gap-2">
+                            <span
+                              className={`inline-block h-3 w-3 rounded-full ${opt.className}`}
+                            />
+                            {opt.label}
+                          </span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase text-slate-500">
+                    Kiểu đường chạy
+                  </label>
+                  <Select
+                    value={editingPhase.lineStyle}
+                    onValueChange={(value) =>
+                      handleFieldChange(
+                        editingPhase.phaseId,
+                        "lineStyle",
+                        value
+                      )
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Chọn kiểu đường" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LIFECYCLE_LINE_STYLES.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2 text-xs text-slate-500">
+                  <label className="font-semibold uppercase">Ghi chú</label>
+                  <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-2">
+                    Thứ tự được xác định bằng thao tác kéo trực tiếp.
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {!editingPhaseIsBase && editingPhase && (
+              <Button
+                type="button"
+                variant="destructive"
+                className="gap-2"
+                onClick={() => {
+                  handleRemovePhase(editingPhase.phaseId);
+                  handleCloseDialog();
+                }}
+              >
+                <Trash2 className="h-4 w-4" />
+                Xoá giai đoạn
+              </Button>
+            )}
+            <div className="flex w-full justify-end gap-2 sm:w-auto">
+              <Button
+                variant="outline"
+                type="button"
+                onClick={handleCloseDialog}
+              >
+                Đóng
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }

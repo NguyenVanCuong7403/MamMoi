@@ -1,4 +1,5 @@
 import React, {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -188,6 +189,9 @@ function LifecycleTimeline({
   postHideIdx,
   onPhaseGateChange,
   phaseConfigs,
+  editableNodes = false,
+  onNodeClick,
+  onNodeReorder,
 }) {
   const defaultPhase1 = {
     id: "growth_development",
@@ -526,6 +530,141 @@ function LifecycleTimeline({
   };
   const connectorColor =
     PHASE_COLORS[cyclePhases[0]?.id] || phase1.lineColorHex || "#ec4899";
+  const nodeLayerRef = useRef(null);
+  const [dragState, setDragState] = useState(null);
+  const dragStateRef = useRef(null);
+  const nodeInteractionEnabled =
+    editableNodes || typeof onNodeClick === "function";
+  const allowPhase1Click = typeof onNodeClick === "function";
+  const segmentAngle = cyclePhases.length
+    ? (2 * Math.PI) / cyclePhases.length
+    : 0;
+
+  useEffect(() => {
+    dragStateRef.current = dragState;
+  }, [dragState]);
+
+  const computeIndexFromPointer = useCallback(
+    (clientX, clientY) => {
+      if (!nodeLayerRef.current || !cyclePhases.length || !segmentAngle) {
+        return null;
+      }
+      const rect = nodeLayerRef.current.getBoundingClientRect();
+      const relX = clientX - (rect.left + centerX);
+      const relY = clientY - (rect.top + centerY);
+      const angle = Math.atan2(relY, relX);
+      const normalized = (angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
+      const rawIndex = Math.round(normalized / segmentAngle);
+      const clamped = Math.min(
+        Math.max(rawIndex, 0),
+        cyclePhases.length - 1
+      );
+      return clamped;
+    },
+    [centerX, centerY, cyclePhases.length, segmentAngle]
+  );
+
+  const handlePointerMove = useCallback((event) => {
+    setDragState((prev) => {
+      if (!prev) return prev;
+      const hasMoved =
+        prev.hasMoved ||
+        Math.abs(event.clientX - prev.pointer.x) > 2 ||
+        Math.abs(event.clientY - prev.pointer.y) > 2;
+      return {
+        ...prev,
+        pointer: { x: event.clientX, y: event.clientY },
+        hasMoved,
+      };
+    });
+  }, []);
+
+  const handlePointerUp = useCallback(
+    (event) => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      const state = dragStateRef.current;
+      dragStateRef.current = null;
+      if (!state) return;
+      setDragState(null);
+
+      if (
+        state.hasMoved &&
+        editableNodes &&
+        typeof onNodeReorder === "function"
+      ) {
+        const dropIndex = computeIndexFromPointer(
+          event.clientX,
+          event.clientY
+        );
+        if (
+          dropIndex !== null &&
+          dropIndex !== state.originIndex &&
+          dropIndex >= 0
+        ) {
+          onNodeReorder(state.id, dropIndex);
+        }
+      } else if (!state.hasMoved && typeof onNodeClick === "function") {
+        onNodeClick(state.id);
+      }
+    },
+    [
+      handlePointerMove,
+      editableNodes,
+      onNodeReorder,
+      computeIndexFromPointer,
+      onNodeClick,
+    ]
+  );
+
+  useEffect(() => {
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+    };
+  }, [handlePointerMove, handlePointerUp]);
+
+  const startDrag = useCallback(
+    (phaseId, idx, event) => {
+      if (!editableNodes) return;
+      event.preventDefault();
+      event.stopPropagation();
+      if (!nodeLayerRef.current) return;
+
+      const layerRect = nodeLayerRef.current.getBoundingClientRect();
+      const total = cyclePhases.length || 1;
+      const angle = idx * ((2 * Math.PI) / total) - Math.PI / 2;
+      const nodeCenter = {
+        x: layerRect.left + centerX + radius * Math.cos(angle),
+        y: layerRect.top + centerY + radius * Math.sin(angle),
+      };
+      const pointer = { x: event.clientX, y: event.clientY };
+      const offset = {
+        x: pointer.x - nodeCenter.x,
+        y: pointer.y - nodeCenter.y,
+      };
+      const initialState = {
+        id: phaseId,
+        originIndex: idx,
+        pointer,
+        offset,
+        hasMoved: false,
+      };
+      dragStateRef.current = initialState;
+      setDragState(initialState);
+      window.addEventListener("pointermove", handlePointerMove);
+      window.addEventListener("pointerup", handlePointerUp);
+    },
+    [
+      editableNodes,
+      cyclePhases.length,
+      handlePointerMove,
+      handlePointerUp,
+      centerX,
+      centerY,
+      radius,
+    ]
+  );
 
   return (
     <div className="w-full">
@@ -555,12 +694,22 @@ function LifecycleTimeline({
             </span>
           </div>
 
-          <div
-            className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg mb-1.5 pointer-events-none
+        <div
+          className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg mb-1.5 ${
+            allowPhase1Click ? "cursor-pointer pointer-events-auto" : "pointer-events-none"
+          }
               ${getColorClasses(phase1.color, activePhase === phase1.id)} ${
-              isPhase1Completed ? "opacity-40 grayscale" : ""
-            }`}
-          >
+            isPhase1Completed ? "opacity-40 grayscale" : ""
+          }`}
+          onClick={
+            allowPhase1Click
+              ? (event) => {
+                  event.stopPropagation();
+                  onNodeClick(phase1.id);
+                }
+              : undefined
+          }
+        >
             {phase1.icon}
             {activePhase === phase1.id && !isPhase1Completed && (
               <span
@@ -792,7 +941,12 @@ function LifecycleTimeline({
             </svg>
 
             {/* nodes */}
-            <div className="absolute inset-0 z-30">
+            <div
+              ref={nodeLayerRef}
+              className={`absolute inset-0 z-30 ${
+                nodeInteractionEnabled ? "" : "pointer-events-none"
+              }`}
+            >
               {cyclePhases.map((phase, idx) => {
                 const pos = getCirclePosition(idx, cyclePhases.length);
                 const isActive = activePhase === phase.id;
@@ -805,15 +959,63 @@ function LifecycleTimeline({
                   ((keepByTrail && phase.id !== suppressId) ||
                     (allowActiveColor && isActive && phase.id !== suppressId) ||
                     isPreview);
+                const isDragging = dragState?.id === phase.id;
+                const layerRect = nodeLayerRef.current
+                  ? nodeLayerRef.current.getBoundingClientRect()
+                  : null;
+                let nodeStyle = {
+                  left: `${pos.x}px`,
+                  top: `${pos.y}px`,
+                  transform: "translate(-50%, -50%)",
+                };
+                if (
+                  isDragging &&
+                  dragState?.pointer &&
+                  dragState?.offset &&
+                  layerRect
+                ) {
+                  nodeStyle = {
+                    left: `${
+                      dragState.pointer.x -
+                      layerRect.left -
+                      dragState.offset.x
+                    }px`,
+                    top: `${
+                      dragState.pointer.y -
+                      layerRect.top -
+                      dragState.offset.y
+                    }px`,
+                    transform: "translate(-50%, -50%)",
+                    zIndex: 50,
+                  };
+                }
+                const nodeWrapperClass = [
+                  "absolute transition-all duration-300 select-none",
+                  nodeInteractionEnabled
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing"
+                    : "pointer-events-none",
+                  isDragging ? "scale-105 drop-shadow-xl" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ");
                 return (
                   <div
                     key={phase.id}
-                    className="absolute transition-all duration-300 pointer-events-none select-none"
-                    style={{
-                      left: `${pos.x}px`,
-                      top: `${pos.y}px`,
-                      transform: "translate(-50%, -50%)",
-                    }}
+                    className={nodeWrapperClass}
+                    style={nodeStyle}
+                    onPointerDown={
+                      editableNodes
+                        ? (event) => startDrag(phase.id, idx, event)
+                        : undefined
+                    }
+                    onClick={
+                      !editableNodes && typeof onNodeClick === "function"
+                        ? (event) => {
+                            event.stopPropagation();
+                            onNodeClick(phase.id);
+                          }
+                        : undefined
+                    }
                   >
                     <div className="flex flex-col items-center">
                       <div
@@ -1022,6 +1224,9 @@ export default function LifecycleWidget({
   autoLifecycleEnabled,
   autoLifecycleDisabledAt,
   phaseTheme,
+  enableNodeEditing = false,
+  onPhaseNodeClick,
+  onPhaseNodeReorder,
 }) {
   const labelOf = (id) =>
     ({
@@ -1750,6 +1955,9 @@ export default function LifecycleWidget({
           postHideIdx={postHideIdx}
           onPhaseGateChange={onPhaseGateChange}
           phaseConfigs={phaseConfigs}
+          editableNodes={enableNodeEditing}
+          onNodeClick={onPhaseNodeClick}
+          onNodeReorder={onPhaseNodeReorder}
         />
       </div>
 
