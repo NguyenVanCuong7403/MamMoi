@@ -4747,12 +4747,21 @@ useEffect(() => {
     const pageItems = list.slice(start, start + AI_PAGE_SIZE);
     const totalPages = Math.max(1, Math.ceil(total / AI_PAGE_SIZE));
 
+    // Show loading if we don't have any suggestions yet and at least one day is still loading
+    const isLoading = total === 0 && (aiLoading.day0 || aiLoading.day1 || aiLoading.day2);
+
     return (
       <section className="mb-2">
         <div className="text-sm font-medium mb-2">Gợi ý từ AI</div>
 
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
-          {pageItems.map((sug, i) => {
+        {isLoading ? (
+          <div className="rounded-2xl border bg-white p-6 flex flex-col items-center justify-center gap-3">
+            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <div className="text-sm text-neutral-600">Đang tải gợi ý từ AI...</div>
+          </div>
+        ) : (
+          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+            {pageItems.map((sug, i) => {
             const theme = TYPE_THEME[sug.type];
             return (
               <div
@@ -4778,14 +4787,16 @@ useEffect(() => {
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
 
-        <div
-          className={
-            "mt-3 flex items-center text-xs text-neutral-600 " +
-            (total > AI_PAGE_SIZE ? "justify-between" : "justify-start")
-          }
-        >
+        {!isLoading && (
+          <div
+            className={
+              "mt-3 flex items-center text-xs text-neutral-600 " +
+              (total > AI_PAGE_SIZE ? "justify-between" : "justify-start")
+            }
+          >
           <div>
             Hiển thị {total === 0 ? 0 : Math.min(total, start + 1)}–
             {Math.min(total, start + pageItems.length)} / {total}
@@ -4812,7 +4823,8 @@ useEffect(() => {
               </button>
             </div>
           )}
-        </div>
+          </div>
+        )}
       </section>
     );
   }
