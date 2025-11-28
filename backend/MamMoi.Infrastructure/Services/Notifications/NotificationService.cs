@@ -1,3 +1,4 @@
+using System;
 using MamMoi.Application.DTOs.Notification;
 using MamMoi.Application.Interfaces;
 using MamMoi.Infrastructure.Models;
@@ -318,20 +319,32 @@ public class NotificationService : INotificationService
 
     public async Task<List<(string GroupId, DateTime SentAt, int RecipientCount, string Title)>> GetBroadcastNotificationsAsync()
     {
-        var broadcasts = await _dbContext.Notifications
-            .Where(n => n.NotificationType == "Broadcast" && !string.IsNullOrEmpty(n.GroupId))
+        // First, get all notifications with GroupId that starts with "Broadcast-"
+        var allNotifications = await _dbContext.Notifications
+            .Where(n => n.GroupId != null && n.GroupId != "")
+            .ToListAsync();
+
+        _logger.LogInformation("Total notifications with GroupId: {Count}", allNotifications.Count);
+        
+        // Filter and group in memory for more flexibility
+        var broadcastGroups = allNotifications
+            .Where(n => 
+                (!string.IsNullOrEmpty(n.GroupId) && n.GroupId.StartsWith("Broadcast-")) ||
+                (n.NotificationType != null && n.NotificationType.Equals("Broadcast", StringComparison.OrdinalIgnoreCase)))
             .GroupBy(n => n.GroupId!)
             .Select(g => new
             {
                 GroupId = g.Key,
                 SentAt = g.Min(n => n.SentAt),
                 RecipientCount = g.Count(),
-                Title = g.First().Title
+                Title = g.First().Title ?? "No Title"
             })
             .OrderByDescending(x => x.SentAt)
-            .ToListAsync();
+            .ToList();
 
-        return broadcasts.Select(b => (b.GroupId, b.SentAt, b.RecipientCount, b.Title)).ToList();
+        _logger.LogInformation("Broadcast notification groups found: {Count}", broadcastGroups.Count);
+
+        return broadcastGroups.Select(b => (b.GroupId, b.SentAt, b.RecipientCount, b.Title)).ToList();
     }
 
     public async Task NotifyAdminOnSupportRequestAsync(int requestId, int userId, string subject)

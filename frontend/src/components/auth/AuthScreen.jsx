@@ -769,8 +769,11 @@ export default function AuthScreen({ defaultTab = "login" }) {
 /* ------------------------ LOGIN --------------------- */
 
 function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
+  const { loginWithGoogle } = useAuth();
   const [show, setShow] = useState(false);
   const [caps, setCaps] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const googleButtonRef = useRef(null);
 
   // Load email đã lưu từ localStorage khi component mount
   // Lấy email đầu tiên trong danh sách (email được sử dụng gần nhất)
@@ -838,12 +841,12 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
     }
 
     setAcctError(message);
-
+    
     // Nếu email hợp lệ và checkbox "Ghi nhớ đăng nhập" đang được tick, thêm email vào danh sách
     if (!message && remember && value) {
       addRememberedEmail(value);
     }
-
+    
     return !message;
   };
 
@@ -904,6 +907,129 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
 
   const handleForgotClick = () => {
     onForgot && onForgot(acct, mode);
+  };
+
+  // Load Google Identity Services script
+  useEffect(() => {
+    // Check if script already exists
+    const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]');
+    if (existingScript && window.google?.accounts?.id) {
+      // Script already loaded, initialize directly
+      window.google.accounts.id.initialize({
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "",
+        callback: handleGoogleSignIn,
+      });
+      return;
+    }
+
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.src = "https://accounts.google.com/gsi/client";
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        if (window.google?.accounts?.id) {
+          window.google.accounts.id.initialize({
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "",
+            callback: handleGoogleSignIn,
+          });
+        }
+      };
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  const handleGoogleSignIn = async (response) => {
+    if (!response.credential) {
+      setFormError("Không thể lấy thông tin từ Google. Vui lòng thử lại.");
+      return;
+    }
+
+    setGoogleLoading(true);
+    setFormError("");
+
+    try {
+      const res = await loginWithGoogle(response.credential);
+
+      if (!res || res.success === false) {
+        setFormError(
+          res?.message ||
+          "Đăng nhập với Google thất bại. Vui lòng thử lại."
+        );
+        setGoogleLoading(false);
+        return;
+      }
+
+      // Success - trigger the same success flow as regular login
+      const role = res?.role || res?.user?.role;
+      const roleId = res?.user?.roleId || res?.roleId;
+      const redirectPath = getPostLoginPath(role, roleId);
+
+      // Call onSubmitLogin to trigger success overlay and navigation
+      await onSubmitLogin({
+        acct: res.user?.email || "",
+        password: "",
+        remember: true,
+        mode: "email",
+        isGoogleLogin: true,
+      });
+    } catch (err) {
+      console.error("Google login error:", err);
+      setFormError("Đã xảy ra lỗi khi đăng nhập với Google. Vui lòng thử lại.");
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleButtonClick = () => {
+    if (!window.google?.accounts?.id) {
+      setFormError("Google đang tải. Vui lòng thử lại sau vài giây.");
+      return;
+    }
+
+    setGoogleLoading(true);
+    setFormError("");
+
+    // Trigger Google Sign-In using one-tap or button
+    // The callback (handleGoogleSignIn) will be called automatically when user signs in
+    try {
+      // Try to show one-tap prompt first
+      window.google.accounts.id.prompt((notification) => {
+        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+          // One-tap not available, render button and auto-click it
+          if (googleButtonRef.current) {
+            // Render Google button in hidden div
+            window.google.accounts.id.renderButton(
+              googleButtonRef.current,
+              {
+                theme: "outline",
+                size: "large",
+                text: "signin_with",
+                width: "100%",
+                type: "standard",
+              }
+            );
+            // Auto-click the rendered button after a short delay
+            setTimeout(() => {
+              const googleBtn = googleButtonRef.current?.querySelector('div[role="button"]');
+              if (googleBtn) {
+                googleBtn.click();
+              } else {
+                // If button not rendered, show error
+                setFormError("Không thể khởi động đăng nhập Google. Vui lòng thử lại.");
+                setGoogleLoading(false);
+              }
+            }, 200);
+          } else {
+            setFormError("Không thể khởi động đăng nhập Google. Vui lòng thử lại.");
+            setGoogleLoading(false);
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Google login error:", err);
+      setFormError("Đã xảy ra lỗi khi đăng nhập với Google. Vui lòng thử lại.");
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -991,7 +1117,7 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
             onCheckedChange={(v) => {
               const newValue = Boolean(v);
               setRemember(newValue);
-
+              
               if (!newValue) {
                 // Nếu bỏ tick, chỉ xóa email hiện tại khỏi danh sách (nếu có)
                 // Không xóa toàn bộ danh sách để giữ lại các email khác
@@ -1047,47 +1173,55 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
 
       <Divider text="hoặc" />
 
-      <Button
-        type="button"
-        variant="outline"
-        className="
-          mt-2 w-full gap-2 rounded-2xl
-          h-11 sm:h-12
-          bg-white/90 text-[15px] font-medium
-          transition
-          hover:-translate-y-[1px] hover:bg-white hover:shadow-md
-        "
-      >
-        <span className="text-lg">
-          {/* Google icon SVG */}
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            x="0px"
-            y="0px"
-            width="100"
-            height="100"
-            viewBox="0 0 48 48"
-          >
-            <path
-              fill="#FFC107"
-              d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
-            ></path>
-            <path
-              fill="#FF3D00"
-              d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
-            ></path>
-            <path
-              fill="#4CAF50"
-              d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
-            ></path>
-            <path
-              fill="#1976D2"
-              d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"
-            ></path>
-          </svg>
-        </span>
-        Tiếp tục với Google
-      </Button>
+      <div className="relative">
+        <Button
+          type="button"
+          variant="outline"
+          className="
+            mt-2 w-full gap-2 rounded-2xl
+            h-11 sm:h-12
+            bg-white/90 text-[15px] font-medium
+            transition
+            hover:-translate-y-[1px] hover:bg-white hover:shadow-md
+            disabled:opacity-60 disabled:cursor-not-allowed
+          "
+          onClick={handleGoogleButtonClick}
+          disabled={googleLoading || submitting}
+        >
+          <span className="text-lg">
+            {/* Google icon SVG */}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              x="0px"
+              y="0px"
+              width="100"
+              height="100"
+              viewBox="0 0 48 48"
+              className="w-5 h-5"
+            >
+              <path
+                fill="#FFC107"
+                d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+              ></path>
+              <path
+                fill="#FF3D00"
+                d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+              ></path>
+              <path
+                fill="#4CAF50"
+                d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
+              ></path>
+              <path
+                fill="#1976D2"
+                d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+              ></path>
+            </svg>
+          </span>
+          {googleLoading ? "Đang đăng nhập..." : "Tiếp tục với Google"}
+        </Button>
+        {/* Hidden div for Google button rendering (fallback) */}
+        <div ref={googleButtonRef} className="absolute inset-0 opacity-0 pointer-events-none" />
+      </div>
     </form>
   );
 }

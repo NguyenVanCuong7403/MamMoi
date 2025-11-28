@@ -239,6 +239,7 @@ namespace MamMoi.Api.Controllers
         [HttpGet("search")]
         public async Task<IActionResult> SearchTasks(
             [FromQuery] int? treeId = null,
+            [FromQuery] int? gardenId = null,
             [FromQuery] string? taskType = null,
             [FromQuery] string? status = null,
             [FromQuery] string? priority = null,
@@ -268,7 +269,7 @@ namespace MamMoi.Api.Controllers
                 }
 
                 var result = await _careScheduleService.SearchTasksAsync(
-                    treeId, taskType, status, priority, parsedDateFrom, parsedDateTo, searchKeyword, pageNumber, pageSize);
+                    treeId, gardenId, taskType, status, priority, parsedDateFrom, parsedDateTo, searchKeyword, pageNumber, pageSize);
 
                 return Ok(result);
             }

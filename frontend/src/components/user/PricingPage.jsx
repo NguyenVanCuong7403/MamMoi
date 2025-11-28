@@ -1,62 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Check, Bell, Calendar, Cloud, Book, ChevronDown, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import SubscriptionPlanRepository from '@/API/repositories/SubscriptionPlanRepository';
 
 export default function PricingPage() {
+  const navigate = useNavigate();
   const [expandedFaq, setExpandedFaq] = useState(null);
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const data = await SubscriptionPlanRepository.getPaidPlans();
+        // Transform backend data to frontend format
+        const transformedPlans = data.map((plan, index) => ({
+          id: plan.planId,
+          name: plan.planName,
+          duration: 'Tiết kiệm 2 tháng',
+          // Price in DB is monthly, multiply by 10 for yearly (12 months - 2 months free)
+          monthlyPrice: plan.price,
+          yearlyPrice: plan.price * 10,
+          popular: index === 1, // Middle plan is popular
+          features: (() => {
+            if (!plan.features) return [];
+            // Handle JSON array string like "[\"item1\", \"item2\"]"
+            if (typeof plan.features === 'string' && plan.features.startsWith('[')) {
+              try {
+                return JSON.parse(plan.features);
+              } catch { return []; }
+            }
+            // Handle newline-separated string
+            return plan.features.split('\n').filter(f => f.trim());
+          })(),
+          buttonText: index === 0 ? 'Bắt đầu' : `Chọn ${plan.planName}`,
+          buttonVariant: 'default',
+          maxGardens: plan.maxGardens,
+          maxTreesPerGarden: plan.maxTreesPerGarden,
+        }));
+        setPlans(transformedPlans);
+      } catch (error) {
+        console.error('Error fetching plans:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   const toggleFaq = (index) => {
     setExpandedFaq(expandedFaq === index ? null : index);
   };
 
-  const plans = [
-    {
-      name: 'Starter',
-      duration: 'Tiết kiệm 2 tháng',
-      price: '490.000',
-      popular: false,
-      features: [
-        'Cảnh báo sâu bệnh cơ bản',
-        'Lịch tưới & bón mầu',
-        'Nhật ký vườn',
-        'Hỗ trợ qua email'
-      ],
-      buttonText: 'Đặt đầu',
-      buttonVariant: 'default'
-    },
-    {
-      name: 'Pro',
-      duration: 'Tiết kiệm 2 tháng',
-      price: '990.000',
-      popular: true,
-      features: [
-        'Cảnh báo sâu bệnh nâng cao',
-        'Lịch tưới & bón theo giống',
-        'Dòng bộ thời tiết địa phương',
-        'Cảnh báo thời tiết địa phương',
-        'Xuất báo cáo PDF'
-      ],
-      buttonText: 'Đăng ký Pro',
-      buttonVariant: 'default'
-    },
-    {
-      name: 'Farm+',
-      duration: 'Tiết kiệm 2 tháng',
-      price: '1.990.000',
-      popular: false,
-      features: [
-        'Mọi tính năng Pro',
-        'Cảnh báo qua Zalo/SMS',
-        'Quyền cho nhiều nhân sự',
-        'Ưu tiên hỗ trợ',
-        'Tùy biến mẫu quy trình'
-      ],
-      buttonText: 'Chọn Farm+',
-      buttonVariant: 'default'
-    }
-  ];
+  const handleSelectPlan = (plan) => {
+    // Navigate to checkout with plan ID
+    // Since PricingPage shows yearlyPrice as the main price, pass isYearly: true
+    navigate('/checkout', { 
+      state: { 
+        planId: plan.id, 
+        planName: plan.name, 
+        price: plan.yearlyPrice,
+        isYearly: true // Indicates yearly subscription (12 months)
+      } 
+    });
+  };
+
+  const formatPrice = (price) => {
+    return price.toLocaleString('vi-VN');
+  };
 
   const features = [
     {
@@ -132,52 +146,91 @@ export default function PricingPage() {
 
           {/* Pricing Cards */}
           <div className="mm-fluid-shell grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            {plans.map((plan, index) => (
-              <Card 
-                key={index} 
-                className={`relative bg-white ${plan.popular ? 'ring-2 ring-emerald-500 shadow-xl scale-105' : ''}`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                      Phổ biến
-                    </span>
-                  </div>
-                )}
-                <CardContent className="p-6">
-                  <div className="mb-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">{plan.name}</h3>
-                    <p className="text-sm text-gray-600">{plan.duration}</p>
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="flex items-baseline">
-                      <span className="text-4xl font-bold text-gray-900">{plan.price}</span>
-                      <span className="text-gray-600 ml-1">₫/năm</span>
+            {loading ? (
+              // Loading skeleton
+              [1, 2, 3].map((i) => (
+                <Card key={i} className="bg-white animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="h-6 bg-gray-200 rounded mb-4 w-1/2"></div>
+                    <div className="h-10 bg-gray-200 rounded mb-6 w-3/4"></div>
+                    <div className="space-y-3 mb-6">
+                      {[1, 2, 3, 4].map((j) => (
+                        <div key={j} className="h-4 bg-gray-200 rounded"></div>
+                      ))}
                     </div>
-                  </div>
+                    <div className="h-10 bg-gray-200 rounded"></div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              plans.map((plan, index) => (
+                <Card 
+                  key={plan.id} 
+                  className={`relative bg-white ${plan.popular ? 'ring-2 ring-emerald-500 shadow-xl scale-105' : ''}`}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                      <span className="bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                        Phổ biến
+                      </span>
+                    </div>
+                  )}
+                  <CardContent className="p-6">
+                    <div className="mb-6">
+                      <h3 className="text-xl font-bold text-gray-900 mb-1">{plan.name}</h3>
+                      <p className="text-sm text-gray-600">{plan.duration}</p>
+                    </div>
 
-                  <ul className="space-y-3 mb-6">
-                    {plan.features.map((feature, fIndex) => (
-                      <li key={fIndex} className="flex items-start gap-2">
-                        <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-gray-700">{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
+                    <div className="mb-6">
+                      <div className="flex items-baseline">
+                        <span className="text-4xl font-bold text-gray-900">{formatPrice(plan.yearlyPrice)}</span>
+                        <span className="text-gray-600 ml-1">₫/năm</span>
+                      </div>
+                      <p className="text-sm text-gray-500 mt-1">
+                        ({formatPrice(plan.monthlyPrice)}₫/tháng)
+                      </p>
+                    </div>
 
-                  <Button 
-                    className={`w-full ${plan.popular ? 'bg-gray-900 hover:bg-gray-800' : 'bg-gray-900 hover:bg-gray-800'}`}
-                  >
-                    {plan.buttonText}
-                  </Button>
+                    <ul className="space-y-3 mb-6">
+                      {plan.features.length > 0 ? (
+                        plan.features.map((feature, fIndex) => (
+                          <li key={fIndex} className="flex items-start gap-2">
+                            <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                            <span className="text-sm text-gray-700">{feature}</span>
+                          </li>
+                        ))
+                      ) : (
+                        <>
+                          <li className="flex items-start gap-2">
+                            <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                            <span className="text-sm text-gray-700">
+                              {plan.maxGardens ? `Tối đa ${plan.maxGardens} vườn` : 'Không giới hạn vườn'}
+                            </span>
+                          </li>
+                          <li className="flex items-start gap-2">
+                            <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                            <span className="text-sm text-gray-700">
+                              {plan.maxTreesPerGarden ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn` : 'Không giới hạn cây'}
+                            </span>
+                          </li>
+                        </>
+                      )}
+                    </ul>
 
-                  <p className="text-xs text-gray-500 text-center mt-3">
-                    Giá đã bao gồm thuế nếu có.
-                  </p>
-                </CardContent>
-              </Card>
-            ))}
+                    <Button 
+                      className={`w-full ${plan.popular ? 'bg-gray-900 hover:bg-gray-800' : 'bg-gray-900 hover:bg-gray-800'}`}
+                      onClick={() => handleSelectPlan(plan)}
+                    >
+                      {plan.buttonText}
+                    </Button>
+
+                    <p className="text-xs text-gray-500 text-center mt-3">
+                      Giá đã bao gồm thuế nếu có.
+                    </p>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -238,7 +291,9 @@ export default function PricingPage() {
                       <Sparkles className="w-5 h-5 text-emerald-600" />
                       <span className="font-semibold text-emerald-900">Gợi ý</span>
                     </div>
-                    <p className="mm-fluid-text text-emerald-800">Gói 1.990.000 rất chi tiết</p>
+                    <p className="mm-fluid-text text-emerald-800">
+                      {plans.length > 0 ? `Gói ${plans[plans.length - 1]?.name} rất chi tiết` : 'Gói Farm+ rất chi tiết'}
+                    </p>
                   </div>
                   <Button variant="link" className="text-emerald-700">
                     Tư vấn nhanh →

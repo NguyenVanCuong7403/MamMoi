@@ -44,7 +44,11 @@ import { Separator } from "@/components/ui/separator";
 import LivingBackground from "@/components/background/LivingBackground";
 import PaymentHistory from "./PaymentHistory";
 import AuthRepository from "@/API/repositories/AuthRepository";
+import UserRepository from "@/API/repositories/UserRepository";
+import PaymentRepository from "@/API/repositories/PaymentRepository";
+import SubscriptionPlanRepository from "@/API/repositories/SubscriptionPlanRepository";
 import { useAuth } from "@/API/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 /* =========================================================
    Theme & helpers
@@ -405,6 +409,7 @@ function SearchInput({ value, onChange, placeholder = "Tìm kiếm...", classNam
 
 /* ===== Avatar Sync ===== */
 function AvatarSync({ src, size = 80, title = "" }) {
+
   // Kiểm tra xem src có phải là URL hợp lệ không (không rỗng và có ít nhất một ký tự)
   const hasImg = src && typeof src === 'string' && src.trim().length > 0;
   const color = hasImg ? "bg-emerald-500" : "bg-amber-500";
@@ -438,19 +443,32 @@ function AvatarSync({ src, size = 80, title = "" }) {
 }
 
 /* ===== Avatar Picker (clickable avatar for upload) ===== */
-function AvatarPicker({ src, size = 80, title = "", onChange }) {
+function AvatarPicker({ src, size = 80, title = "", onChange, onFileSelect }) {
   const fileInputRef = useRef(null);
   const hasImg = !!src;
+  const [uploading, setUploading] = useState(false);
 
-  function handleFile(e) {
+  async function handleFile(e) {
     const f = e.target.files?.[0];
     if (!f) return;
+    
+    // Show preview immediately
     const objectUrl = URL.createObjectURL(f);
     if (onChange) onChange(objectUrl);
+    
+    // If onFileSelect callback is provided, call it with the file
+    if (onFileSelect) {
+      setUploading(true);
+      try {
+        await onFileSelect(f);
+      } finally {
+        setUploading(false);
+      }
+    }
   }
 
   function handleAvatarClick() {
-    if (onChange) {
+    if (onChange && !uploading) {
       fileInputRef.current?.click();
     }
   }
@@ -466,10 +484,10 @@ function AvatarPicker({ src, size = 80, title = "", onChange }) {
       />
       <div
         className={`relative rounded-full overflow-hidden ring-2 ring-white bg-neutral-100 grid place-items-center text-neutral-500 ${
-          onChange ? "cursor-pointer transition-all hover:ring-4 hover:ring-emerald-300" : ""
-        }`}
+          onChange && !uploading ? "cursor-pointer transition-all hover:ring-4 hover:ring-emerald-300" : ""
+        } ${uploading ? "opacity-70" : ""}`}
         style={{ width: size, height: size }}
-        title={onChange ? (hasImg ? "Click để đổi ảnh" : "Click để chọn ảnh") : (title || "Ảnh đại diện")}
+        title={uploading ? "Đang tải lên..." : (onChange ? (hasImg ? "Click để đổi ảnh" : "Click để chọn ảnh") : (title || "Ảnh đại diện"))}
         aria-label="Ảnh đại diện người dùng"
         onClick={handleAvatarClick}
       >
@@ -478,7 +496,11 @@ function AvatarPicker({ src, size = 80, title = "", onChange }) {
         ) : (
           <UserIcon className="h-7 w-7" />
         )}
-        {onChange && (
+        {uploading ? (
+          <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : onChange && (
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all rounded-full flex items-center justify-center">
             <Upload className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
           </div>
@@ -2050,6 +2072,18 @@ async function copyCredentialsToClipboard(account, password) {
 ========================================================= */
 export default function UserProfile() {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  
+  // Loading states
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
+  const [plansLoading, setPlansLoading] = useState(true);
+  
+  // Payment history data from API
+  const [paymentTransactions, setPaymentTransactions] = useState([]);
+  
+  // Subscription plans from API
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
   
   // demo password
   const loadDemoPw = () => {
@@ -2064,7 +2098,7 @@ export default function UserProfile() {
   };
   const [demoPw, setDemoPw] = useState(loadDemoPw);
 
-  // Load profile + migrate organization -> address
+  // Load profile from API or fallback to localStorage
   const [profile, setProfile] = useState(() => {
     const p = load(LS_PROFILE, defaultProfile);
     const address = p.address || p.organization || defaultProfile.address;
@@ -2075,7 +2109,147 @@ export default function UserProfile() {
   const [gardens, setGardens] = useState(() => load(LS_GARDENS, defaultGardens));
   const [staffs, setStaffs] = useState(() => load(LS_STAFFS, defaultStaffs));
   const [trees, setTrees] = useState(() => load(LS_TREES, defaultTrees));
-const [editTree, setEditTree] = useState({ open:false, data:null });
+  const [editTree, setEditTree] = useState({ open:false, data:null });
+
+  // Fetch user profile from API
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user?.userId) {
+        setProfileLoading(false);
+        return;
+      }
+      
+      try {
+        const data = await UserRepository.getProfile(user.userId);
+        if (data) {
+          setProfile({
+            fullName: data.fullName || data.name || defaultProfile.fullName,
+            email: data.email || defaultProfile.email,
+            phone: data.phone || data.phoneNumber || defaultProfile.phone,
+            address: data.address || defaultProfile.address,
+            avatarUrl: data.profileImageUrl || data.avatar || "",
+            gender: data.gender || defaultProfile.gender,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching profile:", error);
+        // Keep localStorage data on error
+      } finally {
+        setProfileLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [user?.userId]);
+
+  // Fetch payment history from API
+  useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const data = await PaymentRepository.getAllPaymentHistory();
+        if (data && Array.isArray(data)) {
+          // Transform API data to match PaymentHistory component format
+          const transformedPayments = data.map((payment) => ({
+            id: payment.invoiceNumber || `PAY-${payment.paymentId}`,
+            time: payment.paymentDate || "",
+            package: payment.subscriptionPlanName || "—",
+            amount: payment.amount ? `${payment.amount.toLocaleString("vi-VN")} đ` : "0 đ",
+            method: payment.paymentMethod || "—",
+            status: mapPaymentStatus(payment.transactionStatus),
+            statusColor: getStatusColor(payment.transactionStatus),
+            txId: payment.transactionId || "—",
+          }));
+          setPaymentTransactions(transformedPayments);
+        }
+      } catch (error) {
+        console.error("Error fetching payment history:", error);
+        // Keep empty array on error
+      } finally {
+        setPaymentsLoading(false);
+      }
+    };
+    
+    fetchPayments();
+  }, []);
+
+  // Fetch subscription plans from API
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const data = await SubscriptionPlanRepository.getPaidPlans();
+        console.log("Subscription plans:", data);
+        setSubscriptionPlans(data || []);
+      } catch (error) {
+        console.error("Error fetching subscription plans:", error);
+      } finally {
+        setPlansLoading(false);
+      }
+    };
+    fetchPlans();
+  }, []);
+
+  // Fetch current user subscription
+  useEffect(() => {
+    const fetchCurrentSubscription = async () => {
+      try {
+        const subscription = await SubscriptionPlanRepository.getCurrentUserSubscription();
+        if (subscription) {
+          setCurrentSubscription(subscription);
+          setCurrentPackage(subscription.planName); // Keep for backward compatibility
+        } else {
+          // No active subscription, default to free plan (ID 1)
+          setCurrentSubscription({ planId: 1, planName: "Free" });
+          setCurrentPackage("Free");
+        }
+      } catch (error) {
+        console.error("Error fetching current subscription:", error);
+        // Default to free plan on error
+        setCurrentSubscription({ planId: 1, planName: "Free" });
+        setCurrentPackage("Free");
+      }
+    };
+    fetchCurrentSubscription();
+  }, []);
+
+  // Handle upgrade plan click
+  const handleUpgradePlan = (plan) => {
+    navigate('/checkout', { 
+      state: { 
+        planId: plan.planId, 
+        planName: plan.planName, 
+        price: plan.price,
+        isYearly: false // UserProfile shows monthly pricing
+      } 
+    });
+  };
+
+  // Helper function to map API status to Vietnamese display status
+  const mapPaymentStatus = (status) => {
+    const statusMap = {
+      "Completed": "Thành công",
+      "Success": "Thành công",
+      "Pending": "Đang xử lý",
+      "Processing": "Đang xử lý",
+      "Failed": "Thất bại",
+      "Refunded": "Hoàn tiền",
+      "Cancelled": "Đã hủy",
+    };
+    return statusMap[status] || status || "—";
+  };
+
+  // Helper function to get status color classes
+  const getStatusColor = (status) => {
+    const colorMap = {
+      "Completed": "bg-green-50 text-green-700 border-green-200",
+      "Success": "bg-green-50 text-green-700 border-green-200",
+      "Pending": "bg-yellow-50 text-yellow-700 border-yellow-200",
+      "Processing": "bg-yellow-50 text-yellow-700 border-yellow-200",
+      "Failed": "bg-red-50 text-red-700 border-red-200",
+      "Refunded": "bg-blue-50 text-blue-700 border-blue-200",
+      "Cancelled": "bg-gray-50 text-gray-700 border-gray-200",
+    };
+    return colorMap[status] || "bg-gray-50 text-gray-700 border-gray-200";
+  };
 
   useEffect(() => save(LS_PROFILE, profile), [profile]);
   useEffect(() => save(LS_GARDENS, gardens), [gardens]);
@@ -2099,7 +2273,8 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
   const [paymentDateTo, setPaymentDateTo] = useState("");
 
   const [activeMenu, setActiveMenu] = useState("account"); // "account" | "password" | "history" | "upgrade"
-  const [currentPackage, setCurrentPackage] = useState("Starter"); // Gói hiện tại
+  const [currentPackage, setCurrentPackage] = useState("Starter"); // Gói hiện tại (deprecated, use currentSubscription)
+  const [currentSubscription, setCurrentSubscription] = useState(null); // Current subscription plan object
   const [pwOpen, setPwOpen] = useState(false);
   const [pwModalTab, setPwModalTab] = useState("change"); // change | forgot
   const [addGardenOpen, setAddGardenOpen] = useState(false);
@@ -2480,25 +2655,42 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
     setConfirm({ open: false, type: "", payload: null });
   }
 
-  function saveProfile() {
+  async function saveProfile() {
     setTouchedProfile((t) => ({ ...t, fullName: true, contact: true }));
     if (!canSaveProfile) return;
-    setProfile(draft);
-    setAllowEditContact({ email: false, phone: false }); // Reset OTP gate sau khi save
     
-    // Đồng bộ avatar với AuthContext để header cập nhật
-    if (user) {
-      const updatedUser = {
-        ...user,
-        ProfileImageUrl: draft.avatarUrl || user.ProfileImageUrl,
-        fullName: draft.fullName || user.fullName,
-      };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      // Trigger custom event để AuthContext có thể cập nhật nếu cần
-      window.dispatchEvent(new CustomEvent("userProfileUpdated", { detail: updatedUser }));
+    try {
+      // Call API to update profile
+      if (user?.userId) {
+        await UserRepository.editProfile(user.userId, {
+          fullName: draft.fullName,
+          email: draft.email,
+          phone: draft.phone,
+          address: draft.address,
+          gender: draft.gender,
+        });
+      }
+      
+      setProfile(draft);
+      setAllowEditContact({ email: false, phone: false }); // Reset OTP gate sau khi save
+      
+      // Đồng bộ avatar với AuthContext để header cập nhật
+      if (user) {
+        const updatedUser = {
+          ...user,
+          ProfileImageUrl: draft.avatarUrl || user.ProfileImageUrl,
+          fullName: draft.fullName || user.fullName,
+        };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        // Trigger custom event để AuthContext có thể cập nhật nếu cần
+        window.dispatchEvent(new CustomEvent("userProfileUpdated", { detail: updatedUser }));
+      }
+      
+      showToast("Đã lưu", "Thông tin tài khoản đã được cập nhật", "success");
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      showToast("Lỗi", "Không thể lưu thông tin. Vui lòng thử lại.", "error");
     }
-    
-    showToast("Đã lưu", "Thông tin tài khoản đã được cập nhật", "success");
   }
 
  function formatGardenLocation(g) {
@@ -2721,6 +2913,20 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
                           src={draft.avatarUrl}
                           size={120}
                           onChange={(v) => setDraft({ ...draft, avatarUrl: v })}
+                          onFileSelect={async (file) => {
+                            if (!user?.userId) return;
+                            try {
+                              const response = await UserRepository.uploadAvatar(user.userId, file);
+                              if (response?.url || response?.avatarUrl) {
+                                const newAvatarUrl = response.url || response.avatarUrl;
+                                setDraft((d) => ({ ...d, avatarUrl: newAvatarUrl }));
+                                showToast("Thành công", "Đã cập nhật ảnh đại diện", "success");
+                              }
+                            } catch (error) {
+                              console.error("Error uploading avatar:", error);
+                              showToast("Lỗi", "Không thể tải ảnh lên. Vui lòng thử lại.", "error");
+                            }
+                          }}
                         />
                       </div>
                     </div>
@@ -3200,26 +3406,20 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
 
                         <Button 
                           onClick={() => {
-                            // Export CSV logic
-                            const defaultTransactions = [
-                              {
-                                id: "SUB-STARTER-58723",
-                                time: "2025-10-11 09:35",
-                                package: "Starter",
-                                amount: "490,000 đ",
-                                method: "QR (VNPay)",
-                                status: "Thành công",
-                                txId: "TX9X2H1",
-                              },
-                            ];
-                            const headers = ["Mã đơn", "Thời gian", "Gói", "Số tiền", "Phương thức", "Trạng thái"];
-                            const rows = defaultTransactions.map((t) => [
-                              t.id,
-                              t.time,
-                              t.package,
-                              t.amount.toString().replace(/,/g, "."),
-                              t.method,
-                              t.status,
+                            // Export CSV logic - use paymentTransactions from API
+                            if (paymentTransactions.length === 0) {
+                              showToast("Thông báo", "Không có dữ liệu để xuất", "info");
+                              return;
+                            }
+                            const headers = ["Mã đơn", "Thời gian", "Gói", "Số tiền", "Phương thức", "Trạng thái", "Mã giao dịch"];
+                            const rows = paymentTransactions.map((t) => [
+                              `"${t.id || ""}"`,
+                              `"${t.time || ""}"`,
+                              `"${t.package || ""}"`,
+                              `"${(t.amount || "").toString().replace(/,/g, ".")}"`,
+                              `"${t.method || ""}"`,
+                              `"${t.status || ""}"`,
+                              `"${t.txId || ""}"`,
                             ]);
                             let csvContent = "\uFEFF" + [headers, ...rows].map((e) => e.join(",")).join("\n");
                             const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
@@ -3229,8 +3429,10 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
+                            showToast("Thành công", `Đã xuất ${paymentTransactions.length} giao dịch`, "success");
                           }}
-                          className="h-14 px-5 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 text-base font-medium"
+                          disabled={paymentsLoading}
+                          className="h-14 px-5 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 text-base font-medium disabled:opacity-50"
                         >
                           <Download className="w-5 h-5" /> Xuất CSV
                         </Button>
@@ -3273,11 +3475,12 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
                     {/* Payment History Table */}
                     <div className="border-t border-white/20 pt-6">
                       <PaymentHistory
-                        transactions={[]}
+                        transactions={paymentTransactions}
                         search={paymentSearch}
                         statusFilter={paymentStatusFilter}
                         dateFrom={paymentDateFrom}
                         dateTo={paymentDateTo}
+                        loading={paymentsLoading}
                       />
                     </div>
                   </CardContent>
@@ -3296,104 +3499,108 @@ const [editTree, setEditTree] = useState({ open:false, data:null });
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {/* Starter Package */}
-                      <div className="p-6 rounded-2xl bg-white/20 border border-white/25 hover:border-yellow-500/50 transition-colors">
-                        <div className="mb-4">
-                          <h3 className="text-xl font-semibold text-white mb-2">Starter</h3>
-                          <div className="text-3xl font-bold text-yellow-400 mb-1">490,000đ</div>
-                          <div className="text-sm text-white/80">/tháng</div>
-                        </div>
-                        <ul className="space-y-2 mb-6 text-sm text-white/70">
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                            <span>Quản lý tối đa 3 vườn</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                            <span>Quản lý tối đa 10 cây</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                            <span>Hỗ trợ email</span>
-                          </li>
-                        </ul>
-                            <Button
-                          className="w-full h-12 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
-                          disabled
-                            >
-                          Gói hiện tại
-                            </Button>
-                      </div>
-
-                      {/* Pro Package */}
-                      <div className="p-6 rounded-2xl bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50 relative">
-                        <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                          Phổ biến
-                        </div>
-                        <div className="mb-4">
-                          <h3 className="text-xl font-semibold text-white mb-2">Pro</h3>
-                          <div className="text-3xl font-bold text-yellow-400 mb-1">990,000đ</div>
-                          <div className="text-sm text-white/80">/tháng</div>
-                        </div>
-                        <ul className="space-y-2 mb-6 text-sm text-white/70">
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-yellow-400 shrink-0" />
-                            <span>Quản lý không giới hạn vườn</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-yellow-400 shrink-0" />
-                            <span>Quản lý không giới hạn cây</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-yellow-400 shrink-0" />
-                            <span>Hỗ trợ 24/7</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-yellow-400 shrink-0" />
-                            <span>Báo cáo nâng cao</span>
-                          </li>
-                        </ul>
-                            <Button
-                          className="w-full h-12 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white font-medium"
-                        >
-                          Nâng cấp ngay
-                            </Button>
-                      </div>
-
-                      {/* Farmer Package */}
-                      <div className="p-6 rounded-2xl bg-white/20 border border-white/25 hover:border-yellow-500/50 transition-colors">
-                        <div className="mb-4">
-                          <h3 className="text-xl font-semibold text-white mb-2">Farmer</h3>
-                          <div className="text-3xl font-bold text-yellow-400 mb-1">1,990,000đ</div>
-                          <div className="text-sm text-white/80">/tháng</div>
-                        </div>
-                        <ul className="space-y-2 mb-6 text-sm text-white/70">
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                            <span>Tất cả tính năng Pro</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                            <span>Quản lý nhân viên</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                            <span>API tích hợp</span>
-                          </li>
-                          <li className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
-                            <span>Hỗ trợ ưu tiên</span>
-                          </li>
-                        </ul>
-                            <Button
-                          className="w-full h-12 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
-                            >
-                          Nâng cấp ngay
-                            </Button>
+                      {plansLoading ? (
+                        // Loading skeleton
+                        [1, 2, 3].map((i) => (
+                          <div key={i} className="p-6 rounded-2xl bg-white/20 border border-white/25 animate-pulse">
+                            <div className="h-6 bg-white/30 rounded mb-4 w-1/2"></div>
+                            <div className="h-10 bg-white/30 rounded mb-6 w-3/4"></div>
+                            <div className="space-y-3 mb-6">
+                              {[1, 2, 3].map((j) => (
+                                <div key={j} className="h-4 bg-white/30 rounded"></div>
+                              ))}
+                            </div>
+                            <div className="h-12 bg-white/30 rounded"></div>
                           </div>
-                </div>
-              </CardContent>
-            </Card>
+                        ))
+                      ) : (
+                        subscriptionPlans.map((plan, index) => {
+                          const isPopular = index === 1;
+                          // Check if this is the current plan or a lower priority plan (lower ID)
+                          const currentPlanId = currentSubscription?.planId || 1;
+                          const isCurrentPlan = plan.planId === currentPlanId;
+                          const isLowerPlan = plan.planId < currentPlanId;
+                          const shouldDisable = isCurrentPlan || isLowerPlan;
+                          const features = (() => {
+                            if (!plan.features) return [];
+                            // Handle JSON array string like "[\"item1\", \"item2\"]"
+                            if (typeof plan.features === 'string' && plan.features.startsWith('[')) {
+                              try {
+                                return JSON.parse(plan.features);
+                              } catch { return []; }
+                            }
+                            // Handle newline-separated string
+                            return plan.features.split('\n').filter(f => f.trim());
+                          })();
+                          
+                          return (
+                            <div 
+                              key={plan.planId}
+                              className={`p-6 rounded-2xl transition-colors relative ${
+                                isPopular 
+                                  ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50" 
+                                  : "bg-white/20 border border-white/25 hover:border-yellow-500/50"
+                              }`}
+                            >
+                              {isPopular && (
+                                <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                  Phổ biến
+                                </div>
+                              )}
+                              <div className="mb-4">
+                                <h3 className="text-xl font-semibold text-white mb-2">{plan.planName}</h3>
+                                <div className="text-3xl font-bold text-yellow-400 mb-1">
+                                  {plan.price.toLocaleString('vi-VN')}đ
+                                </div>
+                                <div className="text-sm text-white/80">/tháng</div>
+                              </div>
+                              <ul className="space-y-2 mb-6 text-sm text-white/70">
+                                {features.length > 0 ? (
+                                  features.map((feature, fIndex) => (
+                                    <li key={fIndex} className="flex items-center gap-2">
+                                      <CheckCircle2 className={`h-4 w-4 shrink-0 ${isPopular ? "text-yellow-400" : "text-emerald-400"}`} />
+                                      <span>{feature}</span>
+                                    </li>
+                                  ))
+                                ) : (
+                                  <>
+                                    <li className="flex items-center gap-2">
+                                      <CheckCircle2 className={`h-4 w-4 shrink-0 ${isPopular ? "text-yellow-400" : "text-emerald-400"}`} />
+                                      <span>{plan.maxGardens ? `Tối đa ${plan.maxGardens} vườn` : 'Không giới hạn vườn'}</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                      <CheckCircle2 className={`h-4 w-4 shrink-0 ${isPopular ? "text-yellow-400" : "text-emerald-400"}`} />
+                                      <span>{plan.maxTreesPerGarden ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn` : 'Không giới hạn cây'}</span>
+                                    </li>
+                                  </>
+                                )}
+                              </ul>
+                              <Button
+                                className={`w-full h-12 rounded-xl font-medium ${
+                                  isCurrentPlan
+                                    ? "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                    : isLowerPlan
+                                    ? "bg-neutral-500/50 hover:bg-neutral-500/50 text-white/50 cursor-not-allowed"
+                                    : isPopular
+                                    ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                                    : "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                }`}
+                                disabled={shouldDisable}
+                                onClick={() => !shouldDisable && handleUpgradePlan(plan)}
+                              >
+                                {isCurrentPlan 
+                                  ? "Gói hiện tại" 
+                                  : isLowerPlan 
+                                  ? "Gói thấp hơn" 
+                                  : "Nâng cấp ngay"}
+                              </Button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </section>
             )}
 

@@ -233,6 +233,71 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (idToken) => {
+    setLoading(true);
+    try {
+      const response = await AuthRepository.loginWithGoogle(idToken);
+      console.log("🔍 AuthContext Google login response:", response);
+
+      if (!response || !response.success) {
+        throw new Error(response?.message || "Đăng nhập với Google thất bại");
+      }
+
+      const data = response.data;
+      if (!data || !data.accessToken) {
+        throw new Error(data?.message || "Đăng nhập với Google thất bại");
+      }
+
+      const { primaryRole, roles } = extractRolesFromToken(data.accessToken);
+
+      console.log("🔍 Extracted role from token:", { primaryRole, roles });
+
+      const userData = {
+        userId: data.userId,
+        email: data.email,
+        fullName: data.fullName,
+        isEmailVerified: data.isEmailVerified,
+        ProfileImageUrl: data.profileImageUrl || data.ProfileImageUrl,
+        role: primaryRole,
+        roleId: data.roleId,
+        roles,
+      };
+
+      console.log("✅ User data to be saved:", userData);
+
+      localStorage.setItem("token", data.accessToken);
+      localStorage.setItem("refreshToken", data.refreshToken);
+      localStorage.setItem("user", JSON.stringify(userData));
+
+      // Add email to remembered emails for Google login
+      if (data.email) {
+        addRememberedEmail(data.email);
+      }
+
+      setUser(userData);
+      setToken(data.accessToken);
+      setRefreshToken(data.refreshToken);
+
+      console.log(
+        "✅ Google login successful, returning role:",
+        primaryRole,
+        "roleId:",
+        data.roleId
+      );
+      return {
+        success: true,
+        role: primaryRole,
+        roleId: data.roleId,
+        user: userData,
+      };
+    } catch (err) {
+      console.error("Google login failed:", err);
+      return { success: false, message: err.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const register = async (fullName, email, phone, password) => {
     setLoading(true);
     try {
@@ -458,6 +523,7 @@ export const AuthProvider = ({ children }) => {
         token,
         refreshToken,
         login,
+        loginWithGoogle,
         register,
         verifyOtp,
         forgotPassword,

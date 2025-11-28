@@ -38,6 +38,9 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import NotificationRepository from "@/API/repositories/NotificationRepository";
+import { getNotificationRoute } from "@/lib/notificationRoutes";
+import { useAuth } from "@/API/context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const PAGE_SIZE = 20;
 
@@ -71,6 +74,8 @@ function getPriorityBadgeVariant(priority) {
 }
 
 export default function Notifications() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -359,78 +364,87 @@ export default function Notifications() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {filteredNotifications.map((notification) => (
-                          <TableRow
-                            key={notification.notificationId}
-                            className={cn(
-                              "transition",
-                              !notification.isRead &&
-                                "bg-blue-50/50 font-semibold"
-                            )}
-                          >
-                            <TableCell>
-                              <div className="space-y-1">
-                                <div className="font-medium text-slate-900">
-                                  {notification.title}
-                                </div>
-                                {notification.message && (
-                                  <div className="text-sm text-slate-600 line-clamp-2">
-                                    {notification.message}
+                        {filteredNotifications.map((notification) => {
+                          const handleNotificationClick = () => {
+                            const route = getNotificationRoute(
+                              notification,
+                              user
+                            );
+                            if (route) {
+                              navigate(route);
+                            }
+                          };
+
+                          return (
+                            <TableRow
+                              key={notification.notificationId}
+                              className={cn(
+                                "transition cursor-pointer",
+                                !notification.isRead &&
+                                  "bg-blue-50/50 font-semibold"
+                              )}
+                              onClick={handleNotificationClick}
+                            >
+                              <TableCell>
+                                <div className="space-y-1">
+                                  <div className="font-medium text-slate-900">
+                                    {notification.title}
                                   </div>
-                                )}
-                                {notification.actionUrl && (
-                                  <a
-                                    href={notification.actionUrl}
-                                    className="text-sm text-emerald-600 hover:underline"
-                                  >
+                                  {notification.message && (
+                                    <div className="text-sm text-slate-600 line-clamp-2">
+                                      {notification.message}
+                                    </div>
+                                  )}
+                                  <div className="text-sm text-emerald-600 hover:underline">
                                     {notification.actionLabel || "Xem chi tiết"}{" "}
                                     →
-                                  </a>
-                                )}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {notification.notificationType || "General"}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge
-                                variant={getPriorityBadgeVariant(
-                                  notification.priority
-                                )}
-                              >
-                                {notification.priority}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-slate-600">
-                              {formatDate(notification.sentAt)}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {!notification.isRead && (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() =>
-                                    handleMarkAsRead(
-                                      notification.notificationId
-                                    )
-                                  }
-                                  disabled={markingAsRead}
-                                  className="text-emerald-600 hover:text-emerald-700"
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  {notification.notificationType || "General"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <Badge
+                                  variant={getPriorityBadgeVariant(
+                                    notification.priority
+                                  )}
                                 >
-                                  <Check className="mr-1 h-4 w-4" />
-                                  Đánh dấu đã đọc
-                                </Button>
-                              )}
-                              {notification.isRead && (
-                                <span className="text-sm text-slate-400">
-                                  Đã đọc
-                                </span>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
+                                  {notification.priority}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-slate-600">
+                                {formatDate(notification.sentAt)}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {!notification.isRead && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleMarkAsRead(
+                                        notification.notificationId
+                                      );
+                                    }}
+                                    disabled={markingAsRead}
+                                    className="text-emerald-600 hover:text-emerald-700"
+                                  >
+                                    <Check className="mr-1 h-4 w-4" />
+                                    Đánh dấu đã đọc
+                                  </Button>
+                                )}
+                                {notification.isRead && (
+                                  <span className="text-sm text-slate-400">
+                                    Đã đọc
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>

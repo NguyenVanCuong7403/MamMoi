@@ -25,7 +25,7 @@ public interface IUserService
     Task<ProfileViewDto?> EditProfileAsync(int userId, EditProfileDto dto);
 
     /// <summary>Upload/Update user avatar</summary>
-    Task<AvatarUploadResponseDto> UploadAvatarAsync(int userId, byte[] imageData, string mimeType);
+    Task<AvatarUploadResponseDto> UploadAvatarAsync(int userId, byte[] imageData, string mimeType, string baseUrl);
 
     /// <summary>Delete user avatar</summary>
     Task<DeleteAvatarResponseDto> DeleteAvatarAsync(int userId);

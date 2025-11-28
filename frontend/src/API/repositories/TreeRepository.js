@@ -14,7 +14,7 @@ export default class TreeRepository {
     return ApiClient.get("/api/trees/varieties");
   }
 
-    /**
+  /**
    * Get AI recommendation(s) for a tree.
    * The API returns recommendations for the requested date and the next 2 days (3 days total).
    * @param {number} id - tree id
@@ -41,7 +41,31 @@ export default class TreeRepository {
     }
 
     const qs = params.toString();
-    return ApiClient.get(`/api/trees/${id}/recommendation${qs ? `?${qs}` : ""}`);
+    return ApiClient.get(
+      `/api/trees/${id}/recommendation${qs ? `?${qs}` : ""}`
+    );
+  }
+
+  /**
+   * Get AI recommendation for a single day (for progressive loading)
+   * @param {number} id - tree id
+   * @param {string} forDate - date string in yyyy-MM-dd format
+   * @returns {Promise} ApiClient.get promise
+   */
+  static async getSingleDayRecommendation(id, forDate) {
+    if (!id) throw new Error("Missing tree id");
+    if (!forDate) throw new Error("Missing forDate");
+    return ApiClient.get(`/api/trees/${id}/recommendation/single?forDate=${forDate}`);
+  }
+
+  /**
+   * Refresh AI recommendations for a tree (triggers backend to regenerate)
+   * @param {number} id - tree id
+   * @returns {Promise} ApiClient.post promise
+   */
+  static async refreshAiRecommendations(id) {
+    if (!id) throw new Error("Missing tree id");
+    return ApiClient.post(`/api/trees/${id}/recommendation/refresh`);
   }
 
   /**
@@ -78,6 +102,13 @@ export default class TreeRepository {
       : null;
 
     return found ? { data: found } : null;
+  }
+
+  /**
+   * Get all tree varieties
+   */
+  static async getTreeVarieties() {
+    return ApiClient.get("/api/trees/varieties");
   }
 
   /**
@@ -242,8 +273,18 @@ export default class TreeRepository {
    * @param {string} data.phaseId - Phase ID: "growth_development", "flowering", "fruiting", "pre_harvest", "post_harvest"
    * @param {number} [data.cycleCount] - Optional cycle count
    * @param {boolean} [data.phase1Completed] - Optional phase 1 completed flag
+   * @param {boolean} [data.autoSyncEnabled] - Enable/disable automatic lifecycle sync
+   * @param {string} [data.overrideReason] - Optional note when disabling auto sync
    */
   static async updateLifecycle(id, data) {
     return ApiClient.patch(`/api/trees/${id}/lifecycle`, data);
+  }
+
+  /**
+   * Get growth stages by tree type ID (for farmers)
+   * @param {number} treeTypeId
+   */
+  static async getStagesByTreeType(treeTypeId) {
+    return ApiClient.get(`/api/trees/types/${treeTypeId}/stages`);
   }
 }

@@ -170,6 +170,43 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// CHỨC NĂNG 10: Đăng nhập hoặc đăng ký với Google OAuth
+    /// POST /api/auth/google-login
+    /// </summary>
+    [HttpPost("google-login")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GoogleLogin([FromBody] GoogleLoginRequestDto request)
+    {
+        try
+        {
+            var response = await _authService.LoginWithGoogleAsync(request.IdToken);
+            return Ok(new
+            {
+                success = true,
+                message = response.Message,
+                data = response
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during Google login");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Đã xảy ra lỗi. Vui lòng thử lại sau."
+            });
+        }
+    }
+
+    /// <summary>
     /// CHỨC NĂNG 5: Làm mới Access Token bằng Refresh Token
     /// POST /api/auth/refresh-token
     /// </summary>

@@ -72,4 +72,11 @@ public interface IAuthService
     /// <param name="request">Password hiện tại và password mới</param>
     /// <returns>Response xác nhận đã đổi thành công</returns>
     Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordRequestDto request);
+
+    /// <summary>
+    /// Đăng nhập hoặc đăng ký với Google OAuth
+    /// </summary>
+    /// <param name="idToken">Google ID token</param>
+    /// <returns>Response chứa token nếu đăng nhập thành công</returns>
+    Task<AuthResponseDto> LoginWithGoogleAsync(string idToken);
 }

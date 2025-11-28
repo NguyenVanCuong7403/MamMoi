@@ -11,7 +11,7 @@ export const normalize = (s = "") =>
 
 /* ======= Fallback tỉnh/thành 2025 (34 đơn vị) ======= */
 const PROVINCES_2025 = [
-  { code: "01", type: "Thành phố", name: "Hà Nội", full_name: "Thành phố Hà Nội" },
+  { code: "01", type: "Thành phố", name: "Hà Nội", full_name: "Hà Nội" },
   { code: "04", type: "Tỉnh", name: "Cao Bằng", full_name: "Tỉnh Cao Bằng" },
   { code: "08", type: "Tỉnh", name: "Tuyên Quang", full_name: "Tỉnh Tuyên Quang" },
   { code: "11", type: "Tỉnh", name: "Điện Biên", full_name: "Tỉnh Điện Biên" },

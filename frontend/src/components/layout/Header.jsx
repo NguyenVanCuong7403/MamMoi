@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Search,
   Menu,
@@ -11,11 +11,12 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/API/context/AuthContext";
 import NotificationRepository from "@/API/repositories/NotificationRepository";
+import { getNotificationRoute } from "@/lib/notificationRoutes";
 
 const DEFAULT_MENU = [
   { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
   { id: "quan-ly", label: "Quản lý vườn & cây", href: "/garden" },
-  { id: "dang-ky", label: "Đăng ký dịch vụ", href: "#register" },
+  { id: "dang-ky", label: "Đăng ký dịch vụ", href: "/price" },
   { id: "lien-he", label: "Liên hệ & Hỗ trợ", href: "/report" },
 ];
 
@@ -161,42 +162,6 @@ export default function MMHeader({
   const menuCloseTimeoutRef = useRef(null);
   const navigate = useNavigate();
 
-  const scheduleScrollTopAndReload = useCallback(() => {
-    if (typeof window === "undefined") return;
-
-    const scrollToTop = () =>
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: "auto",
-      });
-
-    if (typeof window.requestAnimationFrame === "function") {
-      window.requestAnimationFrame(scrollToTop);
-    } else {
-      scrollToTop();
-    }
-
-    const reload = () => window.location.reload();
-    if (typeof window.requestIdleCallback === "function") {
-      window.requestIdleCallback(reload, { timeout: 200 });
-    } else {
-      setTimeout(reload, 0);
-    }
-  }, []);
-
-  const handleBackNavigation = useCallback(() => {
-    if (typeof window === "undefined") return;
-
-    if (window.history.length > 1) {
-      window.history.back();
-      return;
-    }
-
-    navigate("/", { replace: true });
-    scheduleScrollTopAndReload();
-  }, [navigate, scheduleScrollTopAndReload]);
-
   const handleLoginClick = () => {
     onLogin();
     navigate("/auth");
@@ -206,6 +171,11 @@ export default function MMHeader({
     onRegister();
     navigate("/auth");
   };
+
+  const handleLogoutClick = () => {
+    logout();
+    navigate("/auth");
+  }
 
   const palette = useMemo(
     () => ({
@@ -231,29 +201,6 @@ export default function MMHeader({
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!("scrollRestoration" in window.history)) return;
-
-    const previous = window.history.scrollRestoration;
-    window.history.scrollRestoration = "manual";
-
-    return () => {
-      window.history.scrollRestoration = previous;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const handlePopState = () => {
-      scheduleScrollTopAndReload();
-    };
-
-    window.addEventListener("popstate", handlePopState);
-    return () => window.removeEventListener("popstate", handlePopState);
-  }, [scheduleScrollTopAndReload]);
 
   // Fetch notifications and unread count
   useEffect(() => {
@@ -453,7 +400,7 @@ export default function MMHeader({
 
           {/* Back button */}
           <button
-            onClick={handleBackNavigation}
+            onClick={() => navigate(-1)}
             className="w-11 h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none"
             style={{ background: palette.ivory, color: palette.bg }}
             aria-label="Quay lại"
@@ -630,11 +577,12 @@ export default function MMHeader({
                                   !notification.isRead && "bg-blue-50/50",
                                 ].join(" ")}
                                 onClick={() => {
-                                  if (notification.actionUrl) {
-                                    navigate(notification.actionUrl);
-                                  } else {
-                                    navigate("/notifications");
-                                  }
+                                  // Get route based on notification type and user role
+                                  const route = getNotificationRoute(
+                                    notification,
+                                    user
+                                  );
+                                  navigate(route || "/notifications");
                                   setNotificationMenu(false);
                                   if (!notification.isRead) {
                                     NotificationRepository.markNotificationsAsRead(
@@ -769,8 +717,18 @@ export default function MMHeader({
                     </button>
 
                     <button
+                      className="block w-full text-left px-4 py-2 hover:bg-gray-100"
+                      onClick={() => {
+                        navigate("/reports");
+                        setAvatarMenu((prev) => !prev);
+                      }}
+                    >
+                      Quản lý báo cáo
+                    </button>
+
+                    <button
                       className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
-                      onClick={logout}
+                      onClick={handleLogoutClick}
                     >
                       Đăng xuất
                     </button>
@@ -959,7 +917,7 @@ export default function MMHeader({
               {user ? (
                 <div className="flex flex-col gap-3">
                   <button
-                    onClick={logout}
+                    onClick={handleLogoutClick}
                     className="h-11 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30"
                   >
                     Đăng xuất

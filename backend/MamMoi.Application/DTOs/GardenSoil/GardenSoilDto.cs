@@ -11,6 +11,7 @@ namespace MamMoi.Application.DTOs.GardenSoil
         int GardenSoilId,
         int GardenId,
         int SoilMasterId,
+        string? SoilName,
         string? CustomLabel,
         string? Notes
     );

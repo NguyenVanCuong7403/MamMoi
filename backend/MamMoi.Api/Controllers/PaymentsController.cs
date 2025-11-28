@@ -261,4 +261,152 @@ public class PaymentsController : ControllerBase
             return StatusCode(500, new { message = "Error retrieving total amount", error = ex.Message });
         }
     }
+
+    #region PayOS Checkout Endpoints
+
+    /// <summary>
+    /// Create a checkout session for subscription payment
+    /// </summary>
+    /// <param name="request">Checkout request with plan ID</param>
+    /// <returns>Checkout response with QR code and bank info</returns>
+    /// <response code="200">Checkout session created successfully</response>
+    /// <response code="400">Invalid request</response>
+    [HttpPost("checkout")]
+    public async Task<ActionResult<CheckoutResponseDto>> CreateCheckout([FromBody] CreateCheckoutRequestDto request)
+    {
+        try
+        {
+            var userIdStr = User.FindFirst("sub")?.Value ?? User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier")?.Value;
+
+            if (!int.TryParse(userIdStr, out int userId))
+                return Unauthorized("User ID not found in token");
+
+            if (request.PlanId <= 0)
+                return BadRequest(new { message = "Invalid plan ID" });
+
+            var result = await _paymentService.CreateCheckoutAsync(userId, request);
+
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating checkout session");
+            return StatusCode(500, new { message = "Error creating checkout session", error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Check payment status by order code
+    /// </summary>
+    /// <param name="orderCode">Order code to check</param>
+    /// <returns>Payment status</returns>
+    /// <response code="200">Status retrieved successfully</response>
+    [HttpGet("status/{orderCode}")]
+    public async Task<ActionResult<PaymentStatusResponseDto>> CheckPaymentStatus([FromRoute] string orderCode)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(orderCode))
+                return BadRequest(new { message = "Order code is required" });
+
+            var result = await _paymentService.CheckPaymentStatusAsync(orderCode);
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking payment status");
+            return StatusCode(500, new { message = "Error checking payment status", error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// PayOS webhook callback endpoint
+    /// </summary>
+    /// <param name="webhook">Webhook payload from PayOS</param>
+    /// <returns>Success status</returns>
+    [HttpPost("webhook")]
+    public async Task<ActionResult> HandleWebhook([FromBody] PayOSWebhookDto webhook)
+    {
+        try
+        {
+            _logger.LogInformation("Received PayOS webhook: {OrderCode}", webhook.OrderCode);
+
+            var result = await _paymentService.HandleWebhookAsync(webhook);
+
+            if (!result)
+                return BadRequest(new { message = "Failed to process webhook" });
+
+            return Ok(new { message = "Webhook processed successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error processing webhook");
+            return StatusCode(500, new { message = "Error processing webhook" });
+        }
+    }
+
+    /// <summary>
+    /// Cancel a pending payment
+    /// </summary>
+    /// <param name="orderCode">Order code to cancel</param>
+    /// <returns>Success status</returns>
+    [HttpPost("cancel/{orderCode}")]
+    public async Task<ActionResult> CancelPayment([FromRoute] string orderCode)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(orderCode))
+                return BadRequest(new { message = "Order code is required" });
+
+            var result = await _paymentService.CancelPaymentAsync(orderCode);
+
+            if (!result)
+                return BadRequest(new { message = "Failed to cancel payment or payment not found" });
+
+            return Ok(new { message = "Payment cancelled successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error cancelling payment");
+            return StatusCode(500, new { message = "Error cancelling payment" });
+        }
+    }
+
+    /// <summary>
+    /// Simulate payment completion (for demo/testing)
+    /// </summary>
+    /// <param name="orderCode">Order code to complete</param>
+    /// <returns>Success status</returns>
+    [HttpPost("demo-complete/{orderCode}")]
+    public async Task<ActionResult> DemoCompletePayment([FromRoute] string orderCode)
+    {
+        try
+        {
+            // Simulate webhook for demo purposes
+            var webhook = new PayOSWebhookDto
+            {
+                OrderCode = orderCode,
+                Status = "PAID",
+                PaymentTime = DateTime.UtcNow,
+                TransactionId = $"DEMO-{Guid.NewGuid().ToString()[..8].ToUpper()}"
+            };
+
+            var result = await _paymentService.HandleWebhookAsync(webhook);
+
+            if (!result)
+                return BadRequest(new { message = "Failed to complete payment" });
+
+            return Ok(new { message = "Payment completed successfully (demo)" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error completing demo payment");
+            return StatusCode(500, new { message = "Error completing payment" });
+        }
+    }
+
+    #endregion
 }

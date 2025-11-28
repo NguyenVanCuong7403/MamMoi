@@ -9,7 +9,13 @@ public class CareTaskSearchResultDto
 
     public int TreeId { get; set; }
 
+    public string? TreeCode { get; set; }
+
     public string? TreeName { get; set; }
+
+    public int? GardenId { get; set; }
+
+    public string? GardenName { get; set; }
 
     public string? TaskType { get; set; }
 
@@ -18,6 +24,8 @@ public class CareTaskSearchResultDto
     public string? Description { get; set; }
 
     public DateOnly? ScheduledDate { get; set; }
+
+    public string? ScheduledTimeOfDay { get; set; }
 
     public string? Status { get; set; }
 

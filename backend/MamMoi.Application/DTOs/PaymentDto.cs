@@ -14,6 +14,12 @@ public class PaymentHistoryDto
     /// <summary>Subscription ID associated with payment</summary>
     public int SubscriptionId { get; set; }
 
+    /// <summary>Subscription plan name (Starter, Pro, Farmer, etc.)</summary>
+    public string? SubscriptionPlanName { get; set; }
+
+    /// <summary>Subscription status (Active, Expired, Cancelled, etc.)</summary>
+    public string? SubscriptionStatus { get; set; }
+
     /// <summary>Payment date and time</summary>
     public DateTime PaymentDate { get; set; }
 
@@ -137,3 +143,168 @@ public class PaymentHistoryPagedDto
     /// <summary>Total pages</summary>
     public int TotalPages => (Total + PageSize - 1) / PageSize;
 }
+
+#region PayOS Integration DTOs
+
+/// <summary>
+/// Request DTO for creating a PayOS checkout session
+/// </summary>
+public class CreateCheckoutRequestDto
+{
+    /// <summary>Subscription plan ID to purchase</summary>
+    public int PlanId { get; set; }
+
+    /// <summary>Return URL after successful payment</summary>
+    public string? ReturnUrl { get; set; }
+
+    /// <summary>Cancel URL if user cancels payment</summary>
+    public string? CancelUrl { get; set; }
+
+    public int? SubscriptionMonth { get; set; }
+}
+
+/// <summary>
+/// Response DTO for PayOS checkout session
+/// </summary>
+public class CheckoutResponseDto
+{
+    /// <summary>Whether the checkout was created successfully</summary>
+    public bool Success { get; set; }
+
+    /// <summary>Error message if failed</summary>
+    public string? Message { get; set; }
+
+    /// <summary>Order code for tracking</summary>
+    public string? OrderCode { get; set; }
+
+    /// <summary>Transaction ID from PayOS</summary>
+    public string? TransactionId { get; set; }
+
+    /// <summary>QR code data URL (for QR payment)</summary>
+    public string? QrCodeUrl { get; set; }
+
+    /// <summary>Checkout URL (for redirect payment)</summary>
+    public string? CheckoutUrl { get; set; }
+
+    /// <summary>Payment expiration time in seconds</summary>
+    public int ExpirationSeconds { get; set; } = 900; // 15 minutes default
+
+    /// <summary>Bank information for transfer</summary>
+    public BankInfoDto? BankInfo { get; set; }
+
+    /// <summary>Order information</summary>
+    public OrderInfoDto? OrderInfo { get; set; }
+}
+
+/// <summary>
+/// Bank information for payment transfer
+/// </summary>
+public class BankInfoDto
+{
+    /// <summary>Bank name (e.g., VCB, TCB, MB)</summary>
+    public string BankName { get; set; } = string.Empty;
+
+    /// <summary>Bank account number</summary>
+    public string AccountNumber { get; set; } = string.Empty;
+
+    /// <summary>Account holder name</summary>
+    public string AccountHolder { get; set; } = string.Empty;
+
+    /// <summary>Amount to transfer</summary>
+    public decimal Amount { get; set; }
+
+    /// <summary>Transfer note/description</summary>
+    public string TransferNote { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Order information for checkout
+/// </summary>
+public class OrderInfoDto
+{
+    /// <summary>Order code</summary>
+    public string OrderCode { get; set; } = string.Empty;
+
+    /// <summary>Payer name</summary>
+    public string PayerName { get; set; } = string.Empty;
+
+    /// <summary>Payer email</summary>
+    public string PayerEmail { get; set; } = string.Empty;
+
+    /// <summary>Plan name</summary>
+    public string PlanName { get; set; } = string.Empty;
+
+    /// <summary>Plan description</summary>
+    public string PlanDescription { get; set; } = string.Empty;
+
+    /// <summary>Subscription period (e.g., "1 tháng")</summary>
+    public string Period { get; set; } = string.Empty;
+
+    /// <summary>Subtotal amount</summary>
+    public decimal Subtotal { get; set; }
+
+    /// <summary>VAT/Fee amount</summary>
+    public decimal Fee { get; set; }
+
+    /// <summary>Total amount</summary>
+    public decimal Total { get; set; }
+}
+
+/// <summary>
+/// Request DTO for checking payment status
+/// </summary>
+public class CheckPaymentStatusRequestDto
+{
+    /// <summary>Order code to check</summary>
+    public string OrderCode { get; set; } = string.Empty;
+}
+
+/// <summary>
+/// Response DTO for payment status check
+/// </summary>
+public class PaymentStatusResponseDto
+{
+    /// <summary>Whether the request was successful</summary>
+    public bool Success { get; set; }
+
+    /// <summary>Payment status (Pending, Completed, Failed, Cancelled)</summary>
+    public string Status { get; set; } = "Pending";
+
+    /// <summary>Transaction ID if completed</summary>
+    public string? TransactionId { get; set; }
+
+    /// <summary>Payment amount</summary>
+    public decimal Amount { get; set; }
+
+    /// <summary>Payment date if completed</summary>
+    public DateTime? PaymentDate { get; set; }
+
+    /// <summary>Additional message</summary>
+    public string? Message { get; set; }
+}
+
+/// <summary>
+/// PayOS webhook payload
+/// </summary>
+public class PayOSWebhookDto
+{
+    /// <summary>Order code</summary>
+    public string OrderCode { get; set; } = string.Empty;
+
+    /// <summary>Amount paid</summary>
+    public decimal Amount { get; set; }
+
+    /// <summary>Payment status</summary>
+    public string Status { get; set; } = string.Empty;
+
+    /// <summary>Transaction ID</summary>
+    public string? TransactionId { get; set; }
+
+    /// <summary>Payment time</summary>
+    public DateTime? PaymentTime { get; set; }
+
+    /// <summary>Signature for verification</summary>
+    public string? Signature { get; set; }
+}
+
+#endregion

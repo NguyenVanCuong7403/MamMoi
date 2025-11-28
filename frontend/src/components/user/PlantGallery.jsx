@@ -230,6 +230,7 @@ export default function PlantGallery() {
             category: tree.category,
             soilMasterId: tree.soilMasterId,
             isActive: tree.isActive,
+            // These fields might not be in current DTO, but we'll handle gracefully
             description: tree.description || null,
             imageUrl:
               tree.imageUrl ||
@@ -366,7 +367,7 @@ export default function PlantGallery() {
               <div className="relative">
                 {/* Glow effect */}
                 <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400 opacity-25 blur-xl" />
-
+                
                 <div className="relative">
                   <div className="absolute left-5 top-1/2 -translate-y-1/2">
                     <Search className="h-5 w-5 text-emerald-600/70" />
@@ -390,7 +391,7 @@ export default function PlantGallery() {
                   )}
                 </div>
               </div>
-
+              
               {/* Quick stats - More compact */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -420,6 +421,7 @@ export default function PlantGallery() {
 
       {/* Plant Grid Section - Full width with natural decorative elements */}
       <section className="relative z-10 w-full bg-transparent py-20">
+
         <div className="w-full">
           {loading ? (
             <div className="flex min-h-[500px] items-center justify-center">
@@ -564,3 +566,4 @@ export default function PlantGallery() {
     </div>
   );
 }
+

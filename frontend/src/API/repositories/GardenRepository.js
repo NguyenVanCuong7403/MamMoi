@@ -64,4 +64,12 @@ export default class GardenRepository {
     return ApiClient.put(`/api/gardens/${id}/status`, JSON.stringify(status), true);
   }
 
+  /**
+   * Get all soil masters (for farmers to select when creating/updating gardens)
+   * GET /api/gardens/soil-masters
+   */
+  static async getSoilMasters() {
+    return ApiClient.get("/api/gardens/soil-masters");
+  }
+
 }
