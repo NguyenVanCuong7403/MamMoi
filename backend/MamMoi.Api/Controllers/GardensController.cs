@@ -17,13 +17,16 @@ namespace MamMoi.Api.Controllers;
 public class GardensController : ControllerBase
 {
     private readonly IGardenService _gardenService;
+    private readonly ISoilMasterService _soilMasterService;
     private readonly ILogger<GardensController> _logger;
 
     public GardensController(
-        IGardenService gardenService, 
+        IGardenService gardenService,
+        ISoilMasterService soilMasterService,
         ILogger<GardensController> logger)
     {
         _gardenService = gardenService;
+        _soilMasterService = soilMasterService;
         _logger = logger;
     }
 
@@ -336,6 +339,29 @@ public class GardensController : ControllerBase
             {
                 success = false,
                 message = "Đã xảy ra lỗi khi cập nhật vườn. Vui lòng thử lại sau."
+            });
+        }
+    }
+
+    /// <summary>
+    /// Get all soil masters (for farmers to select when creating/updating gardens)
+    /// GET /api/gardens/soil-masters
+    /// </summary>
+    [HttpGet("soil-masters")]
+    public async Task<IActionResult> GetSoilMasters(CancellationToken ct = default)
+    {
+        try
+        {
+            var soilMasters = await _soilMasterService.GetAllAsync(ct);
+            return Ok(soilMasters);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting soil masters");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Đã xảy ra lỗi khi lấy danh sách loại đất. Vui lòng thử lại sau."
             });
         }
     }

@@ -2,6 +2,7 @@ using MamMoi.Application.DTOs.Garden;
 using MamMoi.Application.Interfaces;
 using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
+using Microsoft.EntityFrameworkCore;
 using GardenEntity = MamMoi.Infrastructure.Models.Garden;
 using GardenMemberEntity = MamMoi.Infrastructure.Models.GardenMember;
 
@@ -16,15 +17,18 @@ public class GardenService : IGardenService
     private readonly IGardenRepository _gardenRepository;
     private readonly IUserRepository _userRepository;
     private readonly IGardenMemberRepository _gardenMemberRepository;
+    private readonly MamMoiDbContext _dbContext;
 
     public GardenService(
         IGardenRepository gardenRepository,
         IUserRepository userRepository,
-        IGardenMemberRepository gardenMemberRepository)
+        IGardenMemberRepository gardenMemberRepository,
+        MamMoiDbContext dbContext)
     {
         _gardenRepository = gardenRepository;
         _userRepository = userRepository;
         _gardenMemberRepository = gardenMemberRepository;
+        _dbContext = dbContext;
     }
 
     /// <summary>
@@ -75,8 +79,35 @@ public class GardenService : IGardenService
         };
         await _gardenMemberRepository.AddAsync(gardenMember);
 
-        // 6. Map sang DTO và return
-        return MapToResponseDto(createdGarden, userId);
+        // 6. Create GardenSoil records from SoilMaster IDs if provided
+        if (dto.SoilMasterIds != null && dto.SoilMasterIds.Count > 0)
+        {
+            // Validate that all SoilMaster IDs exist
+            var validSoilMasterIds = await _dbContext.SoilMasters
+                .Where(sm => dto.SoilMasterIds.Contains(sm.SoilMasterId))
+                .Select(sm => sm.SoilMasterId)
+                .ToListAsync();
+
+            // Create GardenSoil records for each valid SoilMaster ID
+            var gardenSoils = validSoilMasterIds.Select(soilMasterId => new GardenSoil
+            {
+                GardenId = createdGarden.GardenId,
+                SoilMasterId = soilMasterId,
+                CustomLabel = null,
+                Notes = null,
+                CreatedAt = DateTime.Now
+            }).ToList();
+
+            await _dbContext.GardenSoils.AddRangeAsync(gardenSoils);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        // 7. Reload garden to include GardenSoils
+        var reloadedGardenDynamic = await _gardenRepository.GetByIdAsync(createdGarden.GardenId);
+        var reloadedGarden = (Garden)reloadedGardenDynamic!;
+
+        // 8. Map sang DTO và return
+        return MapToResponseDto(reloadedGarden, userId);
     }
 
     /// <summary>
@@ -236,7 +267,45 @@ public class GardenService : IGardenService
         // 4. Lưu thay đổi
         await _gardenRepository.UpdateAsync(garden);
 
-        // 5. Reload garden với related data và return
+        // 5. Update GardenSoil records if SoilMasterIds provided
+        if (dto.SoilMasterIds != null)
+        {
+            // Remove existing GardenSoil records for this garden
+            var existingGardenSoils = await _dbContext.GardenSoils
+                .Where(gs => gs.GardenId == gardenId)
+                .ToListAsync();
+            
+            if (existingGardenSoils.Any())
+            {
+                _dbContext.GardenSoils.RemoveRange(existingGardenSoils);
+            }
+
+            // Create new GardenSoil records from provided SoilMaster IDs
+            if (dto.SoilMasterIds.Count > 0)
+            {
+                // Validate that all SoilMaster IDs exist
+                var validSoilMasterIds = await _dbContext.SoilMasters
+                    .Where(sm => dto.SoilMasterIds.Contains(sm.SoilMasterId))
+                    .Select(sm => sm.SoilMasterId)
+                    .ToListAsync();
+
+                // Create GardenSoil records for each valid SoilMaster ID
+                var newGardenSoils = validSoilMasterIds.Select(soilMasterId => new GardenSoil
+                {
+                    GardenId = gardenId,
+                    SoilMasterId = soilMasterId,
+                    CustomLabel = null,
+                    Notes = null,
+                    CreatedAt = DateTime.Now
+                }).ToList();
+
+                await _dbContext.GardenSoils.AddRangeAsync(newGardenSoils);
+            }
+
+            await _dbContext.SaveChangesAsync();
+        }
+
+        // 6. Reload garden với related data và return
         var updatedGardenDynamic = await _gardenRepository.GetByIdAsync(gardenId);
         var updatedGarden = (Garden)updatedGardenDynamic!;
         return MapToResponseDto(updatedGarden, userId);

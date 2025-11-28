@@ -196,5 +196,15 @@ namespace MamMoi.Infrastructure.Services
                     s.StageId, s.StageName, s.StageOrder, s.Description))
                 .ToListAsync(ct);
         }
+
+        public async Task<IReadOnlyList<GrowthStageDto>> GetStagesByTreeTypeIdAsync(int treeTypeId, CancellationToken ct)
+        {
+            return await _db.TreeGrowthStages.AsNoTracking()
+                .Where(s => s.TreeTypeId == treeTypeId)
+                .OrderBy(s => s.StageOrder)
+                .Select(s => new GrowthStageDto(
+                    s.StageId, s.StageName, s.StageOrder, s.Description))
+                .ToListAsync(ct);
+        }
     }
 }

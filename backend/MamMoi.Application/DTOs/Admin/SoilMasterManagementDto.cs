@@ -78,6 +78,7 @@ public class SoilMasterListItemDto
     public string SoilName { get; set; } = null!;
     public string? Texture { get; set; }
     public string? Drainage { get; set; }
+    public string? Notes { get; set; }
     public int TreeTypesCount { get; set; }
     public int GardenSoilsCount { get; set; }
 }

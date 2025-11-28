@@ -35,4 +35,10 @@ public class UpdateGardenDto
     /// </summary>
     [StringLength(50, ErrorMessage = "Climate zone cannot exceed 50 characters")]
     public string? ClimateZone { get; set; }
+
+    /// <summary>
+    /// List of SoilMaster IDs to create/update GardenSoil records for this garden
+    /// If provided, will replace existing GardenSoil records
+    /// </summary>
+    public List<int>? SoilMasterIds { get; set; }
 }

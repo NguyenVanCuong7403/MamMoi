@@ -24,5 +24,6 @@ namespace MamMoi.Application.Interfaces
         Task<IReadOnlyList<GrowthHistoryItemDto>> GetGrowthHistoryAsync(int treeId, CancellationToken ct);
         Task<IReadOnlyList<GrowthChartPointDto>> GetGrowthChartAsync(int treeId, DateTime? from, DateTime? to, CancellationToken ct);
         Task<IReadOnlyList<GrowthStageDto>> GetStagesForTreeAsync(int treeId, CancellationToken ct);
+        Task<IReadOnlyList<GrowthStageDto>> GetStagesByTreeTypeIdAsync(int treeTypeId, CancellationToken ct);
     }
 }
