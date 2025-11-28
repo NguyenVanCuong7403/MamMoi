@@ -2920,6 +2920,22 @@ export default function UserProfile() {
                               if (response?.url || response?.avatarUrl) {
                                 const newAvatarUrl = response.url || response.avatarUrl;
                                 setDraft((d) => ({ ...d, avatarUrl: newAvatarUrl }));
+                                
+                                // Update profile state to trigger localStorage save
+                                setProfile((p) => ({ ...p, avatarUrl: newAvatarUrl }));
+                                
+                                // Update user object in localStorage for AuthContext/Header
+                                if (user) {
+                                  const updatedUser = {
+                                    ...user,
+                                    ProfileImageUrl: newAvatarUrl,
+                                  };
+                                  localStorage.setItem("user", JSON.stringify(updatedUser));
+                                }
+                                
+                                // Dispatch event to notify Header component
+                                window.dispatchEvent(new CustomEvent("userProfileUpdated"));
+                                
                                 showToast("Thành công", "Đã cập nhật ảnh đại diện", "success");
                               }
                             } catch (error) {

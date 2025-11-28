@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -205,6 +205,7 @@ function PlantCard({ tree, index, onClick }) {
 
 export default function PlantGallery() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [trees, setTrees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -263,7 +264,7 @@ export default function PlantGallery() {
     };
 
     fetchData();
-  }, []);
+  }, [location.key]); // Thêm location.key để force reload khi navigate (back/forward)
 
   const filteredTrees = useMemo(() => {
     if (!searchQuery.trim()) return trees;
