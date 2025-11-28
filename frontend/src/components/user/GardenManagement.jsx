@@ -266,21 +266,6 @@ function ImagePicker({ value, onChange }) {
 }
 
 /* ===== UI bits ===== */
-function StatusPill({ s }) {
-  const map = {
-    "Đang hoạt động": "bg-emerald-50 text-emerald-700 border-emerald-200",
-    "Dừng hoạt động": "bg-rose-50 text-rose-700 border-rose-200",
-  };
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] md:text-[12px] border ${
-        map[s] || "bg-neutral-50 text-neutral-700 border-neutral-200"
-      }`}
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" /> {s}
-    </span>
-  );
-}
 function FieldLabel({ children, required }) {
   return (
     <div className="mb-1 text-sm text-neutral-600">
@@ -335,7 +320,6 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
     province: "",
     ward: "",
     address: "",
-    status: "Đang hoạt động",
     coverUrl: "",
     soilIds: [],
     soilNames: [],
@@ -962,7 +946,6 @@ export default function GardenManagement() {
               province,
               ward,
               address,
-              status: g.status || "Đang hoạt động",
               coverUrl: g.coverUrl || "",
             };
           });
@@ -982,7 +965,6 @@ export default function GardenManagement() {
 
   // ===== search + filter =====
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState("all"); // all | active | stopped
   const [provinceFilter, setProvinceFilter] = useState("");
 
   // ===== phân trang =====
@@ -991,7 +973,7 @@ export default function GardenManagement() {
   // mỗi khi thay đổi bộ lọc / search → quay lại trang 1
   useEffect(() => {
     setPage(1);
-  }, [q, status, provinceFilter]);
+  }, [q, provinceFilter]);
 
   // ===== modal thêm / sửa =====
   const [openForm, setOpenForm] = useState(false);
@@ -999,14 +981,6 @@ export default function GardenManagement() {
 
   // ===== confirm xoá =====
   const [confirm, setConfirm] = useState({ open: false, targetIdx: -1 });
-
-  // ===== confirm đổi trạng thái =====
-  const [statusConfirm, setStatusConfirm] = useState({
-    open: false,
-    targetIdx: -1,
-    nextStatus: "",
-    message: "",
-  });
 
   // ===== lọc danh sách theo search + filter =====
   const filtered = useMemo(() => {
@@ -1019,21 +993,15 @@ export default function GardenManagement() {
           .includes(QQ);
         if (!hit) return false;
       }
-      if (status !== "all") {
-        if (status === "active" && g.status !== "Đang hoạt động") return false;
-        if (status === "stopped" && g.status !== "Dừng hoạt động") return false;
-      }
       if (provinceFilter && g.province !== provinceFilter) return false;
       return true;
     });
-  }, [gardens, q, status, provinceFilter]);
+  }, [gardens, q, provinceFilter]);
 
   // ===== stats mini =====
   const stats = useMemo(() => {
     const total = gardens.length;
-    const active = gardens.filter((g) => g.status === "Đang hoạt động").length;
-    const stopped = gardens.filter((g) => g.status === "Dừng hoạt động").length;
-    return { total, active, stopped };
+    return { total };
   }, [gardens]);
 
   // ===== phân trang từ filtered =====
@@ -1098,7 +1066,6 @@ export default function GardenManagement() {
       const payload = {
         Name: form.name || undefined,                     // optional
         Location: formatGardenLocation(form) || undefined,// optional
-        Status: form.status ?? "Đang hoạt động",
         CoverUrl: coverUrl,                               // uploaded file or existing URL
         TimeZone: form.timeZone ?? null,                  // optional
         ClimateZone: form.climateZone ?? null,            // optional
@@ -1144,7 +1111,6 @@ export default function GardenManagement() {
       const payload = {
         Name: updatedForm.name,
         Location: formatGardenLocation(updatedForm),  // use your existing function
-        Status: updatedForm.status ?? "Đang hoạt động",
         CoverUrl: updatedForm.coverUrl,
         TimeZone: null,
         ClimateZone: null,
@@ -1200,53 +1166,6 @@ export default function GardenManagement() {
     }
   }
 
-  function askToggleStatus(i) {
-    const g = gardens[i];
-    if (!g) return;
-    const isActive = g.status === "Đang hoạt động";
-    const nextStatus = isActive ? "Dừng hoạt động" : "Đang hoạt động";
-    const message = isActive
-      ? `Bạn có chắc chắn muốn dừng hoạt động vườn "${g.name}"?\nCác cây trong vườn vẫn được giữ nguyên, bạn có thể khởi động lại bất cứ lúc nào.`
-      : `Bạn có muốn khởi động lại vườn "${g.name}" và đánh dấu là đang hoạt động?`;
-
-    setStatusConfirm({
-      open: true,
-      targetIdx: i,
-      nextStatus,
-      message,
-    });
-  }
-
-  function doToggleStatus() {
-    (async () => {
-      try {
-        await GardenRepository.updateGardenStatus(statusConfirm.targetIdx, statusConfirm.nextStatus);
-      } catch (err) {
-        console.error("Failed to update garden status:", err);
-        setStatusConfirm({
-          open: false,
-          targetIdx: -1,
-          nextStatus: "",
-          message: "",
-        });
-        return;
-      }
-      setGardens((gs) => {
-        const idx = statusConfirm.targetIdx;
-        if (idx < 0 || !gs[idx]) return gs;
-        const next = [...gs];
-        next[idx] = { ...next[idx], status: statusConfirm.nextStatus };
-        save(LS_GARDENS, next);
-        return next;
-      });
-      setStatusConfirm({
-        open: false,
-        targetIdx: -1,
-        nextStatus: "",
-        message: "",
-      });
-    })();
-  }
 
   return (
     <>
@@ -1318,17 +1237,6 @@ export default function GardenManagement() {
 
               <div className="flex items-center gap-2 flex-wrap">
                 <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="h-12 rounded-full border bg-white px-3 text-[15px] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer"
-                  title="Lọc trạng thái"
-                >
-                  <option value="all">Tất cả trạng thái</option>
-                  <option value="active">Đang hoạt động</option>
-                  <option value="stopped">Dừng hoạt động</option>
-                </select>
-
-                <select
                   value={provinceFilter}
                   onChange={(e) => setProvinceFilter(e.target.value)}
                   className="h-12 rounded-full border bg-white px-3 text-[15px] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer"
@@ -1342,13 +1250,12 @@ export default function GardenManagement() {
                   ))}
                 </select>
 
-                {q || status !== "all" || provinceFilter ? (
+                {q || provinceFilter ? (
                   <Button
                     variant="outline"
                     className="h-12 rounded-full text-[14px] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700"
                     onClick={() => {
                       setQ("");
-                      setStatus("all");
                       setProvinceFilter("");
                     }}
                   >
@@ -1360,34 +1267,26 @@ export default function GardenManagement() {
           </section>
 
           {/* Mini stats */}
-          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
-            {[
-              { label: "Tổng vườn", value: stats.total },
-              { label: "Đang hoạt động", value: stats.active },
-              { label: "Dừng hoạt động", value: stats.stopped },
-            ].map((s, i) => (
-              <div
-                key={i}
-                className="relative rounded-xl px-5 py-3.5 flex items-center justify-between text-[14px]"
-                style={{
-                  background: "rgba(251,255,223,0.06)",
-                  border: "1px solid rgba(255,255,165,0.15)",
-                  color: PALETTE.ivory,
-                }}
-              >
-                <span className="inline-flex items-center gap-2 opacity-80">
-                  {s.label}
-                </span>
-                <span className="font-semibold text-lg">{s.value}</span>
-              </div>
-            ))}
+          <section className="grid grid-cols-1 sm:grid-cols-1 lg:grid-cols-1 gap-3">
+            <div
+              className="relative rounded-xl px-5 py-3.5 flex items-center justify-between text-[14px]"
+              style={{
+                background: "rgba(251,255,223,0.06)",
+                border: "1px solid rgba(255,255,165,0.15)",
+                color: PALETTE.ivory,
+              }}
+            >
+              <span className="inline-flex items-center gap-2 opacity-80">
+                Tổng vườn
+              </span>
+              <span className="font-semibold text-lg">{stats.total}</span>
+            </div>
           </section>
 
           {/* Gardens grid */}
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
             {paged.map((g) => {
               const idx = gardens.findIndex((x) => x.id === g.id);
-              const isActive = g.status === "Đang hoạt động";
 
               return (
                 <Card
@@ -1437,9 +1336,6 @@ export default function GardenManagement() {
                           {g.name}
                         </div>
 
-                        <div className="mt-2">
-                          <StatusPill s={g.status} />
-                        </div>
                       </div>
 
                       {/* Địa chỉ */}
@@ -1498,21 +1394,6 @@ export default function GardenManagement() {
                         </button>
                       </div>
 
-                      {/* Nút trạng thái */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (idx >= 0) askToggleStatus(idx);
-                        }}
-                        className={`inline-flex items-center justify-center h-10 px-4 rounded-full text-[13px] font-semibold shadow-sm transition-all duration-200 hover:scale-110 hover:shadow-lg active:scale-[0.95] ${
-                          isActive
-                            ? "bg-rose-500 text-white hover:bg-rose-600 shadow-[0_8px_18px_rgba(244,63,94,0.28)] hover:shadow-[0_12px_28px_rgba(244,63,94,0.40)]"
-                            : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_8px_18px_rgba(16,185,129,0.28)] hover:shadow-[0_12px_28px_rgba(16,185,129,0.40)]"
-                        }`}
-                      >
-                        {isActive ? "Dừng hoạt động" : "Khởi động lại"}
-                      </button>
                     </div>
                   </CardContent>
                 </Card>
@@ -1614,27 +1495,6 @@ export default function GardenManagement() {
           </p>
         </ConfirmModal>
 
-        <ConfirmModal
-          open={statusConfirm.open}
-          title={
-            statusConfirm.nextStatus === "Dừng hoạt động"
-              ? "Dừng hoạt động vườn?"
-              : "Khởi động lại vườn?"
-          }
-          onClose={() =>
-            setStatusConfirm({
-              open: false,
-              targetIdx: -1,
-              nextStatus: "",
-              message: "",
-            })
-          }
-          onConfirm={doToggleStatus}
-        >
-          <p className="text-sm text-neutral-700 whitespace-pre-line">
-            {statusConfirm.message}
-          </p>
-        </ConfirmModal>
       </div>
     </>
   );
