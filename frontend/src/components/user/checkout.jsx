@@ -102,6 +102,98 @@ const RESPONSIVE_QR_STYLES = `
     font-size: clamp(0.9375rem, 0.85rem + 0.35vw, 1.25rem);
   }
 }
+@keyframes mm-dialog-enter {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9) translateY(20px);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.02) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) translateY(0);
+  }
+}
+@keyframes mm-dialog-exit {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.95) translateY(10px);
+  }
+}
+.mm-cancel-dialog {
+  max-width: min(90vw, 32rem) !important;
+  width: calc(100% - 2rem) !important;
+  max-height: calc(100vh - 4rem) !important;
+  margin: 0 !important;
+  left: 50% !important;
+  top: 50% !important;
+  position: fixed !important;
+  box-sizing: border-box !important;
+  will-change: transform, opacity, box-shadow;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  /* Override default shadcn animations */
+  animation: none !important;
+  transform: translate(-50%, -50%) !important;
+  transition: none !important;
+}
+.mm-cancel-dialog[data-state="open"] {
+  animation: mm-dialog-enter 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards !important;
+}
+.mm-cancel-dialog[data-state="closed"] {
+  animation: mm-dialog-exit 0.25s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+}
+/* Enable hover transitions after animation completes */
+.mm-cancel-dialog[data-state="open"] {
+  transition: transform 0.3s ease-out, box-shadow 0.3s ease-out !important;
+}
+.mm-cancel-dialog[data-state="open"]:hover {
+  transform: translate(-50%, calc(-50% - 4px)) scale(1.02) !important;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, 0.5) !important;
+}
+/* Override shadcn default animation classes */
+.mm-cancel-dialog.animate-in,
+.mm-cancel-dialog.animate-out,
+.mm-cancel-dialog[data-state="open"].animate-in,
+.mm-cancel-dialog[data-state="closed"].animate-out {
+  animation: none !important;
+}
+.mm-cancel-dialog * {
+  box-sizing: border-box;
+}
+.mm-cancel-dialog button {
+  max-width: 100% !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  white-space: normal !important;
+  cursor: pointer !important;
+}
+.mm-cancel-dialog [role="dialog"] {
+  overflow: visible !important;
+}
+/* Overlay animation - target the overlay that's a sibling of mm-cancel-dialog */
+[data-radix-dialog-overlay] {
+  backdrop-filter: blur(4px) !important;
+}
+[data-radix-dialog-overlay][data-state="open"] {
+  animation: fade-in 0.3s ease-out forwards !important;
+}
+[data-radix-dialog-overlay][data-state="closed"] {
+  animation: fade-out 0.2s ease-in forwards !important;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
 `;
 
 /* =========================================================
@@ -757,7 +849,7 @@ export default function MamMoiQrCheckout() {
               <CardTitle className="text-xl sm:text-2xl font-bold text-white break-words min-w-0">Thông tin đơn hàng</CardTitle>
             </CardHeader>
             <CardContent className="px-4 sm:px-6 min-w-0">
-              <div className="divide-y divide-white/20 min-w-0">
+              <div className="min-w-0">
                 <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
                   <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Mã đơn</div>
                   <div className="text-sm sm:text-base font-medium text-white break-words break-all min-w-0">{toStr(order.orderCode || orderCode)}</div>
@@ -790,7 +882,7 @@ export default function MamMoiQrCheckout() {
                   <div className="text-sm sm:text-base text-right font-medium text-white break-words min-w-0">{currency(order.fee)}</div>
                 </div>
 
-                <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 border-t border-white/20 gap-2 min-w-0">
+                <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 gap-2 min-w-0">
                   <div className="text-base sm:text-lg font-semibold text-white break-words min-w-0">THANH TOÁN</div>
                   <div className="text-2xl sm:text-3xl font-bold text-emerald-400 break-words min-w-0">{currency(total)}</div>
                 </div>
@@ -838,24 +930,24 @@ export default function MamMoiQrCheckout() {
 
       {/* Cancel Payment Confirmation Dialog */}
       <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <DialogContent className="border border-gray-200 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.3)] rounded-2xl sm:rounded-3xl max-w-md w-[calc(100%-2rem)] mx-4 sm:mx-0">
-          <DialogHeader>
-            <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900 text-center">
+        <DialogContent className="border border-gray-200 bg-white shadow-[0_25px_80px_rgba(0,0,0,0.4)] rounded-2xl sm:rounded-3xl overflow-visible min-w-0 mm-cancel-dialog p-6 sm:p-8 pb-6 sm:pb-8 flex flex-col">
+          <DialogHeader className="min-w-0 space-y-3">
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-gray-900 text-center break-words min-w-0 leading-tight">
               Xác nhận hủy thanh toán
             </DialogTitle>
-            <DialogDescription className="text-sm sm:text-base text-gray-600 text-center pt-2">
+            <DialogDescription className="text-sm sm:text-base text-gray-600 text-center break-words min-w-0 leading-relaxed px-2">
               Bạn có chắc chắn muốn hủy thanh toán này không? 
               <br />
               Phiên thanh toán sẽ bị hủy và bạn sẽ được chuyển về trang chọn gói.
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row gap-3 justify-center pt-4">
+          <DialogFooter className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center pt-6 pb-0 min-w-0 w-full flex-shrink-0">
             <Button
               variant="outline"
               onClick={() => setShowCancelDialog(false)}
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 sm:px-6 w-full sm:w-auto text-sm sm:text-base"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 px-4 sm:px-6 py-2.5 w-full sm:w-auto sm:min-w-[160px] text-xs sm:text-sm shrink-0 transition-all duration-200 ease-out whitespace-normal sm:whitespace-nowrap hover:shadow-md hover:-translate-y-0.5 hover:border-gray-400 active:translate-y-0 h-auto sm:h-10"
             >
-              Không, tiếp tục thanh toán
+              <span className="text-center w-full">Không, tiếp tục thanh toán</span>
             </Button>
             <Button
               onClick={handleConfirmCancel}
