@@ -64,4 +64,24 @@ export default class AdminGrowthStageRepository {
     const response = await ApiClient.delete(`/api/admin/tree-growth-stages/${id}`);
     return response;
   }
+
+  /**
+   * Reorder stages for a tree type
+   * @param {number} treeTypeId - Tree type ID
+   * @param {Object} stageIdToNewOrder - Map of stageId to new order (e.g., { 1: 2, 2: 1 })
+   */
+  static async reorderStages(treeTypeId, stageIdToNewOrder) {
+    const response = await ApiClient.put(`/api/admin/tree-growth-stages/reorder/${treeTypeId}`, stageIdToNewOrder);
+    return response;
+  }
+
+  /**
+   * Upload an icon/image for growth stages
+   * @param {File} file - Image file
+   */
+  static async uploadStageImage(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    return ApiClient.post("/api/admin/tree-growth-stages/upload", formData, true);
+  }
 }

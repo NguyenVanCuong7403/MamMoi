@@ -41,6 +41,12 @@ public partial class TreeGrowthStage
 
     public string? ImageUrl { get; set; }
 
+    public string? Icon { get; set; }
+
+    public string? NodeColor { get; set; }
+
+    public string? LineColor { get; set; }
+
     public virtual TreeType TreeType { get; set; } = null!;
 
     public virtual ICollection<Tree> Trees { get; set; } = new List<Tree>();

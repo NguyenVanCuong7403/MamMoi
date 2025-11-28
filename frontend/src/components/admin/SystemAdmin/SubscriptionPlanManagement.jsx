@@ -268,8 +268,6 @@ export default function SubscriptionPlanManagement() {
       const payload = {};
       if (formData.planName !== selectedPlan.planName)
         payload.planName = formData.planName.trim();
-      if (formData.planType !== selectedPlan.planType)
-        payload.planType = formData.planType.trim() || null;
       if (formData.price !== selectedPlan.price?.toString())
         payload.price = parseFloat(formData.price);
       if (formData.currency !== selectedPlan.currency)
@@ -837,11 +835,13 @@ export default function SubscriptionPlanManagement() {
                 </label>
                 <Input
                   value={formData.planType}
-                  onChange={(e) =>
-                    setFormData({ ...formData, planType: e.target.value })
-                  }
-                  className="mt-1"
+                  readOnly
+                  disabled
+                  className="mt-1 bg-slate-50 text-slate-500 cursor-not-allowed"
                 />
+                <p className="mt-1 text-xs text-slate-500">
+                  Loại gói cố định, không thể chỉnh sửa.
+                </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-slate-700">

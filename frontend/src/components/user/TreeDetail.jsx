@@ -22,10 +22,133 @@ import LifecycleWidget, {
   normalizePhaseId,
   mapPhaseIdFromText,
 } from "./LifecycleWidget";
+import {
+  DEFAULT_PHASE_THEME,
+  PHASE_IDS,
+  LIFECYCLE_COLOR_LOOKUP,
+  getColorKeyFromHex,
+} from "@/lib/lifecycleTheme";
 
 import { Label } from "@/components/ui/label"; // nếu bạn dùng Label trong edit modal
 
 const FIELD_EDIT_LOCK_DAYS = 30;
+
+const STAGE_ICON_PALETTE = ["🌱", "🌿", "🌸", "🍇", "🌾", "🍂", "🍋", "🌻"];
+const STAGE_COLOR_PALETTE = [
+  "emerald",
+  "pink",
+  "lime",
+  "amber",
+  "teal",
+  "sky",
+  "rose",
+  "slate",
+];
+
+const HEX_COLOR_REGEX = /^#([0-9a-f]{6})$/i;
+
+const isStageIconUrl = (value) =>
+  typeof value === "string" &&
+  (value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("/"));
+
+function normalizeStageColorHex(value) {
+  if (!value) return "";
+  const raw = value.toString().trim().toLowerCase();
+  if (HEX_COLOR_REGEX.test(raw)) return raw;
+  if (LIFECYCLE_COLOR_LOOKUP[raw]) return LIFECYCLE_COLOR_LOOKUP[raw];
+  const mappedKey = getColorKeyFromHex(raw);
+  if (mappedKey && LIFECYCLE_COLOR_LOOKUP[mappedKey]) {
+    return LIFECYCLE_COLOR_LOOKUP[mappedKey];
+  }
+  return "";
+}
+
+function buildStageColorMeta(value, fallbackKey = "emerald") {
+  const hex = normalizeStageColorHex(value);
+  const key = getColorKeyFromHex(hex) || fallbackKey;
+  return {
+    hex: hex || LIFECYCLE_COLOR_LOOKUP[key] || "#059669",
+    key,
+  };
+}
+
+function formatAgeRangeLabel(stage) {
+  const min =
+    stage?.minAgeInMonths != null ? Number(stage.minAgeInMonths) : null;
+  const max =
+    stage?.maxAgeInMonths != null ? Number(stage.maxAgeInMonths) : null;
+  if (Number.isFinite(min) && Number.isFinite(max)) {
+    return `${min}-${max} tháng`;
+  }
+  if (Number.isFinite(min)) {
+    return `≥${min} tháng`;
+  }
+  if (Number.isFinite(max)) {
+    return `<${max} tháng`;
+  }
+  return "";
+}
+
+function buildPhaseThemeFromStages(stages = []) {
+  if (!Array.isArray(stages) || stages.length === 0) return null;
+  const sorted = [...stages]
+    .filter((stage) => stage && (stage.stageName || stage.stage_name))
+    .sort(
+      (a, b) =>
+        (a?.stageOrder ?? a?.order ?? 0) - (b?.stageOrder ?? b?.order ?? 0)
+    );
+
+  if (!sorted.length) return null;
+
+  const limited = sorted.slice(0, PHASE_IDS.length);
+  return limited.map((stage, index) => {
+    const phaseId = PHASE_IDS[index];
+    const baseTheme = DEFAULT_PHASE_THEME[phaseId] || {};
+    const label =
+      stage.stageName ||
+      stage.stage_name ||
+      stage.name ||
+      stage.label ||
+      `Giai đoạn ${index + 1}`;
+    const subtitle = formatAgeRangeLabel(stage);
+    const fallbackIcon =
+      baseTheme.icon || STAGE_ICON_PALETTE[index % STAGE_ICON_PALETTE.length];
+    const nodeColorMeta = buildStageColorMeta(
+      stage.nodeColor || stage.colorKey || stage.colorHex || baseTheme.colorHex,
+      baseTheme.colorKey
+    );
+    const lineColorMeta = buildStageColorMeta(
+      stage.lineColor ||
+        stage.lineColorKey ||
+        stage.lineColorHex ||
+        nodeColorMeta.hex,
+      nodeColorMeta.key
+    );
+    const iconValue = stage.icon || "";
+    const isImageIcon = isStageIconUrl(iconValue);
+
+    return {
+      id: `${phaseId}-${stage.stageId ?? stage.stage_id ?? index}`,
+      phaseId,
+      label,
+      subtitle,
+      description:
+        stage.description ||
+        stage.careInstructions ||
+        stage.notes ||
+        "",
+      icon: isImageIcon ? null : iconValue || fallbackIcon,
+      iconImageUrl: isImageIcon ? iconValue : null,
+      colorKey: nodeColorMeta.key,
+      colorHex: nodeColorMeta.hex,
+      lineColorKey: lineColorMeta.key,
+      lineColorHex: lineColorMeta.hex || nodeColorMeta.hex,
+      order: index,
+    };
+  });
+}
 
 // Đồng bộ lại dữ liệu cây vào demoTrees (TREES + TREES_ARRAY)
 // để các màn khác (TreeManagement) đọc được cùng 1 nguồn.
@@ -1971,7 +2094,7 @@ function PlannedRow({
 const NOTE_PREVIEW_MAX = 230;
 
 
-function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed, loai, giong, treeId, treeOwnerId, lifecycleAutoEnabled, lifecycleAutoDisabledAt }) {
+function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed, loai, giong, treeId, treeOwnerId, lifecycleAutoEnabled, lifecycleAutoDisabledAt, phaseTheme, phaseThemeAllowPartial }) {
   const [editNote, setEditNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || "");
   // Chuẩn bị text hiển thị cho khung "Ghi chú" (chỉ xem)
@@ -2199,6 +2322,8 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
             treeVariety={giong}
             autoLifecycleEnabled={lifecycleAutoEnabled}
             autoLifecycleDisabledAt={lifecycleAutoDisabledAt}
+            phaseTheme={phaseTheme}
+            phaseThemeAllowPartial={phaseThemeAllowPartial}
           />
         </CardContent>
       </Card>
@@ -2831,6 +2956,7 @@ function mapDtoToTree(dto) {
     id: dto.treeId,
     code: dto.treeCode,
     name: dto.treeName,
+    treeTypeId: dto.treeTypeId,
 
     // Ngày & vị trí
     plantedAt,
@@ -2903,6 +3029,32 @@ export default function TreeDetail() {
   
   // Ref for AI refresh function (defined later but used in persistTreePatch)
   const refreshAiRecommendationsRef = React.useRef(null);
+  const [stageTheme, setStageTheme] = useState(null);
+  const stageTypeLoadedRef = useRef(null);
+
+  const loadTreeTypeStages = React.useCallback(
+    async (treeTypeId, { force } = {}) => {
+      if (!treeTypeId) return;
+      if (
+        !force &&
+        stageTypeLoadedRef.current === treeTypeId &&
+        stageTheme?.length
+      ) {
+        return;
+      }
+      try {
+        const response = await TreeRepository.getStagesByTreeType(treeTypeId);
+        const list = response?.data ?? response ?? [];
+        stageTypeLoadedRef.current = treeTypeId;
+        setStageTheme(buildPhaseThemeFromStages(list));
+      } catch (error) {
+        console.warn("Failed to load tree type stages", error);
+        stageTypeLoadedRef.current = treeTypeId;
+        setStageTheme(null);
+      }
+    },
+    [stageTheme?.length]
+  );
 
   async function persistTreePatch(partial) {
     if (!treeId) return;
@@ -3111,6 +3263,11 @@ export default function TreeDetail() {
         }
         if (!cancelled) {
           setApiTree(mapDtoToTree(dto));
+        }
+
+        if (dto.treeTypeId) {
+          setMeta((prev) => ({ ...prev, treeTypeId: dto.treeTypeId }));
+          await loadTreeTypeStages(dto.treeTypeId, { force: true });
         }
 
         // ====== Fetch lifecycle data ======
@@ -3583,6 +3740,7 @@ useEffect(() => {
     soil: baseTree.soil ?? prev.soil,
     status: baseTree.status ?? prev.status,
     notes: baseTree.notes || "",
+    treeTypeId: baseTree.treeTypeId ?? prev.treeTypeId ?? null,
   }));
 }, [
   baseTree?.updatedAt,  
@@ -3609,12 +3767,14 @@ useEffect(() => {
       notes: baseTree.notes || "",
       stageId: baseTree.stageId ?? prev.stageId ?? null,
       userId: baseTree.userId ?? prev.userId ?? null,
+    treeTypeId: baseTree.treeTypeId ?? prev.treeTypeId ?? null,
     }));
   }, [
     baseTree?.updatedAt,
     baseTree?.notes,
     baseTree?.stageId,
     baseTree?.userId,
+  baseTree?.treeTypeId,
     baseTree?.id,
   ]);
 
@@ -3627,6 +3787,24 @@ useEffect(() => {
     apiTree?.userId ??
     stateTree?.userId ??
     null;
+
+  useEffect(() => {
+    const typeId =
+      baseTree?.treeTypeId ??
+      meta?.treeTypeId ??
+      apiTree?.treeTypeId ??
+      stateTree?.treeTypeId ??
+      null;
+    if (typeId) {
+      loadTreeTypeStages(typeId);
+    }
+  }, [
+    baseTree?.treeTypeId,
+    meta?.treeTypeId,
+    apiTree?.treeTypeId,
+    stateTree?.treeTypeId,
+    loadTreeTypeStages,
+  ]);
 
   // danh sách GardenSoil của vườn hiện tại & map id -> object
   const [gardenSoils, setGardenSoils] = useState([]);
@@ -5898,6 +6076,8 @@ useEffect(() => {
                 resolvedTreeOwnerId={resolvedTreeOwnerId}
                 lifecycleAutoEnabled={lifecycleAutoEnabled}
                 lifecycleAutoDisabledAt={lifecycleAutoDisabledAt}
+                phaseTheme={stageTheme}
+                phaseThemeAllowPartial={Boolean(stageTheme?.length)}
                 onPhaseChange={(payload) => {
                   // payload: { phaseId, cycleCount, phase1Completed, stageId? }
                   // Lifecycle API already handles the update, so we just sync local state

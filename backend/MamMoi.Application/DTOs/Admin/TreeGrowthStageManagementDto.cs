@@ -15,9 +15,8 @@ public class CreateTreeGrowthStageDto
     [StringLength(100)]
     public string StageName { get; set; } = null!;
 
-    [Required]
     [Range(1, int.MaxValue)]
-    public int StageOrder { get; set; }
+    public int? StageOrder { get; set; }
 
     [StringLength(500)]
     public string? Description { get; set; }
@@ -60,6 +59,15 @@ public class CreateTreeGrowthStageDto
 
     [StringLength(500)]
     public string? ImageUrl { get; set; }
+
+    [StringLength(255)]
+    public string? Icon { get; set; }
+
+    [StringLength(32)]
+    public string? NodeColor { get; set; }
+
+    [StringLength(32)]
+    public string? LineColor { get; set; }
 }
 
 /// <summary>
@@ -117,6 +125,15 @@ public class UpdateTreeGrowthStageDto
 
     [StringLength(500)]
     public string? ImageUrl { get; set; }
+
+    [StringLength(255)]
+    public string? Icon { get; set; }
+
+    [StringLength(32)]
+    public string? NodeColor { get; set; }
+
+    [StringLength(32)]
+    public string? LineColor { get; set; }
 }
 
 /// <summary>
@@ -143,6 +160,9 @@ public class TreeGrowthStageDetailDto
     public string? CriticalWeatherFactors { get; set; }
     public int VulnerabilityLevel { get; set; }
     public string? ImageUrl { get; set; }
+    public string? Icon { get; set; }
+    public string? NodeColor { get; set; }
+    public string? LineColor { get; set; }
     public int TreesCount { get; set; }
 }
 
@@ -160,6 +180,9 @@ public class TreeGrowthStageListItemDto
     public int? MinAgeInMonths { get; set; }
     public int? MaxAgeInMonths { get; set; }
     public int VulnerabilityLevel { get; set; }
+    public string? Icon { get; set; }
+    public string? NodeColor { get; set; }
+    public string? LineColor { get; set; }
     public int TreesCount { get; set; }
 }
 

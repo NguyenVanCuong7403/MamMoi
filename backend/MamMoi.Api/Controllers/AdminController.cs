@@ -1148,6 +1148,38 @@ public class AdminController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Reorder stages for a tree type
+    /// PUT /api/admin/tree-growth-stages/reorder/{treeTypeId}
+    /// Body: { "stageId1": newOrder1, "stageId2": newOrder2, ... }
+    /// </summary>
+    [HttpPut("tree-growth-stages/reorder/{treeTypeId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ReorderTreeGrowthStages(int treeTypeId, [FromBody] Dictionary<int, int> stageIdToNewOrder)
+    {
+        try
+        {
+            if (stageIdToNewOrder == null || stageIdToNewOrder.Count == 0)
+                return BadRequest(new { success = false, message = "Stage order mapping is required" });
+
+            var result = await _adminTreeGrowthStageService.ReorderStagesAsync(treeTypeId, stageIdToNewOrder);
+            if (!result)
+                return BadRequest(new { success = false, message = "Failed to reorder stages" });
+
+            return Ok(new { success = true, message = "Stages reordered successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error reordering tree growth stages for TreeType: {TreeTypeId}", treeTypeId);
+            return StatusCode(500, new { success = false, message = "Internal server error" });
+        }
+    }
+
     #endregion
 
     #region Subscription Plans Management

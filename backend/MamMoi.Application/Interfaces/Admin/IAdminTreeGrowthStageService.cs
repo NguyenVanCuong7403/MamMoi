@@ -40,5 +40,10 @@ public interface IAdminTreeGrowthStageService
     /// Delete a tree growth stage
     /// </summary>
     Task<bool> DeleteTreeGrowthStageAsync(int stageId);
+
+    /// <summary>
+    /// Reorder stages for a tree type
+    /// </summary>
+    Task<bool> ReorderStagesAsync(int treeTypeId, Dictionary<int, int> stageIdToNewOrder);
 }
 

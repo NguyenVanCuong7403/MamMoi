@@ -193,7 +193,15 @@ namespace MamMoi.Infrastructure.Services
                 .Where(s => s.TreeTypeId == ttId)
                 .OrderBy(s => s.StageOrder)
                 .Select(s => new GrowthStageDto(
-                    s.StageId, s.StageName, s.StageOrder, s.Description))
+                    s.StageId,
+                    s.StageName,
+                    s.StageOrder,
+                    s.Description,
+                    s.Icon,
+                    s.NodeColor,
+                    s.LineColor,
+                    s.MinAgeInMonths,
+                    s.MaxAgeInMonths))
                 .ToListAsync(ct);
         }
 
@@ -203,7 +211,15 @@ namespace MamMoi.Infrastructure.Services
                 .Where(s => s.TreeTypeId == treeTypeId)
                 .OrderBy(s => s.StageOrder)
                 .Select(s => new GrowthStageDto(
-                    s.StageId, s.StageName, s.StageOrder, s.Description))
+                    s.StageId,
+                    s.StageName,
+                    s.StageOrder,
+                    s.Description,
+                    s.Icon,
+                    s.NodeColor,
+                    s.LineColor,
+                    s.MinAgeInMonths,
+                    s.MaxAgeInMonths))
                 .ToListAsync(ct);
         }
     }
