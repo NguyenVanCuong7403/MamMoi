@@ -198,7 +198,9 @@ function LifecycleTimeline({
     name: "Sinh trưởng & Phát triển",
     icon: "🌱",
     color: "emerald",
+    colorHex: LIFECYCLE_COLOR_LOOKUP.emerald,
     lineColorHex: LIFECYCLE_COLOR_LOOKUP.emerald,
+    iconImageUrl: null,
   };
   const defaultCyclePhases = [
     {
@@ -206,28 +208,36 @@ function LifecycleTimeline({
       name: "Ra Hoa",
       icon: "🌸",
       color: "pink",
+      colorHex: LIFECYCLE_COLOR_LOOKUP.pink,
       lineColorHex: LIFECYCLE_COLOR_LOOKUP.pink,
+      iconImageUrl: null,
     },
     {
       id: "fruiting",
       name: "Ra quả",
       icon: "🍎",
       color: "lime",
+      colorHex: LIFECYCLE_COLOR_LOOKUP.lime,
       lineColorHex: LIFECYCLE_COLOR_LOOKUP.lime,
+      iconImageUrl: null,
     },
     {
       id: "pre_harvest",
       name: "Trước thu hoạch",
       icon: "🔍",
       color: "amber",
+      colorHex: LIFECYCLE_COLOR_LOOKUP.amber,
       lineColorHex: LIFECYCLE_COLOR_LOOKUP.amber,
+      iconImageUrl: null,
     },
     {
       id: "post_harvest",
       name: "Sau thu hoạch",
       icon: "🌿",
       color: "teal",
+      colorHex: LIFECYCLE_COLOR_LOOKUP.teal,
       lineColorHex: LIFECYCLE_COLOR_LOOKUP.teal,
+      iconImageUrl: null,
     },
   ];
 
@@ -235,14 +245,21 @@ function LifecycleTimeline({
     if (!phaseConfigs?.phase1) return defaultPhase1;
     const cfg = phaseConfigs.phase1;
     const colorKey = (cfg.colorKey || defaultPhase1.color).toLowerCase();
+    const colorHex =
+      cfg.colorHex || LIFECYCLE_COLOR_LOOKUP[colorKey] || defaultPhase1.colorHex;
+    const lineColorHex =
+      cfg.lineColorHex ||
+      LIFECYCLE_COLOR_LOOKUP[cfg.lineColorKey || colorKey] ||
+      colorHex ||
+      defaultPhase1.lineColorHex;
     return {
       id: cfg.phaseId || defaultPhase1.id,
       name: cfg.label || defaultPhase1.name,
       icon: cfg.icon || defaultPhase1.icon,
+      iconImageUrl: cfg.iconImageUrl || null,
       color: colorKey,
-      lineColorHex:
-        LIFECYCLE_COLOR_LOOKUP[cfg.lineColorKey || colorKey] ||
-        defaultPhase1.lineColorHex,
+      colorHex,
+      lineColorHex,
     };
   }, [phaseConfigs]);
 
@@ -258,16 +275,20 @@ function LifecycleTimeline({
         phase.color ||
         "emerald"
       ).toLowerCase();
+      const colorHex =
+        phase.colorHex || LIFECYCLE_COLOR_LOOKUP[colorKey] || LIFECYCLE_COLOR_LOOKUP.emerald;
       const lineColorHex =
         phase.lineColorHex ||
         LIFECYCLE_COLOR_LOOKUP[phase.lineColorKey || colorKey] ||
-        LIFECYCLE_COLOR_LOOKUP[colorKey] ||
+        colorHex ||
         LIFECYCLE_COLOR_LOOKUP.emerald;
       return {
         id: phaseId,
         name: phase.label || phase.name || phaseId,
         icon: phase.icon || "🌿",
+        iconImageUrl: phase.iconImageUrl || null,
         color: colorKey,
+        colorHex,
         lineColorHex,
       };
     });
@@ -710,7 +731,17 @@ function LifecycleTimeline({
               : undefined
           }
         >
-            {phase1.icon}
+            {phase1.iconImageUrl ? (
+              <img
+                src={phase1.iconImageUrl}
+                alt={phase1.name}
+                className={`h-7 w-7 object-contain ${
+                  isPhase1Completed ? "opacity-60" : ""
+                }`}
+              />
+            ) : (
+              <span>{phase1.icon}</span>
+            )}
             {activePhase === phase1.id && !isPhase1Completed && (
               <span
                 className={`absolute inset-0 rounded-full animate-ping ${getPingTone(
@@ -1025,11 +1056,23 @@ function LifecycleTimeline({
                                         nodeHasColor
                                       )}`}
                       >
-                        <span
-                          className={nodeHasColor ? "" : "grayscale opacity-40"}
-                        >
-                          {phase.icon}
-                        </span>
+                        {phase.iconImageUrl ? (
+                          <img
+                            src={phase.iconImageUrl}
+                            alt={phase.name}
+                            className={`h-7 w-7 object-contain ${
+                              nodeHasColor ? "" : "grayscale opacity-40"
+                            }`}
+                          />
+                        ) : (
+                          <span
+                            className={
+                              nodeHasColor ? "" : "grayscale opacity-40"
+                            }
+                          >
+                            {phase.icon}
+                          </span>
+                        )}
                         {((allowActiveColor &&
                           isActive &&
                           phase.id !== suppressId) ||
@@ -1052,6 +1095,10 @@ function LifecycleTimeline({
                                   ? "bg-lime-600"
                                   : phase.color === "amber"
                                   ? "bg-amber-600"
+                                  : phase.color === "emerald"
+                                  ? "bg-emerald-600"
+                                  : phase.color === "slate"
+                                  ? "bg-slate-700"
                                   : "bg-teal-600"
                               } text-white`
                             : "bg-white text-gray-700 border border-gray-200"
@@ -1224,6 +1271,7 @@ export default function LifecycleWidget({
   autoLifecycleEnabled,
   autoLifecycleDisabledAt,
   phaseTheme,
+  phaseThemeAllowPartial = false,
   enableNodeEditing = false,
   onPhaseNodeClick,
   onPhaseNodeReorder,
@@ -1273,10 +1321,12 @@ export default function LifecycleWidget({
     [phaseTheme, meta?.seasonalRoadmap, tree?.seasonalRoadmap]
   );
 
+  const allowPartialPhases =
+    phaseThemeAllowPartial || (Array.isArray(themeSource) && themeSource.length);
+
   const mergedThemeMap = useMemo(() => {
-    return PHASE_IDS.reduce((acc, phaseId, index) => {
+    const buildEntry = (phaseId, override = {}, index = 0) => {
       const base = DEFAULT_PHASE_THEME[phaseId] || {};
-      const override = normalizedTheme[phaseId] || {};
       const colorKey = (override.colorKey || base.colorKey || "emerald")
         .toString()
         .toLowerCase();
@@ -1289,25 +1339,40 @@ export default function LifecycleWidget({
       )
         .toString()
         .toLowerCase();
-      acc[phaseId] = {
+      return {
         phaseId,
-        label: override.label || base.label,
+        label: override.label || base.label || phaseId,
         subtitle: override.subtitle || "",
         description: override.description || "",
-        icon: override.icon || base.icon,
+        icon: override.icon || base.icon || "🌿",
         colorKey,
         lineColorKey,
         lineStyle: override.lineStyle || base.lineStyle || "solid",
         durationMs: override.durationMs || base.durationMs || 1150,
         order: typeof override.order === "number" ? override.order : index,
       };
+    };
+
+    const normalizedKeys = Object.keys(normalizedTheme || {});
+    if (allowPartialPhases && normalizedKeys.length > 0) {
+      return normalizedKeys.reduce((acc, key, index) => {
+        acc[key] = buildEntry(key, normalizedTheme[key], index);
+        return acc;
+      }, {});
+    }
+
+    return PHASE_IDS.reduce((acc, phaseId, index) => {
+      acc[phaseId] = buildEntry(phaseId, normalizedTheme[phaseId], index);
       return acc;
     }, {});
-  }, [normalizedTheme]);
+  }, [normalizedTheme, allowPartialPhases]);
 
   const orderedPhaseConfigs = useMemo(
-    () => getOrderedPhases(mergedThemeMap),
-    [mergedThemeMap]
+    () =>
+      getOrderedPhases(mergedThemeMap, {
+        allowPartial: allowPartialPhases,
+      }),
+    [mergedThemeMap, allowPartialPhases]
   );
 
   const defaultCycleConfigs = useMemo(
@@ -1330,6 +1395,9 @@ export default function LifecycleWidget({
   );
 
   const phase1Config = useMemo(() => {
+    if (allowPartialPhases && orderedPhaseConfigs.length > 0) {
+      return orderedPhaseConfigs[0];
+    }
     const found = orderedPhaseConfigs.find(
       (phase) => phase.phaseId === "growth_development"
     );
@@ -1347,14 +1415,17 @@ export default function LifecycleWidget({
       durationMs: 1150,
       order: 0,
     };
-  }, [orderedPhaseConfigs]);
+  }, [allowPartialPhases, orderedPhaseConfigs]);
 
   const cyclePhaseConfigs = useMemo(() => {
+    if (allowPartialPhases && orderedPhaseConfigs.length > 0) {
+      return orderedPhaseConfigs.slice(1);
+    }
     const filtered = orderedPhaseConfigs.filter(
       (phase) => phase.phaseId !== "growth_development"
     );
     return filtered.length ? filtered : defaultCycleConfigs;
-  }, [orderedPhaseConfigs, defaultCycleConfigs]);
+  }, [allowPartialPhases, orderedPhaseConfigs, defaultCycleConfigs]);
 
   const cyclePhaseIds = useMemo(
     () => cyclePhaseConfigs.map((phase) => phase.phaseId),

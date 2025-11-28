@@ -601,6 +601,9 @@ public partial class MamMoiDbContext : DbContext
             entity.Property(e => e.TreeTypeId).HasColumnName("TreeTypeID");
             entity.Property(e => e.VulnerabilityLevel).HasDefaultValue(5);
             entity.Property(e => e.WateringAmountLiters).HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.Icon).HasMaxLength(255);
+            entity.Property(e => e.NodeColor).HasMaxLength(32);
+            entity.Property(e => e.LineColor).HasMaxLength(32);
 
             entity.HasOne(d => d.TreeType).WithMany(p => p.TreeGrowthStages)
                   .HasForeignKey(d => d.TreeTypeId)

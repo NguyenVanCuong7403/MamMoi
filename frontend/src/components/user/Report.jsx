@@ -64,6 +64,7 @@ export default function Report() {
 
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showLoginNotice, setShowLoginNotice] = useState(false);
   const fileInputRef = useRef(null);
 
   // Validation
@@ -102,15 +103,48 @@ export default function Report() {
     );
   };
 
+  // Check if guest selected a non-auth category (should disable form)
+  const isGuestRestrictedCategory = !user && form.category && form.category !== "auth";
+
   const handleCategoryChange = (e) => {
     const value = e.target.value;
-    setForm((prev) => ({
-      ...prev,
-      category: value,
-      email: value !== "auth" ? "" : prev.email, // Clear email if not auth category
-    }));
-    setTouched((prev) => ({ ...prev, category: true }));
-    setErrors((prev) => ({ ...prev, category: "" }));
+    
+    // Check if guest is trying to select a non-auth category
+    if (!user && value && value !== "auth") {
+      setErrors({
+        category: "bạn phải đăng nhập để sử dụng loại hỗ trợ này",
+      });
+      setForm((prev) => ({
+        ...prev,
+        category: value, // Still set it to show the error
+        email: "",
+        title: "",
+        content: "",
+        image: null,
+        imagePreview: null,
+      }));
+      setTouched({
+        category: true,
+        email: false,
+        title: false,
+        content: false,
+      });
+      // Clear image preview URL if exists
+      if (form.imagePreview) {
+        URL.revokeObjectURL(form.imagePreview);
+      }
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        category: value,
+        email: value !== "auth" ? "" : prev.email, // Clear email if not auth category
+      }));
+      setErrors((prev) => ({ ...prev, category: "" }));
+      setTouched((prev) => ({ ...prev, category: true }));
+    }
   };
 
   const handleFieldBlur = (field) => {
@@ -156,6 +190,16 @@ export default function Report() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if user is logged in
+    if (!user) {
+      setShowLoginNotice(true);
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        setShowLoginNotice(false);
+      }, 5000);
+      return;
+    }
 
     // Mark all fields as touched
     setTouched({
@@ -235,7 +279,7 @@ export default function Report() {
             }`}
           >
             <AlertCircle className="w-6 h-6" />
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-semibold tracking-[0.2em] uppercase">
                 Cần đăng nhập
               </p>
@@ -244,6 +288,22 @@ export default function Report() {
                 lại.
               </p>
             </div>
+            <button
+              onClick={() => {
+                setShowLoginNotice(false);
+                navigate("/auth");
+              }}
+              className="ml-4 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-sm font-medium transition-colors whitespace-nowrap"
+            >
+              Đăng nhập
+            </button>
+            <button
+              onClick={() => setShowLoginNotice(false)}
+              className="ml-2 p-1 hover:bg-white/20 rounded transition-colors"
+              aria-label="Đóng"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
       )}
@@ -285,7 +345,8 @@ export default function Report() {
                     onBlur={() => handleFieldBlur("category")}
                     className={
                       shouldShowCategoryError() ||
-                      (touched.category && errors.category)
+                      (touched.category && errors.category) ||
+                      isGuestRestrictedCategory
                         ? SELECT_ERR
                         : SELECT_OK
                     }
@@ -360,7 +421,7 @@ export default function Report() {
                         ? INPUT_ERR
                         : INPUT_OK
                     }
-                    disabled={!form.category}
+                    disabled={!form.category || isGuestRestrictedCategory}
                   />
                   {shouldShowCategoryError() && !form.category && (
                     <div className="mt-2 flex items-center gap-2 text-rose-400 text-sm">
@@ -381,21 +442,28 @@ export default function Report() {
                   <label className="block text-white text-lg font-semibold mb-3">
                     Nội dung <span className="text-rose-400">*</span>
                   </label>
-                  <textarea
+                    <textarea
                     value={form.content}
                     onChange={(e) => {
+                      // Prevent input when guest selects restricted category
+                      if (isGuestRestrictedCategory) return;
                       setForm((prev) => ({ ...prev, content: e.target.value }));
                       setErrors((prev) => ({ ...prev, content: "" }));
                     }}
-                    onBlur={() => handleFieldBlur("content")}
+                    onBlur={() => {
+                      if (!isGuestRestrictedCategory) {
+                        handleFieldBlur("content");
+                      }
+                    }}
                     placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
-                    className={
+                    className={`${
                       shouldShowCategoryError() ||
                       (touched.content && errors.content)
                         ? TEXTAREA_ERR
                         : TEXTAREA_OK
-                    }
-                    disabled={!form.category}
+                    } ${isGuestRestrictedCategory ? "opacity-50 cursor-not-allowed" : ""}`}
+                    disabled={!form.category || isGuestRestrictedCategory}
+                    readOnly={isGuestRestrictedCategory}
                   />
                   {shouldShowCategoryError() && !form.category && (
                     <div className="mt-2 flex items-center gap-2 text-rose-400 text-sm">
@@ -418,7 +486,11 @@ export default function Report() {
                   </label>
                   <div className="space-y-4">
                     {!form.imagePreview ? (
-                      <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-white/30 rounded-xl bg-white/5 hover:bg-white/10 cursor-pointer transition-colors">
+                      <label className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-white/30 rounded-xl bg-white/5 transition-colors ${
+                        isGuestRestrictedCategory 
+                          ? "cursor-not-allowed" 
+                          : "hover:bg-white/10 cursor-pointer"
+                      }`}>
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <Upload className="w-12 h-12 text-white/60 mb-3" />
                           <p className="mb-2 text-base text-white/80">
@@ -437,6 +509,7 @@ export default function Report() {
                           accept="image/*"
                           className="hidden"
                           onChange={handleFileChange}
+                          disabled={isGuestRestrictedCategory}
                         />
                       </label>
                     ) : (
@@ -468,7 +541,7 @@ export default function Report() {
                 <div className="pt-4">
                   <Button
                     type="submit"
-                    disabled={isSubmitting || !form.category}
+                    disabled={isSubmitting || !form.category || isGuestRestrictedCategory}
                     className="w-full h-14 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (

@@ -154,6 +154,51 @@ const truncateText = (text = "", maxChars = 60) => {
 };
 
 // Helper function to map API response to component format (camelCase -> PascalCase)
+// Helper function to safely convert value to array
+// Handles JSON strings, objects, arrays, and other types
+const ensureArray = (value, defaultValue = []) => {
+  if (!value) return defaultValue;
+  if (Array.isArray(value)) return value;
+  
+  // If it's a string, try to parse as JSON
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed;
+      // If parsed is an object, try to extract array from it
+      if (typeof parsed === 'object' && parsed !== null) {
+        // Check common property names
+        if (Array.isArray(parsed.items)) return parsed.items;
+        if (Array.isArray(parsed.data)) return parsed.data;
+        if (Array.isArray(parsed.steps)) return parsed.steps;
+        // If it's an object with numeric keys, convert to array
+        const keys = Object.keys(parsed);
+        if (keys.length > 0 && keys.every(k => !isNaN(Number(k)))) {
+          return Object.values(parsed);
+        }
+      }
+    } catch (e) {
+      // Not valid JSON, return default
+      return defaultValue;
+    }
+  }
+  
+  // If it's an object, try to convert to array
+  if (typeof value === 'object' && value !== null) {
+    // Check if it has array-like properties
+    if (Array.isArray(value.items)) return value.items;
+    if (Array.isArray(value.data)) return value.data;
+    if (Array.isArray(value.steps)) return value.steps;
+    // If it's an object with numeric keys, convert to array
+    const keys = Object.keys(value);
+    if (keys.length > 0 && keys.every(k => !isNaN(Number(k)))) {
+      return Object.values(value);
+    }
+  }
+  
+  return defaultValue;
+};
+
 const mapTreeTypeFromApi = (apiTreeType) => {
   if (!apiTreeType) return null;
   return {
@@ -194,8 +239,8 @@ const mapTreeTypeFromApi = (apiTreeType) => {
     Varieties: apiTreeType.varieties || apiTreeType.Varieties || [],
     VarietiesCount:
       apiTreeType.varietiesCount || apiTreeType.VarietiesCount || 0,
-    CareGuide: apiTreeType.careGuide || apiTreeType.CareGuide || [],
-    Pests: apiTreeType.pests || apiTreeType.Pests || [],
+    CareGuide: ensureArray(apiTreeType.careGuide || apiTreeType.CareGuide, []),
+    Pests: ensureArray(apiTreeType.pests || apiTreeType.Pests, []),
   };
 };
 
@@ -1208,8 +1253,8 @@ export default function TreeTypeManagement() {
       FrostTolerance: tree.FrostTolerance || undefined,
       WindTolerance: tree.WindTolerance || undefined,
       IsActive: tree.IsActive ?? true,
-      CareGuide: tree.CareGuide || [],
-      Pests: tree.Pests || [],
+      CareGuide: ensureArray(tree.CareGuide, []),
+      Pests: ensureArray(tree.Pests, []),
     });
     setEditingTree(tree);
     setSheetOpen(true);
@@ -2162,8 +2207,9 @@ export default function TreeTypeManagement() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const current = form.getValues("CareGuide") || [];
-                          form.setValue("CareGuide", [...current, ""]);
+                          const current = form.getValues("CareGuide");
+                          const currentArray = Array.isArray(current) ? current : [];
+                          form.setValue("CareGuide", [...currentArray, ""]);
                         }}
                         className="h-8"
                       >
@@ -2180,7 +2226,7 @@ export default function TreeTypeManagement() {
                         <FormItem>
                           <FormControl>
                             <div className="space-y-3 pb-4">
-                              {(field.value || []).map((step, index) => (
+                              {Array.isArray(field.value) ? field.value.map((step, index) => (
                                 <div
                                   key={index}
                                   className="flex gap-3 items-start"
@@ -2195,9 +2241,8 @@ export default function TreeTypeManagement() {
                                       }: Mô tả hướng dẫn chăm sóc...`}
                                       value={step}
                                       onChange={(e) => {
-                                        const newSteps = [
-                                          ...(field.value || []),
-                                        ];
+                                        const currentValue = Array.isArray(field.value) ? field.value : [];
+                                        const newSteps = [...currentValue];
                                         newSteps[index] = e.target.value;
                                         field.onChange(newSteps);
                                       }}
@@ -2210,17 +2255,16 @@ export default function TreeTypeManagement() {
                                     variant="ghost"
                                     className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
                                     onClick={() => {
-                                      const newSteps = (
-                                        field.value || []
-                                      ).filter((_, i) => i !== index);
+                                      const currentValue = Array.isArray(field.value) ? field.value : [];
+                                      const newSteps = currentValue.filter((_, i) => i !== index);
                                       field.onChange(newSteps);
                                     }}
                                   >
                                     <X className="h-4 w-4" />
                                   </Button>
                                 </div>
-                              ))}
-                              {(!field.value || field.value.length === 0) && (
+                              )) : null}
+                              {(!Array.isArray(field.value) || field.value.length === 0) && (
                                 <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-8 text-center text-sm text-slate-500">
                                   <Leaf className="h-8 w-8 text-emerald-300" />
                                   <p>Chưa có hướng dẫn nào.</p>
@@ -2252,9 +2296,10 @@ export default function TreeTypeManagement() {
                         size="sm"
                         variant="outline"
                         onClick={() => {
-                          const current = form.getValues("Pests") || [];
+                          const current = form.getValues("Pests");
+                          const currentArray = Array.isArray(current) ? current : [];
                           form.setValue("Pests", [
-                            ...current,
+                            ...currentArray,
                             { name: "", description: "", severity: "" },
                           ]);
                         }}
@@ -2273,7 +2318,7 @@ export default function TreeTypeManagement() {
                         <FormItem>
                           <FormControl>
                             <div className="space-y-3 pb-4">
-                              {(field.value || []).map((pest, index) => {
+                              {Array.isArray(field.value) ? field.value.map((pest, index) => {
                                 const nameError = form.formState.isSubmitted
                                   ? form.formState.errors?.Pests?.[index]?.name
                                   : null;
@@ -2311,11 +2356,10 @@ export default function TreeTypeManagement() {
                                             placeholder="Tên bệnh..."
                                             value={pest.name || ""}
                                             onChange={(e) => {
-                                              const newPests = [
-                                                ...(field.value || []),
-                                              ];
+                                              const currentValue = Array.isArray(field.value) ? field.value : [];
+                                              const newPests = [...currentValue];
                                               newPests[index] = {
-                                                ...newPests[index],
+                                                ...(newPests[index] || {}),
                                                 name: e.target.value,
                                               };
                                               field.onChange(newPests);
@@ -2337,11 +2381,10 @@ export default function TreeTypeManagement() {
                                             placeholder="Mô tả bệnh và cách phòng trừ..."
                                             value={pest.description || ""}
                                             onChange={(e) => {
-                                              const newPests = [
-                                                ...(field.value || []),
-                                              ];
+                                              const currentValue = Array.isArray(field.value) ? field.value : [];
+                                              const newPests = [...currentValue];
                                               newPests[index] = {
-                                                ...newPests[index],
+                                                ...(newPests[index] || {}),
                                                 description: e.target.value,
                                               };
                                               field.onChange(newPests);
@@ -2362,11 +2405,10 @@ export default function TreeTypeManagement() {
                                           <Select
                                             value={pest.severity || ""}
                                             onValueChange={(value) => {
-                                              const newPests = [
-                                                ...(field.value || []),
-                                              ];
+                                              const currentValue = Array.isArray(field.value) ? field.value : [];
+                                              const newPests = [...currentValue];
                                               newPests[index] = {
-                                                ...newPests[index],
+                                                ...(newPests[index] || {}),
                                                 severity: value,
                                               };
                                               field.onChange(newPests);
@@ -2421,9 +2463,8 @@ export default function TreeTypeManagement() {
                                         variant="ghost"
                                         className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
                                         onClick={() => {
-                                          const newPests = (
-                                            field.value || []
-                                          ).filter((_, i) => i !== index);
+                                          const currentValue = Array.isArray(field.value) ? field.value : [];
+                                          const newPests = currentValue.filter((_, i) => i !== index);
                                           field.onChange(newPests);
                                         }}
                                       >
@@ -2432,8 +2473,8 @@ export default function TreeTypeManagement() {
                                     </div>
                                   </div>
                                 );
-                              })}
-                              {(!field.value || field.value.length === 0) && (
+                              }) : null}
+                              {(!Array.isArray(field.value) || field.value.length === 0) && (
                                 <p className="text-sm text-slate-500 text-center py-4">
                                   Chưa có bệnh nào. Bấm "Thêm bệnh" để bắt đầu.
                                 </p>

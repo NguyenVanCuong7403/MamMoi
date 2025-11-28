@@ -35,7 +35,7 @@ public class SubscriptionPlanService : ISubscriptionPlanService
         }
 
         var plans = await query
-            .OrderBy(p => p.PlanName)
+            .OrderBy(p => p.PlanId)
             .ToListAsync();
 
         return plans.Select(p => MapToDto(p)).ToList();

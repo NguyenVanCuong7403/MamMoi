@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { LivingBackground } from "@/components/background";
 import {
@@ -746,6 +746,7 @@ function PestCard({ pest, index }) {
 export default function PlantDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [plantData, setPlantData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -866,7 +867,7 @@ export default function PlantDetail() {
     if (id) {
       fetchPlantDetail();
     }
-  }, [id]);
+  }, [id, location.key]); // Thêm location.key để force reload khi navigate (back/forward)
 
   if (loading) {
     return (
@@ -1052,36 +1053,36 @@ export default function PlantDetail() {
             {/* Left Column - Main Content (75%) */}
             <div className="col-span-12 xl:col-span-9 space-y-4 sm:space-y-5 lg:space-y-6">
               {/* Description */}
-              {plantData.description && (
-                <Card className="bg-white/95 backdrop-blur-sm border-white/20">
-                  <CardHeader>
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <div
-                        className="flex items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0"
+              <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+                <CardHeader>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div
+                      className="flex items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0"
+                      style={{
+                        width: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                        height: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                      }}
+                    >
+                      <Info
+                        className="text-emerald-600"
                         style={{
-                          width: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
-                          height: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                          width: "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
+                          height: "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
                         }}
-                      >
-                        <Info
-                          className="text-emerald-600"
-                          style={{
-                            width: "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
-                            height: "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
-                          }}
-                        />
-                      </div>
-                      <CardTitle
-                        className="break-words flex-1"
-                        style={{
-                          fontSize: "clamp(1rem, 2vw + 0.375rem, 1.5rem)",
-                        }}
-                      >
-                        Mô tả
-                      </CardTitle>
+                      />
                     </div>
-                  </CardHeader>
-                  <CardContent>
+                    <CardTitle
+                      className="break-words flex-1"
+                      style={{
+                        fontSize: "clamp(1rem, 2vw + 0.375rem, 1.5rem)",
+                      }}
+                    >
+                      Mô tả
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {plantData.description ? (
                     <p
                       className="leading-relaxed text-slate-700 whitespace-pre-line break-words"
                       style={{
@@ -1090,79 +1091,25 @@ export default function PlantDetail() {
                     >
                       {plantData.description}
                     </p>
-                  </CardContent>
-                </Card>
-              )}
+                  ) : (
+                    <p
+                      className="leading-relaxed text-slate-500 italic break-words"
+                      style={{
+                        fontSize: "clamp(0.875rem, 1.25vw + 0.375rem, 1rem)",
+                      }}
+                    >
+                      Chưa cập nhật dữ liệu
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
 
               {/* Care Guide - Moved below Description */}
-              {plantData.careGuide && plantData.careGuide.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  <Card className="bg-white/95 backdrop-blur-sm border-white/20">
-                    <CardHeader>
-                      <div className="flex items-center gap-2 sm:gap-3">
-                        <div
-                          className="flex items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0"
-                          style={{
-                            width: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
-                            height: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
-                          }}
-                        >
-                          <Leaf
-                            className="text-emerald-600"
-                            style={{
-                              width: "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
-                              height: "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
-                            }}
-                          />
-                        </div>
-                        <CardTitle
-                          className="break-words flex-1"
-                          style={{
-                            fontSize: "clamp(1rem, 2vw + 0.375rem, 1.5rem)",
-                          }}
-                        >
-                          Hướng dẫn chăm sóc
-                        </CardTitle>
-                      </div>
-                      <CardDescription className="text-xs">
-                        Các bước chăm sóc cây trồng đúng cách
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div
-                        className="space-y-3 overflow-y-auto"
-                        style={{
-                          maxHeight:
-                            plantData.careGuide.length > CARE_GUIDE_LIMIT
-                              ? `${CARE_GUIDE_LIMIT * 80}px`
-                              : "none",
-                        }}
-                      >
-                        {plantData.careGuide.map((step, index) => (
-                          <CareStep key={index} step={step} index={index} />
-                        ))}
-                      </div>
-                      {plantData.careGuide.length > CARE_GUIDE_LIMIT && (
-                        <p className="mt-3 text-xs text-slate-500 text-center">
-                          Cuộn xuống để xem thêm{" "}
-                          {plantData.careGuide.length - CARE_GUIDE_LIMIT} hướng
-                          dẫn
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
-
-              {/* Environmental Tolerances */}
-              {(plantData.droughtTolerance ||
-                plantData.floodTolerance ||
-                plantData.frostTolerance ||
-                plantData.windTolerance) && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+              >
                 <Card className="bg-white/95 backdrop-blur-sm border-white/20">
                   <CardHeader>
                     <div className="flex items-center gap-2 sm:gap-3">
@@ -1173,7 +1120,7 @@ export default function PlantDetail() {
                           height: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
                         }}
                       >
-                        <Shield
+                        <Leaf
                           className="text-emerald-600"
                           style={{
                             width: "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
@@ -1187,11 +1134,85 @@ export default function PlantDetail() {
                           fontSize: "clamp(1rem, 2vw + 0.375rem, 1.5rem)",
                         }}
                       >
-                        Khả năng chống chịu
+                        Hướng dẫn chăm sóc
                       </CardTitle>
                     </div>
+                    <CardDescription className="text-xs">
+                      Các bước chăm sóc cây trồng đúng cách
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
+                    {plantData.careGuide && plantData.careGuide.length > 0 ? (
+                      <>
+                        <div
+                          className="space-y-3 overflow-y-auto"
+                          style={{
+                            maxHeight:
+                              plantData.careGuide.length > CARE_GUIDE_LIMIT
+                                ? `${CARE_GUIDE_LIMIT * 80}px`
+                                : "none",
+                          }}
+                        >
+                          {plantData.careGuide.map((step, index) => (
+                            <CareStep key={index} step={step} index={index} />
+                          ))}
+                        </div>
+                        {plantData.careGuide.length > CARE_GUIDE_LIMIT && (
+                          <p className="mt-3 text-xs text-slate-500 text-center">
+                            Cuộn xuống để xem thêm{" "}
+                            {plantData.careGuide.length - CARE_GUIDE_LIMIT} hướng
+                            dẫn
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <p
+                        className="leading-relaxed text-slate-500 italic break-words"
+                        style={{
+                          fontSize: "clamp(0.875rem, 1.25vw + 0.375rem, 1rem)",
+                        }}
+                      >
+                        Chưa cập nhật dữ liệu
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Environmental Tolerances */}
+              <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+                <CardHeader>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div
+                      className="flex items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0"
+                      style={{
+                        width: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                        height: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                      }}
+                    >
+                      <Shield
+                        className="text-emerald-600"
+                        style={{
+                          width: "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
+                          height: "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
+                        }}
+                      />
+                    </div>
+                    <CardTitle
+                      className="break-words flex-1"
+                      style={{
+                        fontSize: "clamp(1rem, 2vw + 0.375rem, 1.5rem)",
+                      }}
+                    >
+                      Khả năng chống chịu
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {plantData.droughtTolerance ||
+                  plantData.floodTolerance ||
+                  plantData.frostTolerance ||
+                  plantData.windTolerance ? (
                     <div className="grid gap-4 sm:grid-cols-2">
                       {plantData.droughtTolerance && (
                         <div
@@ -1354,60 +1375,57 @@ export default function PlantDetail() {
                         </div>
                       )}
                     </div>
-                  </CardContent>
-                </Card>
-              )}
+                  ) : (
+                    <p
+                      className="leading-relaxed text-slate-500 italic break-words"
+                      style={{
+                        fontSize: "clamp(0.875rem, 1.25vw + 0.375rem, 1rem)",
+                      }}
+                    >
+                      Chưa cập nhật dữ liệu
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
             </div>
 
             {/* Right Column - Sticky Sidebar (25%) */}
             <div className="col-span-12 xl:col-span-3 space-y-4 sm:space-y-5 lg:space-y-6">
               {/* Varieties List */}
-              {plantData.varieties &&
-                plantData.varieties.length > 0 &&
-                (() => {
-                  const totalVarieties = plantData.varieties.length;
-                  const hasMoreVarieties = totalVarieties > VARIETY_LIMIT;
-                  const displayedVarieties = plantData.varieties.slice(
-                    0,
-                    VARIETY_LIMIT
-                  );
+              {(() => {
+                const totalVarieties = plantData.varieties?.length || 0;
+                const hasMoreVarieties = totalVarieties > VARIETY_LIMIT;
+                const displayedVarieties = (plantData.varieties || []).slice(
+                  0,
+                  VARIETY_LIMIT
+                );
 
-                  return (
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      className="sticky top-6 z-10"
-                    >
-                      <Card className="bg-white/95 backdrop-blur-sm border-white/20">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <div
-                                className="flex items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0"
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="sticky top-6 z-10"
+                  >
+                    <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div
+                              className="flex items-center justify-center rounded-xl bg-emerald-100 flex-shrink-0"
+                              style={{
+                                width: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                                height: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                              }}
+                            >
+                              <Sprout
+                                className="text-emerald-600"
                                 style={{
-                                  width: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
-                                  height: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                                  width:
+                                    "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
+                                  height:
+                                    "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
                                 }}
-                              >
-                                <Sprout
-                                  className="text-emerald-600"
-                                  style={{
-                                    width:
-                                      "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
-                                    height:
-                                      "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
-                                  }}
-                                />
-                              </div>
-                              <CardTitle
-                                className="break-words flex-1"
-                                style={{
-                                  fontSize:
-                                    "clamp(0.875rem, 1.5vw + 0.125rem, 1.25rem)",
-                                }}
-                              >
-                                Các loại giống phổ biến
-                              </CardTitle>
+                              />
                             </div>
                             <CardTitle
                               className="break-words flex-1"
@@ -1419,111 +1437,140 @@ export default function PlantDetail() {
                               Các loại giống phổ biến
                             </CardTitle>
                           </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div
-                            className="space-y-3 overflow-y-auto"
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {totalVarieties > 0 ? (
+                          <>
+                            <div
+                              className="space-y-3 overflow-y-auto"
+                              style={{
+                                maxHeight: hasMoreVarieties
+                                  ? `${VARIETY_LIMIT * 100}px`
+                                  : "none",
+                              }}
+                            >
+                              {displayedVarieties.map((variety, index) => (
+                                <VarietyCard
+                                  key={index}
+                                  variety={variety}
+                                  index={index}
+                                />
+                              ))}
+                            </div>
+                            {hasMoreVarieties && (
+                              <p className="mt-3 text-xs text-slate-500 text-center">
+                                Cuộn xuống để xem thêm{" "}
+                                {totalVarieties - VARIETY_LIMIT} giống
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p
+                            className="leading-relaxed text-slate-500 italic break-words"
                             style={{
-                              maxHeight: hasMoreVarieties
-                                ? `${VARIETY_LIMIT * 100}px`
-                                : "none",
+                              fontSize:
+                                "clamp(0.875rem, 1.25vw + 0.375rem, 1rem)",
                             }}
                           >
-                            {displayedVarieties.map((variety, index) => (
-                              <VarietyCard
-                                key={index}
-                                variety={variety}
-                                index={index}
-                              />
-                            ))}
-                          </div>
-                          {hasMoreVarieties && (
-                            <p className="mt-3 text-xs text-slate-500 text-center">
-                              Cuộn xuống để xem thêm{" "}
-                              {totalVarieties - VARIETY_LIMIT} giống
-                            </p>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  );
-                })()}
+                            Chưa cập nhật dữ liệu
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })()}
 
               {/* Pest Warnings */}
-              {plantData.pests &&
-                plantData.pests.length > 0 &&
-                (() => {
-                  const totalPests = plantData.pests.length;
-                  const hasMorePests = totalPests > PEST_LIMIT;
-                  const displayedPests = plantData.pests.slice(0, PEST_LIMIT);
+              {(() => {
+                const totalPests = plantData.pests?.length || 0;
+                const hasMorePests = totalPests > PEST_LIMIT;
+                const displayedPests = (plantData.pests || []).slice(0, PEST_LIMIT);
 
-                  return (
-                    <motion.div
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="sticky top-6 z-10"
-                    >
-                      <Card className="bg-white/95 backdrop-blur-sm border-white/20">
-                        <CardHeader>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 sm:gap-3">
-                              <div
-                                className="flex items-center justify-center rounded-xl bg-red-100 flex-shrink-0"
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="sticky top-6 z-10"
+                  >
+                    <Card className="bg-white/95 backdrop-blur-sm border-white/20">
+                      <CardHeader>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div
+                              className="flex items-center justify-center rounded-xl bg-red-100 flex-shrink-0"
+                              style={{
+                                width: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                                height: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                              }}
+                            >
+                              <AlertTriangle
+                                className="text-red-600"
                                 style={{
-                                  width: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
-                                  height: "clamp(2.5rem, 4vw + 0.5rem, 3.5rem)",
+                                  width:
+                                    "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
+                                  height:
+                                    "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
                                 }}
-                              >
-                                <AlertTriangle
-                                  className="text-red-600"
-                                  style={{
-                                    width:
-                                      "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
-                                    height:
-                                      "clamp(1.25rem, 2vw + 0.25rem, 1.75rem)",
-                                  }}
-                                />
-                              </div>
-                              <CardTitle
-                                className="break-words flex-1"
-                                style={{
-                                  fontSize:
-                                    "clamp(1rem, 2vw + 0.375rem, 1.5rem)",
-                                }}
-                              >
-                                Bệnh thường gặp
-                              </CardTitle>
+                              />
                             </div>
+                            <CardTitle
+                              className="break-words flex-1"
+                              style={{
+                                fontSize:
+                                  "clamp(1rem, 2vw + 0.375rem, 1.5rem)",
+                              }}
+                            >
+                              Bệnh thường gặp
+                            </CardTitle>
+                          </div>
+                          {totalPests > 0 && (
                             <Badge className="bg-red-100 text-red-700 text-xs">
                               {totalPests} bệnh
                             </Badge>
-                          </div>
-                        </CardHeader>
-                        <CardContent>
-                          <div
-                            className="space-y-3 overflow-y-auto"
+                          )}
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        {totalPests > 0 ? (
+                          <>
+                            <div
+                              className="space-y-3 overflow-y-auto"
+                              style={{
+                                maxHeight: hasMorePests
+                                  ? `${PEST_LIMIT * 140}px`
+                                  : "none",
+                              }}
+                            >
+                              {displayedPests.map((pest, index) => (
+                                <PestCard key={index} pest={pest} index={index} />
+                              ))}
+                            </div>
+                            {hasMorePests && (
+                              <p className="mt-3 text-xs text-slate-500 text-center">
+                                Cuộn xuống để xem thêm {totalPests - PEST_LIMIT}{" "}
+                                bệnh
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <p
+                            className="leading-relaxed text-slate-500 italic break-words"
                             style={{
-                              maxHeight: hasMorePests
-                                ? `${PEST_LIMIT * 140}px`
-                                : "none",
+                              fontSize:
+                                "clamp(0.875rem, 1.25vw + 0.375rem, 1rem)",
                             }}
                           >
-                            {displayedPests.map((pest, index) => (
-                              <PestCard key={index} pest={pest} index={index} />
-                            ))}
-                          </div>
-                          {hasMorePests && (
-                            <p className="mt-3 text-xs text-slate-500 text-center">
-                              Cuộn xuống để xem thêm {totalPests - PEST_LIMIT}{" "}
-                              bệnh
-                            </p>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  );
-                })()}
+                            Chưa cập nhật dữ liệu
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })()}
             </div>
           </div>
         </div>
