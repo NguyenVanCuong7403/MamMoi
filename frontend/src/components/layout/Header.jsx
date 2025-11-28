@@ -172,6 +172,11 @@ export default function MMHeader({
     navigate("/auth");
   };
 
+  const handleLogoutClick = () => {
+    logout();
+    navigate("/auth");
+  }
+
   const palette = useMemo(
     () => ({
       bg: "#1F302F",
@@ -723,7 +728,7 @@ export default function MMHeader({
 
                     <button
                       className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-red-500"
-                      onClick={logout}
+                      onClick={handleLogoutClick}
                     >
                       Đăng xuất
                     </button>
@@ -912,7 +917,7 @@ export default function MMHeader({
               {user ? (
                 <div className="flex flex-col gap-3">
                   <button
-                    onClick={logout}
+                    onClick={handleLogoutClick}
                     className="h-11 rounded-full bg-red-500/20 text-red-300 hover:bg-red-500/30"
                   >
                     Đăng xuất

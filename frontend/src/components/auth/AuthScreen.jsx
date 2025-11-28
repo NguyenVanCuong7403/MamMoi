@@ -916,7 +916,7 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
     if (existingScript && window.google?.accounts?.id) {
       // Script already loaded, initialize directly
       window.google.accounts.id.initialize({
-        client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || "",
+        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "",
         callback: handleGoogleSignIn,
       });
       return;
@@ -930,7 +930,7 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
       script.onload = () => {
         if (window.google?.accounts?.id) {
           window.google.accounts.id.initialize({
-            client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || "",
+            client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || "",
             callback: handleGoogleSignIn,
           });
         }

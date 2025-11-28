@@ -281,10 +281,10 @@ export default class TreeRepository {
   }
 
   /**
-   * Get growth stages by tree type ID
+   * Get growth stages by tree type ID (for farmers)
    * @param {number} treeTypeId
    */
   static async getStagesByTreeType(treeTypeId) {
-    return ApiClient.get(`/api/admin/tree-growth-stages/by-tree-type/${treeTypeId}`);
+    return ApiClient.get(`/api/trees/types/${treeTypeId}/stages`);
   }
 }

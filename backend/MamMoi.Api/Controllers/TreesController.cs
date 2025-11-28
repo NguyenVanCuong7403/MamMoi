@@ -408,4 +408,13 @@ public class TreesController : ControllerBase
     [HttpGet("{id:int}/stages")]
     public async Task<IActionResult> Stages([FromRoute] int id, CancellationToken ct)
         => Ok(await _treeImg.GetStagesForTreeAsync(id, ct));
+
+    // ===================== 15) Stages by Tree Type =====================
+    /// <summary>
+    /// Get growth stages by tree type ID (for farmers to view stages when creating a tree)
+    /// GET /api/trees/types/{treeTypeId}/stages
+    /// </summary>
+    [HttpGet("types/{treeTypeId:int}/stages")]
+    public async Task<IActionResult> GetStagesByTreeType([FromRoute] int treeTypeId, CancellationToken ct)
+        => Ok(await _treeImg.GetStagesByTreeTypeIdAsync(treeTypeId, ct));
 }

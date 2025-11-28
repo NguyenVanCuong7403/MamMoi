@@ -353,10 +353,40 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
 
   useEffect(() => {
     if (open) {
-      setForm(initial || blank);
+      let cancelled = false;
+      const baseForm = initial || blank;
+      
+      // If editing, load existing SoilMasterIds from GardenSoils
+      if (initial?.id) {
+        (async () => {
+          try {
+            const res = await GardenSoilRepository.getGardenSoilsByGarden(initial.id);
+            const gardenSoils = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+            // Extract SoilMasterIds from GardenSoils
+            const soilMasterIds = gardenSoils
+              .map((gs) => gs?.soilMasterId ?? gs?.SoilMasterId ?? null)
+              .filter((id) => id != null);
+            
+            if (!cancelled && soilMasterIds.length > 0) {
+              setForm((prev) => ({
+                ...prev,
+                soilIds: soilMasterIds,
+              }));
+            }
+          } catch (err) {
+            console.error("Failed to load garden soils:", err);
+          }
+        })();
+      }
+      
+      setForm(baseForm);
       setTouched({});
       setSoilSearch("");
       setSoilError("");
+      
+      return () => {
+        cancelled = true;
+      };
     }
   }, [open, initial]);
 
@@ -367,11 +397,11 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
     setSoilError("");
     (async () => {
       try {
-        const res = await GardenSoilRepository.getAllGardenSoils();
-        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+        const res = await GardenRepository.getSoilMasters();
+        const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
         if (!cancelled) setSoilOptions(list);
       } catch (err) {
-        console.error("Failed to load soils:", err);
+        console.error("Failed to load soil masters:", err);
         if (!cancelled) setSoilError("Không tải được danh sách loại đất. Vui lòng thử lại.");
       } finally {
         if (!cancelled) setSoilLoading(false);
@@ -393,9 +423,8 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
   const normalizedSoils = useMemo(() => {
     return soilOptions
       .map((soil) => {
+        // SoilMaster fields
         const id =
-          soil?.gardenSoilId ??
-          soil?.GardenSoilId ??
           soil?.soilMasterId ??
           soil?.SoilMasterId ??
           soil?.SoilMasterID ??
@@ -405,19 +434,19 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
           null;
         if (id == null) return null;
         const label =
-          soil?.customLabel ||
-          soil?.SoilName ||
           soil?.soilName ||
+          soil?.SoilName ||
           soil?.name ||
           soil?.label ||
           `Đất #${id}`;
         const subtitle =
-          soil?.description ||
-          soil?.Description ||
+          soil?.notes ||
           soil?.texture ||
           soil?.Texture ||
-          soil?.notes ||
-          soil?.Notes ||
+          soil?.drainage ||
+          soil?.Drainage ||
+          soil?.description ||
+          soil?.Description ||
           "";
         return {
           id: String(id),
@@ -1060,7 +1089,7 @@ export default function GardenManagement() {
     updatedForm.soilNames = Array.isArray(updatedForm.soilNames)
       ? updatedForm.soilNames
       : [];
-    const payloadSoilIds = updatedForm.soilIds
+    const payloadSoilMasterIds = updatedForm.soilIds
       .map((id) => Number(id))
       .filter((id) => !Number.isNaN(id));
 
@@ -1073,7 +1102,7 @@ export default function GardenManagement() {
         CoverUrl: coverUrl,                               // uploaded file or existing URL
         TimeZone: form.timeZone ?? null,                  // optional
         ClimateZone: form.climateZone ?? null,            // optional
-        GardenSoilIds: payloadSoilIds,
+        SoilMasterIds: payloadSoilMasterIds.length > 0 ? payloadSoilMasterIds : null,
       };
       const res = await GardenRepository.updateGarden(updatedForm.id, payload);
         if (!res?.success) { alert("Cập nhật vườn thất bại"); return; }
@@ -1119,7 +1148,7 @@ export default function GardenManagement() {
         CoverUrl: updatedForm.coverUrl,
         TimeZone: null,
         ClimateZone: null,
-        GardenSoilIds: payloadSoilIds,
+        SoilMasterIds: payloadSoilMasterIds.length > 0 ? payloadSoilMasterIds : null,
       };
       const res = await GardenRepository.createGarden(payload);
         if (!res?.success) {

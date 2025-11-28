@@ -1137,30 +1137,11 @@ export default function AddTreeNewScreen() {
     let mounted = true;
     (async () => {
       try {
-        const res = await fetch("/api/gardens?active=1");
-        if (!mounted) return;
-        if (res.ok) {
-          const data = await res.json();
-          setGardens(
-            Array.isArray(data)
-              ? data
-              : [
-                  { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
-                  { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
-                  {
-                    id: "g_bd_02",
-                    name: "Vườn Bình Dương 02",
-                    region: "Miền Nam",
-                  },
-                ]
-          );
-        } else {
           setGardens([
             { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
             { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
             { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
           ]);
-        }
       } catch {
         setGardens([
           { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
@@ -1598,7 +1579,7 @@ export default function AddTreeNewScreen() {
       const minStageId = stagesByType.length > 0
         ? Math.min(...stagesByType.map(s => s.stageId))
         : 1;
-      const stageIndex = minStageId + tempSId - 1;
+      const stageIndex = minStageId + (tempSId - 1);
 
       // Chuẩn CreateTreeRequest đúng backend
       const createReq = {
@@ -2051,14 +2032,14 @@ export default function AddTreeNewScreen() {
                             // Set tree location using the label/customLabel
                             setTreeLocation(
                               selected
-                                ? selected.customLabel ||
+                                ? selected.customLabel ? `${selected.customLabel} - ${selected.soilName}`: selected.soilName ||
                                     `Đất #${selected.gardenSoilId}`
                                 : ""
                             );
                           }}
                           options={gardenSoils.map((s) => ({
                             value: String(s.gardenSoilId),
-                            label: s.customLabel || `Đất #${s.gardenSoilId}`,
+                            label: s.customLabel ? `${s.customLabel} - ${s.soilName}` : s.soilName || `Đất #${s.gardenSoilId}`,
                           }))}
                           placeholder={
                             currentGarden?.id

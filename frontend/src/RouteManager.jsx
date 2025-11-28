@@ -55,9 +55,18 @@ export default function RouteManager({ authTab }) {
         <Route path="/edit" element={<EditTreeBasic />} />
         <Route path="/demo" element={<Demo />} />
         <Route path="/price" element={<PricingPage />} />
-        <Route path="/checkout" element={<MamMoiQrCheckout />} />
-        <Route path="/invoice" element={<InvoiceSuccess />} />
-        <Route path="/paymenthistory" element={<PaymentHistory />} />{" "}
+        <Route path="/checkout" element={
+          <LoginGuard>
+            <MamMoiQrCheckout />
+          </LoginGuard>} />
+        <Route path="/invoice" element={
+          <LoginGuard>
+            <InvoiceSuccess />
+          </LoginGuard>} />
+        <Route path="/paymenthistory" element={
+        <LoginGuard>
+          <PaymentHistory />
+        </LoginGuard>} />
         <Route path="/plants" element={<PlantGallery />} />
         <Route path="/plants/:id" element={<PlantDetail />} />
         {/* Garden list/management */}
