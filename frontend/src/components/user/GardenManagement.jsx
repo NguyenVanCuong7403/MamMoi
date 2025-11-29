@@ -22,20 +22,23 @@ import GardenSoilRepository from "../../API/repositories/GardenSoilRepository";
 import { LivingBackground } from "@/components/background";
 import AddressPicker from "@/components/AddressPicker";
 
-
 // ✅ Dùng default import (đúng với file của bạn: src/lib/useVnAdmin.js)
 import useVnAdmin from "@/lib/useVnAdmin";
 
-
 const PAGE_SIZE = 12;
 /* ===== Theme (khớp vibe TreeManagement) ===== */
-const PALETTE = { bg: "#1F302F", leaf: "#D1DFB6", ivory: "#FBFFDF", accent: "#FFFFA5" };
+const PALETTE = {
+  bg: "#1F302F",
+  leaf: "#D1DFB6",
+  ivory: "#FBFFDF",
+  accent: "#FFFFA5",
+};
 const MAX_ADDRESS_LEN = 60;
 /* ===== LocalStorage keys (giống UserProfile) ===== */
 const LS_GARDENS = "mm_user_gardens_v3";
 
-const MAX_GARDEN_NAME = 60;      // tối đa 60 ký tự cho tên vườn
-const MAX_GARDEN_ADDRESS = 120;  // tối đa 120 ký tự cho địa chỉ chi tiết
+const MAX_GARDEN_NAME = 60; // tối đa 60 ký tự cho tên vườn
+const MAX_GARDEN_ADDRESS = 120; // tối đa 120 ký tự cho địa chỉ chi tiết
 const CLICKABLE_FORM_STYLES = `
 .mm-clickable-form input:not(:disabled):not([readonly]),
 .mm-clickable-form textarea:not(:disabled):not([readonly]),
@@ -49,10 +52,8 @@ const CLICKABLE_FORM_STYLES = `
 }
 `;
 
-
 /* ===== Default gardens (demo) ===== */
-const defaultGardens = [
-];
+const defaultGardens = [];
 
 /* ===== LocalStorage helpers ===== */
 const LS_SELECTED_GARDEN = "mm_selected_garden_v1";
@@ -97,7 +98,6 @@ function normalizeKey(str) {
     .trim();
 }
 
-
 /**
  * Logic check cây thuộc vườn nào
  * → giống hệt isTreeInGarden trong TreeManagement.jsx
@@ -133,7 +133,6 @@ function isTreeInGardenForCount(tree, garden) {
   return tKey.includes(gName) || gName.includes(tKey);
 }
 
-
 function countTreesInGarden(g) {
   const [count, setCount] = useState(null);
   const gardenId = g.id;
@@ -154,7 +153,6 @@ function GardenTreeCount({ g }) {
   const count = countTreesInGarden(g);
   return <span>{count ?? "..."} cây ăn quả</span>;
 }
-
 
 /* ===== SafeImage + ImagePicker ===== */
 function normalizeImageUrl(raw = "") {
@@ -248,12 +246,16 @@ function ImagePicker({ value, onChange }) {
         className="hidden"
         onChange={handleFile}
       />
-      <div 
+      <div
         className="rounded-2xl overflow-hidden border cursor-pointer hover:opacity-90 transition-opacity"
         onClick={handleImageClick}
       >
         {value ? (
-          <SafeImage src={value} alt="preview" className="w-full h-40 object-cover" />
+          <SafeImage
+            src={value}
+            alt="preview"
+            className="w-full h-40 object-cover"
+          />
         ) : (
           <div className="w-full h-40 bg-neutral-100 flex flex-col items-center justify-center text-neutral-400">
             <Upload className="w-8 h-8 mb-2" />
@@ -266,21 +268,6 @@ function ImagePicker({ value, onChange }) {
 }
 
 /* ===== UI bits ===== */
-function StatusPill({ s }) {
-  const map = {
-    "Đang hoạt động": "bg-emerald-50 text-emerald-700 border-emerald-200",
-    "Dừng hoạt động": "bg-rose-50 text-rose-700 border-rose-200",
-  };
-  return (
-    <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] md:text-[12px] border ${
-        map[s] || "bg-neutral-50 text-neutral-700 border-neutral-200"
-      }`}
-    >
-      <span className="h-1.5 w-1.5 rounded-full bg-current" /> {s}
-    </span>
-  );
-}
 function FieldLabel({ children, required }) {
   return (
     <div className="mb-1 text-sm text-neutral-600">
@@ -335,7 +322,6 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
     province: "",
     ward: "",
     address: "",
-    status: "Đang hoạt động",
     coverUrl: "",
     soilIds: [],
     soilNames: [],
@@ -355,18 +341,24 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
     if (open) {
       let cancelled = false;
       const baseForm = initial || blank;
-      
+
       // If editing, load existing SoilMasterIds from GardenSoils
       if (initial?.id) {
         (async () => {
           try {
-            const res = await GardenSoilRepository.getGardenSoilsByGarden(initial.id);
-            const gardenSoils = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+            const res = await GardenSoilRepository.getGardenSoilsByGarden(
+              initial.id
+            );
+            const gardenSoils = Array.isArray(res)
+              ? res
+              : Array.isArray(res?.data)
+              ? res.data
+              : [];
             // Extract SoilMasterIds from GardenSoils
             const soilMasterIds = gardenSoils
               .map((gs) => gs?.soilMasterId ?? gs?.SoilMasterId ?? null)
               .filter((id) => id != null);
-            
+
             if (!cancelled && soilMasterIds.length > 0) {
               setForm((prev) => ({
                 ...prev,
@@ -378,12 +370,12 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
           }
         })();
       }
-      
+
       setForm(baseForm);
       setTouched({});
       setSoilSearch("");
       setSoilError("");
-      
+
       return () => {
         cancelled = true;
       };
@@ -398,11 +390,16 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
     (async () => {
       try {
         const res = await GardenRepository.getSoilMasters();
-        const list = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+        const list = Array.isArray(res)
+          ? res
+          : Array.isArray(res?.data)
+          ? res.data
+          : [];
         if (!cancelled) setSoilOptions(list);
       } catch (err) {
         console.error("Failed to load soil masters:", err);
-        if (!cancelled) setSoilError("Không tải được danh sách loại đất. Vui lòng thử lại.");
+        if (!cancelled)
+          setSoilError("Không tải được danh sách loại đất. Vui lòng thử lại.");
       } finally {
         if (!cancelled) setSoilLoading(false);
       }
@@ -489,7 +486,9 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
       ...prev,
       soilIds: unique,
       soilNames: unique
-        .map((soilId) => normalizedSoils.find((soil) => soil.id === soilId)?.label)
+        .map(
+          (soilId) => normalizedSoils.find((soil) => soil.id === soilId)?.label
+        )
         .filter(Boolean),
     }));
     setSoilPickerOpen(false);
@@ -509,36 +508,33 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
   };
   const canSave = !errs.name && !errs.province && !errs.ward && !errs.address;
 
- function handleAddressChange(patch) {
-  setForm((prev) => {
-    const next = { ...prev };
+  function handleAddressChange(patch) {
+    setForm((prev) => {
+      const next = { ...prev };
 
-    if ("province" in patch) {
-      const p = patch.province;
-      next.province = p ? p.full_name || p.name || "" : "";
-      // Nếu AddressPicker reset ward (khi đổi tỉnh) thì xoá luôn text ward
-      if (patch.ward === null) {
-        next.ward = "";
+      if ("province" in patch) {
+        const p = patch.province;
+        next.province = p ? p.full_name || p.name || "" : "";
+        // Nếu AddressPicker reset ward (khi đổi tỉnh) thì xoá luôn text ward
+        if (patch.ward === null) {
+          next.ward = "";
+        }
       }
-    }
 
-    if ("ward" in patch) {
-      const w = patch.ward;
-      next.ward = w ? w.full_name || w.name || "" : "";
-    }
+      if ("ward" in patch) {
+        const w = patch.ward;
+        next.ward = w ? w.full_name || w.name || "" : "";
+      }
 
-    if ("address" in patch) {
-      const raw = patch.address || "";
-      // ✅ Giới hạn địa chỉ chi tiết chỉ tối đa 60 ký tự
-      next.address = raw.slice(0, MAX_ADDRESS_LEN);
-    }
+      if ("address" in patch) {
+        const raw = patch.address || "";
+        // ✅ Giới hạn địa chỉ chi tiết chỉ tối đa 60 ký tự
+        next.address = raw.slice(0, MAX_ADDRESS_LEN);
+      }
 
-    return next;
-  });
-}
-
-
-
+      return next;
+    });
+  }
 
   if (!open) return null;
 
@@ -546,276 +542,292 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
     <>
       <style>{CLICKABLE_FORM_STYLES}</style>
       <div className="fixed inset-0 z-[1200] grid place-items-center mm-clickable-form">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div
-        className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-3 flex items-center justify-between">
-          <div className="text-lg font-semibold">
-            {initial ? "Chỉnh sửa vườn" : "Tạo vườn mới"}
-          </div>
-          <button
-            className="rounded p-1 hover:bg-neutral-100"
-            onClick={onClose}
-            aria-label="Đóng"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Tên vườn */}
-<div>
-  <FieldLabel required>Tên vườn</FieldLabel>
-  <Input
-    value={form.name}
-    onChange={(e) =>
-      setForm({
-        ...form,
-        // ✅ giới hạn 60 ký tự
-        name: e.target.value.slice(0, MAX_GARDEN_NAME),
-      })
-    }
-    onBlur={() => setTouched((t) => ({ ...t, name: true }))}
-    maxLength={MAX_GARDEN_NAME}
-    className={`h-12 rounded-xl text-[clamp(13px,1.6vw,16px)] ${
-      touched.name && errs.name ? "border-rose-500" : "border-neutral-300"
-    }`}
-    placeholder="Ví dụ: Vườn số 1 FPT"
-  />
-
-  <div className="mt-1 flex items-center justify-between">
-    {touched.name && errs.name ? (
-      <p className="text-xs text-rose-600">{errs.name}</p>
-    ) : (
-      <span className="text-xs text-transparent">.</span>
-    )}
-    <span className="text-[11px] text-neutral-400">
-      {form.name.length}/{MAX_GARDEN_NAME}
-    </span>
-  </div>
-</div>
-
-
-          {/* Soil picker trigger */}
-          <div className="md:col-span-1">
-            <FieldLabel>Loại đất áp dụng</FieldLabel>
+        <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+        <div
+          className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="mb-3 flex items-center justify-between">
+            <div className="text-lg font-semibold">
+              {initial ? "Chỉnh sửa vườn" : "Tạo vườn mới"}
+            </div>
             <button
-              type="button"
-              onClick={() => setSoilPickerOpen(true)}
-              className="w-full h-12 rounded-xl border border-neutral-300 bg-white px-4 text-left text-[15px] md:text-base flex items-center justify-between hover:border-emerald-500 transition"
+              className="rounded p-1 hover:bg-neutral-100"
+              onClick={onClose}
+              aria-label="Đóng"
             >
-              <span
-                className={`truncate ${
-                  selectedCount ? "text-[#0f1f1e]" : "text-neutral-400"
-                }`}
-              >
-                {selectedCount
-                  ? `${selectedCount} loại đất đã chọn`
-                  : "Chọn loại đất phù hợp"}
-              </span>
-              <span className="text-sm text-emerald-600 font-semibold">Chọn</span>
+              <X className="h-5 w-5" />
             </button>
-            {chipNames.length ? (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {chipNames.map((label, index) => (
-                  <span
-                    key={`${label}-${index}`}
-                    className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 text-xs font-medium"
-                  >
-                    {label}
-                  </span>
-                ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Tên vườn */}
+            <div>
+              <FieldLabel required>Tên vườn</FieldLabel>
+              <Input
+                value={form.name}
+                onChange={(e) =>
+                  setForm({
+                    ...form,
+                    // ✅ giới hạn 60 ký tự
+                    name: e.target.value.slice(0, MAX_GARDEN_NAME),
+                  })
+                }
+                onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+                maxLength={MAX_GARDEN_NAME}
+                className={`h-12 rounded-xl text-[clamp(13px,1.6vw,16px)] ${
+                  touched.name && errs.name
+                    ? "border-rose-500"
+                    : "border-neutral-300"
+                }`}
+                placeholder="Ví dụ: Vườn số 1 FPT"
+              />
+
+              <div className="mt-1 flex items-center justify-between">
+                {touched.name && errs.name ? (
+                  <p className="text-xs text-rose-600">{errs.name}</p>
+                ) : (
+                  <span className="text-xs text-transparent">.</span>
+                )}
+                <span className="text-[11px] text-neutral-400">
+                  {form.name.length}/{MAX_GARDEN_NAME}
+                </span>
               </div>
-            ) : (
-              <p className="text-xs text-neutral-500 mt-2">
-                
-              </p>
-            )}
-          </div>
-
-          {/* AddressPicker */}
-          <div className="md:col-span-2">
-            <AddressPicker
-              value={{
-                province: form.province,
-                ward: form.ward,
-                address: form.address,
-              }}
-              onChange={handleAddressChange}
-              invalidProvince={touched.province && !!errs.province}
-              invalidWard={touched.ward && !!errs.ward}
-              invalidAddress={touched.address && !!errs.address}
-            />
-
-            {(touched.province || touched.ward || touched.address) &&
-            (errs.province || errs.ward || errs.address) ? (
-              <p className="mt-1 text-xs text-rose-600">
-                Vui lòng nhập đầy đủ Tỉnh/Thành, Phường/Xã và địa chỉ chi tiết.
-              </p>
-            ) : null}
-          </div>
-
-          {/* Ảnh vườn */}
-          <div className="md:col-span-2">
-            <FieldLabel>Ảnh vườn</FieldLabel>
-            <ImagePicker
-              value={form.coverUrl}
-              onChange={(v, f) => setForm({ ...form, coverUrl: v, file: f })}
-            />
-          </div>
-        </div>
-
-        <div className="mt-4 flex justify-end gap-2">
-          <Button
-            className="rounded-2xl h-10 px-4 bg-white border border-neutral-300 hover:bg-neutral-100 text-slate-900"
-            onClick={onClose}
-          >
-            Huỷ
-          </Button>
-          <Button
-  className="rounded-2xl h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white"
-  onClick={() => {
-    if (!canSave) {
-      // Mark tất cả field là "đã chạm" để hiện cảnh báo
-      setTouched({
-        name: true,
-        province: true,
-        ward: true,
-        address: true,
-      });
-      return;
-    }
-    onSubmit(form);
-  }}
->
-  {initial ? "Lưu thay đổi" : "Tạo vườn"}
-</Button>
-        </div>
-      </div>
-      {soilPickerOpen && (
-        <div className="fixed inset-0 z-[1350] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/70" onClick={handleCloseSoilPicker} />
-          <div className="relative w-full max-w-3xl rounded-3xl bg-[#F7F9F2] p-6 shadow-2xl border border-emerald-100">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase tracking-[0.3em] text-emerald-500 font-semibold">
-                  Chọn loại đất
-                </p>
-                <h3 className="text-2xl font-semibold text-[#0f1f1e] mt-1">
-                  Áp dụng cho vườn này
-                </h3>
-                <p className="text-sm text-neutral-600 mt-1">
-                  Có thể chọn nhiều loại đất để gợi ý khi tạo cây. Các mục đã chọn sẽ có viền xanh và biểu tượng tick.
-                </p>
-              </div>
-              <button
-                className="p-2 rounded-full hover:bg-white text-neutral-500"
-                onClick={handleCloseSoilPicker}
-                aria-label="Đóng chọn đất"
-              >
-                <X className="h-5 w-5" />
-              </button>
             </div>
 
-            <div className="mt-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
-                <Input
-                  value={soilSearch}
-                  onChange={(e) => setSoilSearch(e.target.value)}
-                  placeholder="Tìm kiếm loại đất..."
-                  className="pl-9 pr-3 h-12 rounded-full border border-emerald-200 bg-white"
-                />
-              </div>
-              <div className="mt-4 h-[340px] overflow-y-auto pr-1 space-y-3">
-                {soilLoading ? (
-                  <div className="h-full grid place-items-center text-sm text-neutral-500">
-                    Đang tải dữ liệu loại đất...
-                  </div>
-                ) : soilError ? (
-                  <div className="h-full grid place-items-center text-sm text-rose-600 text-center px-6">
-                    {soilError}
-                    <button
-                      className="mt-3 text-emerald-600 font-semibold underline underline-offset-2"
-                      onClick={requestSoilReload}
+            {/* Soil picker trigger */}
+            <div className="md:col-span-1">
+              <FieldLabel>Loại đất áp dụng</FieldLabel>
+              <button
+                type="button"
+                onClick={() => setSoilPickerOpen(true)}
+                className="w-full h-12 rounded-xl border border-neutral-300 bg-white px-4 text-left text-[15px] md:text-base flex items-center justify-between hover:border-emerald-500 transition"
+              >
+                <span
+                  className={`truncate ${
+                    selectedCount ? "text-[#0f1f1e]" : "text-neutral-400"
+                  }`}
+                >
+                  {selectedCount
+                    ? `${selectedCount} loại đất đã chọn`
+                    : "Chọn loại đất phù hợp"}
+                </span>
+                <span className="text-sm text-emerald-600 font-semibold">
+                  Chọn
+                </span>
+              </button>
+              {chipNames.length ? (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {chipNames.map((label, index) => (
+                    <span
+                      key={`${label}-${index}`}
+                      className="inline-flex items-center gap-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1 text-xs font-medium"
                     >
-                      Thử lại
-                    </button>
-                  </div>
-                ) : filteredSoils.length ? (
-                  filteredSoils.map((soil) => {
-                    const selected = soilDraft.includes(soil.id);
-                return (
-                  <button
-                    type="button"
-                    key={soil.id}
-                    onClick={() => toggleSoilDraft(soil.id)}
-                    className={`w-full text-left rounded-2xl border p-4 transition flex items-start gap-4 bg-white ${
-                      selected
-                        ? "border-emerald-500 bg-emerald-50"
-                        : "border-neutral-200 hover:border-emerald-200"
-                    }`}
-                  >
-                        <span
-                          className={`mt-1 flex h-6 w-6 items-center justify-center rounded-full border ${
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-neutral-500 mt-2"></p>
+              )}
+            </div>
+
+            {/* AddressPicker */}
+            <div className="md:col-span-2">
+              <AddressPicker
+                value={{
+                  province: form.province,
+                  ward: form.ward,
+                  address: form.address,
+                }}
+                onChange={handleAddressChange}
+                invalidProvince={touched.province && !!errs.province}
+                invalidWard={touched.ward && !!errs.ward}
+                invalidAddress={touched.address && !!errs.address}
+              />
+
+              {(touched.province || touched.ward || touched.address) &&
+              (errs.province || errs.ward || errs.address) ? (
+                <p className="mt-1 text-xs text-rose-600">
+                  Vui lòng nhập đầy đủ Tỉnh/Thành, Phường/Xã và địa chỉ chi
+                  tiết.
+                </p>
+              ) : null}
+            </div>
+
+            {/* Ảnh vườn */}
+            <div className="md:col-span-2">
+              <FieldLabel>Ảnh vườn</FieldLabel>
+              <ImagePicker
+                value={form.coverUrl}
+                onChange={(v, f) => setForm({ ...form, coverUrl: v, file: f })}
+              />
+            </div>
+          </div>
+
+          <div className="mt-4 flex justify-end gap-2">
+            <Button
+              className="rounded-2xl h-10 px-4 bg-white border border-neutral-300 hover:bg-neutral-100 text-slate-900"
+              onClick={onClose}
+            >
+              Huỷ
+            </Button>
+            <Button
+              className="rounded-2xl h-10 px-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => {
+                if (!canSave) {
+                  // Mark tất cả field là "đã chạm" để hiện cảnh báo
+                  setTouched({
+                    name: true,
+                    province: true,
+                    ward: true,
+                    address: true,
+                  });
+                  return;
+                }
+                onSubmit(form);
+              }}
+            >
+              {initial ? "Lưu thay đổi" : "Tạo vườn"}
+            </Button>
+          </div>
+        </div>
+        {soilPickerOpen && (
+          <div className="fixed inset-0 z-[1350] flex items-center justify-center">
+            <div
+              className="absolute inset-0 bg-black/70"
+              onClick={handleCloseSoilPicker}
+            />
+            <div className="relative w-full max-w-3xl rounded-3xl bg-[#F7F9F2] p-6 shadow-2xl border border-emerald-100">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-emerald-500 font-semibold">
+                    Chọn loại đất
+                  </p>
+                  <h3 className="text-2xl font-semibold text-[#0f1f1e] mt-1">
+                    Áp dụng cho vườn này
+                  </h3>
+                  <p className="text-sm text-neutral-600 mt-1">
+                    Có thể chọn nhiều loại đất để gợi ý khi tạo cây. Các mục đã
+                    chọn sẽ có viền xanh và biểu tượng tick.
+                  </p>
+                </div>
+                <button
+                  className="p-2 rounded-full hover:bg-white text-neutral-500"
+                  onClick={handleCloseSoilPicker}
+                  aria-label="Đóng chọn đất"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="mt-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                  <Input
+                    value={soilSearch}
+                    onChange={(e) => setSoilSearch(e.target.value)}
+                    placeholder="Tìm kiếm loại đất..."
+                    className="pl-9 pr-3 h-12 rounded-full border border-emerald-200 bg-white"
+                  />
+                </div>
+                <div className="mt-4 h-[340px] overflow-y-auto pr-1 space-y-3">
+                  {soilLoading ? (
+                    <div className="h-full grid place-items-center text-sm text-neutral-500">
+                      Đang tải dữ liệu loại đất...
+                    </div>
+                  ) : soilError ? (
+                    <div className="h-full grid place-items-center text-sm text-rose-600 text-center px-6">
+                      {soilError}
+                      <button
+                        className="mt-3 text-emerald-600 font-semibold underline underline-offset-2"
+                        onClick={requestSoilReload}
+                      >
+                        Thử lại
+                      </button>
+                    </div>
+                  ) : filteredSoils.length ? (
+                    filteredSoils.map((soil) => {
+                      const selected = soilDraft.includes(soil.id);
+                      return (
+                        <button
+                          type="button"
+                          key={soil.id}
+                          onClick={() => toggleSoilDraft(soil.id)}
+                          className={`w-full text-left rounded-2xl border p-4 transition flex items-start gap-4 bg-white ${
                             selected
-                              ? "border-emerald-500 bg-emerald-500 text-white"
-                              : "border-neutral-300 text-transparent"
+                              ? "border-emerald-500 bg-emerald-50"
+                              : "border-neutral-200 hover:border-emerald-200"
                           }`}
                         >
-                          <Check className={`h-4 w-4 ${selected ? "opacity-100" : "opacity-0"}`} />
-                        </span>
-                        <div>
-                          <div className="font-semibold text-[#0f1f1e]">{soil.label}</div>
-                          {soil.subtitle ? (
-                            <p className="text-sm text-neutral-600 mt-1">{soil.subtitle}</p>
-                          ) : null}
-                        </div>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className="h-full grid place-items-center text-sm text-neutral-500">
-                    Không tìm thấy loại đất phù hợp với từ khóa.
-                  </div>
-                )}
+                          <span
+                            className={`mt-1 flex h-6 w-6 items-center justify-center rounded-full border ${
+                              selected
+                                ? "border-emerald-500 bg-emerald-500 text-white"
+                                : "border-neutral-300 text-transparent"
+                            }`}
+                          >
+                            <Check
+                              className={`h-4 w-4 ${
+                                selected ? "opacity-100" : "opacity-0"
+                              }`}
+                            />
+                          </span>
+                          <div>
+                            <div className="font-semibold text-[#0f1f1e]">
+                              {soil.label}
+                            </div>
+                            {soil.subtitle ? (
+                              <p className="text-sm text-neutral-600 mt-1">
+                                {soil.subtitle}
+                              </p>
+                            ) : null}
+                          </div>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="h-full grid place-items-center text-sm text-neutral-500">
+                      Không tìm thấy loại đất phù hợp với từ khóa.
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-              <div className="text-sm text-neutral-600">
-                Đã chọn{" "}
-                <span className="font-semibold text-emerald-600">{soilDraft.length}</span> loại đất.
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  className="rounded-full h-11 px-5 border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
-                  type="button"
-                  onClick={handleCloseSoilPicker}
-                >
-                  Huỷ
-                </Button>
-                <Button
-                  className="rounded-full h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-[0_14px_30px_rgba(16,185,129,0.35)]"
-                  type="button"
-                  onClick={handleApplySoils}
-                >
-                  Lưu
-                </Button>
+              <div className="mt-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div className="text-sm text-neutral-600">
+                  Đã chọn{" "}
+                  <span className="font-semibold text-emerald-600">
+                    {soilDraft.length}
+                  </span>{" "}
+                  loại đất.
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    className="rounded-full h-11 px-5 border border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-100"
+                    type="button"
+                    onClick={handleCloseSoilPicker}
+                  >
+                    Huỷ
+                  </Button>
+                  <Button
+                    className="rounded-full h-11 px-6 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold shadow-[0_14px_30px_rgba(16,185,129,0.35)]"
+                    type="button"
+                    onClick={handleApplySoils}
+                  >
+                    Lưu
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </>
   );
 }
 
 /* ===== Utils ===== */
-
 
 function clampText(str, max) {
   if (!str) return "";
@@ -885,8 +897,6 @@ function normalizeGardenRecord(g) {
     soilNames: soilNames.length ? soilNames : fallbackNames,
   };
 }
-
-
 
 /* ================================
    MAIN: GardenManagement
@@ -962,12 +972,13 @@ export default function GardenManagement() {
               province,
               ward,
               address,
-              status: g.status || "Đang hoạt động",
               coverUrl: g.coverUrl || "",
             };
           });
 
-          const apiGardens = ensureIds(apiGardensRaw).map(normalizeGardenRecord);
+          const apiGardens = ensureIds(apiGardensRaw).map(
+            normalizeGardenRecord
+          );
           setGardens(apiGardens);
           save(LS_GARDENS, apiGardens); // sync localStorage cho lần load sau
         }
@@ -982,7 +993,6 @@ export default function GardenManagement() {
 
   // ===== search + filter =====
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState("all"); // all | active | stopped
   const [provinceFilter, setProvinceFilter] = useState("");
 
   // ===== phân trang =====
@@ -991,7 +1001,7 @@ export default function GardenManagement() {
   // mỗi khi thay đổi bộ lọc / search → quay lại trang 1
   useEffect(() => {
     setPage(1);
-  }, [q, status, provinceFilter]);
+  }, [q, provinceFilter]);
 
   // ===== modal thêm / sửa =====
   const [openForm, setOpenForm] = useState(false);
@@ -999,14 +1009,6 @@ export default function GardenManagement() {
 
   // ===== confirm xoá =====
   const [confirm, setConfirm] = useState({ open: false, targetIdx: -1 });
-
-  // ===== confirm đổi trạng thái =====
-  const [statusConfirm, setStatusConfirm] = useState({
-    open: false,
-    targetIdx: -1,
-    nextStatus: "",
-    message: "",
-  });
 
   // ===== lọc danh sách theo search + filter =====
   const filtered = useMemo(() => {
@@ -1019,21 +1021,15 @@ export default function GardenManagement() {
           .includes(QQ);
         if (!hit) return false;
       }
-      if (status !== "all") {
-        if (status === "active" && g.status !== "Đang hoạt động") return false;
-        if (status === "stopped" && g.status !== "Dừng hoạt động") return false;
-      }
       if (provinceFilter && g.province !== provinceFilter) return false;
       return true;
     });
-  }, [gardens, q, status, provinceFilter]);
+  }, [gardens, q, provinceFilter]);
 
   // ===== stats mini =====
   const stats = useMemo(() => {
     const total = gardens.length;
-    const active = gardens.filter((g) => g.status === "Đang hoạt động").length;
-    const stopped = gardens.filter((g) => g.status === "Dừng hoạt động").length;
-    return { total, active, stopped };
+    return { total };
   }, [gardens]);
 
   // ===== phân trang từ filtered =====
@@ -1060,112 +1056,117 @@ export default function GardenManagement() {
     //console.log(form);
 
     (async () => {
-    let coverUrl = form.coverUrl; // fallback if user uses URL
+      let coverUrl = form.coverUrl; // fallback if user uses URL
 
-    // If user uploaded a file, upload it first
-    if (form.file instanceof File) {
-      try {
-        const data = await GardenRepository.uploadGardenImage(form.file);
-        if (data.success && data.url) {
-          coverUrl = data.url; // update coverUrl with uploaded file URL
-        } else {
-          console.error("File upload failed", data);
+      // If user uploaded a file, upload it first
+      if (form.file instanceof File) {
+        try {
+          const data = await GardenRepository.uploadGardenImage(form.file);
+          if (data.success && data.url) {
+            coverUrl = data.url; // update coverUrl with uploaded file URL
+          } else {
+            console.error("File upload failed", data);
+            alert("Upload file thất bại. Vui lòng thử lại.");
+            return;
+          }
+        } catch (err) {
+          console.error("File upload error", err);
           alert("Upload file thất bại. Vui lòng thử lại.");
           return;
         }
-      } catch (err) {
-        console.error("File upload error", err);
-        alert("Upload file thất bại. Vui lòng thử lại.");
-        return;
       }
-    }
 
-    // Prepare updated form with coverUrl
-    const updatedForm = { ...form, coverUrl };
-    delete updatedForm.file; 
-    updatedForm.soilIds = Array.isArray(updatedForm.soilIds)
-      ? updatedForm.soilIds.map((id) => String(id)).filter(Boolean)
-      : [];
-    updatedForm.soilNames = Array.isArray(updatedForm.soilNames)
-      ? updatedForm.soilNames
-      : [];
-    const payloadSoilMasterIds = updatedForm.soilIds
-      .map((id) => Number(id))
-      .filter((id) => !Number.isNaN(id));
+      // Prepare updated form with coverUrl
+      const updatedForm = { ...form, coverUrl };
+      delete updatedForm.file;
+      updatedForm.soilIds = Array.isArray(updatedForm.soilIds)
+        ? updatedForm.soilIds.map((id) => String(id)).filter(Boolean)
+        : [];
+      updatedForm.soilNames = Array.isArray(updatedForm.soilNames)
+        ? updatedForm.soilNames
+        : [];
+      const payloadSoilMasterIds = updatedForm.soilIds
+        .map((id) => Number(id))
+        .filter((id) => !Number.isNaN(id));
 
-    if (editingIdx >= 0) {
-
-      const payload = {
-        Name: form.name || undefined,                     // optional
-        Location: formatGardenLocation(form) || undefined,// optional
-        Status: form.status ?? "Đang hoạt động",
-        CoverUrl: coverUrl,                               // uploaded file or existing URL
-        TimeZone: form.timeZone ?? null,                  // optional
-        ClimateZone: form.climateZone ?? null,            // optional
-        SoilMasterIds: payloadSoilMasterIds.length > 0 ? payloadSoilMasterIds : null,
-      };
-      const res = await GardenRepository.updateGarden(updatedForm.id, payload);
-        if (!res?.success) { alert("Cập nhật vườn thất bại"); return; }
-
-      // sửa vườn
-      setGardens((gs) => {
-        const prev = gs[editingIdx];
-        const next = [...gs];
-        next[editingIdx] = normalizeGardenRecord({ ...prev, ...updatedForm });
-
-        // Nếu tên đổi → phát event để TreeManagement cập nhật title
-        if (prev.name !== updatedForm.name) {
-          window.dispatchEvent(
-            new CustomEvent("mm:garden:renamed", {
-              detail: { id: next[editingIdx].id, name: updatedForm.name },
-            })
-          );
-
-          // Nếu vườn này đang được chọn, cập nhật luôn LS_SELECTED_GARDEN
-          try {
-            const sel = JSON.parse(
-              localStorage.getItem(LS_SELECTED_GARDEN) || "null"
-            );
-            if (sel && sel.id === next[editingIdx].id) {
-              localStorage.setItem(
-                LS_SELECTED_GARDEN,
-                JSON.stringify({ id: sel.id, name: updatedForm.name })
-              );
-            }
-          } catch {
-            // ignore
-          }
+      if (editingIdx >= 0) {
+        const payload = {
+          Name: form.name || undefined, // optional
+          Location: formatGardenLocation(form) || undefined, // optional
+          CoverUrl: coverUrl, // uploaded file or existing URL
+          TimeZone: form.timeZone ?? null, // optional
+          ClimateZone: form.climateZone ?? null, // optional
+          SoilMasterIds:
+            payloadSoilMasterIds.length > 0 ? payloadSoilMasterIds : null,
+        };
+        const res = await GardenRepository.updateGarden(
+          updatedForm.id,
+          payload
+        );
+        if (!res?.success) {
+          alert("Cập nhật vườn thất bại");
+          return;
         }
 
-        save(LS_GARDENS, next);
-        return next;
-      });
-    } else {
-      const payload = {
-        Name: updatedForm.name,
-        Location: formatGardenLocation(updatedForm),  // use your existing function
-        Status: updatedForm.status ?? "Đang hoạt động",
-        CoverUrl: updatedForm.coverUrl,
-        TimeZone: null,
-        ClimateZone: null,
-        SoilMasterIds: payloadSoilMasterIds.length > 0 ? payloadSoilMasterIds : null,
-      };
-      const res = await GardenRepository.createGarden(payload);
+        // sửa vườn
+        setGardens((gs) => {
+          const prev = gs[editingIdx];
+          const next = [...gs];
+          next[editingIdx] = normalizeGardenRecord({ ...prev, ...updatedForm });
+
+          // Nếu tên đổi → phát event để TreeManagement cập nhật title
+          if (prev.name !== updatedForm.name) {
+            window.dispatchEvent(
+              new CustomEvent("mm:garden:renamed", {
+                detail: { id: next[editingIdx].id, name: updatedForm.name },
+              })
+            );
+
+            // Nếu vườn này đang được chọn, cập nhật luôn LS_SELECTED_GARDEN
+            try {
+              const sel = JSON.parse(
+                localStorage.getItem(LS_SELECTED_GARDEN) || "null"
+              );
+              if (sel && sel.id === next[editingIdx].id) {
+                localStorage.setItem(
+                  LS_SELECTED_GARDEN,
+                  JSON.stringify({ id: sel.id, name: updatedForm.name })
+                );
+              }
+            } catch {
+              // ignore
+            }
+          }
+
+          save(LS_GARDENS, next);
+          return next;
+        });
+      } else {
+        const payload = {
+          Name: updatedForm.name,
+          Location: formatGardenLocation(updatedForm), // use your existing function
+          CoverUrl: updatedForm.coverUrl,
+          TimeZone: null,
+          ClimateZone: null,
+          SoilMasterIds:
+            payloadSoilMasterIds.length > 0 ? payloadSoilMasterIds : null,
+        };
+        const res = await GardenRepository.createGarden(payload);
         if (!res?.success) {
           alert("Tạo vườn thất bại");
           return;
         }
         updatedForm.id = res.data.gardenId;
 
-      // thêm mới
-      setGardens((gs) => {
-        const next = [normalizeGardenRecord({ ...updatedForm }), ...gs];
-        save(LS_GARDENS, next);
-        return next;
-      });
-    }
-    setOpenForm(false);
-    setEditingIdx(-1);
+        // thêm mới
+        setGardens((gs) => {
+          const next = [normalizeGardenRecord({ ...updatedForm }), ...gs];
+          save(LS_GARDENS, next);
+          return next;
+        });
+      }
+      setOpenForm(false);
+      setEditingIdx(-1);
     })();
   }
 
@@ -1200,54 +1201,6 @@ export default function GardenManagement() {
     }
   }
 
-  function askToggleStatus(i) {
-    const g = gardens[i];
-    if (!g) return;
-    const isActive = g.status === "Đang hoạt động";
-    const nextStatus = isActive ? "Dừng hoạt động" : "Đang hoạt động";
-    const message = isActive
-      ? `Bạn có chắc chắn muốn dừng hoạt động vườn "${g.name}"?\nCác cây trong vườn vẫn được giữ nguyên, bạn có thể khởi động lại bất cứ lúc nào.`
-      : `Bạn có muốn khởi động lại vườn "${g.name}" và đánh dấu là đang hoạt động?`;
-
-    setStatusConfirm({
-      open: true,
-      targetIdx: i,
-      nextStatus,
-      message,
-    });
-  }
-
-  function doToggleStatus() {
-    (async () => {
-      try {
-        await GardenRepository.updateGardenStatus(statusConfirm.targetIdx, statusConfirm.nextStatus);
-      } catch (err) {
-        console.error("Failed to update garden status:", err);
-        setStatusConfirm({
-          open: false,
-          targetIdx: -1,
-          nextStatus: "",
-          message: "",
-        });
-        return;
-      }
-      setGardens((gs) => {
-        const idx = statusConfirm.targetIdx;
-        if (idx < 0 || !gs[idx]) return gs;
-        const next = [...gs];
-        next[idx] = { ...next[idx], status: statusConfirm.nextStatus };
-        save(LS_GARDENS, next);
-        return next;
-      });
-      setStatusConfirm({
-        open: false,
-        targetIdx: -1,
-        nextStatus: "",
-        message: "",
-      });
-    })();
-  }
-
   return (
     <>
       {/* ✅ Nền sống */}
@@ -1273,8 +1226,8 @@ export default function GardenManagement() {
                 Danh Sách Quản Lý Vườn
               </h1>
               <p className="text-white/85 mt-2 text-[clamp(13px,1.6vw,17px)] mm-text-wrap-safe">
-                Tạo, chỉnh sửa, lọc và tra cứu thông tin các vườn — dùng chung nguồn dữ liệu với
-                UserProfile.
+                Tạo, chỉnh sửa, lọc và tra cứu thông tin các vườn — dùng chung
+                nguồn dữ liệu với UserProfile.
               </p>
             </div>
 
@@ -1283,7 +1236,8 @@ export default function GardenManagement() {
                 onClick={openAdd}
                 className="h-12 md:h-12 px-5 md:px-6 rounded-2xl text-[clamp(14px,1.8vw,16px)] font-semibold shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5 transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5 mm-text-wrap-safe break-words"
                 style={{
-                  background: "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)",
+                  background:
+                    "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)",
                   color: "#1F302F",
                 }}
               >
@@ -1342,13 +1296,12 @@ export default function GardenManagement() {
                   ))}
                 </select>
 
-                {q || status !== "all" || provinceFilter ? (
+                {q || provinceFilter ? (
                   <Button
                     variant="outline"
                     className="h-12 rounded-full text-[clamp(12px,1.5vw,14px)] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700 mm-text-wrap-safe break-words"
                     onClick={() => {
                       setQ("");
-                      setStatus("all");
                       setProvinceFilter("");
                     }}
                   >
@@ -1387,7 +1340,6 @@ export default function GardenManagement() {
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
             {paged.map((g) => {
               const idx = gardens.findIndex((x) => x.id === g.id);
-              const isActive = g.status === "Đang hoạt động";
 
               return (
                 <Card
@@ -1436,10 +1388,6 @@ export default function GardenManagement() {
                         >
                           {g.name}
                         </div>
-
-                        <div className="mt-2">
-                          <StatusPill s={g.status} />
-                        </div>
                       </div>
 
                       {/* Địa chỉ */}
@@ -1463,7 +1411,7 @@ export default function GardenManagement() {
                       <div>
                         <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 text-[clamp(11px,1.4vw,13px)] font-medium mm-text-wrap-safe">
                           <TreePine className="h-3.5 w-3.5" />
-                          <GardenTreeCount g={g} key={g}/>
+                          <GardenTreeCount g={g} key={g} />
                         </span>
                       </div>
                     </div>
@@ -1482,7 +1430,9 @@ export default function GardenManagement() {
                           }}
                         >
                           <Edit3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
-                          <span className="mm-text-wrap-safe break-words">Sửa vườn</span>
+                          <span className="mm-text-wrap-safe break-words">
+                            Sửa vườn
+                          </span>
                         </Button>
 
                         <button
@@ -1529,7 +1479,8 @@ export default function GardenManagement() {
                   {startIndex + 1}-
                   {Math.min(startIndex + PAGE_SIZE, filtered.length)}
                 </span>{" "}
-                trên <span className="font-semibold">{filtered.length}</span> vườn
+                trên <span className="font-semibold">{filtered.length}</span>{" "}
+                vườn
               </div>
 
               <div className="flex items-center gap-2">
@@ -1571,9 +1522,7 @@ export default function GardenManagement() {
                   size="sm"
                   className="h-9 rounded-full px-3 text-[13px] bg-white/90"
                   disabled={currentPage === totalPages}
-                  onClick={() =>
-                    setPage((p) => Math.min(totalPages, p + 1))
-                  }
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 >
                   Trang sau
                 </Button>
@@ -1611,28 +1560,6 @@ export default function GardenManagement() {
               {confirm.targetIdx >= 0 ? gardens[confirm.targetIdx]?.name : ""}
             </span>
             ? Hành động này không thể hoàn tác.
-          </p>
-        </ConfirmModal>
-
-        <ConfirmModal
-          open={statusConfirm.open}
-          title={
-            statusConfirm.nextStatus === "Dừng hoạt động"
-              ? "Dừng hoạt động vườn?"
-              : "Khởi động lại vườn?"
-          }
-          onClose={() =>
-            setStatusConfirm({
-              open: false,
-              targetIdx: -1,
-              nextStatus: "",
-              message: "",
-            })
-          }
-          onConfirm={doToggleStatus}
-        >
-          <p className="text-sm text-neutral-700 whitespace-pre-line">
-            {statusConfirm.message}
           </p>
         </ConfirmModal>
       </div>

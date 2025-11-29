@@ -1169,6 +1169,7 @@ export default function TreeManagement() {
     headerGardenName,
     incomingGarden,
     location.search,
+    location.key, // Force reload khi navigate (back/forward)
   ]);
 
   // Load thời tiết từ API (theo location hoặc gardenId)

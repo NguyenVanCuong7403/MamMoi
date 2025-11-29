@@ -3419,7 +3419,7 @@ export default function TreeDetail() {
     return () => {
       cancelled = true;
     };
-  }, [treeId, stateTree]);
+  }, [treeId, stateTree, location.key]); // Thêm location.key để force reload khi navigate (back/forward)
 
   // Chọn cây theo query
   // Chọn cây theo id + merge với stateTree nếu có

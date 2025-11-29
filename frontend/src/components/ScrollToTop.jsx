@@ -14,7 +14,18 @@ export default function ScrollToTop() {
         behavior: "auto",
       });
     }
-  }, [location.pathname, location.search]);
+    
+    // Emit custom event khi navigation thay đổi để các components có thể reload data
+    // location.key thay đổi mỗi khi navigate (bao gồm back/forward)
+    window.dispatchEvent(new CustomEvent("mm:navigation:changed", {
+      detail: {
+        pathname: location.pathname,
+        search: location.search,
+        key: location.key,
+        state: location.state,
+      }
+    }));
+  }, [location.pathname, location.search, location.key]);
 
   return null;
 }

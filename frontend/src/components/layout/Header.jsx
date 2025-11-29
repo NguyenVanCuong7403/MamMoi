@@ -14,7 +14,6 @@ import NotificationRepository from "@/API/repositories/NotificationRepository";
 import { getNotificationRoute } from "@/lib/notificationRoutes";
 
 const DEFAULT_MENU = [
-  { id: "vi-sao", label: "Vì sao chọn Mầm Mới", href: "#intro" },
   { id: "quan-ly", label: "Quản lý vườn & cây", href: "/garden" },
   { id: "dang-ky", label: "Đăng ký dịch vụ", href: "/price" },
   { id: "lien-he", label: "Liên hệ & Hỗ trợ", href: "/report" },
@@ -33,6 +32,10 @@ const isAdmin = (user) => {
   if (!user) return false;
   const role = normalizeRole(user.role);
   return role === "systemadmin" || role === "businessadmin";
+};
+
+const isGuest = (user) => {
+  return !user;
 };
 
 const getAdminPath = (user) => {
@@ -186,6 +189,27 @@ export default function MMHeader({
     }),
     []
   );
+
+  // Filter and add menu items based on user role
+  const filteredMenuItems = useMemo(() => {
+    let items = [...menuItems];
+
+    // Remove "Quản lý vườn & cây" for guests
+    if (isGuest(user)) {
+      items = items.filter((item) => item.id !== "quan-ly");
+    }
+
+    // Add "Thư viện Cây" for users and guests, but not admins
+    if (!isAdmin(user)) {
+      items.push({
+        id: "thu-vien-cay",
+        label: "Thư viện Cây",
+        href: "/plants",
+      });
+    }
+
+    return items;
+  }, [menuItems, user]);
 
   useEffect(() => {
     const close = (e) => {
@@ -401,8 +425,14 @@ export default function MMHeader({
 
           {/* Back button */}
           <button
-            onClick={() => navigate(-1)}
-            className="w-9 h-9 sm:w-11 sm:h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none flex-shrink-0"
+            onClick={() => {
+              // Force reload data khi quay lại bằng cách dispatch event trước khi navigate
+              window.dispatchEvent(
+                new CustomEvent("mm:navigation:force-reload")
+              );
+              navigate(-1);
+            }}
+            className="w-11 h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none"
             style={{ background: palette.ivory, color: palette.bg }}
             aria-label="Quay lại"
             title="Quay lại"
@@ -697,7 +727,7 @@ export default function MMHeader({
                       >
                         Quản lý Admin
                       </button>
-                    ) : (
+                    ) : !isGuest(user) ? (
                       <button
                         className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
                         onClick={() => {
@@ -708,7 +738,7 @@ export default function MMHeader({
                       >
                         Vườn của tôi
                       </button>
-                    )}
+                    ) : null}
 
                     <button
                       className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap"
@@ -844,18 +874,24 @@ export default function MMHeader({
                       </button>
                     </li>
                   ) : (
-                    menuItems.map((item, idx) => {
+                    filteredMenuItems.map((item, idx) => {
                       const active = activeMenu === item.id;
                       const isReportLink = item.href === "/report";
+                      const isDangKyLink = item.id === "dang-ky";
                       return (
-                        <li key={item.id} className="overflow-hidden">
-                          {isReportLink ? (
+                        <li key={item.id}>
+                          {isReportLink || isDangKyLink ? (
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
                                 setActiveMenu(item.id);
                                 closeMenu();
-                                navigate(item.href);
+                                // Redirect guests to login when clicking "Đăng ký dịch vụ"
+                                if (isDangKyLink && isGuest(user)) {
+                                  navigate("/auth");
+                                } else {
+                                  navigate(item.href);
+                                }
                               }}
                               className={[
                                 "group relative block w-fit max-w-full px-1 py-2 rounded-md",
