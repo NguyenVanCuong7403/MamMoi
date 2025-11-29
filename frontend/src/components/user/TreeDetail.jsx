@@ -135,10 +135,7 @@ function buildPhaseThemeFromStages(stages = []) {
       label,
       subtitle,
       description:
-        stage.description ||
-        stage.careInstructions ||
-        stage.notes ||
-        "",
+        stage.description || stage.careInstructions || stage.notes || "",
       icon: isImageIcon ? null : iconValue || fallbackIcon,
       iconImageUrl: isImageIcon ? iconValue : null,
       colorKey: nodeColorMeta.key,
@@ -1496,15 +1493,37 @@ function inList(val, list = []) {
 // === Phase normalization (DB ↔ UI) ===
 const PHASE_ID_ALIASES = {
   growth_development: [
-    "growth", "sinh trưởng", "sinh truong", "phát triển", "phat trien",
-    "sinh trưởng & phát triển", "phase1", "1"
+    "growth",
+    "sinh trưởng",
+    "sinh truong",
+    "phát triển",
+    "phat trien",
+    "sinh trưởng & phát triển",
+    "phase1",
+    "1",
   ],
   flowering: ["ra hoa", "flower", "2"],
- fruiting: ["ra quả","ra qua","đậu quả","dau qua","kết trái","ket trai","nuôi quả","nuoi qua","fruit","3"],
-  pre_harvest: ["trước thu hoạch","truoc thu hoach","pre harvest","pre-harvest","4"],
+  fruiting: [
+    "ra quả",
+    "ra qua",
+    "đậu quả",
+    "dau qua",
+    "kết trái",
+    "ket trai",
+    "nuôi quả",
+    "nuoi qua",
+    "fruit",
+    "3",
+  ],
+  pre_harvest: [
+    "trước thu hoạch",
+    "truoc thu hoach",
+    "pre harvest",
+    "pre-harvest",
+    "4",
+  ],
   post_harvest: ["sau thu hoạch", "sau thu hoach", "post harvest", "5"],
 };
-
 
 function labelPhaseId(id) {
   switch (normalizePhaseId(id)) {
@@ -1520,8 +1539,6 @@ function labelPhaseId(id) {
       return "Sinh trưởng & Phát triển";
   }
 }
-
-
 
 /* =========================================================================
    Local Image Registry + ImagePicker
@@ -2093,8 +2110,32 @@ function PlannedRow({
 // Bạn có thể tự chỉnh con số này (ví dụ 100, 150, 230, ...)
 const NOTE_PREVIEW_MAX = 230;
 
-
-function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed, loai, giong, treeId, treeOwnerId, lifecycleAutoEnabled, lifecycleAutoDisabledAt, phaseTheme, phaseThemeAllowPartial }) {
+function AsideCards({
+  image,
+  setImage,
+  codeKey,
+  phen,
+  tree,
+  meta,
+  planned,
+  openEditNote,
+  note,
+  onSaveNote,
+  readOnly = false,
+  showImageTop = false,
+  currentPhaseId,
+  onPhaseChange,
+  cycleCount,
+  phase1Completed,
+  loai,
+  giong,
+  treeId,
+  treeOwnerId,
+  lifecycleAutoEnabled,
+  lifecycleAutoDisabledAt,
+  phaseTheme,
+  phaseThemeAllowPartial,
+}) {
   const [editNote, setEditNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || "");
   // Chuẩn bị text hiển thị cho khung "Ghi chú" (chỉ xem)
@@ -2318,7 +2359,7 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
             disabled={meta.status === "stopped"}
             treeId={treeId}
             treeOwnerId={treeOwnerId}
-            treeType={loai}         // 👈 thêm
+            treeType={loai} // 👈 thêm
             treeVariety={giong}
             autoLifecycleEnabled={lifecycleAutoEnabled}
             autoLifecycleDisabledAt={lifecycleAutoDisabledAt}
@@ -3026,7 +3067,7 @@ export default function TreeDetail() {
   }, []);
 
   const [saving, setSaving] = useState(false);
-  
+
   // Ref for AI refresh function (defined later but used in persistTreePatch)
   const refreshAiRecommendationsRef = React.useRef(null);
   const [stageTheme, setStageTheme] = useState(null);
@@ -3086,7 +3127,7 @@ export default function TreeDetail() {
         stageId: partial.stageId ?? meta?.stageId ?? null,
         gardenSoilId:
           partial.gardenSoilId ??
-          partial.GardenSoilId ?? 
+          partial.GardenSoilId ??
           meta?.gardenSoilId ??
           null,
 
@@ -3117,19 +3158,27 @@ export default function TreeDetail() {
         fruitStatus: partial.fruitStatus ?? meta?.fruitStatus ?? null,
       };
 
-
       await TreeRepository.updateTree(treeId, payload);
 
       // cập nhật lại meta local cho đồng bộ
+      // Nếu partial.isActive là "stopped" hoặc "active", cập nhật cả status và isActive
+      const updatedPartial = { ...partial };
+      if (partial.isActive === "stopped" || partial.isActive === "active") {
+        updatedPartial.status = partial.isActive;
+        updatedPartial.isActive = partial.isActive === "active";
+      } else if (typeof partial.isActive === "boolean") {
+        updatedPartial.status = partial.isActive ? "active" : "stopped";
+      }
+
       setMeta((prev) => ({
         ...prev,
-        ...partial,
+        ...updatedPartial,
       }));
 
       // Refresh AI recommendations after tree update
       // Run in background, don't block the UI
       if (refreshAiRecommendationsRef.current) {
-        refreshAiRecommendationsRef.current().catch(err => {
+        refreshAiRecommendationsRef.current().catch((err) => {
           console.error("Failed to refresh AI after tree update:", err);
         });
       }
@@ -3397,7 +3446,6 @@ export default function TreeDetail() {
       merged.phenology.fruitStatus = fromApi.fruitStatus;
     }
 
-
     // Ưu tiên stateTree (navigate từ danh sách có đủ field),
     // nếu không có thì dùng dữ liệu đã map từ API
     return merged || {};
@@ -3424,8 +3472,8 @@ export default function TreeDetail() {
   function getTodayDateString() {
     const today = new Date();
     const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   }
 
@@ -3711,42 +3759,55 @@ export default function TreeDetail() {
     [currentPhaseId]
   );
 
-
- // ==== META (data thật) + DRAFT (để sửa, không làm bẩn state khi Hủy) ====
-const [meta, setMeta] = useState({
-  name: baseTree.treeName || "",
-  plantedAt: baseTree.plantedAt || today(),
-  variety: baseTree.variety || "",
-  preNurseryAgeMonths: Number(baseTree.preMonths || 0),
-  soil: baseTree.soil || "",
-  status: baseTree.status || "active",
-  notes: baseTree.notes || "",
-});
-
-
-useEffect(() => {
-  if (!baseTree) return;
-
-  setNote(baseTree.notes || "");
-
-  setMeta((prev) => ({
-    ...prev,
-    name: baseTree.treeName ?? baseTree.name ?? prev.name,
-    plantedAt: baseTree.plantedAt ?? prev.plantedAt,
-    variety: baseTree.variety ?? prev.variety,
-    preNurseryAgeMonths: Number(
-      baseTree.preNurseryAgeMonths ?? prev.preNurseryAgeMonths ?? 0
-    ),
-    soil: baseTree.soil ?? prev.soil,
-    status: baseTree.status ?? prev.status,
+  // ==== META (data thật) + DRAFT (để sửa, không làm bẩn state khi Hủy) ====
+  const [meta, setMeta] = useState({
+    name: baseTree.treeName || "",
+    plantedAt: baseTree.plantedAt || today(),
+    variety: baseTree.variety || "",
+    preNurseryAgeMonths: Number(baseTree.preMonths || 0),
+    soil: baseTree.soil || "",
+    status: baseTree.status || "active",
+    isActive:
+      baseTree.isActive ??
+      (baseTree.status === "active"
+        ? true
+        : baseTree.status === "stopped"
+        ? false
+        : true),
     notes: baseTree.notes || "",
-    treeTypeId: baseTree.treeTypeId ?? prev.treeTypeId ?? null,
-  }));
-}, [
-  baseTree?.updatedAt,  
-  baseTree?.notes,
-]);
+  });
 
+  useEffect(() => {
+    if (!baseTree) return;
+
+    setNote(baseTree.notes || "");
+
+    setMeta((prev) => ({
+      ...prev,
+      name: baseTree.treeName ?? baseTree.name ?? prev.name,
+      plantedAt: baseTree.plantedAt ?? prev.plantedAt,
+      variety: baseTree.variety ?? prev.variety,
+      preNurseryAgeMonths: Number(
+        baseTree.preNurseryAgeMonths ?? prev.preNurseryAgeMonths ?? 0
+      ),
+      soil: baseTree.soil ?? prev.soil,
+      status: baseTree.status ?? prev.status,
+      isActive:
+        baseTree.isActive ??
+        (baseTree.status === "active"
+          ? true
+          : baseTree.status === "stopped"
+          ? false
+          : prev.isActive),
+      notes: baseTree.notes || "",
+      treeTypeId: baseTree.treeTypeId ?? prev.treeTypeId ?? null,
+    }));
+  }, [
+    baseTree?.updatedAt,
+    baseTree?.notes,
+    baseTree?.status,
+    baseTree?.isActive,
+  ]);
 
   useEffect(() => {
     if (!baseTree) return;
@@ -3764,18 +3825,27 @@ useEffect(() => {
       ),
       soil: baseTree.soil ?? prev.soil,
       status: baseTree.status ?? prev.status,
+      isActive:
+        baseTree.isActive ??
+        (baseTree.status === "active"
+          ? true
+          : baseTree.status === "stopped"
+          ? false
+          : prev.isActive),
       notes: baseTree.notes || "",
       stageId: baseTree.stageId ?? prev.stageId ?? null,
       userId: baseTree.userId ?? prev.userId ?? null,
-    treeTypeId: baseTree.treeTypeId ?? prev.treeTypeId ?? null,
+      treeTypeId: baseTree.treeTypeId ?? prev.treeTypeId ?? null,
     }));
   }, [
     baseTree?.updatedAt,
     baseTree?.notes,
     baseTree?.stageId,
     baseTree?.userId,
-  baseTree?.treeTypeId,
+    baseTree?.treeTypeId,
     baseTree?.id,
+    baseTree?.status,
+    baseTree?.isActive,
   ]);
 
   const resolvedTreeId =
@@ -4153,7 +4223,11 @@ useEffect(() => {
   }, [planned]);
 
   const [aiSuggestions, setAiSuggestions] = useState([]);
-  const [aiLoading, setAiLoading] = useState({ day0: false, day1: false, day2: false });
+  const [aiLoading, setAiLoading] = useState({
+    day0: false,
+    day1: false,
+    day2: false,
+  });
 
   // Progressive AI loading - load one day at a time
   useEffect(() => {
@@ -4162,7 +4236,7 @@ useEffect(() => {
 
     const loadProgressively = async () => {
       const today = new Date();
-      const dates = [0, 1, 2].map(offset => {
+      const dates = [0, 1, 2].map((offset) => {
         const d = new Date(today);
         d.setDate(d.getDate() + offset);
         const yyyy = d.getFullYear();
@@ -4173,22 +4247,25 @@ useEffect(() => {
 
       for (let i = 0; i < dates.length; i++) {
         if (cancelled) return;
-        
+
         const dayKey = `day${i}`;
-        setAiLoading(prev => ({ ...prev, [dayKey]: true }));
+        setAiLoading((prev) => ({ ...prev, [dayKey]: true }));
 
         try {
-          const resp = await TreeRepository.getSingleDayRecommendation(baseTree.treeId, dates[i]);
+          const resp = await TreeRepository.getSingleDayRecommendation(
+            baseTree.treeId,
+            dates[i]
+          );
           if (cancelled) return;
 
           const dto = resp?.data ?? resp;
           const suggestions = parseSingleDayDto(dto);
-          
+
           // Append to existing suggestions
-          setAiSuggestions(prev => {
+          setAiSuggestions((prev) => {
             // Remove any existing suggestions for this date
-            const filtered = prev.filter(s => s._sourceForDate !== dates[i]);
-            return [...filtered, ...suggestions].sort((a, b) => 
+            const filtered = prev.filter((s) => s._sourceForDate !== dates[i]);
+            return [...filtered, ...suggestions].sort((a, b) =>
               (a.due || "").localeCompare(b.due || "")
             );
           });
@@ -4196,20 +4273,22 @@ useEffect(() => {
           console.error(`Failed to load AI for ${dates[i]}:`, err);
         } finally {
           if (!cancelled) {
-            setAiLoading(prev => ({ ...prev, [dayKey]: false }));
+            setAiLoading((prev) => ({ ...prev, [dayKey]: false }));
           }
         }
       }
     };
 
     loadProgressively();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [baseTree.treeId]);
 
   // Helper to parse a single day DTO into suggestions
   const parseSingleDayDto = (dto) => {
     if (!dto) return [];
-    
+
     const dtoForDate = dto?.ForDate ?? dto?.forDate ?? null;
     const baseDate = toYmd(dtoForDate);
     const rawActions = dto?.ActionsJson ?? dto?.actionsJson ?? "[]";
@@ -4217,10 +4296,14 @@ useEffect(() => {
 
     if (!actions || actions.length === 0) return [];
 
-    return actions.map(a => {
+    return actions.map((a) => {
       const scheduled = a.scheduledDate ?? a.scheduled ?? baseDate ?? null;
       const due = toYmd(scheduled) ?? baseDate ?? toYmd(new Date());
-      const details = Array.isArray(a.details) ? a.details : (a.details ? [String(a.details)] : []);
+      const details = Array.isArray(a.details)
+        ? a.details
+        : a.details
+        ? [String(a.details)]
+        : [];
 
       return {
         type: mapTaskTypeFromApi(a.type ?? a.actionType ?? a.typeName),
@@ -4228,7 +4311,7 @@ useEffect(() => {
         due,
         details,
         _sourceForDate: baseDate,
-        _createdAt: dto?.CreatedAt ?? dto?.createdAt ?? null
+        _createdAt: dto?.CreatedAt ?? dto?.createdAt ?? null,
       };
     });
   };
@@ -4237,18 +4320,18 @@ useEffect(() => {
   // Assign the function to the ref so it can be called from persistTreePatch
   refreshAiRecommendationsRef.current = async () => {
     if (!treeId) return;
-    
+
     try {
       // Clear current suggestions and show loading
       setAiSuggestions([]);
       setAiLoading({ day0: true, day1: true, day2: true });
-      
+
       // Trigger backend refresh (this will delete old and regenerate)
       await TreeRepository.refreshAiRecommendations(treeId);
-      
+
       // Reload progressively
       const today = new Date();
-      const dates = [0, 1, 2].map(offset => {
+      const dates = [0, 1, 2].map((offset) => {
         const d = new Date(today);
         d.setDate(d.getDate() + offset);
         const yyyy = d.getFullYear();
@@ -4259,20 +4342,23 @@ useEffect(() => {
 
       for (let i = 0; i < dates.length; i++) {
         try {
-          const resp = await TreeRepository.getSingleDayRecommendation(treeId, dates[i]);
+          const resp = await TreeRepository.getSingleDayRecommendation(
+            treeId,
+            dates[i]
+          );
           const dto = resp?.data ?? resp;
           const suggestions = parseSingleDayDto(dto);
-          
-          setAiSuggestions(prev => {
-            const filtered = prev.filter(s => s._sourceForDate !== dates[i]);
-            return [...filtered, ...suggestions].sort((a, b) => 
+
+          setAiSuggestions((prev) => {
+            const filtered = prev.filter((s) => s._sourceForDate !== dates[i]);
+            return [...filtered, ...suggestions].sort((a, b) =>
               (a.due || "").localeCompare(b.due || "")
             );
           });
         } catch (err) {
           console.error(`Failed to reload AI for ${dates[i]}:`, err);
         } finally {
-          setAiLoading(prev => ({ ...prev, [`day${i}`]: false }));
+          setAiLoading((prev) => ({ ...prev, [`day${i}`]: false }));
         }
       }
     } catch (err) {
@@ -4280,8 +4366,6 @@ useEffect(() => {
       setAiLoading({ day0: false, day1: false, day2: false });
     }
   };
-
-
 
   // Loại đang xem
   const [activeType, setActiveType] = useState("water");
@@ -5129,7 +5213,8 @@ useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(total / AI_PAGE_SIZE));
 
     // Show loading if we don't have any suggestions yet and at least one day is still loading
-    const isLoading = total === 0 && (aiLoading.day0 || aiLoading.day1 || aiLoading.day2);
+    const isLoading =
+      total === 0 && (aiLoading.day0 || aiLoading.day1 || aiLoading.day2);
 
     return (
       <section className="mb-2">
@@ -5138,36 +5223,40 @@ useEffect(() => {
         {isLoading ? (
           <div className="rounded-2xl border bg-white p-6 flex flex-col items-center justify-center gap-3">
             <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-            <div className="text-sm text-neutral-600">Đang tải gợi ý từ AI...</div>
+            <div className="text-sm text-neutral-600">
+              Đang tải gợi ý từ AI...
+            </div>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {pageItems.map((sug, i) => {
-            const theme = TYPE_THEME[sug.type];
-            return (
-              <div
-                key={start + i}
-                className={
-                  "rounded-2xl border bg-white p-3 border-l-4 " +
-                  theme.edge +
-                  " hover:shadow-md transition-shadow"
-                }
-              >
-                <div className="flex items-center gap-2">
-                  <div className="text-sm font-semibold">{sug.title}</div>
-                  <Badge className={"border " + theme.pill}>{theme.name}</Badge>
+              const theme = TYPE_THEME[sug.type];
+              return (
+                <div
+                  key={start + i}
+                  className={
+                    "rounded-2xl border bg-white p-3 border-l-4 " +
+                    theme.edge +
+                    " hover:shadow-md transition-shadow"
+                  }
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold">{sug.title}</div>
+                    <Badge className={"border " + theme.pill}>
+                      {theme.name}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-neutral-600 mt-0.5">
+                    Nên làm: {formatVN(sug.due)}
+                  </div>
+                  <ol className="mt-2 ml-5 list-decimal text-sm text-neutral-700 space-y-1">
+                    {sug.details.map((d, idx) => (
+                      <li key={idx}>{d}</li>
+                    ))}
+                  </ol>
                 </div>
-                <div className="text-xs text-neutral-600 mt-0.5">
-                  Nên làm: {formatVN(sug.due)}
-                </div>
-                <ol className="mt-2 ml-5 list-decimal text-sm text-neutral-700 space-y-1">
-                  {sug.details.map((d, idx) => (
-                    <li key={idx}>{d}</li>
-                  ))}
-                </ol>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         )}
 
@@ -5178,34 +5267,34 @@ useEffect(() => {
               (total > AI_PAGE_SIZE ? "justify-between" : "justify-start")
             }
           >
-          <div>
-            Hiển thị {total === 0 ? 0 : Math.min(total, start + 1)}–
-            {Math.min(total, start + pageItems.length)} / {total}
-          </div>
-
-          {total > AI_PAGE_SIZE && (
-            <div className="flex items-center gap-2">
-              <button
-                className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
-                onClick={() => setAiPage(Math.max(1, aiPage - 1))}
-                disabled={aiPage <= 1}
-              >
-                Trang trước
-              </button>
-
-              <span>
-                {aiPage}/{totalPages}
-              </span>
-
-              <button
-                className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
-                onClick={() => setAiPage(Math.min(totalPages, aiPage + 1))}
-                disabled={aiPage >= totalPages}
-              >
-                Trang sau
-              </button>
+            <div>
+              Hiển thị {total === 0 ? 0 : Math.min(total, start + 1)}–
+              {Math.min(total, start + pageItems.length)} / {total}
             </div>
-          )}
+
+            {total > AI_PAGE_SIZE && (
+              <div className="flex items-center gap-2">
+                <button
+                  className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
+                  onClick={() => setAiPage(Math.max(1, aiPage - 1))}
+                  disabled={aiPage <= 1}
+                >
+                  Trang trước
+                </button>
+
+                <span>
+                  {aiPage}/{totalPages}
+                </span>
+
+                <button
+                  className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
+                  onClick={() => setAiPage(Math.min(totalPages, aiPage + 1))}
+                  disabled={aiPage >= totalPages}
+                >
+                  Trang sau
+                </button>
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -6452,15 +6541,38 @@ useEffect(() => {
                       Huỷ
                     </Button>
                     <Button
-                      onClick={() => {
+                      onClick={async () => {
                         const nextStatus = statusModal.next || "active";
 
-                        // Cập nhật meta chính
-                        setMeta((s) => ({ ...s, status: nextStatus }));
+                        // Cập nhật meta chính với cả status và isActive
+                        const isActiveBool = nextStatus === "active";
+                        setMeta((s) => ({
+                          ...s,
+                          status: nextStatus,
+                          isActive: isActiveBool,
+                        }));
 
                         // Sync về demoTrees để màn khác thấy đúng trạng thái
                         syncTreePatch(codeKey, { status: nextStatus });
-                        persistTreePatch({ isActive: nextStatus });
+                        await persistTreePatch({ isActive: nextStatus });
+
+                        // Reload tree data from API to ensure consistency
+                        if (treeId) {
+                          try {
+                            const res = await TreeRepository.getTreeDetail(
+                              treeId
+                            );
+                            const dto = res?.data ?? res;
+                            if (dto) {
+                              setApiTree(mapDtoToTree(dto));
+                            }
+                          } catch (err) {
+                            console.error(
+                              "Failed to reload tree after status update",
+                              err
+                            );
+                          }
+                        }
 
                         setStatusModal({ open: false, next: nextStatus });
                       }}

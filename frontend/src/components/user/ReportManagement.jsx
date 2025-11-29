@@ -250,11 +250,11 @@ export default function ReportManagement() {
           {/* Header */}
           <div className="mb-8">
             <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-3">
-              <div className="flex-1">
-                <h1 className="text-4xl md:text-5xl font-bold text-white mb-3">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-[clamp(28px,4.5vw,48px)] font-bold text-white mb-3 mm-text-wrap-safe break-words">
                   Quản lý báo cáo
                 </h1>
-                <p className="text-white/80 text-lg">
+                <p className="text-white/80 text-[clamp(14px,1.8vw,18px)] mm-text-wrap-safe break-words">
                   Xem và quản lý các báo cáo bạn đã gửi
                 </p>
               </div>
@@ -310,25 +310,25 @@ export default function ReportManagement() {
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-white/10 hover:bg-white/10">
-                      <TableHead className="text-white font-semibold text-lg py-6 px-6">
+                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
                         Mã ticket
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-lg py-6 px-6">
+                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
                         Tiêu đề
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-lg py-6 px-6">
+                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
                         Phân loại
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-lg py-6 px-6">
+                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
                         Độ ưu tiên
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-lg py-6 px-6">
+                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
                         Trạng thái
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-lg py-6 px-6">
+                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
                         Ngày gửi
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-lg py-6 px-6">
+                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
                         Thao tác
                       </TableHead>
                     </TableRow>
@@ -349,18 +349,18 @@ export default function ReportManagement() {
                           key={report.requestId}
                           className="hover:bg-white/5 border-white/10"
                         >
-                          <TableCell className="text-white text-lg py-6 px-6">
+                          <TableCell className="text-white text-[clamp(14px,1.8vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
                             {report.ticketNumber || `#${report.requestId}`}
                           </TableCell>
-                          <TableCell className="text-white text-lg py-6 px-6">
+                          <TableCell className="text-white text-[clamp(14px,1.8vw,18px)] py-6 px-6 min-w-0">
                             <div
-                              className="max-w-xs truncate"
+                              className="max-w-xs mm-text-wrap-safe break-words"
                               title={report.subject}
                             >
                               {report.subject}
                             </div>
                           </TableCell>
-                          <TableCell className="text-white/80 text-base py-6 px-6">
+                          <TableCell className="text-white/80 text-[clamp(13px,1.6vw,16px)] py-6 px-6 mm-text-wrap-safe break-words">
                             {CATEGORY_MAP[report.category] ||
                               report.category ||
                               "N/A"}
@@ -378,17 +378,17 @@ export default function ReportManagement() {
                           </TableCell>
                           <TableCell className="py-6 px-6">
                             <span
-                              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-base font-medium border ${
+                              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[clamp(12px,1.5vw,16px)] font-medium border mm-text-wrap-safe break-words ${
                                 STATUS_MAP[report.status]?.color ||
                                 "bg-gray-50 text-gray-700 border-gray-200"
                               }`}
                             >
-                              <span className="w-2 h-2 rounded-full bg-current"></span>
+                              <span className="w-2 h-2 rounded-full bg-current flex-shrink-0"></span>
                               {STATUS_MAP[report.status]?.label ||
                                 report.status}
                             </span>
                           </TableCell>
-                          <TableCell className="text-white/80 text-base py-6 px-6">
+                          <TableCell className="text-white/80 text-[clamp(13px,1.6vw,16px)] py-6 px-6 mm-text-wrap-safe break-words">
                             {formatDate(report.requestDate)}
                           </TableCell>
                           <TableCell className="py-6 px-6">

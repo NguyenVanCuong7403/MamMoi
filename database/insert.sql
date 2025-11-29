@@ -1300,6 +1300,124 @@ BEGIN
 END
 GO
 
+-- ===== ADDITIONAL: CHUỐI (BANANA) TREE TYPE AND STAGES =====
+PRINT 'Inserting Chuối (Banana) TreeType and GrowthStages...'
+GO
+
+-- Insert Chuối TreeType
+IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeTypes] WHERE [TreeTypeName] = N'Chuối')
+BEGIN
+    DECLARE @SoilMasterIDForBanana INT = (SELECT TOP 1 [SoilMasterID] FROM [dbo].[SoilMaster] WHERE [SoilName] = N'Đất phù sa');
+    IF @SoilMasterIDForBanana IS NULL
+        SET @SoilMasterIDForBanana = 1; -- Fallback to first soil type
+    
+    INSERT INTO [dbo].[TreeTypes] ([SoilMasterID], [TreeTypeName], [ScientificName], [Description], [Category], [AverageLifespanYears],
+                                   [OptimalTemperatureMin], [OptimalTemperatureMax], [OptimalHumidityMin], [OptimalHumidityMax],
+                                   [DroughtTolerance], [FloodTolerance], [FrostTolerance], [WindTolerance], [IsActive],
+                                   [CareGuide], [LightRequirement], [WaterRequirement], [Pests], [SeasonalRoadmap])
+    VALUES (@SoilMasterIDForBanana, N'Chuối', N'Musa acuminata', N'Cây chuối nhiệt đới, cho quả quanh năm', N'Tropical Fruit', 5, 
+            20.0, 35.0, 60.0, 90.0,
+            N'Medium', N'High', N'Low', N'Low', 1,
+            N'["Bón phân NPK 15-15-15 với liều lượng 0.5-1kg/cây vào đầu mùa mưa","Tưới nước đều đặn 2-3 lần/tuần, đảm bảo đất luôn ẩm","Cắt tỉa lá già, lá bệnh thường xuyên để cây phát triển tốt","Phòng trừ bệnh héo rũ Panama và bệnh đốm lá","Bón phân hữu cơ 10-15kg/cây/năm","Che phủ gốc bằng rơm rạ để giữ ẩm"]',
+            N'Ánh sáng đầy đủ (6-8 giờ/ngày)',
+            N'Tưới đều đặn, 2-3 lần/tuần',
+            N'[{"name":"Bệnh héo rũ Panama","description":"Bệnh do nấm gây ra, làm cây héo và chết. Phòng trừ bằng cách chọn giống kháng bệnh và vệ sinh vườn.","severity":"High"},{"name":"Bệnh đốm lá","description":"Bệnh do nấm gây ra, xuất hiện đốm vàng trên lá. Phòng trừ bằng thuốc trừ nấm.","severity":"Medium"},{"name":"Sâu đục thân","description":"Sâu đục vào thân cây làm cây suy yếu. Phòng trừ bằng cách vệ sinh vườn và phun thuốc trừ sâu.","severity":"Low"}]',
+            N'[{"stage":"Trồng cây","timing":"Tháng 3-4","action":"Chuẩn bị đất, trồng cây con, tưới nước đều đặn"},{"stage":"Chăm sóc","timing":"Tháng 5-7","action":"Bón phân lót, tưới nước, làm cỏ"},{"stage":"Sinh trưởng","timing":"Tháng 8-9","action":"Bón thúc, tưới nước, chăm sóc lá"},{"stage":"Ra hoa","timing":"Tháng 10-11","action":"Tưới nước đầy đủ, phun thuốc kích thích ra hoa"},{"stage":"Đậu quả","timing":"Tháng 12-1","action":"Bón phân kali, tưới nước, bao buồng chuối"},{"stage":"Thu hoạch","timing":"Tháng 2-3","action":"Thu hoạch khi quả chín 70-80%, bảo quản nơi khô ráo"}]');
+    PRINT '  - Inserted: Chuối (Banana) TreeType'
+END
+GO
+
+-- Insert TreeGrowthStages for Chuối
+DECLARE @TreeTypeBananaID INT = (SELECT TOP 1 [TreeTypeID] FROM [dbo].[TreeTypes] WHERE [TreeTypeName] = N'Chuối');
+
+IF @TreeTypeBananaID IS NOT NULL
+BEGIN
+    -- Stage 1: Sinh trưởng & Phát triển (0-8 tháng)
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeGrowthStages] WHERE [TreeTypeID] = @TreeTypeBananaID AND [StageOrder] = 1)
+    BEGIN
+        INSERT INTO [dbo].[TreeGrowthStages] ([TreeTypeID], [StageName], [StageOrder], [Description], [MinAgeInMonths], [MaxAgeInMonths],
+                                              [WateringFrequencyDays], [WateringAmountLiters], [FertilizingFrequencyDays], 
+                                              [FertilizerType], [FertilizerAmountGrams], [PruningFrequencyDays], 
+                                              [CareInstructions], [CommonIssues], [CriticalWeatherFactors], [VulnerabilityLevel])
+        VALUES (@TreeTypeBananaID, N'Sinh trưởng & Phát triển', 1, N'Cây phát triển thân lá, ra rễ mạnh', 0, 8, 
+                2, 3.0, 60, N'NPK 16-16-8', 150.0, 90,
+                N'Tưới nước đều đặn, bón phân định kỳ, làm cỏ xung quanh gốc',
+                N'Rệp sáp, nấm lá, sâu đục thân',
+                N'Mưa kéo dài, gió mạnh',
+                6);
+        PRINT '  - Inserted: Sinh trưởng & Phát triển (Chuối) - 0-8 tháng'
+    END
+    
+    -- Stage 2: Ra hoa (8-10 tháng) - Theo yêu cầu: cây chuối đến tuổi tháng 8 thì tự động quy trình phải chuyển sang ra Hoa
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeGrowthStages] WHERE [TreeTypeID] = @TreeTypeBananaID AND [StageOrder] = 2)
+    BEGIN
+        INSERT INTO [dbo].[TreeGrowthStages] ([TreeTypeID], [StageName], [StageOrder], [Description], [MinAgeInMonths], [MaxAgeInMonths],
+                                              [WateringFrequencyDays], [WateringAmountLiters], [FertilizingFrequencyDays],
+                                              [FertilizerType], [FertilizerAmountGrams], [PruningFrequencyDays],
+                                              [CareInstructions], [CommonIssues], [CriticalWeatherFactors], [VulnerabilityLevel])
+        VALUES (@TreeTypeBananaID, N'Ra hoa', 2, N'Hình thành chồi hoa, phân hóa mầm hoa', 8, 10,
+                3, 4.0, 45, N'Vi lượng + NPK 12-12-17', 120.0, 60,
+                N'Phun vi lượng khi phân hóa mầm hoa, tưới nước đầy đủ, bảo vệ chồi hoa',
+                N'Rụng hoa, thối nụ, sâu đục hoa',
+                N'Mưa trái mùa, gió mạnh',
+                7);
+        PRINT '  - Inserted: Ra hoa (Chuối) - 8-10 tháng'
+    END
+    
+    -- Stage 3: Đậu quả (10-12 tháng)
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeGrowthStages] WHERE [TreeTypeID] = @TreeTypeBananaID AND [StageOrder] = 3)
+    BEGIN
+        INSERT INTO [dbo].[TreeGrowthStages] ([TreeTypeID], [StageName], [StageOrder], [Description], [MinAgeInMonths], [MaxAgeInMonths],
+                                              [WateringFrequencyDays], [WateringAmountLiters], [FertilizingFrequencyDays],
+                                              [FertilizerType], [FertilizerAmountGrams], [PruningFrequencyDays],
+                                              [CareInstructions], [CommonIssues], [CriticalWeatherFactors], [VulnerabilityLevel])
+        VALUES (@TreeTypeBananaID, N'Đậu quả', 3, N'Hình thành quả non, nuôi quả ban đầu', 10, 12,
+                3, 5.0, 30, N'Kali cao (NPK 15-5-20)', 180.0, 60,
+                N'Bảo vệ quả non, bón kali bổ sung, bao buồng chuối',
+                N'Rụng quả non, sâu đục quả, bệnh đốm quả',
+                N'Mưa trái mùa, nắng nóng',
+                7);
+        PRINT '  - Inserted: Đậu quả (Chuối) - 10-12 tháng'
+    END
+    
+    -- Stage 4: Trước thu hoạch (12-14 tháng)
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeGrowthStages] WHERE [TreeTypeID] = @TreeTypeBananaID AND [StageOrder] = 4)
+    BEGIN
+        INSERT INTO [dbo].[TreeGrowthStages] ([TreeTypeID], [StageName], [StageOrder], [Description], [MinAgeInMonths], [MaxAgeInMonths],
+                                              [WateringFrequencyDays], [WateringAmountLiters], [FertilizingFrequencyDays],
+                                              [FertilizerType], [FertilizerAmountGrams], [PruningFrequencyDays],
+                                              [CareInstructions], [CommonIssues], [CriticalWeatherFactors], [VulnerabilityLevel])
+        VALUES (@TreeTypeBananaID, N'Trước thu hoạch', 4, N'Nuôi quả lớn, tích lũy đường', 12, 14,
+                4, 4.5, 60, N'NPK cân đối (15-15-15)', 150.0, 120,
+                N'Giữ ẩm vừa, tỉa lá già, chống đổ ngã',
+                N'Nứt quả, thối quả, sâu bệnh',
+                N'Nắng nóng, khô hạn, gió mạnh',
+                5);
+        PRINT '  - Inserted: Trước thu hoạch (Chuối) - 12-14 tháng'
+    END
+    
+    -- Stage 5: Sau thu hoạch (14+ tháng)
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeGrowthStages] WHERE [TreeTypeID] = @TreeTypeBananaID AND [StageOrder] = 5)
+    BEGIN
+        INSERT INTO [dbo].[TreeGrowthStages] ([TreeTypeID], [StageName], [StageOrder], [Description], [MinAgeInMonths], [MaxAgeInMonths],
+                                              [WateringFrequencyDays], [WateringAmountLiters], [FertilizingFrequencyDays],
+                                              [FertilizerType], [FertilizerAmountGrams], [PruningFrequencyDays],
+                                              [CareInstructions], [CommonIssues], [CriticalWeatherFactors], [VulnerabilityLevel])
+        VALUES (@TreeTypeBananaID, N'Sau thu hoạch', 5, N'Phục hồi sau thu, chuẩn bị chu kỳ mới', 14, NULL,
+                5, 3.0, 90, N'Hữu cơ + NPK 16-16-8', 200.0, 180,
+                N'Tỉa cành chết, vệ sinh vườn, bón phân hữu cơ',
+                N'Nấm bệnh lưu tồn, sâu bệnh tích tụ',
+                N'Mưa dầm, úng nước',
+                4);
+        PRINT '  - Inserted: Sau thu hoạch (Chuối) - 14+ tháng'
+    END
+END
+ELSE
+BEGIN
+    PRINT '  - WARNING: Chuối TreeType not found. Please ensure TreeType is created first.'
+END
+GO
+
 PRINT ''
 PRINT '========================================'
 PRINT 'Seed data insertion completed!'
@@ -1309,8 +1427,8 @@ PRINT 'Summary:'
 PRINT '  - Roles: 3 records (SystemAdmin, BusinessAdmin, Farmer)'
 PRINT '  - SoilMaster: 5 records'
 PRINT '  - Users: 5 records (passwords shown in comments)'
-PRINT '  - TreeTypes: 5 records'
-PRINT '  - TreeGrowthStages: 5 records'
+PRINT '  - TreeTypes: 6 records (including Chuối)'
+PRINT '  - TreeGrowthStages: 10+ records (including Chuối stages)'
 PRINT '  - Gardens: 5 records'
 PRINT '  - GardenSoils: 1 record'
 PRINT '  - Trees: 5 records'

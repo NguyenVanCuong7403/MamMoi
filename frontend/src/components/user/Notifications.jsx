@@ -211,11 +211,11 @@ export default function Notifications() {
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold text-slate-900">
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[clamp(20px,3vw,24px)] font-semibold text-slate-900 mm-text-wrap-safe break-words">
                 Thông báo của tôi
               </h2>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-1 text-[clamp(12px,1.5vw,14px)] text-slate-600 mm-text-wrap-safe break-words">
                 Quản lý và xem tất cả thông báo bạn đã nhận
               </p>
             </div>
@@ -386,16 +386,16 @@ export default function Notifications() {
                               onClick={handleNotificationClick}
                             >
                               <TableCell>
-                                <div className="space-y-1">
-                                  <div className="font-medium text-slate-900">
+                                <div className="space-y-1 min-w-0">
+                                  <div className="font-medium text-slate-900 mm-text-wrap-safe break-words">
                                     {notification.title}
                                   </div>
                                   {notification.message && (
-                                    <div className="text-sm text-slate-600 line-clamp-2">
+                                    <div className="text-sm text-slate-600 line-clamp-2 mm-text-wrap-safe break-words">
                                       {notification.message}
                                     </div>
                                   )}
-                                  <div className="text-sm text-emerald-600 hover:underline">
+                                  <div className="text-sm text-emerald-600 hover:underline mm-text-wrap-safe break-words">
                                     {notification.actionLabel || "Xem chi tiết"}{" "}
                                     →
                                   </div>

@@ -1318,12 +1318,32 @@ export default function TreeTypeManagement() {
             tree.TreeTypeID === updated.TreeTypeID ? updated : tree
           )
         );
+        // Dispatch event để PlantDetail đồng bộ ảnh
+        window.dispatchEvent(
+          new CustomEvent("mm:treetype:updated", {
+            detail: {
+              treeTypeId: updated.TreeTypeID,
+              treeTypeID: updated.TreeTypeID,
+              imageUrl: updated.ImageUrl,
+            },
+          })
+        );
       } else {
         const created = await createTreeType({
           ...values,
           Varieties: [],
         });
         setTrees((prev) => [created, ...prev]);
+        // Dispatch event để PlantDetail đồng bộ ảnh
+        window.dispatchEvent(
+          new CustomEvent("mm:treetype:created", {
+            detail: {
+              treeTypeId: created.TreeTypeID,
+              treeTypeID: created.TreeTypeID,
+              imageUrl: created.ImageUrl,
+            },
+          })
+        );
       }
       setSheetOpen(false);
     } finally {
@@ -1500,6 +1520,16 @@ export default function TreeTypeManagement() {
         item.TreeTypeID === updated.TreeTypeID ? updated : item
       )
     );
+    // Dispatch event để PlantDetail đồng bộ ảnh
+    window.dispatchEvent(
+      new CustomEvent("mm:treetype:updated", {
+        detail: {
+          treeTypeId: updated.TreeTypeID,
+          treeTypeID: updated.TreeTypeID,
+          imageUrl: updated.ImageUrl,
+        },
+      })
+    );
   };
 
   const handleDelete = async () => {
@@ -1507,6 +1537,15 @@ export default function TreeTypeManagement() {
     await deleteTreeType(deleteTarget.TreeTypeID);
     setTrees((prev) =>
       prev.filter((tree) => tree.TreeTypeID !== deleteTarget.TreeTypeID)
+    );
+    // Dispatch event để PlantDetail đồng bộ ảnh
+    window.dispatchEvent(
+      new CustomEvent("mm:treetype:deleted", {
+        detail: {
+          treeTypeId: deleteTarget.TreeTypeID,
+          treeTypeID: deleteTarget.TreeTypeID,
+        },
+      })
     );
     setDeleteTarget(null);
   };
@@ -1745,6 +1784,16 @@ export default function TreeTypeManagement() {
       setCreateVarietyOverlayOpen(false);
       setVarietyCreateConfirmOpen(false);
       setPendingVarietyCreate(null);
+      // Dispatch event để PlantDetail đồng bộ ảnh variety
+      window.dispatchEvent(
+        new CustomEvent("mm:variety:created", {
+          detail: {
+            treeTypeId: updated.TreeTypeID,
+            treeTypeID: updated.TreeTypeID,
+            varietyId: updated.Varieties?.[updated.Varieties.length - 1]?.VarietyID,
+          },
+        })
+      );
     } finally {
       setVarietySaving(false);
     }
@@ -1772,6 +1821,16 @@ export default function TreeTypeManagement() {
       setVarietyDetailEditMode(false);
       setPendingVarietyUpdate(null);
       setVarietyUpdateConfirmOpen(false);
+      // Dispatch event để PlantDetail đồng bộ ảnh variety
+      window.dispatchEvent(
+        new CustomEvent("mm:variety:updated", {
+          detail: {
+            treeTypeId: updated.TreeTypeID,
+            treeTypeID: updated.TreeTypeID,
+            varietyId: selectedVarietyId,
+          },
+        })
+      );
     } finally {
       setVarietySaving(false);
     }
@@ -1835,6 +1894,16 @@ export default function TreeTypeManagement() {
       setVarietyDetailEditMode(false);
       setVarietyCancelEditConfirmOpen(false);
       setVarietyRevertConfirmOpen(false);
+      // Dispatch event để PlantDetail đồng bộ ảnh variety
+      window.dispatchEvent(
+        new CustomEvent("mm:variety:deleted", {
+          detail: {
+            treeTypeId: updated.TreeTypeID,
+            treeTypeID: updated.TreeTypeID,
+            varietyId: selectedVarietyId,
+          },
+        })
+      );
     } finally {
       setVarietyDeleting(false);
     }

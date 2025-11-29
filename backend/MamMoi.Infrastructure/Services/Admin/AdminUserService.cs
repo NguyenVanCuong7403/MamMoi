@@ -153,6 +153,13 @@ public class AdminUserService : IAdminUserService
             if (!roleExists)
                 throw new InvalidOperationException("Role not found");
 
+            // Kiểm tra nếu user hiện tại có role SystemAdmin (RoleId = 3)
+            // thì không cho phép thay đổi role
+            if (user.RoleId == 3 && dto.RoleId.Value != 3)
+            {
+                throw new InvalidOperationException("Không thể thay đổi vai trò của Quản trị hệ thống.");
+            }
+
             user.RoleId = dto.RoleId.Value;
         }
 

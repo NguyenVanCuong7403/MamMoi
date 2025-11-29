@@ -579,7 +579,7 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
     }
     onBlur={() => setTouched((t) => ({ ...t, name: true }))}
     maxLength={MAX_GARDEN_NAME}
-    className={`h-12 rounded-xl text-[15px] md:text-base ${
+    className={`h-12 rounded-xl text-[clamp(13px,1.6vw,16px)] ${
       touched.name && errs.name ? "border-rose-500" : "border-neutral-300"
     }`}
     placeholder="Ví dụ: Vườn số 1 FPT"
@@ -1259,20 +1259,20 @@ export default function GardenManagement() {
 
       {/* UI trên nền sống */}
       <div className="mm-fluid-page relative min-h-screen pt-[64px] z-10">
-        <main className="mm-fluid-shell px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-6 space-y-6 text-[16px] md:text-[17px]">
+        <main className="mm-fluid-shell px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-6 space-y-6 text-[clamp(14px,1.8vw,17px)]">
           {/* Header */}
           <section className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div className="max-w-[820px]">
               <span
-                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs md:text-[13px] font-medium"
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[clamp(11px,1.3vw,13px)] font-medium mm-text-wrap-safe"
                 style={{ background: PALETTE.accent, color: PALETTE.bg }}
               >
                 Quản lý vườn
               </span>
-              <h1 className="mt-2 text-white text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight leading-tight">
+              <h1 className="mt-2 text-white text-[clamp(24px,4vw,48px)] font-semibold tracking-tight leading-tight mm-text-wrap-safe">
                 Danh Sách Quản Lý Vườn
               </h1>
-              <p className="text-white/85 mt-2 text-sm md:text-base lg:text-[17px]">
+              <p className="text-white/85 mt-2 text-[clamp(13px,1.6vw,17px)] mm-text-wrap-safe">
                 Tạo, chỉnh sửa, lọc và tra cứu thông tin các vườn — dùng chung nguồn dữ liệu với
                 UserProfile.
               </p>
@@ -1281,7 +1281,7 @@ export default function GardenManagement() {
             <div className="w-full md:w-auto flex items-stretch md:items-center gap-3 md:gap-4">
               <Button
                 onClick={openAdd}
-                className="h-12 md:h-12 px-5 md:px-6 rounded-2xl text-base font-semibold shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5 transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5"
+                className="h-12 md:h-12 px-5 md:px-6 rounded-2xl text-[clamp(14px,1.8vw,16px)] font-semibold shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5 transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5 mm-text-wrap-safe break-words"
                 style={{
                   background: "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)",
                   color: "#1F302F",
@@ -1312,7 +1312,7 @@ export default function GardenManagement() {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Tìm tên/địa chỉ/tỉnh..."
-                  className="pl-9 bg-white/95 text-[#0f1f1e] placeholder:text-neutral-500 rounded-full h-12 text-[15px]"
+                  className="pl-9 bg-white/95 text-[#0f1f1e] placeholder:text-neutral-500 rounded-full h-12 text-[clamp(13px,1.6vw,15px)] mm-text-wrap-safe"
                 />
               </div>
 
@@ -1320,7 +1320,7 @@ export default function GardenManagement() {
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value)}
-                  className="h-12 rounded-full border bg-white px-3 text-[15px] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer"
+                  className="h-12 rounded-full border bg-white px-3 text-[clamp(13px,1.6vw,15px)] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer mm-text-wrap-safe"
                   title="Lọc trạng thái"
                 >
                   <option value="all">Tất cả trạng thái</option>
@@ -1331,7 +1331,7 @@ export default function GardenManagement() {
                 <select
                   value={provinceFilter}
                   onChange={(e) => setProvinceFilter(e.target.value)}
-                  className="h-12 rounded-full border bg-white px-3 text-[15px] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer"
+                  className="h-12 rounded-full border bg-white px-3 text-[clamp(13px,1.6vw,15px)] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer mm-text-wrap-safe"
                   title="Lọc theo tỉnh/thành"
                 >
                   <option value="">Tất cả tỉnh/thành</option>
@@ -1345,7 +1345,7 @@ export default function GardenManagement() {
                 {q || status !== "all" || provinceFilter ? (
                   <Button
                     variant="outline"
-                    className="h-12 rounded-full text-[14px] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700"
+                    className="h-12 rounded-full text-[clamp(12px,1.5vw,14px)] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700 mm-text-wrap-safe break-words"
                     onClick={() => {
                       setQ("");
                       setStatus("all");
@@ -1368,7 +1368,7 @@ export default function GardenManagement() {
             ].map((s, i) => (
               <div
                 key={i}
-                className="relative rounded-xl px-5 py-3.5 flex items-center justify-between text-[14px]"
+                className="relative rounded-xl px-5 py-3.5 flex items-center justify-between text-[clamp(12px,1.5vw,14px)]"
                 style={{
                   background: "rgba(251,255,223,0.06)",
                   border: "1px solid rgba(255,255,165,0.15)",
@@ -1392,7 +1392,7 @@ export default function GardenManagement() {
               return (
                 <Card
                   key={g.id}
-                  className="group rounded-3xl overflow-hidden shadow-sm transition-all duration-500 ease-out h-full flex flex-col cursor-pointer text-[16px] border border-[rgba(255,255,165,0.25)] hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-500/30 hover:border-emerald-500 hover:border-[4px] hover:ring-4 hover:ring-emerald-400/60 animate-pulse-on-hover"
+                  className="group rounded-3xl overflow-hidden shadow-sm transition-all duration-500 ease-out h-full flex flex-col cursor-pointer text-[clamp(14px,1.8vw,16px)] border border-[rgba(255,255,165,0.25)] hover:-translate-y-2 hover:scale-[1.02] hover:shadow-2xl hover:shadow-emerald-500/30 hover:border-emerald-500 hover:border-[4px] hover:ring-4 hover:ring-emerald-400/60 animate-pulse-on-hover"
                   style={{
                     background: "#FFFFFFF2",
                   }}
@@ -1425,7 +1425,7 @@ export default function GardenManagement() {
                       {/* Tên vườn + pill trạng thái */}
                       <div className="min-w-0">
                         <div
-                          className="font-semibold text-[17px] md:text-[18px] text-[#0f1f1e] leading-snug break-words"
+                          className="font-semibold text-[clamp(15px,2vw,18px)] text-[#0f1f1e] leading-snug break-words mm-text-wrap-safe"
                           title={g.name}
                           style={{
                             display: "-webkit-box",
@@ -1443,10 +1443,10 @@ export default function GardenManagement() {
                       </div>
 
                       {/* Địa chỉ */}
-                      <div className="flex items-start gap-1.5 text-[14px] text-neutral-650">
+                      <div className="flex items-start gap-1.5 text-[clamp(12px,1.5vw,14px)] text-neutral-650">
                         <MapPin className="h-4 w-4 mt-[1px] flex-shrink-0 text-neutral-500" />
                         <div
-                          className="min-w-0 leading-snug break-words"
+                          className="min-w-0 leading-snug break-words mm-text-wrap-safe"
                           title={formatGardenLocation(g)}
                           style={{
                             display: "-webkit-box",
@@ -1461,7 +1461,7 @@ export default function GardenManagement() {
 
                       {/* Số cây trong vườn */}
                       <div>
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 text-[13px] font-medium">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 px-3 py-1.5 text-[clamp(11px,1.4vw,13px)] font-medium mm-text-wrap-safe">
                           <TreePine className="h-3.5 w-3.5" />
                           <GardenTreeCount g={g} key={g}/>
                         </span>
@@ -1475,14 +1475,14 @@ export default function GardenManagement() {
                           type="button"
                           variant="outline"
                           size="sm"
-                          className="h-10 rounded-xl px-4 text-[14px] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700"
+                          className="h-10 rounded-xl px-4 text-[clamp(12px,1.5vw,14px)] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 mm-text-wrap-safe break-words"
                           onClick={(e) => {
                             e.stopPropagation();
                             if (idx >= 0) openEdit(idx);
                           }}
                         >
-                          <Edit3 className="w-4 h-4 mr-1.5" />
-                          Sửa vườn
+                          <Edit3 className="w-4 h-4 mr-1.5 flex-shrink-0" />
+                          <span className="mm-text-wrap-safe break-words">Sửa vườn</span>
                         </Button>
 
                         <button
@@ -1505,7 +1505,7 @@ export default function GardenManagement() {
                           e.stopPropagation();
                           if (idx >= 0) askToggleStatus(idx);
                         }}
-                        className={`inline-flex items-center justify-center h-10 px-4 rounded-full text-[13px] font-semibold shadow-sm transition-all duration-200 hover:scale-110 hover:shadow-lg active:scale-[0.95] ${
+                        className={`inline-flex items-center justify-center h-10 px-4 rounded-full text-[clamp(11px,1.4vw,13px)] font-semibold shadow-sm transition-all duration-200 hover:scale-110 hover:shadow-lg active:scale-[0.95] mm-text-wrap-safe ${
                           isActive
                             ? "bg-rose-500 text-white hover:bg-rose-600 shadow-[0_8px_18px_rgba(244,63,94,0.28)] hover:shadow-[0_12px_28px_rgba(244,63,94,0.40)]"
                             : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_8px_18px_rgba(16,185,129,0.28)] hover:shadow-[0_12px_28px_rgba(16,185,129,0.40)]"
@@ -1553,7 +1553,7 @@ export default function GardenManagement() {
                         key={pageNumber}
                         type="button"
                         onClick={() => setPage(pageNumber)}
-                        className={`min-w-[32px] h-9 rounded-full text-[13px] px-2 ${
+                        className={`min-w-[32px] h-9 rounded-full text-[clamp(11px,1.4vw,13px)] px-2 ${
                           isCurrent
                             ? "bg-[#FFFFA5] text-[#1F302F] font-semibold"
                             : "bg-white/10 text-white/80 hover:bg-white/20"

@@ -661,9 +661,15 @@ function VarietyCard({ variety, index }) {
         {variety.imageUrl && (
           <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg">
             <img
+              key={variety.imageUrl} // Force re-render when imageUrl changes
               src={variety.imageUrl}
               alt={variety.name}
               className="h-full w-full object-cover transition-transform group-hover:scale-110"
+              onError={(e) => {
+                // Fallback if image fails to load
+                e.target.src =
+                  "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400";
+              }}
             />
           </div>
         )}
@@ -755,8 +761,24 @@ export default function PlantDetail() {
   const PEST_LIMIT = 4;
   const VARIETY_LIMIT = 4;
 
-  useEffect(() => {
-    const fetchPlantDetail = async () => {
+  // Helper function to add cache busting to image URLs
+  const addCacheBust = (url) => {
+    if (!url) return url;
+    try {
+      const urlObj = new URL(url);
+      // Add timestamp to force refresh
+      urlObj.searchParams.set("_t", Date.now());
+      return urlObj.toString();
+    } catch {
+      // If URL parsing fails, just add query param
+      const separator = url.includes("?") ? "&" : "?";
+      return `${url}${separator}_t=${Date.now()}`;
+    }
+  };
+
+  // Helper function to refresh plant data
+  const fetchPlantDetail = React.useCallback(
+    async (forceRefresh = false) => {
       setLoading(true);
       setError(null);
       try {
@@ -789,14 +811,19 @@ export default function PlantDetail() {
           const varietiesResponse = await TreeRepository.getTreeVarieties(id);
           if (Array.isArray(varietiesResponse)) {
             varieties = varietiesResponse
-              .map((v) => ({
-                name: v.varietyName || v.VarietyName || "",
-                description: v.varietyDescription || v.VarietyDescription || "",
-                imageUrl:
-                  v.imageUrl ||
-                  v.ImageUrl ||
-                  "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
-              }))
+              .map((v) => {
+                const imageUrl = v.imageUrl || v.ImageUrl;
+                return {
+                  name: v.varietyName || v.VarietyName || "",
+                  description:
+                    v.varietyDescription || v.VarietyDescription || "",
+                  imageUrl:
+                    forceRefresh && imageUrl
+                      ? addCacheBust(imageUrl)
+                      : imageUrl ||
+                        "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
+                };
+              })
               .filter((v) => v.name); // Only include varieties with names
           }
         } catch (err) {
@@ -811,6 +838,7 @@ export default function PlantDetail() {
         // Merge API data with demo data - prioritize backend/DB data
         const demoData =
           demoPlantData[foundTree.treeTypeId || foundTree.treeTypeID];
+        const baseImageUrl = foundTree.imageUrl || demoData?.imageUrl;
         const mergedData = {
           ...foundTree,
           // Prioritize backend data, fallback to demo data
@@ -818,7 +846,11 @@ export default function PlantDetail() {
           scientificName: foundTree.scientificName || demoData?.scientificName,
           category: foundTree.category || demoData?.category,
           description: foundTree.description || demoData?.description,
-          imageUrl: foundTree.imageUrl || demoData?.imageUrl,
+          // Add cache busting to image URL if force refresh
+          imageUrl:
+            forceRefresh && baseImageUrl
+              ? addCacheBust(baseImageUrl)
+              : baseImageUrl,
           averageLifespanYears:
             foundTree.averageLifespanYears ?? demoData?.averageLifespanYears,
           optimalTemperatureMin:
@@ -861,12 +893,83 @@ export default function PlantDetail() {
       } finally {
         setLoading(false);
       }
+    },
+    [id]
+  );
+
+  // Initial fetch
+  useEffect(() => {
+    if (id) {
+      fetchPlantDetail(false);
+    }
+  }, [id, fetchPlantDetail]);
+
+  // Listen for admin CRUD events to refresh images
+  useEffect(() => {
+    if (!id) return;
+
+    // Listen for custom events when admin updates tree types or varieties
+    const handleTreeTypeUpdate = (event) => {
+      const updatedId = event.detail?.treeTypeId || event.detail?.treeTypeID;
+      if (updatedId && String(updatedId) === String(id)) {
+        // Refresh data with cache busting for images
+        console.log("PlantDetail: TreeType updated, refreshing images...");
+        fetchPlantDetail(true);
+      }
     };
 
-    if (id) {
-      fetchPlantDetail();
-    }
-  }, [id]);
+    const handleTreeTypeDelete = (event) => {
+      const deletedId = event.detail?.treeTypeId || event.detail?.treeTypeID;
+      if (deletedId && String(deletedId) === String(id)) {
+        // Navigate away if the plant was deleted
+        navigate("/plants");
+      }
+    };
+
+    const handleVarietyUpdate = (event) => {
+      const treeTypeId = event.detail?.treeTypeId || event.detail?.treeTypeID;
+      if (treeTypeId && String(treeTypeId) === String(id)) {
+        // Refresh data with cache busting for images
+        console.log("PlantDetail: Variety updated, refreshing images...");
+        fetchPlantDetail(true);
+      }
+    };
+
+    // Listen for window events
+    window.addEventListener("mm:treetype:updated", handleTreeTypeUpdate);
+    window.addEventListener("mm:treetype:created", handleTreeTypeUpdate);
+    window.addEventListener("mm:treetype:deleted", handleTreeTypeDelete);
+    window.addEventListener("mm:variety:updated", handleVarietyUpdate);
+    window.addEventListener("mm:variety:created", handleVarietyUpdate);
+    window.addEventListener("mm:variety:deleted", handleVarietyUpdate);
+
+    // Also listen for visibility change to refresh when user comes back to tab
+    // (with debounce to avoid too many refreshes)
+    let visibilityTimeout;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        // Debounce: only refresh after 1 second of being visible
+        clearTimeout(visibilityTimeout);
+        visibilityTimeout = setTimeout(() => {
+          console.log("PlantDetail: Tab visible, refreshing images...");
+          fetchPlantDetail(true);
+        }, 1000);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("mm:treetype:updated", handleTreeTypeUpdate);
+      window.removeEventListener("mm:treetype:created", handleTreeTypeUpdate);
+      window.removeEventListener("mm:treetype:deleted", handleTreeTypeDelete);
+      window.removeEventListener("mm:variety:updated", handleVarietyUpdate);
+      window.removeEventListener("mm:variety:created", handleVarietyUpdate);
+      window.removeEventListener("mm:variety:deleted", handleVarietyUpdate);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearTimeout(visibilityTimeout);
+    };
+  }, [id, fetchPlantDetail, navigate]);
 
   if (loading) {
     return (
@@ -925,9 +1028,15 @@ export default function PlantDetail() {
         <div className="absolute inset-0">
           {plantData.imageUrl && (
             <img
+              key={plantData.imageUrl} // Force re-render when imageUrl changes
               src={plantData.imageUrl}
               alt={plantData.treeTypeName}
               className="h-full w-full object-cover opacity-15 scale-75"
+              onError={(e) => {
+                // Fallback if image fails to load
+                e.target.src =
+                  "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1600";
+              }}
             />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/90 via-emerald-800/70 to-emerald-900/50" />

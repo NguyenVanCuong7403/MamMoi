@@ -463,13 +463,13 @@ export default function Home() {
                       lang="vi"
                       className="text-[#FBFFDF]"
                     >
-                      <p className="font-hero text-[clamp(16px,2.6vw,32px)] font-semibold opacity-95 mb-3 md:mb-4">
+                      <p className="font-hero text-[clamp(16px,2.6vw,32px)] font-semibold opacity-95 mb-3 md:mb-4 mm-text-wrap-safe break-words">
                         {HERO_TOPLINE}
                       </p>
-                      <h1 className="font-display font-extrabold leading-[1.06] tracking-[-0.01em] drop-shadow-[0_10px_36px_rgba(0,0,0,0.35)] text-[clamp(72px,11.5vw,172px)] antialiased">
+                      <h1 className="font-display font-extrabold leading-[1.06] tracking-[-0.01em] drop-shadow-[0_10px_36px_rgba(0,0,0,0.35)] text-[clamp(72px,11.5vw,172px)] antialiased mm-text-wrap-safe break-words">
                         {HERO_TITLE}
                       </h1>
-                      <p className="font-hero text-[clamp(16px,2.6vw,32px)] font-semibold mt-3 md:mt-4">
+                      <p className="font-hero text-[clamp(16px,2.6vw,32px)] font-semibold mt-3 md:mt-4 mm-text-wrap-safe break-words">
                         {HERO_TAGLINE}
                       </p>
                       <span className="sr-only">{HERO_SLOGAN.altText}</span>
@@ -510,7 +510,7 @@ export default function Home() {
           className="cv-auto bg-[#1F302F] text-[#D1DFB6] py-6"
         >
           <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px]">
-            <p className="mm-fluid-text text-center text-[clamp(16px,2.1vw,22px)] opacity-90">
+            <p className="mm-fluid-text text-center text-[clamp(16px,2.1vw,22px)] opacity-90 mm-text-wrap-safe break-words">
               Thiết lập vườn, cấp mã cây, rồi quản lý lá – cành – hoa – quả ngay
               tại một bảng điều khiển đồng nhất.
             </p>
@@ -532,17 +532,17 @@ export default function Home() {
                 />
               </div>
               <div className="md:w-[54%] flex flex-col gap-4 md:gap-5">
-                <h3 className="text-[clamp(32px,4vw,50px)] leading-tight text-[#1F302F] font-semibold">
+                <h3 className="text-[clamp(32px,4vw,50px)] leading-tight text-[#1F302F] font-semibold mm-text-wrap-safe break-words">
                   Đồng hành cùng Mầm mới
                 </h3>
-                <p className="mm-fluid-text text-[16px] md:text-[18px] leading-relaxed text-[#1F302F]/85">
+                <p className="mm-fluid-text text-[clamp(14px,1.8vw,18px)] leading-relaxed text-[#1F302F]/85 mm-text-wrap-safe break-words">
                   Mục tiêu sứ mệnh của chúng tôi luôn mong muốn đưa ra hệ thống
                   chăm sóc cây ăn quả tốt nhất và hiệu quả nhất cho người dùng.
                 </p>
                 <div>
                   <a
                     href="#register"
-                    className="inline-flex items-center justify-center rounded-full bg-[#FFFFA5] text-[#1F302F] px-7 py-3.5 text-lg md:text-xl font-semibold shadow hover:shadow-md transition"
+                    className="inline-flex items-center justify-center rounded-full bg-[#FFFFA5] text-[#1F302F] px-7 py-3.5 text-[clamp(14px,1.8vw,20px)] font-semibold shadow hover:shadow-md transition mm-text-wrap-safe break-words"
                   >
                     Tìm hiểu về Mầm Mới
                   </a>
@@ -561,7 +561,7 @@ export default function Home() {
           <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px]">
             <div className="grid md:grid-cols-2 gap-10 items-center">
               <div>
-                <h2 className="text-[clamp(28px,3.2vw,42.5px)] leading-[1.15] font-medium">
+                <h2 className="text-[clamp(28px,3.2vw,42.5px)] leading-[1.15] font-medium mm-text-wrap-safe break-words">
                   <span className="opacity-90">
                     Chúng tôi luôn đồng hành cùng bạn từ{" "}
                   </span>
@@ -663,14 +663,14 @@ export default function Home() {
           <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px] py-16 md:py-24">
             <div className="rounded-[28px] bg-[#F8FBEA] ring-1 ring-black/5 shadow-[0_14px_40px_rgba(0,0,0,0.08)] p-8 md:p-12 space-y-8">
               <div>
-                <p className="text-sm uppercase tracking-[0.2em] text-[#5B6B4E] font-semibold">
+                <p className="text-[clamp(11px,1.3vw,14px)] uppercase tracking-[0.2em] text-[#5B6B4E] font-semibold mm-text-wrap-safe break-words">
                   Mầm Mới Care Desk
                 </p>
-                <h2 className="text-[clamp(32px,3.6vw,56px)] leading-tight text-[#243833] font-medium mt-3">
+                <h2 className="text-[clamp(32px,3.6vw,56px)] leading-tight text-[#243833] font-medium mt-3 mm-text-wrap-safe break-words">
                   Luôn hỗ trợ ngay lập tức khi bạn cần
                 </h2>
               </div>
-              <p className="mm-fluid-text text-[#243833]/85 max-w-4xl">
+              <p className="mm-fluid-text text-[clamp(14px,1.8vw,18px)] text-[#243833]/85 max-w-4xl mm-text-wrap-safe break-words">
                 Chúng tôi duy trì đội hỗ trợ có mặt 24/7, sẵn sàng phản hồi mọi
                 yêu cầu từ nhập liệu, cấu hình thiết bị đến xử lý cảnh báo sâu
                 bệnh, đảm bảo bạn không bao giờ bị bỏ lại cùng câu hỏi chưa được
@@ -695,10 +695,10 @@ export default function Home() {
                     key={card.title}
                     className="rounded-2xl bg-white/85 p-5 shadow-inner border border-[#E0E7C6]/70"
                   >
-                    <h3 className="text-[20px] font-semibold text-[#1F302F]">
+                    <h3 className="text-[clamp(16px,2.2vw,20px)] font-semibold text-[#1F302F] mm-text-wrap-safe break-words">
                       {card.title}
                     </h3>
-                    <p className="mm-fluid-text mt-3 text-[#1F302F]/80">
+                    <p className="mm-fluid-text mt-3 text-[clamp(13px,1.6vw,16px)] text-[#1F302F]/80 mm-text-wrap-safe break-words">
                       {card.body}
                     </p>
                   </div>
@@ -726,7 +726,7 @@ export default function Home() {
           {/* News */}
           <section id="news" className="cv-auto bg-[#D1DFB6]">
             <div className="mm-fluid-shell mx-auto max-w-[1280px] px-4 md:px-[90px] py-14 md:py-20">
-              <h2 className="text-center text-[clamp(34px,3.6vw,48px)] leading-tight font-semibold text-[#1F302F]">
+              <h2 className="text-center text-[clamp(34px,3.6vw,48px)] leading-tight font-semibold text-[#1F302F] mm-text-wrap-safe break-words">
                 Tin mới
               </h2>
 
@@ -765,10 +765,10 @@ export default function Home() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/35 to-black/10" />
                     <div className="relative z-10 h-full p-6 md:p-8 flex flex-col justify-end text-white">
-                      <h3 className="text-[clamp(22px,2.3vw,30px)] leading-snug font-semibold drop-shadow-md">
+                      <h3 className="text-[clamp(22px,2.3vw,30px)] leading-snug font-semibold drop-shadow-md mm-text-wrap-safe break-words">
                         {n.title}
                       </h3>
-                      <p className="mm-fluid-text mt-4 text-[14.5px] md:text-[16px] opacity-95 drop-shadow max-w-[92%]">
+                      <p className="mm-fluid-text mt-4 text-[clamp(13px,1.7vw,16px)] opacity-95 drop-shadow max-w-[92%] mm-text-wrap-safe break-words">
                         {n.body}
                       </p>
                     </div>

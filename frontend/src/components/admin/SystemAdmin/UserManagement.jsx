@@ -1241,11 +1241,22 @@ export default function SystemAdminUserManagement() {
       setEditError("Vui lòng nhập đủ họ tên, email và số điện thoại.");
       return;
     }
+
+    // Ngăn không cho thay đổi role của SystemAdmin
+    if (
+      selectedUser.role === "SystemAdmin" &&
+      editDraft.role !== "SystemAdmin"
+    ) {
+      setEditError("Không thể thay đổi vai trò của Quản trị hệ thống.");
+      return;
+    }
+
     try {
       await updateUser(selectedUser.userId || selectedUser.id, {
         name: editDraft.name.trim(),
         phone: editDraft.phone.trim(),
-        role: editDraft.role,
+        role:
+          selectedUser.role === "SystemAdmin" ? "SystemAdmin" : editDraft.role,
         email: editDraft.email.trim(),
       });
       setEditError("");
@@ -2188,6 +2199,7 @@ export default function SystemAdminUserManagement() {
                       onValueChange={(value) =>
                         setEditDraft((prev) => ({ ...prev, role: value }))
                       }
+                      disabled={selectedUser?.role === "SystemAdmin"}
                     >
                       <SelectTrigger className="rounded-xl border-slate-200 bg-white">
                         <SelectValue placeholder="Chọn vai trò" />
@@ -2202,6 +2214,11 @@ export default function SystemAdminUserManagement() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {selectedUser?.role === "SystemAdmin" && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        Không thể thay đổi vai trò của Quản trị hệ thống
+                      </p>
+                    )}
                   </div>
                 </div>
                 {editError && (
