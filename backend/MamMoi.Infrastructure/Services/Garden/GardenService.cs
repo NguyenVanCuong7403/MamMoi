@@ -270,27 +270,85 @@ public class GardenService : IGardenService
         // 5. Update GardenSoil records if SoilMasterIds provided
         if (dto.SoilMasterIds != null)
         {
-            // Remove existing GardenSoil records for this garden
+            // Validate that all SoilMaster IDs exist
+            var validSoilMasterIds = dto.SoilMasterIds.Count > 0
+                ? await _dbContext.SoilMasters
+                    .Where(sm => dto.SoilMasterIds.Contains(sm.SoilMasterId))
+                    .Select(sm => sm.SoilMasterId)
+                    .ToListAsync()
+                : new List<int>();
+
+            // Get existing GardenSoil records for this garden
             var existingGardenSoils = await _dbContext.GardenSoils
                 .Where(gs => gs.GardenId == gardenId)
                 .ToListAsync();
-            
-            if (existingGardenSoils.Any())
+
+            // Find GardenSoil records that are referenced by trees
+            var gardenSoilIdsInUse = await _dbContext.Trees
+                .Where(t => t.GardenId == gardenId && t.GardenSoilId != null)
+                .Select(t => t.GardenSoilId!.Value)
+                .Distinct()
+                .ToListAsync();
+
+            // Validate: Check if user is trying to remove GardenSoil records that are in use by trees
+            if (gardenSoilIdsInUse.Any())
             {
-                _dbContext.GardenSoils.RemoveRange(existingGardenSoils);
+                // Get the GardenSoil records that are in use
+                var gardenSoilsInUse = existingGardenSoils
+                    .Where(gs => gardenSoilIdsInUse.Contains(gs.GardenSoilId))
+                    .ToList();
+
+                // Check if any of the in-use GardenSoil records have SoilMasterIds NOT in the new list
+                var inUseSoilMasterIdsToRemove = gardenSoilsInUse
+                    .Where(gs => !validSoilMasterIds.Contains(gs.SoilMasterId))
+                    .Select(gs => gs.SoilMasterId)
+                    .ToList();
+
+                if (inUseSoilMasterIdsToRemove.Any())
+                {
+                    // Get soil names for better error message
+                    var soilNames = await _dbContext.SoilMasters
+                        .Where(sm => inUseSoilMasterIdsToRemove.Contains(sm.SoilMasterId))
+                        .Select(sm => sm.SoilName)
+                        .ToListAsync();
+
+                    var soilNamesText = string.Join(", ", soilNames);
+                    throw new InvalidOperationException(
+                        $"Không thể xóa loại đất '{soilNamesText}' khỏi vườn vì đang được sử dụng bởi cây. " +
+                        "Vui lòng thay đổi loại đất của các cây trước khi xóa loại đất khỏi vườn.");
+                }
             }
 
-            // Create new GardenSoil records from provided SoilMaster IDs
-            if (dto.SoilMasterIds.Count > 0)
-            {
-                // Validate that all SoilMaster IDs exist
-                var validSoilMasterIds = await _dbContext.SoilMasters
-                    .Where(sm => dto.SoilMasterIds.Contains(sm.SoilMasterId))
-                    .Select(sm => sm.SoilMasterId)
-                    .ToListAsync();
+            // Determine which GardenSoil records to keep and which to delete
+            var gardenSoilsToKeep = existingGardenSoils
+                .Where(gs => validSoilMasterIds.Contains(gs.SoilMasterId) || 
+                             gardenSoilIdsInUse.Contains(gs.GardenSoilId))
+                .ToList();
 
-                // Create GardenSoil records for each valid SoilMaster ID
-                var newGardenSoils = validSoilMasterIds.Select(soilMasterId => new GardenSoil
+            var gardenSoilsToDelete = existingGardenSoils
+                .Where(gs => !validSoilMasterIds.Contains(gs.SoilMasterId) && 
+                             !gardenSoilIdsInUse.Contains(gs.GardenSoilId))
+                .ToList();
+
+            // Delete only GardenSoil records that are not in use and not in the new list
+            if (gardenSoilsToDelete.Any())
+            {
+                _dbContext.GardenSoils.RemoveRange(gardenSoilsToDelete);
+            }
+
+            // Find which SoilMasterIds don't have GardenSoil records yet
+            var existingSoilMasterIds = gardenSoilsToKeep
+                .Select(gs => gs.SoilMasterId)
+                .ToHashSet();
+
+            var newSoilMasterIds = validSoilMasterIds
+                .Where(smId => !existingSoilMasterIds.Contains(smId))
+                .ToList();
+
+            // Create new GardenSoil records for SoilMasterIds that don't exist yet
+            if (newSoilMasterIds.Any())
+            {
+                var newGardenSoils = newSoilMasterIds.Select(soilMasterId => new GardenSoil
                 {
                     GardenId = gardenId,
                     SoilMasterId = soilMasterId,

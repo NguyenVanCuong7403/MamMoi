@@ -59,13 +59,14 @@ namespace MamMoi.Infrastructure.Services.GardenSoils
         from t in _db.Set<Tree>().AsNoTracking()
         where t.TreeId == treeId
         from gs in _db.Set<GardenSoil>().AsNoTracking()
+            .Include(t => t.SoilMaster)
             .Where(gs => gs.GardenId == t.GardenId
                       )
         select new GardenSoilDto(
             gs.GardenSoilId,
             gs.GardenId,
             gs.SoilMasterId,
-            null,
+            gs.SoilMaster.SoilName,
             gs.CustomLabel,
             gs.Notes
         );

@@ -315,6 +315,43 @@ function ConfirmModal({ open, title, children, onClose, onConfirm }) {
   );
 }
 
+function ErrorModal({ open, message, onClose }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-[1200] grid place-items-center">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div
+        className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <div className="text-lg font-semibold text-rose-600">Lỗi</div>
+          <button
+            className="rounded p-1 hover:bg-neutral-100"
+            onClick={onClose}
+            aria-label="Đóng"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="space-y-3">
+          <p className="text-sm text-neutral-700 whitespace-pre-wrap break-words">
+            {message || "Đã xảy ra lỗi không xác định. Vui lòng thử lại."}
+          </p>
+        </div>
+        <div className="mt-4 flex justify-end">
+          <Button
+            className="rounded-2xl h-10 px-4 bg-rose-600 hover:bg-rose-700 text-white"
+            onClick={onClose}
+          >
+            Đóng
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ===== Garden Form Modal (dùng AddressPicker) ===== */
 function GardenFormModal({ open, initial, onClose, onSubmit }) {
   const blank = {
@@ -1011,6 +1048,9 @@ export default function GardenManagement() {
   // ===== confirm xoá =====
   const [confirm, setConfirm] = useState({ open: false, targetIdx: -1 });
 
+  // ===== error notification =====
+  const [error, setError] = useState({ open: false, message: "" });
+
   // ===== lọc danh sách theo search + filter =====
   const filtered = useMemo(() => {
     const QQ = q.trim().toLowerCase();
@@ -1074,117 +1114,139 @@ export default function GardenManagement() {
     //console.log(form);
 
     (async () => {
-      let coverUrl = form.coverUrl; // fallback if user uses URL
+      try {
+        let coverUrl = form.coverUrl; // fallback if user uses URL
 
-      // If user uploaded a file, upload it first
-      if (form.file instanceof File) {
-        try {
-          const data = await GardenRepository.uploadGardenImage(form.file);
-          if (data.success && data.url) {
-            coverUrl = data.url; // update coverUrl with uploaded file URL
-          } else {
-            console.error("File upload failed", data);
-            alert("Upload file thất bại. Vui lòng thử lại.");
+        // If user uploaded a file, upload it first
+        if (form.file instanceof File) {
+          try {
+            const data = await GardenRepository.uploadGardenImage(form.file);
+            if (data.success && data.url) {
+              coverUrl = data.url; // update coverUrl with uploaded file URL
+            } else {
+              console.error("File upload failed", data);
+              setError({
+                open: true,
+                message: "Upload file thất bại. Vui lòng thử lại.",
+              });
+              return;
+            }
+          } catch (err) {
+            console.error("File upload error", err);
+            const errorMessage =
+              err?.message || "Upload file thất bại. Vui lòng thử lại.";
+            setError({ open: true, message: errorMessage });
             return;
           }
-        } catch (err) {
-          console.error("File upload error", err);
-          alert("Upload file thất bại. Vui lòng thử lại.");
-          return;
-        }
-      }
-
-      // Prepare updated form with coverUrl
-      const updatedForm = { ...form, coverUrl };
-      delete updatedForm.file;
-      updatedForm.soilIds = Array.isArray(updatedForm.soilIds)
-        ? updatedForm.soilIds.map((id) => String(id)).filter(Boolean)
-        : [];
-      updatedForm.soilNames = Array.isArray(updatedForm.soilNames)
-        ? updatedForm.soilNames
-        : [];
-      const payloadSoilMasterIds = updatedForm.soilIds
-        .map((id) => Number(id))
-        .filter((id) => !Number.isNaN(id));
-
-      if (editingIdx >= 0) {
-        const payload = {
-          Name: form.name || undefined, // optional
-          Location: formatGardenLocation(form) || undefined, // optional
-          CoverUrl: coverUrl, // uploaded file or existing URL
-          TimeZone: form.timeZone ?? null, // optional
-          ClimateZone: form.climateZone ?? null, // optional
-          SoilMasterIds:
-            payloadSoilMasterIds.length > 0 ? payloadSoilMasterIds : null,
-        };
-        const res = await GardenRepository.updateGarden(
-          updatedForm.id,
-          payload
-        );
-        if (!res?.success) {
-          alert("Cập nhật vườn thất bại");
-          return;
         }
 
-        // sửa vườn
-        setGardens((gs) => {
-          const prev = gs[editingIdx];
-          const next = [...gs];
-          next[editingIdx] = normalizeGardenRecord({ ...prev, ...updatedForm });
+        // Prepare updated form with coverUrl
+        const updatedForm = { ...form, coverUrl };
+        delete updatedForm.file;
+        updatedForm.soilIds = Array.isArray(updatedForm.soilIds)
+          ? updatedForm.soilIds.map((id) => String(id)).filter(Boolean)
+          : [];
+        updatedForm.soilNames = Array.isArray(updatedForm.soilNames)
+          ? updatedForm.soilNames
+          : [];
+        const payloadSoilMasterIds = updatedForm.soilIds
+          .map((id) => Number(id))
+          .filter((id) => !Number.isNaN(id));
 
-          // Nếu tên đổi → phát event để TreeManagement cập nhật title
-          if (prev.name !== updatedForm.name) {
-            window.dispatchEvent(
-              new CustomEvent("mm:garden:renamed", {
-                detail: { id: next[editingIdx].id, name: updatedForm.name },
-              })
-            );
-
-            // Nếu vườn này đang được chọn, cập nhật luôn LS_SELECTED_GARDEN
-            try {
-              const sel = JSON.parse(
-                localStorage.getItem(LS_SELECTED_GARDEN) || "null"
-              );
-              if (sel && sel.id === next[editingIdx].id) {
-                localStorage.setItem(
-                  LS_SELECTED_GARDEN,
-                  JSON.stringify({ id: sel.id, name: updatedForm.name })
-                );
-              }
-            } catch {
-              // ignore
-            }
+        if (editingIdx >= 0) {
+          const payload = {
+            Name: form.name || undefined, // optional
+            Location: formatGardenLocation(form) || undefined, // optional
+            CoverUrl: coverUrl, // uploaded file or existing URL
+            TimeZone: form.timeZone ?? null, // optional
+            ClimateZone: form.climateZone ?? null, // optional
+            SoilMasterIds:
+              payloadSoilMasterIds.length > 0 ? payloadSoilMasterIds : null,
+          };
+          const res = await GardenRepository.updateGarden(
+            updatedForm.id,
+            payload
+          );
+          if (!res?.success) {
+            const errorMessage =
+              res?.message || "Cập nhật vườn thất bại. Vui lòng thử lại.";
+            setError({ open: true, message: errorMessage });
+            return;
           }
 
-          save(LS_GARDENS, next);
-          return next;
-        });
-      } else {
-        const payload = {
-          Name: updatedForm.name,
-          Location: formatGardenLocation(updatedForm), // use your existing function
-          CoverUrl: updatedForm.coverUrl,
-          TimeZone: null,
-          ClimateZone: null,
-          SoilMasterIds:
-            payloadSoilMasterIds.length > 0 ? payloadSoilMasterIds : null,
-        };
-        const res = await GardenRepository.createGarden(payload);
-        if (!res?.success) {
-          alert("Tạo vườn thất bại");
-          return;
-        }
-        updatedForm.id = res.data.gardenId;
+          // sửa vườn
+          setGardens((gs) => {
+            const prev = gs[editingIdx];
+            const next = [...gs];
+            next[editingIdx] = normalizeGardenRecord({
+              ...prev,
+              ...updatedForm,
+            });
 
-        // thêm mới
-        setGardens((gs) => {
-          const next = [normalizeGardenRecord({ ...updatedForm }), ...gs];
-          save(LS_GARDENS, next);
-          return next;
-        });
+            // Nếu tên đổi → phát event để TreeManagement cập nhật title
+            if (prev.name !== updatedForm.name) {
+              window.dispatchEvent(
+                new CustomEvent("mm:garden:renamed", {
+                  detail: { id: next[editingIdx].id, name: updatedForm.name },
+                })
+              );
+
+              // Nếu vườn này đang được chọn, cập nhật luôn LS_SELECTED_GARDEN
+              try {
+                const sel = JSON.parse(
+                  localStorage.getItem(LS_SELECTED_GARDEN) || "null"
+                );
+                if (sel && sel.id === next[editingIdx].id) {
+                  localStorage.setItem(
+                    LS_SELECTED_GARDEN,
+                    JSON.stringify({ id: sel.id, name: updatedForm.name })
+                  );
+                }
+              } catch {
+                // ignore
+              }
+            }
+
+            save(LS_GARDENS, next);
+            return next;
+          });
+        } else {
+          const payload = {
+            Name: updatedForm.name,
+            Location: formatGardenLocation(updatedForm), // use your existing function
+            CoverUrl: updatedForm.coverUrl,
+            TimeZone: null,
+            ClimateZone: null,
+            SoilMasterIds:
+              payloadSoilMasterIds.length > 0 ? payloadSoilMasterIds : null,
+          };
+          const res = await GardenRepository.createGarden(payload);
+          if (!res?.success) {
+            const errorMessage =
+              res?.message || "Tạo vườn thất bại. Vui lòng thử lại.";
+            setError({ open: true, message: errorMessage });
+            return;
+          }
+          updatedForm.id = res.data.gardenId;
+
+          // thêm mới
+          setGardens((gs) => {
+            const next = [normalizeGardenRecord({ ...updatedForm }), ...gs];
+            save(LS_GARDENS, next);
+            return next;
+          });
+        }
+        setOpenForm(false);
+        setEditingIdx(-1);
+      } catch (err) {
+        console.error("Garden update/create error:", err);
+        // Extract error message from the error object
+        const errorMessage =
+          err?.message ||
+          err?.response?.data?.message ||
+          "Đã xảy ra lỗi khi cập nhật vườn. Vui lòng thử lại.";
+        setError({ open: true, message: errorMessage });
       }
-      setOpenForm(false);
-      setEditingIdx(-1);
     })();
   }
 
@@ -1583,6 +1645,12 @@ export default function GardenManagement() {
             ? Hành động này không thể hoàn tác.
           </p>
         </ConfirmModal>
+
+        <ErrorModal
+          open={error.open}
+          message={error.message}
+          onClose={() => setError({ open: false, message: "" })}
+        />
       </div>
     </>
   );

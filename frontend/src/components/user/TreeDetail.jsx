@@ -3362,8 +3362,8 @@ export default function TreeDetail() {
         // ====== NEW: load GardenSoils của vườn này ======
         // giả sử DTO từ backend có: dto.treeId và dto.gardenSoilId
         if (dto.treeId) {
-          const soilRes = await GardenSoilRepository.getGardenSoilsByTree(
-            dto.treeId
+          const soilRes = await GardenSoilRepository.getGardenSoilsByGarden(
+            dto.gardenId
           );
           if (!cancelled) {
             const soils = soilRes?.data ?? soilRes ?? [];
@@ -3378,13 +3378,13 @@ export default function TreeDetail() {
 
             // fill lại dropdown soil bằng CustomLabel của các GardenSoil
             DROPDOWN_OPTIONS.soils = soils
-              .map((s) => (s.customLabel || "").trim())
+              .map((s) => (s.customLabel ? `${s.customLabel} - ${s.soilName}` : `${s.soilName}`).trim())
               .filter(Boolean);
 
             // Lấy customLabel của soil hiện tại từ GardenSoilId trong dto
             const currentSoil =
               dto.gardenSoilId != null ? map[dto.gardenSoilId] : null;
-            const soilLabel = currentSoil?.customLabel || "";
+            const soilLabel = currentSoil?.customLabel ? `${currentSoil.customLabel} - ${currentSoil.soilName}` : (currentSoil?.soilName || "");
 
             // cập nhật meta để UI hiển thị đúng loại đất
             setMeta((prev) => ({
