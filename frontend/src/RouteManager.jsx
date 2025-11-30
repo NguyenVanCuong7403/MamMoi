@@ -35,13 +35,17 @@ import BusinessAdminTaskManagement from "./components/admin/BusinessAdmin/TaskMa
 import BusinessAdminLifecycleProcessManagement from "./components/admin/BusinessAdmin/LifecycleProcessManagement";
 import PlantGallery from "./components/user/PlantGallery";
 import PlantDetail from "./components/user/PlantDetail";
+import LogoutGuard from "./guards/LogoutGuard";
 
 export default function RouteManager({ authTab }) {
   return (
     <>
       <ScrollToTop />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={
+          <LogoutGuard>
+            <Home />
+          </LogoutGuard>} />
         <Route path="/auth" element={<AuthScreen defaultTab={authTab} />} />
         <Route
           path="/new"
@@ -54,7 +58,10 @@ export default function RouteManager({ authTab }) {
         <Route path="/preview" element={<CareFlowEditablePreview />} />
         <Route path="/edit" element={<EditTreeBasic />} />
         <Route path="/demo" element={<Demo />} />
-        <Route path="/price" element={<PricingPage />} />
+        <Route path="/price" element={
+          <LogoutGuard>
+            <PricingPage />
+          </LogoutGuard>} />
         <Route path="/checkout" element={
           <LoginGuard>
             <MamMoiQrCheckout />
@@ -67,8 +74,14 @@ export default function RouteManager({ authTab }) {
         <LoginGuard>
           <PaymentHistory />
         </LoginGuard>} />
-        <Route path="/plants" element={<PlantGallery />} />
-        <Route path="/plants/:id" element={<PlantDetail />} />
+        <Route path="/plants" element={
+          <LogoutGuard>
+            <PlantGallery />
+          </LogoutGuard>} />
+        <Route path="/plants/:id" element={
+          <LogoutGuard>
+            <PlantDetail />
+          </LogoutGuard>} />
         {/* Garden list/management */}
         <Route
           path="/garden"
@@ -102,7 +115,11 @@ export default function RouteManager({ authTab }) {
         <Route path="/garden/:gardenId/trees" element={<TreeManagement />} />
         <Route
           path="/garden/:gardenId/trees/:treeId"
-          element={<TreeDetail />}
+          element={
+            <LoginGuard>
+              <TreeDetail />
+            </LoginGuard>
+          }
         />
         {/* Guards */}
         <Route
