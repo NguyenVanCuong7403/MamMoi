@@ -19,6 +19,7 @@ export default function PricingPage() {
   const [expandedFaq, setExpandedFaq] = useState(null);
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentSubscription, setCurrentSubscription] = useState(null);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -89,7 +90,7 @@ export default function PricingPage() {
           return {
             id: plan.planId,
             name: plan.planName,
-            duration: "Quản lý user",
+            duration: "12 tháng",
             monthlyPrice: planPrice,
             yearlyPrice: planPrice * 12, // Giá năm = giá tháng * 12
             popular: index === 1, // Middle plan is popular
@@ -108,6 +109,22 @@ export default function PricingPage() {
       }
     };
     fetchPlans();
+  }, []);
+
+  // Fetch current user subscription
+  useEffect(() => {
+    const fetchCurrentSubscription = async () => {
+      try {
+        const subscription =
+          await SubscriptionPlanRepository.getCurrentUserSubscription();
+        if (subscription) {
+          setCurrentSubscription(subscription);
+        }
+      } catch (error) {
+        console.error("Error fetching current subscription:", error);
+      }
+    };
+    fetchCurrentSubscription();
   }, []);
 
   const toggleFaq = (index) => {
@@ -312,95 +329,111 @@ export default function PricingPage() {
                     </CardContent>
                   </Card>
                 ))
-              : plans.map((plan, index) => (
-                  <Card
-                    key={plan.id}
-                    className={`relative bg-white ${
-                      plan.popular
-                        ? "ring-2 ring-emerald-500 shadow-xl scale-105"
-                        : ""
-                    }`}
-                  >
-                    {plan.popular && (
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                        <span className="bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-medium">
-                          Phổ biến
-                        </span>
-                      </div>
-                    )}
-                    <CardContent className="p-6">
-                      <div className="mb-6">
-                        <h3 className="text-[clamp(18px,2.5vw,22px)] font-bold text-gray-900 mb-1 mm-text-wrap-safe break-words">
-                          {plan.name}
-                        </h3>
-                        <p className="text-[clamp(12px,1.5vw,14px)] text-gray-600 mm-text-wrap-safe break-words">
-                          {plan.duration}
-                        </p>
-                      </div>
-
-                      <div className="mb-6">
-                        <div className="flex items-baseline flex-wrap">
-                          <span className="text-[clamp(28px,4vw,36px)] font-bold text-gray-900 mm-text-wrap-safe break-words">
-                            {formatPrice(plan.monthlyPrice)}
-                          </span>
-                          <span className="text-[clamp(12px,1.5vw,14px)] text-gray-600 ml-1 mm-text-wrap-safe break-words">
-                            ₫/tháng
+              : plans.map((plan, index) => {
+                  const isCurrentPlan =
+                    currentSubscription &&
+                    currentSubscription.planId === plan.id;
+                  return (
+                    <Card
+                      key={plan.id}
+                      className={`relative bg-white flex flex-col ${
+                        plan.popular
+                          ? "ring-2 ring-emerald-500 shadow-xl scale-105"
+                          : ""
+                      }`}
+                    >
+                      {plan.popular && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                          <span className="bg-emerald-500 text-white px-4 py-1 rounded-full text-sm font-medium">
+                            Phổ biến
                           </span>
                         </div>
-                        <p className="text-[clamp(12px,1.5vw,14px)] text-gray-500 mt-1 mm-text-wrap-safe break-words">
-                          ({formatPrice(plan.yearlyPrice)}₫/năm)
-                        </p>
-                      </div>
+                      )}
+                      {isCurrentPlan && (
+                        <div className="absolute -top-3 right-4">
+                          <span className="bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-xs font-medium shadow-md">
+                            Bạn đang ở gói này
+                          </span>
+                        </div>
+                      )}
+                      <CardContent className="p-6 flex flex-col h-full">
+                        <div className="flex-1">
+                          <div className="mb-6">
+                            <h3 className="text-[clamp(18px,2.5vw,22px)] font-bold text-gray-900 mb-1 mm-text-wrap-safe break-words">
+                              {plan.name}
+                            </h3>
+                            <p className="text-[clamp(12px,1.5vw,14px)] text-gray-600 mm-text-wrap-safe break-words">
+                              {plan.duration}
+                            </p>
+                          </div>
 
-                      <ul className="space-y-3 mb-6">
-                        {plan.features.length > 0 ? (
-                          plan.features.map((feature, fIndex) => (
-                            <li key={fIndex} className="flex items-start gap-2">
-                              <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                              <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
-                                {feature}
+                          <div className="mb-6">
+                            <div className="flex items-baseline flex-wrap">
+                              <span className="text-[clamp(28px,4vw,36px)] font-bold text-gray-900 mm-text-wrap-safe break-words">
+                                {formatPrice(plan.monthlyPrice)}
                               </span>
-                            </li>
-                          ))
-                        ) : (
-                          <>
-                            <li className="flex items-start gap-2">
-                              <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                              <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
-                                {plan.maxGardens
-                                  ? `Tối đa ${plan.maxGardens} vườn`
-                                  : "Không giới hạn vườn"}
+                              <span className="text-[clamp(12px,1.5vw,14px)] text-gray-600 ml-1 mm-text-wrap-safe break-words">
+                                ₫/tháng
                               </span>
-                            </li>
-                            <li className="flex items-start gap-2">
-                              <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                              <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
-                                {plan.maxTreesPerGarden
-                                  ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
-                                  : "Không giới hạn cây"}
-                              </span>
-                            </li>
-                          </>
-                        )}
-                      </ul>
+                            </div>
+                            <p className="text-[clamp(12px,1.5vw,14px)] text-gray-500 mt-1 mm-text-wrap-safe break-words">
+                              ({formatPrice(plan.yearlyPrice)}₫/năm)
+                            </p>
+                          </div>
 
-                      <Button
-                        className={`w-full ${
-                          plan.popular
-                            ? "bg-gray-900 hover:bg-gray-800"
-                            : "bg-gray-900 hover:bg-gray-800"
-                        }`}
-                        onClick={() => handleSelectPlan(plan)}
-                      >
-                        {plan.buttonText}
-                      </Button>
+                          <ul className="space-y-3 mb-6">
+                            {plan.features.length > 0 ? (
+                              plan.features.map((feature, fIndex) => (
+                                <li key={fIndex} className="flex items-start gap-2">
+                                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                  <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
+                                    {feature}
+                                  </span>
+                                </li>
+                              ))
+                            ) : (
+                              <>
+                                <li className="flex items-start gap-2">
+                                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                  <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
+                                    {plan.maxGardens
+                                      ? `Tối đa ${plan.maxGardens} vườn`
+                                      : "Không giới hạn vườn"}
+                                  </span>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                  <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                  <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
+                                    {plan.maxTreesPerGarden
+                                      ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
+                                      : "Không giới hạn cây"}
+                                  </span>
+                                </li>
+                              </>
+                            )}
+                          </ul>
+                        </div>
 
-                      <p className="text-xs text-gray-500 text-center mt-3">
-                        Giá đã bao gồm thuế nếu có.
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
+                        <div className="mt-auto">
+                          <Button
+                            className={`w-full ${
+                              plan.popular
+                                ? "bg-gray-900 hover:bg-gray-800"
+                                : "bg-gray-900 hover:bg-gray-800"
+                            }`}
+                            onClick={() => handleSelectPlan(plan)}
+                          >
+                            {plan.buttonText}
+                          </Button>
+
+                          <p className="text-xs text-gray-500 text-center mt-3">
+                            Giá đã bao gồm thuế nếu có.
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
           </div>
         </div>
       </div>

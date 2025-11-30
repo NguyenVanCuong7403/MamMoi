@@ -73,6 +73,36 @@ function getPriorityBadgeVariant(priority) {
   }
 }
 
+// Translate notification type to Vietnamese (matching Report.jsx style)
+function translateNotificationType(type) {
+  if (!type) return "Chung";
+  
+  const typeLower = type.toLowerCase();
+  
+  switch (typeLower) {
+    case "supportrequest":
+      return "Hỗ trợ";
+    case "broadcast":
+      return "Thông báo chung";
+    case "taskexpiration":
+    case "task":
+      return "Nhiệm vụ";
+    case "promotion":
+      return "Khuyến mãi";
+    case "payment":
+    case "subscription":
+      return "Thanh toán";
+    case "tree":
+      return "Cây";
+    case "auth":
+      return "Đăng nhập & Đăng ký";
+    case "system":
+      return "Hệ thống";
+    default:
+      return type;
+  }
+}
+
 export default function Notifications() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -212,10 +242,10 @@ export default function Notifications() {
           {/* Header */}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0 flex-1">
-              <h2 className="text-[clamp(20px,3vw,24px)] font-semibold text-slate-900 mm-text-wrap-safe break-words">
+              <h2 className="text-[clamp(32px,4vw,40px)] font-semibold text-white mm-text-wrap-safe break-words">
                 Thông báo của tôi
               </h2>
-              <p className="mt-1 text-[clamp(12px,1.5vw,14px)] text-slate-600 mm-text-wrap-safe break-words">
+              <p className="mt-1 text-[clamp(16px,2vw,20px)] text-white mm-text-wrap-safe break-words">
                 Quản lý và xem tất cả thông báo bạn đã nhận
               </p>
             </div>
@@ -317,10 +347,13 @@ export default function Notifications() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Tất cả loại</SelectItem>
-                      <SelectItem value="SupportRequest">Hỗ trợ</SelectItem>
-                      <SelectItem value="Broadcast">Thông báo chung</SelectItem>
-                      <SelectItem value="TaskExpiration">Nhiệm vụ</SelectItem>
-                      <SelectItem value="Promotion">Khuyến mãi</SelectItem>
+                      <SelectItem value="SupportRequest">{translateNotificationType("SupportRequest")}</SelectItem>
+                      <SelectItem value="Broadcast">{translateNotificationType("Broadcast")}</SelectItem>
+                      <SelectItem value="TaskExpiration">{translateNotificationType("TaskExpiration")}</SelectItem>
+                      <SelectItem value="Promotion">{translateNotificationType("Promotion")}</SelectItem>
+                      <SelectItem value="Payment">{translateNotificationType("Payment")}</SelectItem>
+                      <SelectItem value="Tree">{translateNotificationType("Tree")}</SelectItem>
+                      <SelectItem value="System">{translateNotificationType("System")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -403,7 +436,7 @@ export default function Notifications() {
                               </TableCell>
                               <TableCell>
                                 <Badge variant="outline">
-                                  {notification.notificationType || "General"}
+                                  {translateNotificationType(notification.notificationType)}
                                 </Badge>
                               </TableCell>
                               <TableCell>

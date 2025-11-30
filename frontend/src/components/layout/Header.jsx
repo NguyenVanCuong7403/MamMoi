@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Search,
   Menu,
   Bell,
-  Calendar,
-  CloudRain,
   User as UserIcon,
   ArrowLeft,
 } from "lucide-react";
@@ -154,14 +151,11 @@ export default function MMHeader({
     };
   }, []);
 
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [activeMenu, setActiveMenu] = useState(menuItems?.[0]?.id || "");
   const [isTop, setIsTop] = useState(true);
-  const [showValidationError, setShowValidationError] = useState(false);
+  const [isHeaderVisible, setIsHeaderVisible] = useState(true);
+  const lastScrollY = useRef(0);
 
-  const searchInputRef = useRef(null);
-  const openedAtRef = useRef(0);
   const menuCloseTimeoutRef = useRef(null);
   const navigate = useNavigate();
 
@@ -214,13 +208,31 @@ export default function MMHeader({
   useEffect(() => {
     const close = (e) => {
       if (!e.target.closest(".avatar-menu-area")) setAvatarMenu(false);
+      if (!e.target.closest(".notification-menu-area")) setNotificationMenu(false);
     };
     document.addEventListener("click", close);
     return () => document.removeEventListener("click", close);
   }, []);
 
   useEffect(() => {
-    const onScroll = () => setIsTop(window.scrollY < 60);
+    const onScroll = () => {
+      const currentScrollY = window.scrollY;
+      setIsTop(currentScrollY < 60);
+      
+      // Show header when scrolling up, hide when scrolling down
+      if (currentScrollY < 60) {
+        // Always show header at the top
+        setIsHeaderVisible(true);
+      } else if (currentScrollY > lastScrollY.current) {
+        // Scrolling down - hide header
+        setIsHeaderVisible(false);
+      } else if (currentScrollY < lastScrollY.current) {
+        // Scrolling up - show header
+        setIsHeaderVisible(true);
+      }
+      
+      lastScrollY.current = currentScrollY;
+    };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
@@ -264,29 +276,6 @@ export default function MMHeader({
 
   useEffect(() => {
     const onKey = (e) => {
-      const tag = (document.activeElement?.tagName || "").toLowerCase();
-      const typing =
-        ["input", "textarea", "select"].includes(tag) ||
-        document.activeElement?.getAttribute?.("contenteditable") === "true";
-
-      // Nếu đang mở khung chọn ngày (DateInput) thì bỏ qua Enter,
-      // không bật search của header
-      const dateOpen = document.querySelector('[data-mm-date-open="1"]');
-
-      // Kiểm tra xem có đang ở màn hình AddTreeNewScreen không
-      const addTreeScreen = document.querySelector(
-        '[data-mm-screen="add-tree"]'
-      );
-
-      if (e.key === "Enter") {
-        if (dateOpen) return; // khung lịch đang mở → không làm gì
-        if (addTreeScreen && !typing) return; // đang ở màn hình thêm cây và không focus input → không mở search
-
-        if (!typing && !searchOpen) {
-          setSearchOpen(true);
-        }
-      }
-
       if (e.key === "Escape") {
         closeMenu();
       }
@@ -294,32 +283,7 @@ export default function MMHeader({
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [searchOpen]);
-
-  useEffect(() => {
-    if (searchOpen) setTimeout(() => searchInputRef.current?.focus(), 60);
-  }, [searchOpen]);
-
-  const submitSearch = (e) => {
-    if (e) e.preventDefault();
-    const q = searchQuery.trim();
-    if (!q) {
-      setShowValidationError(true);
-      searchInputRef.current?.classList.add("mm-shake");
-      setTimeout(
-        () => searchInputRef.current?.classList.remove("mm-shake"),
-        350
-      );
-      setTimeout(() => setShowValidationError(false), 2500);
-      return;
-    }
-    setShowValidationError(false);
-    console.log("Searching for:", q);
-    setTimeout(() => {
-      setSearchOpen(false);
-      setSearchQuery("");
-    }, 800);
-  };
+  }, []);
 
   // Drawer open/close (chậm & mượt hơn)
   const openMenu = () => {
@@ -378,6 +342,7 @@ export default function MMHeader({
         className={[
           "fixed top-0 left-0 right-0 z-[55] transition-all duration-300",
           isTop ? "bg-transparent text-white" : "backdrop-blur-sm",
+          isHeaderVisible ? "translate-y-0" : "-translate-y-full",
         ].join(" ")}
         style={!isTop ? { background: `#1F302FE6` } : undefined}
         data-testid="mmheader"
@@ -445,101 +410,6 @@ export default function MMHeader({
 
           {/* Right cluster */}
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-auto">
-            {/* Search inline */}
-            <form
-              onSubmit={submitSearch}
-              className={[
-                "relative overflow-hidden transition-[max-width,opacity] duration-300",
-                "hidden sm:block",
-              ].join(" ")}
-              style={{
-                maxWidth: searchOpen ? "min(600px, calc(100vw - 200px))" : 0,
-                opacity: searchOpen ? 1 : 0,
-                pointerEvents: searchOpen ? "auto" : "none",
-              }}
-              onMouseLeave={() => {
-                if (
-                  !searchQuery.trim() &&
-                  Date.now() - openedAtRef.current > 250
-                ) {
-                  setSearchOpen(false);
-                }
-              }}
-              data-testid="mm-search-form-inline"
-            >
-              <input
-                ref={searchInputRef}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm kiếm cây, quy trình, gợi ý chăm sóc…"
-                className="
-                  h-10 sm:h-12 w-full max-w-[600px]
-                  rounded-full pl-4 sm:pl-6 pr-28 sm:pr-36
-                  bg-white/95 text-[#1F302F]
-                  placeholder:text-neutral-500
-                  border border-white/30
-                  shadow-[0_10px_28px_rgba(0,0,0,0.10)]
-                  focus:outline-none focus:ring-2 focus:ring-[#FFFFA5]
-                  text-sm sm:text-[15px]
-                "
-                data-testid="mm-search-input"
-                aria-invalid={showValidationError ? "true" : "false"}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-20 sm:right-28 top-1/2 -translate-y-1/2 h-8 w-8 sm:h-9 sm:w-9 grid place-items-center rounded-full hover:bg-black/5 focus:outline-none text-sm sm:text-base"
-                  aria-label="Xóa từ khóa"
-                >
-                  ✕
-                </button>
-              )}
-              <button
-                type="submit"
-                className="absolute right-1 sm:right-2 top-1/2 -translate-y-1/2 h-8 sm:h-10 px-3 sm:px-5 rounded-full shadow hover:scale-[1.02] transition text-xs sm:text-[15px] font-medium focus:outline-none whitespace-nowrap"
-                style={{ background: palette.accent, color: "#1F302F" }}
-                aria-label="Tìm kiếm"
-              >
-                Tìm
-              </button>
-              {showValidationError && (
-                <div
-                  role="alert"
-                  aria-live="polite"
-                  className="absolute right-0 top-full mt-1 text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 rounded-full shadow border z-[80] animate-[mm-pop_.18s_ease-out] whitespace-nowrap"
-                  style={{
-                    background: palette.accent,
-                    color: "#1F302F",
-                    borderColor: "#EAB30855",
-                  }}
-                >
-                  Vui lòng nhập nội dung
-                </div>
-              )}
-            </form>
-
-            {/* Toggle search */}
-            <button
-              onClick={() => {
-                if (!searchOpen) {
-                  setSearchOpen(true);
-                  openedAtRef.current = Date.now();
-                  setTimeout(() => searchInputRef.current?.focus(), 80);
-                } else {
-                  setSearchOpen(false);
-                  setShowValidationError(false);
-                }
-              }}
-              className="w-9 h-9 sm:w-11 sm:h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none flex-shrink-0"
-              style={{ background: palette.ivory, color: palette.bg }}
-              aria-label="Mở/đóng tìm kiếm"
-              title="Tìm kiếm"
-              data-testid="mm-search-btn"
-            >
-              <Search className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]" />
-            </button>
-
             {/* Notification bell */}
             {user && (
               <div className="hidden sm:block relative notification-menu-area">
@@ -712,33 +582,60 @@ export default function MMHeader({
 
                 {/* Dropdown */}
                 {avatarMenu && (
-                  <div className="absolute right-0 mt-3 w-56 min-w-[200px] max-w-[90vw] bg-white text-[#1F302F] rounded-xl shadow-lg py-2 z-[999]">
-                    {isAdmin(user) ? (
-                      <button
-                        className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
-                        onClick={() => {
-                          const adminPath = getAdminPath(user);
-                          if (adminPath) {
-                            navigate(adminPath);
-                          }
-                          setAvatarMenu((prev) => !prev);
-                        }}
-                        title="Quản lý Admin"
-                      >
-                        Quản lý Admin
-                      </button>
-                    ) : !isGuest(user) ? (
-                      <button
-                        className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
-                        onClick={() => {
-                          navigate("/garden");
-                          setAvatarMenu((prev) => !prev);
-                        }}
-                        title="Vườn của tôi"
-                      >
-                        Vườn của tôi
-                      </button>
-                    ) : null}
+                  <div className="absolute right-0 mt-3 w-56 min-w-[200px] max-w-[90vw] bg-white text-[#1F302F] rounded-xl shadow-lg z-[999]">
+                    {/* Avatar and Name Section */}
+                    <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-200">
+                      <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 flex-shrink-0">
+                        {user.ProfileImageUrl || profileAvatar ? (
+                          <SafeImage
+                            src={user.ProfileImageUrl || profileAvatar}
+                            alt="avatar"
+                            className="w-full h-full object-cover object-center"
+                          />
+                        ) : (
+                          <div
+                            className="w-full h-full grid place-items-center"
+                            style={{ background: palette.ivory, color: palette.bg }}
+                          >
+                            <UserIcon className="w-5 h-5" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-[#1F302F] truncate">
+                          {user.fullName || user.name || "User"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Menu Items */}
+                    <div className="py-2">
+                      {isAdmin(user) ? (
+                        <button
+                          className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+                          onClick={() => {
+                            const adminPath = getAdminPath(user);
+                            if (adminPath) {
+                              navigate(adminPath);
+                            }
+                            setAvatarMenu((prev) => !prev);
+                          }}
+                          title="Quản lý Admin"
+                        >
+                          Quản lý Admin
+                        </button>
+                      ) : !isGuest(user) ? (
+                        <button
+                          className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+                          onClick={() => {
+                            navigate("/garden");
+                            setAvatarMenu((prev) => !prev);
+                          }}
+                          title="Vườn của tôi"
+                        >
+                          Vườn của tôi
+                        </button>
+                      ) : null}
 
                     <button
                       className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap"
@@ -751,16 +648,18 @@ export default function MMHeader({
                       Hồ sơ
                     </button>
 
-                    <button
-                      className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
-                      onClick={() => {
-                        navigate("/reports");
-                        setAvatarMenu((prev) => !prev);
-                      }}
-                      title="Quản lý báo cáo"
-                    >
-                      Quản lý báo cáo
-                    </button>
+                    {!isAdmin(user) && (
+                      <button
+                        className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+                        onClick={() => {
+                          navigate("/reports");
+                          setAvatarMenu((prev) => !prev);
+                        }}
+                        title="Quản lý báo cáo"
+                      >
+                        Quản lý báo cáo
+                      </button>
+                    )}
 
                     <button
                       className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap text-red-500"
@@ -769,6 +668,7 @@ export default function MMHeader({
                     >
                       Đăng xuất
                     </button>
+                    </div>
                   </div>
                 )}
               </div>

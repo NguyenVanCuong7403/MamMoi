@@ -2355,6 +2355,13 @@ export default function UserProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
 
+  // Check if user is admin
+  const isAdmin = React.useMemo(() => {
+    if (!user) return false;
+    const role = (user.role || "").toLowerCase();
+    return role === "systemadmin" || role === "businessadmin" || user.roleId === 1 || user.roleId === 2;
+  }, [user]);
+
   // Loading states
   const [profileLoading, setProfileLoading] = useState(true);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
@@ -2559,6 +2566,13 @@ export default function UserProfile() {
   const [paymentDateTo, setPaymentDateTo] = useState("");
 
   const [activeMenu, setActiveMenu] = useState("account"); // "account" | "password" | "history" | "upgrade"
+
+  // Reset active menu to "account" if admin tries to access restricted menus
+  useEffect(() => {
+    if (isAdmin && (activeMenu === "history" || activeMenu === "upgrade")) {
+      setActiveMenu("account");
+    }
+  }, [isAdmin, activeMenu]);
   const [currentPackage, setCurrentPackage] = useState("Starter"); // Gói hiện tại (deprecated, use currentSubscription)
   const [currentSubscription, setCurrentSubscription] = useState(null); // Current subscription plan object
   const [pwOpen, setPwOpen] = useState(false);
@@ -3075,45 +3089,47 @@ export default function UserProfile() {
           </p>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-          {[
-            {
-              label: "Hiển thị gói hiện tại",
-              value: currentPackage,
-              icon: <Shield className="h-5 w-5" />,
-            },
-            {
-              label: "Số vườn đang quản lý",
-              value: gardens.length,
-              icon: <MapPin className="h-5 w-5" />,
-            },
-            {
-              label: "Tổng số cây đang chăm",
-              value: stats.totalTrees,
-              icon: <TreePine className="h-5 w-5" />,
-            },
-          ].map((s, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-white/25 bg-white/20 backdrop-blur-[10px] p-4"
-            >
-              <div className="flex items-center justify-between text-2xl font-semibold text-white/90 mb-2">
-                <span>{s.label}</span>
-                {s.icon}
-              </div>
+        {/* Stats - Only show for non-admin users */}
+        {!isAdmin && (
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+            {[
+              {
+                label: "Hiển thị gói hiện tại",
+                value: currentPackage,
+                icon: <Shield className="h-5 w-5" />,
+              },
+              {
+                label: "Số vườn đang quản lý",
+                value: gardens.length,
+                icon: <MapPin className="h-5 w-5" />,
+              },
+              {
+                label: "Tổng số cây đang chăm",
+                value: stats.totalTrees,
+                icon: <TreePine className="h-5 w-5" />,
+              },
+            ].map((s, i) => (
               <div
-                className={`${
-                  s.label.includes("vườn") || s.label.includes("cây")
-                    ? "text-4xl"
-                    : "text-2xl"
-                } font-medium text-white drop-shadow-sm`}
+                key={i}
+                className="rounded-2xl border border-white/25 bg-white/20 backdrop-blur-[10px] p-4"
               >
-                {s.value}
+                <div className="flex items-center justify-between text-2xl font-semibold text-white/90 mb-2">
+                  <span>{s.label}</span>
+                  {s.icon}
+                </div>
+                <div
+                  className={`${
+                    s.label.includes("vườn") || s.label.includes("cây")
+                      ? "text-4xl"
+                      : "text-2xl"
+                  } font-medium text-white drop-shadow-sm`}
+                >
+                  {s.value}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Main */}
@@ -3121,9 +3137,9 @@ export default function UserProfile() {
         className={`${CONTAINER} pb-16`}
         inert={overlayOpen ? "" : undefined}
       >
-        <div className="flex gap-8 w-full">
+        <div className="flex gap-4 md:gap-6 lg:gap-8 w-full min-w-0">
           {/* Sidebar Menu - Left */}
-          <aside className="w-80 shrink-0">
+          <aside className="w-64 md:w-72 lg:w-80 shrink-0">
             <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
               <CardContent className="p-8">
                 <div className="mb-8">
@@ -3156,28 +3172,33 @@ export default function UserProfile() {
                     <Lock className="h-6 w-6" />
                     <span className="text-lg">Mật khẩu</span>
                   </button>
-                  <button
-                    onClick={() => setActiveMenu("history")}
-                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
-                      activeMenu === "history"
-                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                        : "text-white/90 hover:bg-slate-800/50"
-                    }`}
-                  >
-                    <CreditCard className="h-6 w-6" />
-                    <span className="text-lg">Lịch sử giao dịch</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveMenu("upgrade")}
-                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
-                      activeMenu === "upgrade"
-                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                        : "text-white/90 hover:bg-slate-800/50"
-                    }`}
-                  >
-                    <TrendingUp className="h-6 w-6" />
-                    <span className="text-lg">Nâng cấp gói</span>
-                  </button>
+                  {/* Only show history and upgrade for non-admin users */}
+                  {!isAdmin && (
+                    <>
+                      <button
+                        onClick={() => setActiveMenu("history")}
+                        className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
+                          activeMenu === "history"
+                            ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                            : "text-white/90 hover:bg-slate-800/50"
+                        }`}
+                      >
+                        <CreditCard className="h-6 w-6" />
+                        <span className="text-lg">Lịch sử giao dịch</span>
+                      </button>
+                      <button
+                        onClick={() => setActiveMenu("upgrade")}
+                        className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
+                          activeMenu === "upgrade"
+                            ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                            : "text-white/90 hover:bg-slate-800/50"
+                        }`}
+                      >
+                        <TrendingUp className="h-6 w-6" />
+                        <span className="text-lg">Nâng cấp gói</span>
+                      </button>
+                    </>
+                  )}
                 </nav>
 
                 {/* User Profile Summary */}
@@ -3208,7 +3229,7 @@ export default function UserProfile() {
           </aside>
 
           {/* Main Content - Right */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {/* Tài khoản Section */}
             {activeMenu === "account" && (
               <section ref={profileRef} className="space-y-6">
@@ -3824,9 +3845,9 @@ export default function UserProfile() {
 
             {/* Lịch sử giao dịch Section */}
             {activeMenu === "history" && (
-              <section className="space-y-6">
+              <section className="space-y-6 min-w-0">
                 <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
-                  <CardContent className="p-6 sm:p-8">
+                  <CardContent className="p-4 sm:p-6 md:p-8 overflow-x-hidden">
                     {/* Header */}
                     <div className="mb-6">
                       <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">
@@ -3838,23 +3859,23 @@ export default function UserProfile() {
                     </div>
 
                     {/* Filters Section */}
-                    <div className="space-y-6 mb-6">
+                    <div className="space-y-4 sm:space-y-6 mb-4 sm:mb-6">
                       {/* Search and Status Row */}
-                      <div className="flex flex-wrap items-center gap-4">
-                        <div className="flex-1 min-w-[280px] relative">
-                          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/70 w-5 h-5" />
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4">
+                        <div className="flex-1 min-w-[200px] sm:min-w-[280px] relative">
+                          <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-white/70 w-4 h-4 sm:w-5 sm:h-5" />
                           <Input
                             type="text"
-                            placeholder="Tìm mã đơn, gói, TXID, phương thức, số tiền..."
-                            className="pl-12 h-14 w-full rounded-xl bg-white/20 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 text-base"
+                            placeholder="Tìm mã đơn, gói, TXID..."
+                            className="pl-10 sm:pl-12 h-12 sm:h-14 w-full rounded-xl bg-white/20 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 text-sm sm:text-base"
                             value={paymentSearch}
                             onChange={(e) => setPaymentSearch(e.target.value)}
                           />
                         </div>
 
-                        <div className="relative">
+                        <div className="relative w-full sm:w-auto">
                           <select
-                            className="appearance-none px-5 py-3 pr-10 h-14 text-base border border-emerald-400/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 bg-white/20 backdrop-blur-sm text-white font-medium min-w-[200px]"
+                            className="appearance-none px-4 sm:px-5 py-2.5 sm:py-3 pr-8 sm:pr-10 h-12 sm:h-14 w-full sm:min-w-[180px] md:min-w-[200px] text-sm sm:text-base border border-emerald-400/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 bg-white/20 backdrop-blur-sm text-white font-medium"
                             value={paymentStatusFilter}
                             onChange={(e) =>
                               setPaymentStatusFilter(e.target.value)
@@ -3879,7 +3900,7 @@ export default function UserProfile() {
                               Hoàn tiền
                             </option>
                           </select>
-                          <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 w-5 h-5 pointer-events-none" />
+                          <ChevronDown className="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-white/70 w-4 h-4 sm:w-5 sm:h-5 pointer-events-none" />
                         </div>
 
                         <Button
@@ -3890,7 +3911,7 @@ export default function UserProfile() {
                             setPaymentDateFrom("");
                             setPaymentDateTo("");
                           }}
-                          className="h-14 px-5 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg text-base font-medium"
+                          className="h-12 sm:h-14 px-4 sm:px-5 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg text-sm sm:text-base font-medium whitespace-nowrap"
                         >
                           Reset
                         </Button>
@@ -3950,9 +3971,11 @@ export default function UserProfile() {
                             );
                           }}
                           disabled={paymentsLoading}
-                          className="h-14 px-5 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 text-base font-medium disabled:opacity-50"
+                          className="h-12 sm:h-14 px-4 sm:px-5 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 text-sm sm:text-base font-medium disabled:opacity-50 whitespace-nowrap"
                         >
-                          <Download className="w-5 h-5" /> Xuất CSV
+                          <Download className="w-4 h-4 sm:w-5 sm:h-5" /> 
+                          <span className="hidden sm:inline">Xuất CSV</span>
+                          <span className="sm:hidden">CSV</span>
                         </Button>
                       </div>
 
@@ -3998,7 +4021,7 @@ export default function UserProfile() {
                     </div>
 
                     {/* Payment History Table */}
-                    <div className="border-t border-white/20 pt-6">
+                    <div className="border-t border-white/20 pt-6 w-full min-w-0 overflow-x-hidden">
                       <PaymentHistory
                         transactions={paymentTransactions}
                         search={paymentSearch}
@@ -4027,153 +4050,171 @@ export default function UserProfile() {
                       </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {plansLoading
-                        ? // Loading skeleton
-                          [1, 2, 3].map((i) => (
-                            <div
-                              key={i}
-                              className="p-6 rounded-2xl bg-white/20 border border-white/25 animate-pulse"
-                            >
-                              <div className="h-6 bg-white/30 rounded mb-4 w-1/2"></div>
-                              <div className="h-10 bg-white/30 rounded mb-6 w-3/4"></div>
-                              <div className="space-y-3 mb-6">
-                                {[1, 2, 3].map((j) => (
-                                  <div
-                                    key={j}
-                                    className="h-4 bg-white/30 rounded"
-                                  ></div>
-                                ))}
+                    <div className="space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {plansLoading
+                          ? // Loading skeleton
+                            [1, 2, 3].map((i) => (
+                              <div
+                                key={i}
+                                className="p-6 rounded-2xl bg-white/20 border border-white/25 animate-pulse"
+                              >
+                                <div className="h-6 bg-white/30 rounded mb-4 w-1/2"></div>
+                                <div className="h-10 bg-white/30 rounded mb-6 w-3/4"></div>
+                                <div className="space-y-3 mb-6">
+                                  {[1, 2, 3].map((j) => (
+                                    <div
+                                      key={j}
+                                      className="h-4 bg-white/30 rounded"
+                                    ></div>
+                                  ))}
+                                </div>
                               </div>
-                              <div className="h-12 bg-white/30 rounded"></div>
-                            </div>
-                          ))
-                        : subscriptionPlans.map((plan, index) => {
+                            ))
+                          : subscriptionPlans.map((plan, index) => {
+                              const isPopular = index === 1;
+                              // Check if this is the current plan or a lower priority plan (lower ID)
+                              const currentPlanId =
+                                currentSubscription?.planId || 1;
+                              const isCurrentPlan = plan.planId === currentPlanId;
+                              const isLowerPlan = plan.planId < currentPlanId;
+                              const features = (() => {
+                                if (!plan.features) return [];
+                                // Handle JSON array string like "[\"item1\", \"item2\"]"
+                                if (
+                                  typeof plan.features === "string" &&
+                                  plan.features.startsWith("[")
+                                ) {
+                                  try {
+                                    return JSON.parse(plan.features);
+                                  } catch {
+                                    return [];
+                                  }
+                                }
+                                // Handle newline-separated string
+                                return plan.features
+                                  .split("\n")
+                                  .filter((f) => f.trim());
+                              })();
+
+                              return (
+                                <div
+                                  key={plan.planId}
+                                  className={`p-6 rounded-2xl transition-colors relative ${
+                                    isPopular
+                                      ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50"
+                                      : "bg-white/20 border border-white/25 hover:border-yellow-500/50"
+                                  }`}
+                                >
+                                  {isPopular && (
+                                    <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                      Phổ biến
+                                    </div>
+                                  )}
+                                  <div className="mb-4">
+                                    <h3 className="text-xl font-semibold text-white mb-2">
+                                      {plan.planName}
+                                    </h3>
+                                    <div className="text-3xl font-bold text-yellow-400 mb-1">
+                                      {plan.price.toLocaleString("vi-VN")}đ
+                                    </div>
+                                    <div className="text-sm text-white/80">
+                                      /tháng
+                                    </div>
+                                  </div>
+                                  <ul className="space-y-2 text-sm text-white/70">
+                                    {features.length > 0 ? (
+                                      features.map((feature, fIndex) => (
+                                        <li
+                                          key={fIndex}
+                                          className="flex items-center gap-2"
+                                        >
+                                          <CheckCircle2
+                                            className={`h-4 w-4 shrink-0 ${
+                                              isPopular
+                                                ? "text-yellow-400"
+                                                : "text-emerald-400"
+                                            }`}
+                                          />
+                                          <span>{feature}</span>
+                                        </li>
+                                      ))
+                                    ) : (
+                                      <>
+                                        <li className="flex items-center gap-2">
+                                          <CheckCircle2
+                                            className={`h-4 w-4 shrink-0 ${
+                                              isPopular
+                                                ? "text-yellow-400"
+                                                : "text-emerald-400"
+                                            }`}
+                                          />
+                                          <span>
+                                            {plan.maxGardens
+                                              ? `Tối đa ${plan.maxGardens} vườn`
+                                              : "Không giới hạn vườn"}
+                                          </span>
+                                        </li>
+                                        <li className="flex items-center gap-2">
+                                          <CheckCircle2
+                                            className={`h-4 w-4 shrink-0 ${
+                                              isPopular
+                                                ? "text-yellow-400"
+                                                : "text-emerald-400"
+                                            }`}
+                                          />
+                                          <span>
+                                            {plan.maxTreesPerGarden
+                                              ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
+                                              : "Không giới hạn cây"}
+                                          </span>
+                                        </li>
+                                      </>
+                                    )}
+                                  </ul>
+                                </div>
+                              );
+                            })}
+                      </div>
+
+                      {/* Upgrade buttons at the bottom */}
+                      {!plansLoading && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          {subscriptionPlans.map((plan, index) => {
                             const isPopular = index === 1;
-                            // Check if this is the current plan or a lower priority plan (lower ID)
                             const currentPlanId =
                               currentSubscription?.planId || 1;
                             const isCurrentPlan = plan.planId === currentPlanId;
                             const isLowerPlan = plan.planId < currentPlanId;
                             const shouldDisable = isCurrentPlan || isLowerPlan;
-                            const features = (() => {
-                              if (!plan.features) return [];
-                              // Handle JSON array string like "[\"item1\", \"item2\"]"
-                              if (
-                                typeof plan.features === "string" &&
-                                plan.features.startsWith("[")
-                              ) {
-                                try {
-                                  return JSON.parse(plan.features);
-                                } catch {
-                                  return [];
-                                }
-                              }
-                              // Handle newline-separated string
-                              return plan.features
-                                .split("\n")
-                                .filter((f) => f.trim());
-                            })();
 
                             return (
-                              <div
+                              <Button
                                 key={plan.planId}
-                                className={`p-6 rounded-2xl transition-colors relative ${
-                                  isPopular
-                                    ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50"
-                                    : "bg-white/20 border border-white/25 hover:border-yellow-500/50"
-                                }`}
-                              >
-                                {isPopular && (
-                                  <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                    Phổ biến
-                                  </div>
-                                )}
-                                <div className="mb-4">
-                                  <h3 className="text-xl font-semibold text-white mb-2">
-                                    {plan.planName}
-                                  </h3>
-                                  <div className="text-3xl font-bold text-yellow-400 mb-1">
-                                    {plan.price.toLocaleString("vi-VN")}đ
-                                  </div>
-                                  <div className="text-sm text-white/80">
-                                    /tháng
-                                  </div>
-                                </div>
-                                <ul className="space-y-2 mb-6 text-sm text-white/70">
-                                  {features.length > 0 ? (
-                                    features.map((feature, fIndex) => (
-                                      <li
-                                        key={fIndex}
-                                        className="flex items-center gap-2"
-                                      >
-                                        <CheckCircle2
-                                          className={`h-4 w-4 shrink-0 ${
-                                            isPopular
-                                              ? "text-yellow-400"
-                                              : "text-emerald-400"
-                                          }`}
-                                        />
-                                        <span>{feature}</span>
-                                      </li>
-                                    ))
-                                  ) : (
-                                    <>
-                                      <li className="flex items-center gap-2">
-                                        <CheckCircle2
-                                          className={`h-4 w-4 shrink-0 ${
-                                            isPopular
-                                              ? "text-yellow-400"
-                                              : "text-emerald-400"
-                                          }`}
-                                        />
-                                        <span>
-                                          {plan.maxGardens
-                                            ? `Tối đa ${plan.maxGardens} vườn`
-                                            : "Không giới hạn vườn"}
-                                        </span>
-                                      </li>
-                                      <li className="flex items-center gap-2">
-                                        <CheckCircle2
-                                          className={`h-4 w-4 shrink-0 ${
-                                            isPopular
-                                              ? "text-yellow-400"
-                                              : "text-emerald-400"
-                                          }`}
-                                        />
-                                        <span>
-                                          {plan.maxTreesPerGarden
-                                            ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
-                                            : "Không giới hạn cây"}
-                                        </span>
-                                      </li>
-                                    </>
-                                  )}
-                                </ul>
-                                <Button
-                                  className={`w-full h-12 rounded-xl font-medium ${
-                                    isCurrentPlan
-                                      ? "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
-                                      : isLowerPlan
-                                      ? "bg-neutral-500/50 hover:bg-neutral-500/50 text-white/50 cursor-not-allowed"
-                                      : isPopular
-                                      ? "bg-yellow-500 hover:bg-yellow-600 text-white"
-                                      : "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
-                                  }`}
-                                  disabled={shouldDisable}
-                                  onClick={() =>
-                                    !shouldDisable && handleUpgradePlan(plan)
-                                  }
-                                >
-                                  {isCurrentPlan
-                                    ? "Gói hiện tại"
+                                className={`w-full h-12 rounded-xl font-medium ${
+                                  isCurrentPlan
+                                    ? "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
                                     : isLowerPlan
-                                    ? "Gói thấp hơn"
-                                    : "Nâng cấp ngay"}
-                                </Button>
-                              </div>
+                                    ? "bg-neutral-500/50 hover:bg-neutral-500/50 text-white/50 cursor-not-allowed"
+                                    : isPopular
+                                    ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                                    : "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                }`}
+                                disabled={shouldDisable}
+                                onClick={() =>
+                                  !shouldDisable && handleUpgradePlan(plan)
+                                }
+                              >
+                                {isCurrentPlan
+                                  ? "Gói hiện tại"
+                                  : isLowerPlan
+                                  ? "Gói thấp hơn"
+                                  : "Nâng cấp ngay"}
+                              </Button>
                             );
                           })}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
