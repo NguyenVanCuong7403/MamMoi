@@ -3024,7 +3024,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
               <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
                 <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
                   <div className="px-6 py-4 border-b flex items-center justify-between">
-                    <div className="text-lg font-semibold">
+                    <div className="text-lg font-semibold text-black">
                       Ghi chú thực tế & hoàn thành
                     </div>
                     <button
@@ -3037,7 +3037,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
 
                   <div className="p-6 space-y-3">
                     <div className="rounded-xl border p-3 text-sm">
-                      <div className="font-medium">
+                      <div className="font-medium text-black">
                         Xác nhận hoàn thành công việc
                       </div>
                       {completeConfirmDialog.task && (
@@ -3071,7 +3071,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                           completingMap[completeConfirmDialog.task?.scheduleId]
                         )}
                       >
-                        Huỷ
+                         <span className="text-black">Hủy</span>
                       </Button>
                       <Button
                         onClick={handleConfirmComplete}

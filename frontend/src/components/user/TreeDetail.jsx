@@ -2110,6 +2110,108 @@ function PlannedRow({
 // Bạn có thể tự chỉnh con số này (ví dụ 100, 150, 230, ...)
 const NOTE_PREVIEW_MAX = 230;
 
+/* =========================================================================
+   NoteCardTablet - Ghi chú card for tablet view (in left column)
+   ========================================================================= */
+function NoteCardTablet({ note, saveNote, readOnly, codeKey, meta }) {
+  const [editNote, setEditNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(note || "");
+  const rawNote = (note || "").trim();
+  const displayNote =
+    rawNote.length > NOTE_PREVIEW_MAX
+      ? rawNote.slice(0, NOTE_PREVIEW_MAX) + "…"
+      : rawNote;
+  const noteCardRef = useRef(null);
+
+  useEffect(() => setNoteDraft(note || ""), [note]);
+  useEffect(() => {
+    if (readOnly && editNote) setEditNote(false);
+  }, [readOnly, editNote]);
+
+  useEffect(() => {
+    if (!editNote || readOnly) return;
+
+    function handleClickOutside(e) {
+      if (!noteCardRef.current) return;
+      if (!noteCardRef.current.contains(e.target)) {
+        saveNote(noteDraft);
+        setEditNote(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [editNote, readOnly, noteDraft, saveNote]);
+
+  return (
+    <Card className="block md:block xl:hidden">
+      <CardHeader className="pb-2">
+        <CardTitle>Ghi chú</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div ref={noteCardRef}>
+          {!editNote ? (
+            <button
+              type="button"
+              disabled={readOnly}
+              onClick={() => {
+                if (readOnly) return;
+                setEditNote(true);
+                setNoteDraft(note || "");
+              }}
+              className={
+                "w-full text-left text-sm whitespace-pre-wrap break-words min-h-20 rounded-2xl border px-3 py-2 " +
+                (readOnly
+                  ? "border-neutral-200 bg-neutral-50 text-neutral-700 cursor-default"
+                  : "border-neutral-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/40 cursor-text transition-colors")
+              }
+            >
+              {rawNote ? (
+                displayNote
+              ) : (
+                <span className="text-neutral-500 italic">
+                  Bấm vào đây để thêm ghi chú cho cây này.
+                </span>
+              )}
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <Textarea
+                rows={6}
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                placeholder="Nhập ghi chú cho cây này (lưu theo mã cây)"
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditNote(false);
+                    setNoteDraft(note || "");
+                  }}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    saveNote(noteDraft.trim());
+                    setEditNote(false);
+                  }}
+                >
+                  Lưu
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function AsideCards({
   image,
   setImage,
@@ -2268,7 +2370,8 @@ function AsideCards({
     <>
       {/* Ghi chú */}
       {/* Ghi chú (click để sửa, auto-save khi click ra ngoài) */}
-      <div ref={noteCardRef}>
+      {/* Hidden on tablets (md), shown on desktop (xl) */}
+      <div ref={noteCardRef} className="hidden xl:block">
         <Card ref={noteCardRef}>
           <CardHeader className="pb-2">
             <CardTitle>Ghi chú</CardTitle>
@@ -2339,7 +2442,8 @@ function AsideCards({
       </div>
 
       {/* Chu kỳ sinh trưởng (timeline) — đặt ngay dưới Ghi chú */}
-      <Card>
+      {/* Hidden on tablets (md), shown on desktop (xl) */}
+      <Card className="hidden xl:block">
         <CardHeader className="flex items-center justify-between gap-3">
           <CardTitle>Chu kỳ sinh trưởng</CardTitle>
           {/* Điểm gắn nút bằng portal */}
@@ -5885,6 +5989,100 @@ export default function TreeDetail() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Chu kỳ sinh trưởng - Show on tablets (md) but hide on desktop (xl) where it's in sidebar */}
+            <Card className="block md:block xl:hidden">
+              <CardHeader className="flex items-center justify-between gap-3">
+                <CardTitle>Chu kỳ sinh trưởng</CardTitle>
+                {/* Điểm gắn nút bằng portal - use unique ID for tablet version */}
+                <div id="lc-controls-tablet" className="shrink-0" />
+              </CardHeader>
+
+              <CardContent>
+                <LifecycleWidget
+                  tree={baseTree}
+                  meta={meta}
+                  portalId="lc-controls-tablet"
+                  value={currentPhaseId}
+                  onChange={(payload) => {
+                    // payload: { phaseId, cycleCount, phase1Completed, stageId? }
+                    // Lifecycle API already handles the update, so we just sync local state
+                    setCurrentPhaseId(payload.phaseId);
+                    setCycleCount(payload.cycleCount);
+                    setPhase1Completed(payload.phase1Completed);
+                    if (typeof payload.lifecycleAutoEnabled === "boolean") {
+                      setLifecycleAutoEnabled(payload.lifecycleAutoEnabled);
+                    }
+                    if ("lifecycleAutoDisabledAt" in payload) {
+                      setLifecycleAutoDisabledAt(
+                        payload.lifecycleAutoDisabledAt || null
+                      );
+                    }
+
+                    // Update lifecycleFromAPI state with the response from API
+                    if (payload.stageId != null) {
+                      setLifecycleFromAPI((prev) => ({
+                        ...(prev || {}),
+                        phaseId: payload.phaseId,
+                        cycleCount: payload.cycleCount,
+                        phase1Completed: payload.phase1Completed,
+                        stageId: payload.stageId,
+                        lifecycleAutoEnabled:
+                          typeof payload.lifecycleAutoEnabled === "boolean"
+                            ? payload.lifecycleAutoEnabled
+                            : prev?.lifecycleAutoEnabled ?? lifecycleAutoEnabled,
+                        lifecycleAutoDisabledAt:
+                          payload.lifecycleAutoDisabledAt ??
+                          prev?.lifecycleAutoDisabledAt ??
+                          lifecycleAutoDisabledAt,
+                      }));
+
+                      // Update stageId in meta
+                      setMeta((prev) => ({
+                        ...prev,
+                        stageId: payload.stageId,
+                      }));
+                    } else {
+                      // Update lifecycleFromAPI even if stageId is not provided
+                      setLifecycleFromAPI((prev) => ({
+                        ...(prev || {}),
+                        phaseId: payload.phaseId,
+                        cycleCount: payload.cycleCount,
+                        phase1Completed: payload.phase1Completed,
+                        lifecycleAutoEnabled:
+                          typeof payload.lifecycleAutoEnabled === "boolean"
+                            ? payload.lifecycleAutoEnabled
+                            : prev?.lifecycleAutoEnabled ?? lifecycleAutoEnabled,
+                        lifecycleAutoDisabledAt:
+                          payload.lifecycleAutoDisabledAt ??
+                          prev?.lifecycleAutoDisabledAt ??
+                          lifecycleAutoDisabledAt,
+                      }));
+                    }
+                  }}
+                  cycleCount={cycleCount}
+                  phase1Completed={phase1Completed}
+                  disabled={meta.status === "stopped"}
+                  treeId={resolvedTreeId}
+                  treeOwnerId={resolvedTreeOwnerId}
+                  treeType={loai}
+                  treeVariety={giong}
+                  autoLifecycleEnabled={lifecycleAutoEnabled}
+                  autoLifecycleDisabledAt={lifecycleAutoDisabledAt}
+                  phaseTheme={stageTheme}
+                  phaseThemeAllowPartial={Boolean(stageTheme?.length)}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Ghi chú - Show on tablets (md) but hide on desktop (xl) where it's in sidebar */}
+            <NoteCardTablet
+              note={note}
+              saveNote={saveNote}
+              readOnly={isStopped}
+              codeKey={codeKey}
+              meta={meta}
+            />
 
             {/* Các công việc đã lên kế hoạch */}
             <Card>
