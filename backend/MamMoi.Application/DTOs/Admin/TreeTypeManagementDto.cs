@@ -15,9 +15,8 @@ public class CreateTreeTypeDto
     [StringLength(100)]
     public string TreeTypeName { get; set; } = null!;
 
-    [Required]
     [StringLength(150)]
-    public string ScientificName { get; set; } = null!;
+    public string? ScientificName { get; set; }
 
     [StringLength(500)]
     public string? Description { get; set; }

@@ -616,8 +616,8 @@ public class AdminController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating tree variety");
-            return StatusCode(500, new { success = false, message = "Internal server error" });
+            _logger.LogError(ex, "Error creating tree variety: {Message}\n{StackTrace}", ex.Message, ex.StackTrace);
+            return StatusCode(500, new { success = false, message = "Internal server error", details = ex.Message });
         }
     }
 

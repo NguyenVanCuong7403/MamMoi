@@ -993,6 +993,7 @@ export default function GardenManagement() {
 
   // ===== search + filter =====
   const [q, setQ] = useState("");
+  const [status, setStatus] = useState("all"); // all | active | stopped
   const [provinceFilter, setProvinceFilter] = useState("");
 
   // ===== phân trang =====
@@ -1001,7 +1002,7 @@ export default function GardenManagement() {
   // mỗi khi thay đổi bộ lọc / search → quay lại trang 1
   useEffect(() => {
     setPage(1);
-  }, [q, provinceFilter]);
+  }, [q, status, provinceFilter]);
 
   // ===== modal thêm / sửa =====
   const [openForm, setOpenForm] = useState(false);
@@ -1014,6 +1015,7 @@ export default function GardenManagement() {
   const filtered = useMemo(() => {
     const QQ = q.trim().toLowerCase();
     return gardens.filter((g) => {
+      // 1) Search text
       if (QQ) {
         const hit = [g.name, g.province, g.ward, g.address]
           .join(" ")
@@ -1021,15 +1023,31 @@ export default function GardenManagement() {
           .includes(QQ);
         if (!hit) return false;
       }
+      
+      // 2) Filter theo tỉnh/thành
       if (provinceFilter && g.province !== provinceFilter) return false;
+      
+      // 3) Filter theo trạng thái
+      if (status !== "all") {
+        const gardenStatus = g.status?.toLowerCase() || "active";
+        const isActive = gardenStatus === "active" || gardenStatus === "đang hoạt động";
+        if (status === "active" && !isActive) return false;
+        if (status === "stopped" && isActive) return false;
+      }
+      
       return true;
     });
-  }, [gardens, q, provinceFilter]);
+  }, [gardens, q, status, provinceFilter]);
 
   // ===== stats mini =====
   const stats = useMemo(() => {
     const total = gardens.length;
-    return { total };
+    const active = gardens.filter((g) => {
+      const status = g.status?.toLowerCase() || "active";
+      return status === "active" || status === "đang hoạt động";
+    }).length;
+    const stopped = total - active;
+    return { total, active, stopped };
   }, [gardens]);
 
   // ===== phân trang từ filtered =====
@@ -1296,12 +1314,13 @@ export default function GardenManagement() {
                   ))}
                 </select>
 
-                {q || provinceFilter ? (
+                {(q || status !== "all" || provinceFilter) ? (
                   <Button
                     variant="outline"
                     className="h-12 rounded-full text-[clamp(12px,1.5vw,14px)] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700 mm-text-wrap-safe break-words"
                     onClick={() => {
                       setQ("");
+                      setStatus("all");
                       setProvinceFilter("");
                     }}
                   >
@@ -1340,6 +1359,8 @@ export default function GardenManagement() {
           <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 items-stretch">
             {paged.map((g) => {
               const idx = gardens.findIndex((x) => x.id === g.id);
+              const status = g.status?.toLowerCase() || "active";
+              const isActive = status === "active" || status === "đang hoạt động";
 
               return (
                 <Card

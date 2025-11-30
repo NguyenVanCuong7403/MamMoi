@@ -2396,6 +2396,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     status: "all",
     type: "all",
   });
+  const [showCompleted, setShowCompleted] = useState(false); // Tab để hiển thị cây đã hoàn thành
   const [taskLoading, setTaskLoading] = useState(false);
   const [taskError, setTaskError] = useState(null);
   const [completingMap, setCompletingMap] = useState({});
@@ -2501,6 +2502,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
 
   const handleResetFilters = () => {
     setTaskFilters({ search: "", status: "all", type: "all" });
+    setShowCompleted(false);
   };
 
   const handleOpenCompleteDialog = (task) => {
@@ -2547,6 +2549,11 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
       );
       handleCloseCompleteDialog();
       setTaskError(null); // Clear any previous errors
+      
+      // Tự động refresh để cập nhật thứ tự sắp xếp
+      setTimeout(() => {
+        fetchGardenTasks();
+      }, 500);
     } catch (err) {
       console.error("Failed to mark task complete", err);
       setTaskError(err?.message || "Không thể hoàn thành công việc.");
@@ -2582,11 +2589,24 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
       grouped[key].tasks.push(task);
     });
     
-    // Sort tasks within each tree by scheduled date
+    // Sort tasks within each tree by scheduled date (gần hạn nhất lên đầu)
     Object.keys(grouped).forEach((key) => {
       grouped[key].tasks.sort((a, b) => {
-        const dateA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : 0;
-        const dateB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : 0;
+        // Completed tasks xuống cuối
+        const aCompleted = normalizeKey(a.status) === "completed";
+        const bCompleted = normalizeKey(b.status) === "completed";
+        if (aCompleted && !bCompleted) return 1;
+        if (!aCompleted && bCompleted) return -1;
+        
+        // Overdue tasks lên đầu
+        const aOverdue = isTaskOverdue(a.scheduledDate, a.status);
+        const bOverdue = isTaskOverdue(b.scheduledDate, b.status);
+        if (aOverdue && !bOverdue) return -1;
+        if (!aOverdue && bOverdue) return 1;
+        
+        // Còn lại sắp xếp theo ngày (gần hạn nhất lên đầu)
+        const dateA = a.scheduledDate ? new Date(a.scheduledDate).getTime() : Infinity;
+        const dateB = b.scheduledDate ? new Date(b.scheduledDate).getTime() : Infinity;
         return dateA - dateB;
       });
     });
@@ -2595,29 +2615,131 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
   }, [tasks]);
 
   const treeKeys = useMemo(() => {
-    return Object.keys(tasksByTree).sort((a, b) => {
-      const nameA = tasksByTree[a].treeName.toLowerCase();
-      const nameB = tasksByTree[b].treeName.toLowerCase();
-      return nameA.localeCompare(nameB);
-    });
-  }, [tasksByTree]);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const nowTime = now.getTime();
+    
+    return Object.keys(tasksByTree)
+      .filter((key) => {
+        const treeGroup = tasksByTree[key];
+        // Kiểm tra xem cây có toàn bộ công việc hoàn thành không
+        const allCompleted = treeGroup.tasks.every(
+          (task) => normalizeKey(task.status) === "completed"
+        );
+        
+        // Nếu showCompleted = false, ẩn cây đã hoàn thành
+        if (!showCompleted && allCompleted) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const treeA = tasksByTree[a];
+        const treeB = tasksByTree[b];
+        
+        // Kiểm tra cây có việc quá hạn
+        const aHasOverdue = treeA.tasks.some(
+          (task) => isTaskOverdue(task.scheduledDate, task.status)
+        );
+        const bHasOverdue = treeB.tasks.some(
+          (task) => isTaskOverdue(task.scheduledDate, task.status)
+        );
+        
+        // Cây có việc quá hạn lên đầu
+        if (aHasOverdue && !bHasOverdue) return -1;
+        if (!aHasOverdue && bHasOverdue) return 1;
+        
+        // Kiểm tra cây có toàn bộ công việc hoàn thành
+        const aAllCompleted = treeA.tasks.every(
+          (task) => normalizeKey(task.status) === "completed"
+        );
+        const bAllCompleted = treeB.tasks.every(
+          (task) => normalizeKey(task.status) === "completed"
+        );
+        
+        // Cây đã hoàn thành xuống cuối
+        if (aAllCompleted && !bAllCompleted) return 1;
+        if (!aAllCompleted && bAllCompleted) return -1;
+        
+        // Tìm việc gần hạn nhất của mỗi cây (chưa hoàn thành)
+        const getNearestDueTime = (tree) => {
+          const activeTasks = tree.tasks.filter(
+            (task) => normalizeKey(task.status) !== "completed"
+          );
+          if (activeTasks.length === 0) return Infinity;
+          
+          const times = activeTasks
+            .map((task) => {
+              if (!task.scheduledDate) return Infinity;
+              try {
+                const date = new Date(task.scheduledDate);
+                date.setHours(0, 0, 0, 0);
+                return date.getTime();
+              } catch {
+                return Infinity;
+              }
+            })
+            .filter((t) => t !== Infinity);
+          
+          return times.length > 0 ? Math.min(...times) : Infinity;
+        };
+        
+        const aNearest = getNearestDueTime(treeA);
+        const bNearest = getNearestDueTime(treeB);
+        
+        // Cây có việc gần hạn nhất lên đầu
+        if (aNearest < bNearest) return -1;
+        if (aNearest > bNearest) return 1;
+        
+        // Nếu cùng hạn, sắp xếp theo tên
+        const nameA = treeA.treeName.toLowerCase();
+        const nameB = treeB.treeName.toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+  }, [tasksByTree, showCompleted]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-3xl lg:max-w-4xl overflow-y-auto bg-[#f7fbf4]"
+        className="w-full sm:max-w-3xl lg:max-w-4xl overflow-y-auto"
+        style={{
+          background: PALETTE.bg,
+          color: PALETTE.ivory,
+        }}
       >
         <SheetHeader>
-          <SheetTitle>Quản lý công việc vườn</SheetTitle>
-          <SheetDescription>
+          <SheetTitle className="text-white">Quản lý công việc vườn</SheetTitle>
+          <SheetDescription className="text-white/80">
             {garden?.name
               ? `Tổng hợp công việc của ${garden.name}`
               : "Theo dõi tiến độ chăm sóc cây trong vườn"}
             .<br />
-            <span className="text-foreground/80">{locationText}</span>
+            <span className="text-white/70">{locationText}</span>
           </SheetDescription>
         </SheetHeader>
+        
+        {/* Tab để hiển thị/ẩn cây đã hoàn thành */}
+        <div className="mt-4 flex gap-2 border-b border-white/20">
+          <button
+            onClick={() => setShowCompleted(false)}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              !showCompleted
+                ? "text-white border-b-2 border-emerald-400"
+                : "text-white/60 hover:text-white/80"
+            }`}
+          >
+            Đang thực hiện
+          </button>
+          <button
+            onClick={() => setShowCompleted(true)}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              showCompleted
+                ? "text-white border-b-2 border-emerald-400"
+                : "text-white/60 hover:text-white/80"
+            }`}
+          >
+            Đã hoàn thành
+          </button>
+        </div>
 
         {!numericGardenId && (
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -2629,19 +2751,19 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
           <div className="mt-6 space-y-5">
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
                 <Input
                   value={taskFilters.search}
                   onChange={(e) => handleFilterChange("search", e.target.value)}
                   placeholder="Tìm theo tên công việc, cây hoặc mô tả..."
-                  className="pl-9 bg-white"
+                  className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20"
                 />
               </div>
               <Select
                 value={taskFilters.status}
                 onValueChange={(value) => handleFilterChange("status", value)}
               >
-                <SelectTrigger className="w-[180px] bg-white">
+                <SelectTrigger className="w-[180px] bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
@@ -2656,7 +2778,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                 value={taskFilters.type}
                 onValueChange={(value) => handleFilterChange("type", value)}
               >
-                <SelectTrigger className="w-[200px] bg-white">
+                <SelectTrigger className="w-[200px] bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Quy trình" />
                 </SelectTrigger>
                 <SelectContent>
@@ -2669,14 +2791,14 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
               </Select>
               <Button
                 variant="ghost"
-                className="text-sm text-neutral-600 hover:text-rose-600"
+                className="text-sm text-white/80 hover:text-white hover:bg-white/10"
                 onClick={handleResetFilters}
               >
                 Xóa lọc
               </Button>
               <Button
                 variant="outline"
-                className="gap-2"
+                className="gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
                 onClick={handleManualRefresh}
                 disabled={taskLoading}
               >
@@ -2700,12 +2822,12 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
               ].map((stat, idx) => (
                 <div
                   key={idx}
-                  className="rounded-2xl border border-emerald-100 bg-white px-3 py-3 text-sm text-neutral-600"
+                  className="rounded-2xl border border-white/20 bg-white/10 px-3 py-3 text-sm text-white/90"
                 >
-                  <div className="text-xs uppercase tracking-wide text-neutral-400">
+                  <div className="text-xs uppercase tracking-wide text-white/60">
                     {stat.label}
                   </div>
-                  <div className="text-2xl font-semibold text-emerald-700">
+                  <div className="text-2xl font-semibold text-white">
                     {stat.value}
                   </div>
                 </div>
@@ -2724,14 +2846,14 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                   {Array.from({ length: 3 }).map((_, idx) => (
                     <div
                       key={idx}
-                      className="h-[140px] rounded-2xl bg-neutral-200/40 animate-pulse"
+                      className="h-[140px] rounded-2xl bg-white/10 animate-pulse"
                     />
                   ))}
                 </div>
               )}
 
               {!taskLoading && tasks.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-neutral-200 bg-white px-6 py-10 text-center text-sm text-neutral-500">
+                <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 px-6 py-10 text-center text-sm text-white/70">
                   Không có công việc nào phù hợp với bộ lọc hiện tại.
                 </div>
               )}
@@ -2744,26 +2866,61 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                   return (
                     <div key={treeKey} className="space-y-3">
                       {/* Tree Header */}
-                      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl px-4 py-3 shadow-sm">
-                        <div className="flex items-center gap-2">
-                          <Sprout className="h-5 w-5 text-emerald-600" />
-                          <h3 className="text-lg font-semibold text-emerald-900">
-                            {treeGroup.treeName}
-                          </h3>
-                          <Badge
-                            variant="secondary"
-                            className="ml-auto bg-emerald-100 text-emerald-700 border-emerald-200"
-                          >
-                            {treeGroup.tasks.length}{" "}
-                            {treeGroup.tasks.length === 1
-                              ? "công việc"
-                              : "công việc"}
-                          </Badge>
-                        </div>
-                      </div>
+                      {(() => {
+                        const hasOverdue = treeGroup.tasks.some(
+                          (task) => isTaskOverdue(task.scheduledDate, task.status)
+                        );
+                        const allCompleted = treeGroup.tasks.every(
+                          (task) => normalizeKey(task.status) === "completed"
+                        );
+                        
+                        return (
+                          <div className={`bg-gradient-to-r ${
+                            hasOverdue
+                              ? "from-rose-500/20 to-rose-600/20 border-rose-400/40"
+                              : allCompleted
+                              ? "from-neutral-500/20 to-neutral-600/20 border-neutral-400/40"
+                              : "from-emerald-500/20 to-teal-500/20 border-emerald-400/40"
+                          } border rounded-xl px-4 py-3 shadow-sm`}>
+                            <div className="flex items-center gap-2">
+                              <Sprout className={`h-5 w-5 ${
+                                hasOverdue
+                                  ? "text-rose-400"
+                                  : allCompleted
+                                  ? "text-neutral-400"
+                                  : "text-emerald-400"
+                              }`} />
+                              <h3 className={`text-lg font-semibold ${
+                                hasOverdue
+                                  ? "text-rose-200"
+                                  : allCompleted
+                                  ? "text-neutral-300"
+                                  : "text-emerald-200"
+                              }`}>
+                                {treeGroup.treeName}
+                              </h3>
+                              <Badge
+                                variant="secondary"
+                                className={`ml-auto ${
+                                  hasOverdue
+                                    ? "bg-rose-500/30 text-rose-200 border-rose-400/40"
+                                    : allCompleted
+                                    ? "bg-neutral-500/30 text-neutral-200 border-neutral-400/40"
+                                    : "bg-emerald-500/30 text-emerald-200 border-emerald-400/40"
+                                } border`}
+                              >
+                                {treeGroup.tasks.length}{" "}
+                                {treeGroup.tasks.length === 1
+                                  ? "công việc"
+                                  : "công việc"}
+                              </Badge>
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {/* Tasks for this tree */}
-                      <div className="space-y-3 pl-4 border-l-2 border-emerald-100">
+                      <div className="space-y-3 pl-4 border-l-2 border-white/20">
                         {treeGroup.tasks.map((task) => {
                           const overdue = isTaskOverdue(
                             task.scheduledDate,
@@ -2778,14 +2935,20 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                           return (
                             <div
                               key={task.scheduleId}
-                              className="rounded-2xl border border-emerald-100 bg-white px-4 py-4 shadow-sm space-y-3"
+                              className={`rounded-2xl border px-4 py-4 shadow-sm space-y-3 ${
+                                overdue
+                                  ? "border-rose-400/40 bg-rose-500/10"
+                                  : normalizeKey(task.status) === "completed"
+                                  ? "border-neutral-400/40 bg-neutral-500/10"
+                                  : "border-white/20 bg-white/10"
+                              }`}
                             >
                               <div className="flex items-start justify-between gap-3">
                                 <div>
-                                  <div className="text-base font-semibold text-slate-900">
+                                  <div className="text-base font-semibold text-white">
                                     {task.taskName}
                                   </div>
-                                  <div className="text-xs text-neutral-500">
+                                  <div className="text-xs text-white/60">
                                     #{task.scheduleId}
                                   </div>
                                 </div>
@@ -2795,22 +2958,22 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                               <div className="flex flex-wrap gap-2 text-xs">
                                 <Badge
                                   variant="secondary"
-                                  className="gap-1 bg-emerald-50 text-emerald-700"
+                                  className="gap-1 bg-emerald-500/30 text-emerald-200 border-emerald-400/40"
                                 >
                                   {taskTypeLabel(task.taskType)}
                                 </Badge>
                                 <Badge
                                   variant="outline"
-                                  className={`gap-1 ${priorityMeta.className}`}
+                                  className={`gap-1 border-white/20 text-white/80 ${priorityMeta.className}`}
                                 >
                                   Ưu tiên: {priorityMeta.label}
                                 </Badge>
                                 <Badge
                                   variant="outline"
-                                  className={`gap-1 border-neutral-200 text-neutral-600 ${
+                                  className={`gap-1 ${
                                     overdue
-                                      ? "border-rose-200 text-rose-600 bg-rose-50"
-                                      : ""
+                                      ? "border-rose-400/60 text-rose-200 bg-rose-500/20"
+                                      : "border-white/20 text-white/80"
                                   }`}
                                 >
                                   <Calendar className="h-3.5 w-3.5" />
@@ -2820,15 +2983,15 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                               </div>
 
                               {task.description && (
-                                <p className="text-sm text-neutral-600">
+                                <p className="text-sm text-white/80">
                                   {task.description}
                                 </p>
                               )}
 
-                              <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-neutral-200 pt-3">
+                              <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-white/20 pt-3">
                                 <Button
                                   size="sm"
-                                  className="gap-2"
+                                  className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
                                   onClick={() => handleOpenCompleteDialog(task)}
                                   disabled={
                                     busyComplete || task.status === "Completed"
@@ -2858,7 +3021,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
 
             {/* Completion Confirmation Dialog */}
             {completeConfirmDialog.open && (
-              <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+              <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
                 <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
                   <div className="px-6 py-4 border-b flex items-center justify-between">
                     <div className="text-lg font-semibold">
@@ -2932,13 +3095,14 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
 
             {taskTotal > TASK_PAGE_SIZE && (
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="text-sm text-neutral-500">
+                <div className="text-sm text-white/70">
                   Trang {taskPage}/{totalPages} · {taskTotal} công việc
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                     disabled={taskPage === 1}
                     onClick={() => setTaskPage((p) => Math.max(1, p - 1))}
                   >
@@ -2948,6 +3112,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                     disabled={taskPage === totalPages}
                     onClick={() =>
                       setTaskPage((p) => Math.min(totalPages, p + 1))

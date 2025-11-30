@@ -120,4 +120,33 @@ export default class UserRepository {
   }
 
   // #endregion
+
+  // #region Profile OTP Endpoints
+
+  /**
+   * Send OTP for profile update (email/phone change)
+   * @param {number} userId
+   * @param {Object} data - SendProfileOtpRequestDto
+   * @param {string} data.updateType - "email" or "phone"
+   * @param {string} [data.newEmail] - New email (required if updateType is "email")
+   * @param {string} [data.newPhone] - New phone (required if updateType is "phone")
+   */
+  static async sendProfileOtp(userId, data) {
+    return ApiClient.post(`/api/users/${userId}/profile/otp/send`, data);
+  }
+
+  /**
+   * Verify OTP for profile update
+   * @param {Object} data - VerifyProfileOtpRequestDto
+   * @param {number} data.userId
+   * @param {string} data.updateType - "email" or "phone"
+   * @param {string} data.otpCode - OTP code (6 digits)
+   * @param {string} [data.newEmail] - New email (required if updateType is "email")
+   * @param {string} [data.newPhone] - New phone (required if updateType is "phone")
+   */
+  static async verifyProfileOtp(data) {
+    return ApiClient.post(`/api/users/profile/otp/verify`, data);
+  }
+
+  // #endregion
 }

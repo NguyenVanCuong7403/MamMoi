@@ -6,7 +6,7 @@ namespace MamMoi.Application.DTOs.Notification;
 public class BroadcastNotificationDto
 {
     public string Title { get; set; } = null!;
-    public string? Message { get; set; }
+    public string Message { get; set; } = null!;
     public string? NotificationType { get; set; }
     public string Priority { get; set; } = "Normal";
     public string? Category { get; set; }

@@ -10,6 +10,7 @@ import {
   Loader2,
   Calendar,
   FileDown,
+  X,
 } from "lucide-react";
 import { LivingBackground } from "@/components/background";
 import AdminLayout from "../layout/AdminLayout";
@@ -47,6 +48,12 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import AdminRevenueRepository from "@/API/repositories/AdminRevenueRepository";
 import {
   Area,
@@ -170,6 +177,16 @@ export default function RevenueManagement() {
 
   const [actionNotice, setActionNotice] = useState(null);
 
+  // Payment history dialog states
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] =
+    useState(false);
+  const [userPaymentHistory, setUserPaymentHistory] = useState([]);
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
+  const [paymentHistoryPage, setPaymentHistoryPage] = useState(1);
+  const [paymentHistoryTotalPages, setPaymentHistoryTotalPages] = useState(1);
+  const [paymentHistoryTotalCount, setPaymentHistoryTotalCount] = useState(0);
+
   // Fetch revenue statistics
   const fetchStatistics = async () => {
     try {
@@ -249,6 +266,65 @@ export default function RevenueManagement() {
   useEffect(() => {
     fetchPayments();
   }, [page, startDate, endDate, userIdFilter, statusFilter]);
+
+  // Fetch payment history for selected user
+  const fetchUserPaymentHistory = async (
+    userId,
+    userName,
+    userEmail,
+    pageNum = 1
+  ) => {
+    try {
+      setPaymentHistoryLoading(true);
+      const response = await AdminRevenueRepository.getPayments(
+        pageNum,
+        PAGE_SIZE,
+        null,
+        null,
+        userId,
+        null
+      );
+
+      if (response.success) {
+        setUserPaymentHistory(response.data || []);
+        setPaymentHistoryTotalCount(response.pagination?.totalCount || 0);
+        setPaymentHistoryTotalPages(response.pagination?.totalPages || 1);
+        setSelectedUser({ userId, userName, userEmail });
+        setIsPaymentHistoryDialogOpen(true);
+      }
+    } catch (err) {
+      console.error("Error fetching user payment history:", err);
+      setActionNotice({
+        message: "Có lỗi xảy ra khi tải lịch sử thanh toán",
+        tone: "error",
+      });
+    } finally {
+      setPaymentHistoryLoading(false);
+    }
+  };
+
+  // Handle click on user name
+  const handleUserNameClick = (payment) => {
+    fetchUserPaymentHistory(
+      payment.userId,
+      payment.userName,
+      payment.userEmail,
+      1
+    );
+  };
+
+  // Handle payment history dialog page change
+  const handlePaymentHistoryPageChange = (newPage) => {
+    if (selectedUser) {
+      setPaymentHistoryPage(newPage);
+      fetchUserPaymentHistory(
+        selectedUser.userId,
+        selectedUser.userName,
+        selectedUser.userEmail,
+        newPage
+      );
+    }
+  };
 
   useEffect(() => {
     if (!actionNotice) return;
@@ -626,9 +702,14 @@ export default function RevenueManagement() {
                                 </TableCell>
                                 <TableCell>
                                   <div>
-                                    <p className="font-medium text-slate-900">
+                                    <button
+                                      onClick={() =>
+                                        handleUserNameClick(payment)
+                                      }
+                                      className="font-medium text-slate-900 hover:text-emerald-600 hover:underline cursor-pointer transition-colors text-left"
+                                    >
                                       {payment.userName}
-                                    </p>
+                                    </button>
                                     <p className="text-xs text-slate-500">
                                       {payment.userEmail}
                                     </p>
@@ -734,6 +815,185 @@ export default function RevenueManagement() {
           </div>
         </AdminLayout>
       </div>
+
+      {/* Payment History Dialog */}
+      <Dialog
+        open={isPaymentHistoryDialogOpen}
+        onOpenChange={(open) => {
+          setIsPaymentHistoryDialogOpen(open);
+          if (!open) {
+            setSelectedUser(null);
+            setUserPaymentHistory([]);
+            setPaymentHistoryPage(1);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-semibold text-slate-900">
+              Lịch sử thanh toán
+              {selectedUser && (
+                <div className="mt-2 text-base font-normal text-slate-600">
+                  <p className="font-medium">{selectedUser.userName}</p>
+                  <p className="text-sm text-slate-500">
+                    {selectedUser.userEmail}
+                  </p>
+                </div>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-4">
+            {paymentHistoryLoading ? (
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                <span className="ml-3 text-slate-600">
+                  Đang tải lịch sử thanh toán...
+                </span>
+              </div>
+            ) : userPaymentHistory.length === 0 ? (
+              <div className="py-8 text-center text-slate-500">
+                Không có giao dịch nào.
+              </div>
+            ) : (
+              <>
+                <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
+                      <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
+                        <TableHead>ID</TableHead>
+                        <TableHead>Gói dịch vụ</TableHead>
+                        <TableHead>Số tiền</TableHead>
+                        <TableHead>Phương thức</TableHead>
+                        <TableHead>Ngày thanh toán</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {userPaymentHistory.map((payment) => (
+                        <TableRow
+                          key={payment.paymentId}
+                          className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
+                        >
+                          <TableCell className="font-semibold text-slate-900">
+                            #{payment.paymentId}
+                          </TableCell>
+                          <TableCell className="text-slate-800">
+                            {payment.planName}
+                          </TableCell>
+                          <TableCell className="font-semibold text-emerald-700">
+                            {payment.amount.toLocaleString("vi-VN", {
+                              style: "currency",
+                              currency: payment.currency || "VND",
+                            })}
+                          </TableCell>
+                          <TableCell className="text-slate-600">
+                            {payment.paymentMethod || "N/A"}
+                          </TableCell>
+                          <TableCell className="text-slate-500">
+                            {new Date(payment.paymentDate).toLocaleDateString(
+                              "vi-VN",
+                              {
+                                year: "numeric",
+                                month: "2-digit",
+                                day: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={cn(
+                                "border-0",
+                                payment.transactionStatus === "Success"
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : payment.transactionStatus === "Failed"
+                                  ? "bg-rose-50 text-rose-700"
+                                  : "bg-amber-50 text-amber-700"
+                              )}
+                            >
+                              {payment.transactionStatus === "Success"
+                                ? "Thành công"
+                                : payment.transactionStatus === "Failed"
+                                ? "Thất bại"
+                                : "Đang xử lý"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination */}
+                {paymentHistoryTotalPages > 1 && (
+                  <Pagination className="mt-6">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePaymentHistoryPageChange(
+                              Math.max(1, paymentHistoryPage - 1)
+                            );
+                          }}
+                          className={
+                            paymentHistoryPage === 1
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }
+                        />
+                      </PaginationItem>
+                      {Array.from(
+                        { length: paymentHistoryTotalPages },
+                        (_, i) => i + 1
+                      ).map((p) => (
+                        <PaginationItem key={p}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePaymentHistoryPageChange(p);
+                            }}
+                            isActive={paymentHistoryPage === p}
+                          >
+                            {p}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePaymentHistoryPageChange(
+                              Math.min(
+                                paymentHistoryTotalPages,
+                                paymentHistoryPage + 1
+                              )
+                            );
+                          }}
+                          className={
+                            paymentHistoryPage === paymentHistoryTotalPages
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+
+                <div className="mt-4 text-sm text-slate-500 text-center">
+                  Tổng cộng: {paymentHistoryTotalCount} giao dịch
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

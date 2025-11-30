@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import AddressPicker from "@/components/AddressPicker";
 
-
 import {
   Shield,
   TreePine,
@@ -54,7 +53,8 @@ import { useNavigate } from "react-router-dom";
    Theme & helpers
 ========================================================= */
 const BG = "#1F302F";
-const CONTAINER = "mm-fluid-shell mx-auto w-full px-6 sm:px-8 lg:px-12 2xl:px-16";
+const CONTAINER =
+  "mm-fluid-shell mx-auto w-full px-6 sm:px-8 lg:px-12 2xl:px-16";
 
 const LS_PROFILE = "mm_user_profile_v3";
 const LS_GARDENS = "mm_user_gardens_v3";
@@ -62,9 +62,12 @@ const LS_STAFFS = "mm_user_staffs_v3";
 const LS_TREES = "mm_user_trees_v1";
 const LS_DEMO_PW = "mm_demo_auth_pw";
 
-const INPUT_OK = "h-14 w-full rounded-xl bg-white border border-neutral-300 placeholder:text-neutral-400 text-base focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500";
-const INPUT_ERR = "h-14 w-full rounded-xl bg-white border border-rose-500 placeholder:text-neutral-400 text-base focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500";
-const SELECT = "h-14 w-full rounded-2xl border bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500";
+const INPUT_OK =
+  "h-14 w-full rounded-xl bg-white border border-neutral-300 placeholder:text-neutral-400 text-base focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500";
+const INPUT_ERR =
+  "h-14 w-full rounded-xl bg-white border border-rose-500 placeholder:text-neutral-400 text-base focus:ring-2 focus:ring-rose-500/40 focus:border-rose-500";
+const SELECT =
+  "h-14 w-full rounded-2xl border bg-white px-3 text-base focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500";
 const BTN = {
   base: "rounded-2xl h-12 px-5 text-base",
   primary: "bg-emerald-600 hover:bg-emerald-700 text-white",
@@ -72,13 +75,12 @@ const BTN = {
     "bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100",
 };
 
-
 /* ===== (THÊM MỚI, đặt ngay dưới const BTN) ===== */
 const COMPACT = {
-  select: "h-11 rounded-full border bg-white px-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500",
+  select:
+    "h-11 rounded-full border bg-white px-3 text-[15px] focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500",
   btn: "h-11 rounded-full px-5",
 };
-
 
 /* ===== trang trí nhẹ ===== */
 function PageRails() {
@@ -303,7 +305,7 @@ function ImagePicker({ value, onChange }) {
         className="hidden"
         onChange={handleFile}
       />
-      <div 
+      <div
         className="rounded-2xl overflow-hidden border cursor-pointer hover:opacity-90 transition-opacity"
         onClick={handleImageClick}
       >
@@ -377,7 +379,12 @@ function Segmented({ value, onChange, options = [] }) {
   );
 }
 
-function SearchInput({ value, onChange, placeholder = "Tìm kiếm...", className = "" }) {
+function SearchInput({
+  value,
+  onChange,
+  placeholder = "Tìm kiếm...",
+  className = "",
+}) {
   return (
     <div className="relative">
       <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
@@ -409,9 +416,8 @@ function SearchInput({ value, onChange, placeholder = "Tìm kiếm...", classNam
 
 /* ===== Avatar Sync ===== */
 function AvatarSync({ src, size = 80, title = "" }) {
-
   // Kiểm tra xem src có phải là URL hợp lệ không (không rỗng và có ít nhất một ký tự)
-  const hasImg = src && typeof src === 'string' && src.trim().length > 0;
+  const hasImg = src && typeof src === "string" && src.trim().length > 0;
   const color = hasImg ? "bg-emerald-500" : "bg-amber-500";
   const badgeTitle = hasImg
     ? "Ảnh đã sẵn sàng đồng bộ"
@@ -424,7 +430,11 @@ function AvatarSync({ src, size = 80, title = "" }) {
       aria-label="Ảnh đại diện người dùng"
     >
       {hasImg ? (
-        <SafeImage src={src} alt="avatar" className="w-full h-full object-cover" />
+        <SafeImage
+          src={src}
+          alt="avatar"
+          className="w-full h-full object-cover"
+        />
       ) : (
         <UserIcon className="h-7 w-7" />
       )}
@@ -432,11 +442,7 @@ function AvatarSync({ src, size = 80, title = "" }) {
         className={`absolute -bottom-0.5 -right-0.5 grid place-items-center h-5 w-5 rounded-full ${color} text-white ring-2 ring-white`}
         title={badgeTitle}
       >
-        {hasImg ? (
-          <Check className="h-3 w-3" />
-        ) : (
-          <Clock className="h-3 w-3" />
-        )}
+        {hasImg ? <Check className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
       </div>
     </div>
   );
@@ -451,11 +457,11 @@ function AvatarPicker({ src, size = 80, title = "", onChange, onFileSelect }) {
   async function handleFile(e) {
     const f = e.target.files?.[0];
     if (!f) return;
-    
+
     // Show preview immediately
     const objectUrl = URL.createObjectURL(f);
     if (onChange) onChange(objectUrl);
-    
+
     // If onFileSelect callback is provided, call it with the file
     if (onFileSelect) {
       setUploading(true);
@@ -484,15 +490,29 @@ function AvatarPicker({ src, size = 80, title = "", onChange, onFileSelect }) {
       />
       <div
         className={`relative rounded-full overflow-hidden ring-2 ring-white bg-neutral-100 grid place-items-center text-neutral-500 ${
-          onChange && !uploading ? "cursor-pointer transition-all hover:ring-4 hover:ring-emerald-300" : ""
+          onChange && !uploading
+            ? "cursor-pointer transition-all hover:ring-4 hover:ring-emerald-300"
+            : ""
         } ${uploading ? "opacity-70" : ""}`}
         style={{ width: size, height: size }}
-        title={uploading ? "Đang tải lên..." : (onChange ? (hasImg ? "Click để đổi ảnh" : "Click để chọn ảnh") : (title || "Ảnh đại diện"))}
+        title={
+          uploading
+            ? "Đang tải lên..."
+            : onChange
+            ? hasImg
+              ? "Click để đổi ảnh"
+              : "Click để chọn ảnh"
+            : title || "Ảnh đại diện"
+        }
         aria-label="Ảnh đại diện người dùng"
         onClick={handleAvatarClick}
       >
         {hasImg ? (
-          <SafeImage src={src} alt="avatar" className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+          <SafeImage
+            src={src}
+            alt="avatar"
+            className="w-full h-full object-cover transition-transform group-hover:scale-110"
+          />
         ) : (
           <UserIcon className="h-7 w-7" />
         )}
@@ -500,10 +520,12 @@ function AvatarPicker({ src, size = 80, title = "", onChange, onFileSelect }) {
           <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : onChange && (
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all rounded-full flex items-center justify-center">
-            <Upload className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
-          </div>
+        ) : (
+          onChange && (
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all rounded-full flex items-center justify-center">
+              <Upload className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-lg" />
+            </div>
+          )
         )}
       </div>
     </div>
@@ -522,7 +544,11 @@ function SquareThumb({ src, size = 72, fallback = "garden", title = "" }) {
       aria-label="thumbnail"
     >
       {src ? (
-        <SafeImage src={src} alt={title || "thumb"} className="w-full h-full object-cover" />
+        <SafeImage
+          src={src}
+          alt={title || "thumb"}
+          className="w-full h-full object-cover"
+        />
       ) : (
         <FallbackIcon className="h-5 w-5" />
       )}
@@ -554,7 +580,10 @@ function ConfirmModal({ open, title, children, onClose, onConfirm }) {
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="text-lg font-semibold">{title}</div>
-          <button className="rounded p-1 hover:bg-neutral-100" onClick={onClose}>
+          <button
+            className="rounded p-1 hover:bg-neutral-100"
+            onClick={onClose}
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -606,7 +635,8 @@ function PasswordModal({
           const cs =
             "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@$!%*?&";
           let s = "";
-          for (let i = 0; i < 10; i++) s += cs[Math.floor(Math.random() * cs.length)];
+          for (let i = 0; i < 10; i++)
+            s += cs[Math.floor(Math.random() * cs.length)];
           return s;
         };
 
@@ -652,7 +682,9 @@ function PasswordModal({
     if (!open) return;
     // reset khi mở modal
     setTab(initialTab);
-    setCp(""); setNp(""); setCf("");
+    setCp("");
+    setNp("");
+    setCf("");
     setTC({ cp: false, np: false, cf: false });
     setEC({ cp: "", np: "", cf: "" });
     setIsVerifying(false);
@@ -660,10 +692,15 @@ function PasswordModal({
     setStep("otp");
     setFpEmail(defaultEmail || "");
     setEmailErr("");
-    setOtp(""); setOtpCode(""); setOtpErr("");
-    setSentAt(null); setCooldown(0);
-    setNp2(""); setCf2("");
-    setTS({ np: false, cf: false }); setES({ np: "", cf: "" });
+    setOtp("");
+    setOtpCode("");
+    setOtpErr("");
+    setSentAt(null);
+    setCooldown(0);
+    setNp2("");
+    setCf2("");
+    setTS({ np: false, cf: false });
+    setES({ np: "", cf: "" });
   }, [open, defaultEmail, initialTab]);
 
   React.useEffect(() => {
@@ -684,7 +721,6 @@ function PasswordModal({
       setOtpErr("Mã OTP không chính xác.");
     }
   }, [open, tab, step, otp, otpCode, np2]);
-
 
   /* --------------- actions --------------- */
   const validateChange = () => {
@@ -739,12 +775,17 @@ function PasswordModal({
       });
 
       if (response.success) {
-    onChanged?.(np);
-    onClose?.();
+        onChanged?.(np);
+        onClose?.();
       } else {
         // Nếu có lỗi về mật khẩu hiện tại không đúng
         const errorMessage = response.message || "";
-        if (errorMessage.includes("không đúng") || errorMessage.includes("incorrect") || errorMessage.includes("Password hiện tại") || errorMessage.includes("Current password")) {
+        if (
+          errorMessage.includes("không đúng") ||
+          errorMessage.includes("incorrect") ||
+          errorMessage.includes("Password hiện tại") ||
+          errorMessage.includes("Current password")
+        ) {
           setTC((t) => ({ ...t, cp: true }));
           setEC((e) => ({ ...e, cp: "Mật khẩu hiện tại không đúng" }));
           // Clear tất cả 3 field và bắt nhập lại
@@ -760,7 +801,12 @@ function PasswordModal({
       }
     } catch (error) {
       const errorMessage = error.response?.data?.message || error.message || "";
-      if (errorMessage.includes("không đúng") || errorMessage.includes("incorrect") || errorMessage.includes("Password hiện tại") || errorMessage.includes("Current password")) {
+      if (
+        errorMessage.includes("không đúng") ||
+        errorMessage.includes("incorrect") ||
+        errorMessage.includes("Password hiện tại") ||
+        errorMessage.includes("Current password")
+      ) {
         setTC((t) => ({ ...t, cp: true }));
         setEC((e) => ({ ...e, cp: "Mật khẩu hiện tại không đúng" }));
         // Clear tất cả 3 field và bắt nhập lại
@@ -790,7 +836,8 @@ function PasswordModal({
     setOtpCode(code);
     setSentAt(new Date());
     setCooldown(40);
-    setOtp(""); setOtpErr("");
+    setOtp("");
+    setOtpErr("");
     // TODO: Gửi 'code' tới email `em` từ backend
   }
 
@@ -847,7 +894,10 @@ function PasswordModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[1300] grid place-items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[1300] grid place-items-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-xl overflow-hidden rounded-3xl shadow-2xl"
@@ -862,14 +912,18 @@ function PasswordModal({
                 Quên mật khẩu — xác minh OTP qua email
               </div>
             </div>
-            <button className="rounded p-1 hover:bg-white/10" onClick={onClose} aria-label="Đóng">
+            <button
+              className="rounded p-1 hover:bg-white/10"
+              onClick={onClose}
+              aria-label="Đóng"
+            >
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
 
         {/* Body */}
-                                                                                  <div className="bg-white p-6">
+        <div className="bg-white p-6">
           {tab === "forgot" && (
             <div className="space-y-4">
               {step === "otp" && (
@@ -901,7 +955,9 @@ function PasswordModal({
 
                   <div className="rounded-2xl border p-3">
                     <div className="mb-2 text-sm text-neutral-700">
-                      {otpCode ? "Nhập 6 số trong email để tiếp tục." : "Chưa gửi OTP."}
+                      {otpCode
+                        ? "Nhập 6 số trong email để tiếp tục."
+                        : "Chưa gửi OTP."}
                     </div>
                     <OTPInput6
                       disabled={!otpCode}
@@ -911,24 +967,40 @@ function PasswordModal({
                     />
                     {otpCode && (
                       <div className="mt-2 flex items-center gap-2 text-xs text-neutral-600">
-                        <span>Đã gửi lúc: {sentAt ? sentAt.toLocaleTimeString() : "--:--:--"}</span>
+                        <span>
+                          Đã gửi lúc:{" "}
+                          {sentAt ? sentAt.toLocaleTimeString() : "--:--:--"}
+                        </span>
                         <span className="mx-1">•</span>
-                        <span>{cooldown > 0 ? `Gửi lại sau ${cooldown}s` : "Có thể gửi lại ngay."}</span>
+                        <span>
+                          {cooldown > 0
+                            ? `Gửi lại sau ${cooldown}s`
+                            : "Có thể gửi lại ngay."}
+                        </span>
                       </div>
                     )}
-                    {otpErr ? <div className="mt-1 text-xs text-rose-600">{otpErr}</div> : null}
+                    {otpErr ? (
+                      <div className="mt-1 text-xs text-rose-600">{otpErr}</div>
+                    ) : null}
                   </div>
 
                   <div className="flex items-center justify-end">
                     <div className="flex gap-2">
-                      <Button className={`${BTN.base} ${BTN.outline}`} onClick={onClose}>
+                      <Button
+                        className={`${BTN.base} ${BTN.outline}`}
+                        onClick={onClose}
+                      >
                         Huỷ
                       </Button>
                       <Button
                         className={`${BTN.base} ${BTN.primary}`}
                         onClick={sendOTP}
                         disabled={cooldown > 0}
-                        title={cooldown > 0 ? `Chờ ${cooldown}s để gửi lại` : undefined}
+                        title={
+                          cooldown > 0
+                            ? `Chờ ${cooldown}s để gửi lại`
+                            : undefined
+                        }
                       >
                         {!otpCode
                           ? "Nhận mã"
@@ -954,7 +1026,9 @@ function PasswordModal({
                         <Input
                           type="password"
                           autoComplete="new-password"
-                          className={`${!tS.np ? INPUT_OK : eS.np ? INPUT_ERR : INPUT_OK} no-native-eye`}
+                          className={`${
+                            !tS.np ? INPUT_OK : eS.np ? INPUT_ERR : INPUT_OK
+                          } no-native-eye`}
                           value={np2}
                           onChange={(e) => setNp2(e.target.value)}
                           onBlur={() => setTS((t) => ({ ...t, np: true }))}
@@ -978,7 +1052,9 @@ function PasswordModal({
                       <Input
                         type="password"
                         autoComplete="new-password"
-                        className={`${!tS.cf ? INPUT_OK : eS.cf ? INPUT_ERR : INPUT_OK} no-native-eye`}
+                        className={`${
+                          !tS.cf ? INPUT_OK : eS.cf ? INPUT_ERR : INPUT_OK
+                        } no-native-eye`}
                         value={cf2}
                         onChange={(e) => setCf2(e.target.value)}
                         onBlur={() => setTS((t) => ({ ...t, cf: true }))}
@@ -997,10 +1073,16 @@ function PasswordModal({
                       ← Quay lại bước OTP
                     </button>
                     <div className="flex gap-2">
-                      <Button className={`${BTN.base} ${BTN.outline}`} onClick={onClose}>
+                      <Button
+                        className={`${BTN.base} ${BTN.outline}`}
+                        onClick={onClose}
+                      >
                         Huỷ
                       </Button>
-                      <Button className={`${BTN.base} ${BTN.primary}`} onClick={submitSet}>
+                      <Button
+                        className={`${BTN.base} ${BTN.primary}`}
+                        onClick={submitSet}
+                      >
                         Đặt mật khẩu mới
                       </Button>
                     </div>
@@ -1019,8 +1101,8 @@ function PasswordModal({
    OTPInput6 — mượt, hỗ trợ paste, autocomplete one-time-code
 ========================================================= */
 function OTPInput6({ value = "", onChange, onComplete, disabled = false }) {
-  const [cells, setCells] = React.useState(
-    () => Array.from({ length: 6 }, (_, i) => value[i] || "")
+  const [cells, setCells] = React.useState(() =>
+    Array.from({ length: 6 }, (_, i) => value[i] || "")
   );
   const refs = React.useRef([...Array(6)].map(() => React.createRef()));
 
@@ -1052,13 +1134,16 @@ function OTPInput6({ value = "", onChange, onComplete, disabled = false }) {
   };
 
   const handleKeyDown = (i, e) => {
-    if (e.key === "Backspace" && !cells[i] && i > 0) refs.current[i - 1].current?.focus();
+    if (e.key === "Backspace" && !cells[i] && i > 0)
+      refs.current[i - 1].current?.focus();
     if (e.key === "ArrowLeft" && i > 0) refs.current[i - 1].current?.focus();
     if (e.key === "ArrowRight" && i < 5) refs.current[i + 1].current?.focus();
   };
 
   const pasteFrom = (i, text) => {
-    const digits = String(text).replace(/\D/g, "").slice(0, 6 - i);
+    const digits = String(text)
+      .replace(/\D/g, "")
+      .slice(0, 6 - i);
     if (!digits) return;
     const arr = [...cells];
     for (let k = 0; k < digits.length; k++) arr[i + k] = digits[k];
@@ -1103,28 +1188,35 @@ function OTPInput6({ value = "", onChange, onComplete, disabled = false }) {
   );
 }
 
-
-
-
 /* =========================================================
    NEW: OTP Modal (xác minh trước khi cho sửa Email/SĐT)
    (đã xoá note demo hiển thị)
 ========================================================= */
-function OTPModal({ open, target, sendTo, onClose, onVerified }) {
+function OTPModal({
+  open,
+  target,
+  sendTo,
+  userId,
+  newValue,
+  onClose,
+  onVerified,
+}) {
   const [otp, setOtp] = useState("");
-  const [code, setCode] = useState("");         // chưa sinh cho đến khi bấm "Nhận mã"
   const [err, setErr] = useState("");
   const [sentAt, setSentAt] = useState(null);
   const [cooldown, setCooldown] = useState(0);
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const sent = !!sentAt;
 
   useEffect(() => {
     if (open) {
       setOtp("");
-      setCode("");
       setErr("");
       setSentAt(null);
       setCooldown(0);
+      setSending(false);
+      setVerifying(false);
     }
   }, [open]);
 
@@ -1137,32 +1229,86 @@ function OTPModal({ open, target, sendTo, onClose, onVerified }) {
   }, [open, cooldown]);
 
   useEffect(() => {
-    if (!open || !sent) return;
+    if (!open || !sent || verifying) return;
     if (otp.length < 6) {
       if (err) setErr("");
       return;
     }
-    if (otp === code) {
-      onVerified?.();
-      onClose?.();
-    } else {
-      setErr("Mã OTP không chính xác.");
+
+    // Auto verify when 6 digits are entered
+    if (otp.length === 6) {
+      handleVerify();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [otp, code, sent, open]);
+  }, [otp, sent, open]);
 
   const title =
     target === "email"
       ? "Xác minh OTP để đổi Email"
       : "Xác minh OTP để đổi SĐT";
 
-  const handleSend = () => {
-    if (cooldown > 0) return;
-    const c = genOTP();
-    setCode(c);
-    setSentAt(new Date());
-    setCooldown(40);
-    // TODO: gọi API backend để gửi 'c' tới email/SMS.
+  const handleSend = async () => {
+    if (cooldown > 0 || sending || !userId || !newValue) return;
+
+    try {
+      setSending(true);
+      setErr("");
+
+      const response = await UserRepository.sendProfileOtp(userId, {
+        updateType: target,
+        [target === "email" ? "newEmail" : "newPhone"]: newValue,
+      });
+
+      if (response?.success || response?.data?.success) {
+        setSentAt(new Date());
+        setCooldown(60); // 60 seconds cooldown
+      } else {
+        setErr(response?.message || "Không thể gửi mã OTP. Vui lòng thử lại.");
+      }
+    } catch (error) {
+      console.error("Error sending OTP:", error);
+      setErr(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Không thể gửi mã OTP. Vui lòng thử lại."
+      );
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const handleVerify = async () => {
+    if (!userId || !newValue || verifying || otp.length !== 6) return;
+
+    try {
+      setVerifying(true);
+      setErr("");
+
+      const response = await UserRepository.verifyProfileOtp({
+        userId,
+        updateType: target,
+        otpCode: otp,
+        [target === "email" ? "newEmail" : "newPhone"]: newValue,
+      });
+
+      if (response?.success || response?.data?.success) {
+        onVerified?.();
+        onClose?.();
+      } else {
+        setErr(
+          response?.message || "Mã OTP không chính xác. Vui lòng thử lại."
+        );
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      setErr(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Mã OTP không chính xác. Vui lòng thử lại."
+      );
+    } finally {
+      setVerifying(false);
+    }
   };
 
   const handleChange = (v) => {
@@ -1174,7 +1320,10 @@ function OTPModal({ open, target, sendTo, onClose, onVerified }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[1320] grid place-items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[1320] grid place-items-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-xl"
@@ -1184,9 +1333,13 @@ function OTPModal({ open, target, sendTo, onClose, onVerified }) {
           <div className="text-lg font-semibold">{title}</div>
           <div className="text-white/80 text-sm mt-1">
             {sent ? (
-              <>Đã gửi mã OTP tới: <b>{sendTo}</b></>
+              <>
+                Đã gửi mã OTP tới: <b>{sendTo}</b>
+              </>
             ) : (
-              <>Nhấn <b>Nhận mã</b> để gửi OTP tới: <b>{sendTo}</b></>
+              <>
+                Nhấn <b>Nhận mã</b> để gửi OTP tới: <b>{sendTo}</b>
+              </>
             )}
           </div>
         </div>
@@ -1200,7 +1353,7 @@ function OTPModal({ open, target, sendTo, onClose, onVerified }) {
             <Input
               inputMode="numeric"
               pattern="\d*"
-              disabled={!sent}
+              disabled={!sent || verifying}
               placeholder="••••••"
               className={err ? INPUT_ERR : INPUT_OK}
               value={otp}
@@ -1211,21 +1364,42 @@ function OTPModal({ open, target, sendTo, onClose, onVerified }) {
                 Gửi lúc: {sentAt ? sentAt.toLocaleTimeString() : "--:--:--"}
               </div>
             )}
-            {err ? <div className="mt-1 text-xs text-rose-600">{err}</div> : null}
+            {err ? (
+              <div className="mt-1 text-xs text-rose-600">{err}</div>
+            ) : null}
+            {verifying && (
+              <div className="mt-1 text-xs text-emerald-600">
+                Đang xác minh...
+              </div>
+            )}
           </div>
 
           <div className="mt-4 flex items-center justify-between">
-            <Button className={`${BTN.base} ${BTN.outline}`} onClick={onClose}>
+            <Button
+              className={`${BTN.base} ${BTN.outline}`}
+              onClick={onClose}
+              disabled={sending || verifying}
+            >
               Huỷ
             </Button>
 
             <Button
               className={`${BTN.base} ${BTN.primary}`}
               onClick={handleSend}
-              disabled={cooldown > 0}
-              title={cooldown > 0 ? `Chờ ${cooldown}s để gửi lại` : undefined}
+              disabled={
+                cooldown > 0 || sending || verifying || !userId || !newValue
+              }
+              title={
+                !userId || !newValue
+                  ? "Thiếu thông tin cần thiết"
+                  : cooldown > 0
+                  ? `Chờ ${cooldown}s để gửi lại`
+                  : undefined
+              }
             >
-              {!sent
+              {sending
+                ? "Đang gửi..."
+                : !sent
                 ? "Nhận mã"
                 : cooldown > 0
                 ? `Gửi lại mã (${cooldown}s)`
@@ -1242,17 +1416,29 @@ function OTPModal({ open, target, sendTo, onClose, onVerified }) {
    ErrorBoundary – chặn trắng màn nếu form gặp runtime error
 ========================================================= */
 class ErrorBoundary extends React.Component {
-  constructor(props){ super(props); this.state = { hasError:false }; }
-  static getDerivedStateFromError(){ return { hasError:true }; }
-  componentDidCatch(err, info){ console.error("EditTree crashed:", err, info); }
-  render(){
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(err, info) {
+    console.error("EditTree crashed:", err, info);
+  }
+  render() {
     if (this.state.hasError) {
       return (
         <div className="fixed inset-0 z-[1400] grid place-items-center">
           <div className="absolute inset-0 bg-black/60" />
           <div className="relative max-w-md w-full rounded-2xl bg-white p-6 shadow-xl">
-            <div className="text-lg font-semibold text-rose-700 mb-2">Có lỗi khi hiển thị form sửa cây</div>
-            <div className="text-sm text-neutral-700">Đừng lo, dữ liệu của bạn vẫn an toàn. Đóng hộp thoại này và thử lại.</div>
+            <div className="text-lg font-semibold text-rose-700 mb-2">
+              Có lỗi khi hiển thị form sửa cây
+            </div>
+            <div className="text-sm text-neutral-700">
+              Đừng lo, dữ liệu của bạn vẫn an toàn. Đóng hộp thoại này và thử
+              lại.
+            </div>
           </div>
         </div>
       );
@@ -1277,9 +1463,7 @@ function GardenDetailModal({
   if (!open || !garden) return null;
 
   const managers = (staffs || []).filter((s) => s.assigned === garden.name);
-  const gardenTrees = (trees || []).filter(
-    (t) => t.gardenName === garden.name
-  );
+  const gardenTrees = (trees || []).filter((t) => t.gardenName === garden.name);
 
   return (
     <div
@@ -1305,7 +1489,10 @@ function GardenDetailModal({
               <RefreshCcw className="h-5 w-5 mr-1" />
               Tải lại
             </Button>
-            <button className="rounded p-1 hover:bg-neutral-100" onClick={onClose}>
+            <button
+              className="rounded p-1 hover:bg-neutral-100"
+              onClick={onClose}
+            >
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -1449,7 +1636,9 @@ function Toast({ open, title, desc, variant = "success", onClose }) {
         )}
         <div className="min-w-0">
           <div className="font-semibold truncate">{title}</div>
-          {desc ? <div className="text-sm opacity-90 truncate">{desc}</div> : null}
+          {desc ? (
+            <div className="text-sm opacity-90 truncate">{desc}</div>
+          ) : null}
         </div>
         <button
           className="ml-auto rounded-md p-1 hover:bg-black/5"
@@ -1499,19 +1688,17 @@ function EditGardenModal({
   const errs = {
     name: !form.name.trim() ? "Tên vườn là bắt buộc" : "",
     province: !form.province.trim() ? "Nhập Tỉnh/Thành phố" : "",
-    
+
     ward: !form.ward.trim() ? "Nhập Phường/Xã" : "",
     address: !form.address.trim() ? "Nhập địa chỉ chi tiết" : "",
   };
-  const canSave =
-    !errs.name &&
-    !errs.province &&
-    
-    !errs.ward &&
-    !errs.address;
+  const canSave = !errs.name && !errs.province && !errs.ward && !errs.address;
 
   return (
-    <div className="fixed inset-0 z-[1100] grid place-items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[1100] grid place-items-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
@@ -1523,7 +1710,9 @@ function EditGardenModal({
           <div>
             <FieldLabel required>Tên vườn</FieldLabel>
             <Input
-              className={!touched.name ? INPUT_OK : errs.name ? INPUT_ERR : INPUT_OK}
+              className={
+                !touched.name ? INPUT_OK : errs.name ? INPUT_ERR : INPUT_OK
+              }
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               onBlur={() => setTouched((t) => ({ ...t, name: true }))}
@@ -1534,37 +1723,47 @@ function EditGardenModal({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-   <div>
-     <FieldLabel required>Tỉnh / Thành phố</FieldLabel>
-     <Input
-       className={!touched.province ? INPUT_OK : errs.province ? INPUT_ERR : INPUT_OK}
-       value={form.province}
-       onChange={(e) => setForm({ ...form, province: e.target.value })}
-       onBlur={() => setTouched((t) => ({ ...t, province: true }))}
-     />
-     {touched.province && errs.province && (
-       <p className="mt-1 text-xs text-rose-600">{errs.province}</p>
-     )}
-   </div>
-   <div>
-     <FieldLabel required>Phường / Xã</FieldLabel>
-     <Input
-       className={!touched.ward ? INPUT_OK : errs.ward ? INPUT_ERR : INPUT_OK}
-       value={form.ward}
-       onChange={(e) => setForm({ ...form, ward: e.target.value })}
-       onBlur={() => setTouched((t) => ({ ...t, ward: true }))}
-     />
-     {touched.ward && errs.ward && (
-       <p className="mt-1 text-xs text-rose-600">{errs.ward}</p>
-     )}
-   </div>
-</div>
+            <div>
+              <FieldLabel required>Tỉnh / Thành phố</FieldLabel>
+              <Input
+                className={
+                  !touched.province
+                    ? INPUT_OK
+                    : errs.province
+                    ? INPUT_ERR
+                    : INPUT_OK
+                }
+                value={form.province}
+                onChange={(e) => setForm({ ...form, province: e.target.value })}
+                onBlur={() => setTouched((t) => ({ ...t, province: true }))}
+              />
+              {touched.province && errs.province && (
+                <p className="mt-1 text-xs text-rose-600">{errs.province}</p>
+              )}
+            </div>
+            <div>
+              <FieldLabel required>Phường / Xã</FieldLabel>
+              <Input
+                className={
+                  !touched.ward ? INPUT_OK : errs.ward ? INPUT_ERR : INPUT_OK
+                }
+                value={form.ward}
+                onChange={(e) => setForm({ ...form, ward: e.target.value })}
+                onBlur={() => setTouched((t) => ({ ...t, ward: true }))}
+              />
+              {touched.ward && errs.ward && (
+                <p className="mt-1 text-xs text-rose-600">{errs.ward}</p>
+              )}
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <FieldLabel required>Phường / Xã</FieldLabel>
               <Input
-                className={!touched.ward ? INPUT_OK : errs.ward ? INPUT_ERR : INPUT_OK}
+                className={
+                  !touched.ward ? INPUT_OK : errs.ward ? INPUT_ERR : INPUT_OK
+                }
                 value={form.ward}
                 onChange={(e) => setForm({ ...form, ward: e.target.value })}
                 onBlur={() => setTouched((t) => ({ ...t, ward: true }))}
@@ -1576,7 +1775,13 @@ function EditGardenModal({
             <div>
               <FieldLabel required>Địa chỉ chi tiết</FieldLabel>
               <Input
-                className={!touched.address ? INPUT_OK : errs.address ? INPUT_ERR : INPUT_OK}
+                className={
+                  !touched.address
+                    ? INPUT_OK
+                    : errs.address
+                    ? INPUT_ERR
+                    : INPUT_OK
+                }
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
                 onBlur={() => setTouched((t) => ({ ...t, address: true }))}
@@ -1675,19 +1880,26 @@ function EditStaffModal({
   const canSave = !errs.name && !errs.contact;
 
   return (
-    <div className="fixed inset-0 z-[1100] grid place-items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[1100] grid place-items-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-3 text-lg font-semibold">Sửa thông tin nhân viên</div>
+        <div className="mb-3 text-lg font-semibold">
+          Sửa thông tin nhân viên
+        </div>
 
         <div className="space-y-3 text-sm">
           <div>
             <FieldLabel required>Họ tên</FieldLabel>
             <Input
-              className={!touched.name ? INPUT_OK : errs.name ? INPUT_ERR : INPUT_OK}
+              className={
+                !touched.name ? INPUT_OK : errs.name ? INPUT_ERR : INPUT_OK
+              }
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
               onBlur={() => setTouched((t) => ({ ...t, name: true }))}
@@ -1702,7 +1914,13 @@ function EditStaffModal({
               <FieldLabel>Email (ít nhất 1 trong 2: Email/SĐT)</FieldLabel>
               <Input
                 type="email"
-                className={!touched.contact ? INPUT_OK : errs.contact ? INPUT_ERR : INPUT_OK}
+                className={
+                  !touched.contact
+                    ? INPUT_OK
+                    : errs.contact
+                    ? INPUT_ERR
+                    : INPUT_OK
+                }
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                 onBlur={() => setTouched((t) => ({ ...t, contact: true }))}
@@ -1715,7 +1933,13 @@ function EditStaffModal({
                 type="tel"
                 inputMode="numeric"
                 pattern="\d*"
-                className={!touched.contact ? INPUT_OK : errs.contact ? INPUT_ERR : INPUT_OK}
+                className={
+                  !touched.contact
+                    ? INPUT_OK
+                    : errs.contact
+                    ? INPUT_ERR
+                    : INPUT_OK
+                }
                 value={form.phone}
                 onChange={(e) =>
                   setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })
@@ -1786,7 +2010,10 @@ function AssignStaffModal({ open, staff, gardens = [], onClose, onConfirm }) {
   if (!open || !staff) return null;
 
   return (
-    <div className="fixed inset-0 z-[1205] grid place-items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[1205] grid place-items-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
@@ -1794,7 +2021,10 @@ function AssignStaffModal({ open, staff, gardens = [], onClose, onConfirm }) {
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="text-lg font-semibold">Phân công nhân viên</div>
-          <button className="rounded p-1 hover:bg-neutral-100" onClick={onClose}>
+          <button
+            className="rounded p-1 hover:bg-neutral-100"
+            onClick={onClose}
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -1822,11 +2052,15 @@ function AssignStaffModal({ open, staff, gardens = [], onClose, onConfirm }) {
                           {g.name}
                         </div>
                         <div className="text-xs text-neutral-600">
-                          {[g.address, g.ward, g.district, g.province].filter(Boolean).join(", ")}
+                          {[g.address, g.ward, g.district, g.province]
+                            .filter(Boolean)
+                            .join(", ")}
                         </div>
                       </div>
                       <BadgeSoft
-                        color={g.status === "Đang hoạt động" ? "emerald" : "rose"}
+                        color={
+                          g.status === "Đang hoạt động" ? "emerald" : "rose"
+                        }
                       >
                         {g.status}
                       </BadgeSoft>
@@ -1884,9 +2118,11 @@ function ResetStaffPwModal({ open, staff, onClose, onConfirmed }) {
 
   if (!open || !staff) return null;
 
-  const err =
-    !npw.trim() ? "Vui lòng nhập mật khẩu mới" :
-    npw.trim().length < 8 ? "Mật khẩu tối thiểu 8 ký tự" : "";
+  const err = !npw.trim()
+    ? "Vui lòng nhập mật khẩu mới"
+    : npw.trim().length < 8
+    ? "Mật khẩu tối thiểu 8 ký tự"
+    : "";
 
   const handleSubmit = () => {
     setTouched(true);
@@ -1906,7 +2142,10 @@ function ResetStaffPwModal({ open, staff, onClose, onConfirmed }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[1206] grid place-items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[1206] grid place-items-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
@@ -1914,7 +2153,10 @@ function ResetStaffPwModal({ open, staff, onClose, onConfirmed }) {
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="text-lg font-semibold">Đổi mật khẩu nhân viên</div>
-          <button className="rounded p-1 hover:bg-neutral-100" onClick={onClose}>
+          <button
+            className="rounded p-1 hover:bg-neutral-100"
+            onClick={onClose}
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -1923,22 +2165,31 @@ function ResetStaffPwModal({ open, staff, onClose, onConfirmed }) {
           <div className="space-y-3">
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800">
               <div className="font-semibold mb-1">
-                Đã đặt lại mật khẩu cho <span className="underline">{staff.name}</span>
+                Đã đặt lại mật khẩu cho{" "}
+                <span className="underline">{staff.name}</span>
               </div>
               <div className="text-sm">Mật khẩu mới:</div>
               <div className="mt-1 flex items-center gap-2">
                 <code className="rounded-lg bg-white px-3 py-2 border text-emerald-900">
                   {donePw}
                 </code>
-                <Button className={`${BTN.base} ${BTN.outline}`} onClick={copyPw}>
+                <Button
+                  className={`${BTN.base} ${BTN.outline}`}
+                  onClick={copyPw}
+                >
                   <Copy className="h-5 w-5 mr-1" /> Sao chép
                 </Button>
               </div>
-              {copied ? <div className="mt-2 text-xs">Đã sao chép vào clipboard.</div> : null}
+              {copied ? (
+                <div className="mt-2 text-xs">Đã sao chép vào clipboard.</div>
+              ) : null}
             </div>
 
             <div className="flex justify-end">
-              <Button className={`${BTN.base} ${BTN.primary}`} onClick={onClose}>
+              <Button
+                className={`${BTN.base} ${BTN.primary}`}
+                onClick={onClose}
+              >
                 Đóng
               </Button>
             </div>
@@ -1969,14 +2220,22 @@ function ResetStaffPwModal({ open, staff, onClose, onConfirmed }) {
                   Tạo ngẫu nhiên
                 </Button>
               </div>
-              {touched && err ? <p className="text-xs text-rose-600 mt-1">{err}</p> : null}
+              {touched && err ? (
+                <p className="text-xs text-rose-600 mt-1">{err}</p>
+              ) : null}
             </div>
 
             <div className="mt-2 flex justify-end gap-2">
-              <Button className={`${BTN.base} ${BTN.outline}`} onClick={onClose}>
+              <Button
+                className={`${BTN.base} ${BTN.outline}`}
+                onClick={onClose}
+              >
                 Huỷ
               </Button>
-              <Button className={`${BTN.base} ${BTN.primary}`} onClick={handleSubmit}>
+              <Button
+                className={`${BTN.base} ${BTN.primary}`}
+                onClick={handleSubmit}
+              >
                 Xác nhận
               </Button>
             </div>
@@ -1993,7 +2252,10 @@ function ResetStaffPwModal({ open, staff, onClose, onConfirmed }) {
 function StaffDetailModal({ open, staff, onClose, onEdit, onResetPw }) {
   if (!open || !staff) return null;
   return (
-    <div className="fixed inset-0 z-[1255] grid place-items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[1255] grid place-items-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
@@ -2001,35 +2263,54 @@ function StaffDetailModal({ open, staff, onClose, onEdit, onResetPw }) {
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="text-lg font-semibold">
-            Chi tiết nhân viên — <span className="text-emerald-700">{staff.name}</span>
+            Chi tiết nhân viên —{" "}
+            <span className="text-emerald-700">{staff.name}</span>
           </div>
-          <button className="rounded p-1 hover:bg-neutral-100" onClick={onClose}>
+          <button
+            className="rounded p-1 hover:bg-neutral-100"
+            onClick={onClose}
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="flex items-start gap-4">
-          <SquareThumb src={staff.avatarUrl} size={72} fallback="user" title={staff.name} />
+          <SquareThumb
+            src={staff.avatarUrl}
+            size={72}
+            fallback="user"
+            title={staff.name}
+          />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
             <div className="rounded-xl border bg-neutral-50 px-3 py-2">
               <div className="text-xs text-neutral-500">Họ & tên</div>
-              <div className="text-sm text-neutral-900">{staff.name || "—"}</div>
+              <div className="text-sm text-neutral-900">
+                {staff.name || "—"}
+              </div>
             </div>
             <div className="rounded-xl border bg-neutral-50 px-3 py-2">
               <div className="text-xs text-neutral-500">Email</div>
-              <div className="text-sm text-neutral-900">{staff.email || "—"}</div>
+              <div className="text-sm text-neutral-900">
+                {staff.email || "—"}
+              </div>
             </div>
             <div className="rounded-xl border bg-neutral-50 px-3 py-2">
               <div className="text-xs text-neutral-500">Số điện thoại</div>
-              <div className="text-sm text-neutral-900">{staff.phone || "—"}</div>
+              <div className="text-sm text-neutral-900">
+                {staff.phone || "—"}
+              </div>
             </div>
             <div className="rounded-xl border bg-neutral-50 px-3 py-2">
               <div className="text-xs text-neutral-500">Vai trò</div>
-              <div className="text-sm text-neutral-900">{staff.role || "Staff"}</div>
+              <div className="text-sm text-neutral-900">
+                {staff.role || "Staff"}
+              </div>
             </div>
             <div className="rounded-xl border bg-neutral-50 px-3 py-2 md:col-span-2">
               <div className="text-xs text-neutral-500">Phân công</div>
-              <div className="text-sm text-neutral-900">{staff.assigned || "—"}</div>
+              <div className="text-sm text-neutral-900">
+                {staff.assigned || "—"}
+              </div>
             </div>
           </div>
         </div>
@@ -2073,18 +2354,18 @@ async function copyCredentialsToClipboard(account, password) {
 export default function UserProfile() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   // Loading states
   const [profileLoading, setProfileLoading] = useState(true);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
   const [plansLoading, setPlansLoading] = useState(true);
-  
+
   // Payment history data from API
   const [paymentTransactions, setPaymentTransactions] = useState([]);
-  
+
   // Subscription plans from API
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
-  
+
   // demo password
   const loadDemoPw = () => {
     try {
@@ -2106,10 +2387,12 @@ export default function UserProfile() {
     return { ...defaultProfile, ...rest, address };
   });
 
-  const [gardens, setGardens] = useState(() => load(LS_GARDENS, defaultGardens));
+  const [gardens, setGardens] = useState(() =>
+    load(LS_GARDENS, defaultGardens)
+  );
   const [staffs, setStaffs] = useState(() => load(LS_STAFFS, defaultStaffs));
   const [trees, setTrees] = useState(() => load(LS_TREES, defaultTrees));
-  const [editTree, setEditTree] = useState({ open:false, data:null });
+  const [editTree, setEditTree] = useState({ open: false, data: null });
 
   // Fetch user profile from API
   useEffect(() => {
@@ -2118,7 +2401,7 @@ export default function UserProfile() {
         setProfileLoading(false);
         return;
       }
-      
+
       try {
         const data = await UserRepository.getProfile(user.userId);
         if (data) {
@@ -2138,7 +2421,7 @@ export default function UserProfile() {
         setProfileLoading(false);
       }
     };
-    
+
     fetchProfile();
   }, [user?.userId]);
 
@@ -2153,7 +2436,9 @@ export default function UserProfile() {
             id: payment.invoiceNumber || `PAY-${payment.paymentId}`,
             time: payment.paymentDate || "",
             package: payment.subscriptionPlanName || "—",
-            amount: payment.amount ? `${payment.amount.toLocaleString("vi-VN")} đ` : "0 đ",
+            amount: payment.amount
+              ? `${payment.amount.toLocaleString("vi-VN")} đ`
+              : "0 đ",
             method: payment.paymentMethod || "—",
             status: mapPaymentStatus(payment.transactionStatus),
             statusColor: getStatusColor(payment.transactionStatus),
@@ -2168,7 +2453,7 @@ export default function UserProfile() {
         setPaymentsLoading(false);
       }
     };
-    
+
     fetchPayments();
   }, []);
 
@@ -2192,7 +2477,8 @@ export default function UserProfile() {
   useEffect(() => {
     const fetchCurrentSubscription = async () => {
       try {
-        const subscription = await SubscriptionPlanRepository.getCurrentUserSubscription();
+        const subscription =
+          await SubscriptionPlanRepository.getCurrentUserSubscription();
         if (subscription) {
           setCurrentSubscription(subscription);
           setCurrentPackage(subscription.planName); // Keep for backward compatibility
@@ -2213,26 +2499,26 @@ export default function UserProfile() {
 
   // Handle upgrade plan click
   const handleUpgradePlan = (plan) => {
-    navigate('/checkout', { 
-      state: { 
-        planId: plan.planId, 
-        planName: plan.planName, 
+    navigate("/checkout", {
+      state: {
+        planId: plan.planId,
+        planName: plan.planName,
         price: plan.price,
-        isYearly: false // UserProfile shows monthly pricing
-      } 
+        isYearly: false, // UserProfile shows monthly pricing
+      },
     });
   };
 
   // Helper function to map API status to Vietnamese display status
   const mapPaymentStatus = (status) => {
     const statusMap = {
-      "Completed": "Thành công",
-      "Success": "Thành công",
-      "Pending": "Đang xử lý",
-      "Processing": "Đang xử lý",
-      "Failed": "Thất bại",
-      "Refunded": "Hoàn tiền",
-      "Cancelled": "Đã hủy",
+      Completed: "Thành công",
+      Success: "Thành công",
+      Pending: "Đang xử lý",
+      Processing: "Đang xử lý",
+      Failed: "Thất bại",
+      Refunded: "Hoàn tiền",
+      Cancelled: "Đã hủy",
     };
     return statusMap[status] || status || "—";
   };
@@ -2240,13 +2526,13 @@ export default function UserProfile() {
   // Helper function to get status color classes
   const getStatusColor = (status) => {
     const colorMap = {
-      "Completed": "bg-green-50 text-green-700 border-green-200",
-      "Success": "bg-green-50 text-green-700 border-green-200",
-      "Pending": "bg-yellow-50 text-yellow-700 border-yellow-200",
-      "Processing": "bg-yellow-50 text-yellow-700 border-yellow-200",
-      "Failed": "bg-red-50 text-red-700 border-red-200",
-      "Refunded": "bg-blue-50 text-blue-700 border-blue-200",
-      "Cancelled": "bg-gray-50 text-gray-700 border-gray-200",
+      Completed: "bg-green-50 text-green-700 border-green-200",
+      Success: "bg-green-50 text-green-700 border-green-200",
+      Pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
+      Processing: "bg-yellow-50 text-yellow-700 border-yellow-200",
+      Failed: "bg-red-50 text-red-700 border-red-200",
+      Refunded: "bg-blue-50 text-blue-700 border-blue-200",
+      Cancelled: "bg-gray-50 text-gray-700 border-gray-200",
     };
     return colorMap[status] || "bg-gray-50 text-gray-700 border-gray-200";
   };
@@ -2255,7 +2541,6 @@ export default function UserProfile() {
   useEffect(() => save(LS_GARDENS, gardens), [gardens]);
   useEffect(() => save(LS_STAFFS, staffs), [staffs]);
   useEffect(() => save(LS_TREES, trees), [trees]);
-
 
   /* ====== Search/Filter ====== */
   // Gardens
@@ -2268,7 +2553,8 @@ export default function UserProfile() {
 
   // Payment History Filters
   const [paymentSearch, setPaymentSearch] = useState("");
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState("Tất cả trạng thái");
+  const [paymentStatusFilter, setPaymentStatusFilter] =
+    useState("Tất cả trạng thái");
   const [paymentDateFrom, setPaymentDateFrom] = useState("");
   const [paymentDateTo, setPaymentDateTo] = useState("");
 
@@ -2279,13 +2565,17 @@ export default function UserProfile() {
   const [pwModalTab, setPwModalTab] = useState("change"); // change | forgot
   const [addGardenOpen, setAddGardenOpen] = useState(false);
   const [addStaffOpen, setAddStaffOpen] = useState(false);
-  
+
   // Password change form state
   const [cp, setCp] = useState(""); // current password
   const [np, setNp] = useState(""); // new password
   const [cf, setCf] = useState(""); // confirm password
   const [peek, setPeek] = useState(false);
-  const [touchedPw, setTouchedPw] = useState({ cp: false, np: false, cf: false });
+  const [touchedPw, setTouchedPw] = useState({
+    cp: false,
+    np: false,
+    cf: false,
+  });
   const [errorsPw, setErrorsPw] = useState({ cp: "", np: "", cf: "" });
   const cpRef = useRef(null);
   const npRef = useRef(null);
@@ -2464,28 +2754,28 @@ export default function UserProfile() {
   const canSaveProfile = !profileErrors.fullName && !profileErrors.contact;
 
   const blankGarden = {
-   name: "",
-   province: "",
-   ward: "",
-   address: "",
-   status: "Đang hoạt động",
-   coverUrl: "",
-   provinceObj: null,
-   wardObj: null,
- };
+    name: "",
+    province: "",
+    ward: "",
+    address: "",
+    status: "Đang hoạt động",
+    coverUrl: "",
+    provinceObj: null,
+    wardObj: null,
+  };
   const [newGarden, setNewGarden] = useState(blankGarden);
   const [touchedGarden, setTouchedGarden] = useState({});
-   const gardenErrors = {
-       name: !newGarden.name.trim() ? "Tên vườn là bắt buộc" : "",
-   province: !newGarden.provinceObj ? "Nhập Tỉnh/Thành phố" : "",
-   ward: !newGarden.wardObj ? "Nhập Phường/Xã" : "",
-   address: !newGarden.address.trim() ? "Nhập địa chỉ chi tiết" : "",
- };
+  const gardenErrors = {
+    name: !newGarden.name.trim() ? "Tên vườn là bắt buộc" : "",
+    province: !newGarden.provinceObj ? "Nhập Tỉnh/Thành phố" : "",
+    ward: !newGarden.wardObj ? "Nhập Phường/Xã" : "",
+    address: !newGarden.address.trim() ? "Nhập địa chỉ chi tiết" : "",
+  };
   const canSubmitGarden =
-   !gardenErrors.name &&
-  !gardenErrors.province &&
-   !gardenErrors.ward &&
-   !gardenErrors.address;
+    !gardenErrors.name &&
+    !gardenErrors.province &&
+    !gardenErrors.ward &&
+    !gardenErrors.address;
 
   const [newStaff, setNewStaff] = useState({
     name: "",
@@ -2517,8 +2807,9 @@ export default function UserProfile() {
 
   /* ======= Stats + Memos ======= */
   const stats = useMemo(() => {
-    const activeGardens =
-      gardens.filter((g) => g.status === "Đang hoạt động").length;
+    const activeGardens = gardens.filter(
+      (g) => g.status === "Đang hoạt động"
+    ).length;
     return {
       totalTrees: trees.length,
       staffCount: staffs.length,
@@ -2548,14 +2839,7 @@ export default function UserProfile() {
 
       if (!q) return byStatus;
 
-      const haystack = [
-        g.name,
-        g.province,
-        
-        g.ward,
-        g.address,
-        g.status,
-      ]
+      const haystack = [g.name, g.province, g.ward, g.address, g.status]
         .join(" ")
         .toLowerCase();
 
@@ -2658,7 +2942,7 @@ export default function UserProfile() {
   async function saveProfile() {
     setTouchedProfile((t) => ({ ...t, fullName: true, contact: true }));
     if (!canSaveProfile) return;
-    
+
     try {
       // Call API to update profile
       if (user?.userId) {
@@ -2670,10 +2954,10 @@ export default function UserProfile() {
           gender: draft.gender,
         });
       }
-      
+
       setProfile(draft);
       setAllowEditContact({ email: false, phone: false }); // Reset OTP gate sau khi save
-      
+
       // Đồng bộ avatar với AuthContext để header cập nhật
       if (user) {
         const updatedUser = {
@@ -2683,9 +2967,11 @@ export default function UserProfile() {
         };
         localStorage.setItem("user", JSON.stringify(updatedUser));
         // Trigger custom event để AuthContext có thể cập nhật nếu cần
-        window.dispatchEvent(new CustomEvent("userProfileUpdated", { detail: updatedUser }));
+        window.dispatchEvent(
+          new CustomEvent("userProfileUpdated", { detail: updatedUser })
+        );
       }
-      
+
       showToast("Đã lưu", "Thông tin tài khoản đã được cập nhật", "success");
     } catch (error) {
       console.error("Error saving profile:", error);
@@ -2693,9 +2979,9 @@ export default function UserProfile() {
     }
   }
 
- function formatGardenLocation(g) {
-   return [g.address, g.ward, g.province].filter(Boolean).join(", ");
- }
+  function formatGardenLocation(g) {
+    return [g.address, g.ward, g.province].filter(Boolean).join(", ");
+  }
 
   function openGardenModal() {
     setNewGarden({ ...blankGarden });
@@ -2747,16 +3033,33 @@ export default function UserProfile() {
   const [otpState, setOtpState] = useState({
     open: false,
     target: null, // "email" | "phone"
+    newValue: null, // giá trị mới user muốn đổi
   });
   const openOtp = (target) => {
-    setOtpState({ open: true, target });
+    // Lấy giá trị hiện tại từ draft, nếu có thì dùng, nếu không thì dùng giá trị hiện tại từ profile
+    const currentValue =
+      target === "email"
+        ? draft.email || profile.email
+        : draft.phone || profile.phone;
+    setOtpState({
+      open: true,
+      target,
+      newValue: currentValue || "",
+    });
+    // Tạm thời unlock field để user có thể nhập giá trị mới
+    // (nếu muốn, có thể bỏ qua bước này và yêu cầu nhập trong modal)
+    setAllowEditContact((s) => ({ ...s, [target]: true }));
   };
-  const closeOtp = () => setOtpState({ open: false, target: null });
+  const closeOtp = () => {
+    setOtpState({ open: false, target: null, newValue: null });
+    // Reset allowEditContact nếu chưa verify thành công
+    // (sẽ được set lại trong onVerified)
+  };
 
   return (
-   <div className="mm-fluid-page min-h-screen relative">
-    <LivingBackground density={28} baseColor={BG} />
-    <PageRails />
+    <div className="mm-fluid-page min-h-screen relative">
+      <LivingBackground density={28} baseColor={BG} />
+      <PageRails />
 
       {/* Banner */}
       <div
@@ -2764,7 +3067,9 @@ export default function UserProfile() {
         inert={overlayOpen ? "" : undefined}
       >
         <div className="mb-6">
-          <h1 className="text-6xl font-bold text-white drop-shadow-lg">Hồ sơ người dùng</h1>
+          <h1 className="text-6xl font-bold text-white drop-shadow-lg">
+            Hồ sơ người dùng
+          </h1>
           <p className="text-white/90 text-base mt-2">
             Quản lý thông tin, vườn và nhân viên
           </p>
@@ -2789,18 +3094,26 @@ export default function UserProfile() {
               icon: <TreePine className="h-5 w-5" />,
             },
           ].map((s, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl border border-white/25 bg-white/20 backdrop-blur-[10px] p-4"
-                >
-                  <div className="flex items-center justify-between text-2xl font-semibold text-white/90 mb-2">
-                    <span>{s.label}</span>
-                    {s.icon}
-                  </div>
-                  <div className={`${s.label.includes("vườn") || s.label.includes("cây") ? "text-4xl" : "text-2xl"} font-medium text-white drop-shadow-sm`}>{s.value}</div>
-                </div>
-              ))}
+            <div
+              key={i}
+              className="rounded-2xl border border-white/25 bg-white/20 backdrop-blur-[10px] p-4"
+            >
+              <div className="flex items-center justify-between text-2xl font-semibold text-white/90 mb-2">
+                <span>{s.label}</span>
+                {s.icon}
+              </div>
+              <div
+                className={`${
+                  s.label.includes("vườn") || s.label.includes("cây")
+                    ? "text-4xl"
+                    : "text-2xl"
+                } font-medium text-white drop-shadow-sm`}
+              >
+                {s.value}
+              </div>
             </div>
+          ))}
+        </div>
       </div>
 
       {/* Main */}
@@ -2814,12 +3127,14 @@ export default function UserProfile() {
             <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
               <CardContent className="p-8">
                 <div className="mb-8">
-                  <h2 className="text-2xl font-semibold text-white drop-shadow-lg">Quản lý tài khoản</h2>
+                  <h2 className="text-2xl font-semibold text-white drop-shadow-lg">
+                    Quản lý tài khoản
+                  </h2>
                 </div>
-                
+
                 {/* Navigation Menu */}
                 <nav className="space-y-3 mb-10">
-                  <button 
+                  <button
                     onClick={() => setActiveMenu("account")}
                     className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
                       activeMenu === "account"
@@ -2830,7 +3145,7 @@ export default function UserProfile() {
                     <UserIcon className="h-6 w-6" />
                     <span className="text-lg font-medium">Tài khoản</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveMenu("password")}
                     className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
                       activeMenu === "password"
@@ -2841,7 +3156,7 @@ export default function UserProfile() {
                     <Lock className="h-6 w-6" />
                     <span className="text-lg">Mật khẩu</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveMenu("history")}
                     className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
                       activeMenu === "history"
@@ -2852,7 +3167,7 @@ export default function UserProfile() {
                     <CreditCard className="h-6 w-6" />
                     <span className="text-lg">Lịch sử giao dịch</span>
                   </button>
-                  <button 
+                  <button
                     onClick={() => setActiveMenu("upgrade")}
                     className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
                       activeMenu === "upgrade"
@@ -2871,8 +3186,8 @@ export default function UserProfile() {
                     <AvatarSync src={profile.avatarUrl} size={56} />
                     <div className="flex-1 min-w-0">
                       <div className="text-base font-medium text-white truncate">
-  {profile.fullName}
-</div>
+                        {profile.fullName}
+                      </div>
                       <div className="text-sm text-white/80 truncate">
                         {profile.email || "—"}
                       </div>
@@ -2902,8 +3217,12 @@ export default function UserProfile() {
                   <CardContent className="p-4 sm:p-6 md:p-8">
                     {/* Header */}
                     <div className="mb-6">
-                      <h1 className="text-xl sm:text-2xl font-semibold text-white mb-1 break-words drop-shadow-lg">Tài khoản</h1>
-                      <p className="text-xs sm:text-sm text-white/80 break-words">Cập nhật thông tin tài khoản</p>
+                      <h1 className="text-xl sm:text-2xl font-semibold text-white mb-1 break-words drop-shadow-lg">
+                        Tài khoản
+                      </h1>
+                      <p className="text-xs sm:text-sm text-white/80 break-words">
+                        Cập nhật thông tin tài khoản
+                      </p>
                     </div>
 
                     {/* Avatar Section */}
@@ -2916,31 +3235,55 @@ export default function UserProfile() {
                           onFileSelect={async (file) => {
                             if (!user?.userId) return;
                             try {
-                              const response = await UserRepository.uploadAvatar(user.userId, file);
+                              const response =
+                                await UserRepository.uploadAvatar(
+                                  user.userId,
+                                  file
+                                );
                               if (response?.url || response?.avatarUrl) {
-                                const newAvatarUrl = response.url || response.avatarUrl;
-                                setDraft((d) => ({ ...d, avatarUrl: newAvatarUrl }));
-                                
+                                const newAvatarUrl =
+                                  response.url || response.avatarUrl;
+                                setDraft((d) => ({
+                                  ...d,
+                                  avatarUrl: newAvatarUrl,
+                                }));
+
                                 // Update profile state to trigger localStorage save
-                                setProfile((p) => ({ ...p, avatarUrl: newAvatarUrl }));
-                                
+                                setProfile((p) => ({
+                                  ...p,
+                                  avatarUrl: newAvatarUrl,
+                                }));
+
                                 // Update user object in localStorage for AuthContext/Header
                                 if (user) {
                                   const updatedUser = {
                                     ...user,
                                     ProfileImageUrl: newAvatarUrl,
                                   };
-                                  localStorage.setItem("user", JSON.stringify(updatedUser));
+                                  localStorage.setItem(
+                                    "user",
+                                    JSON.stringify(updatedUser)
+                                  );
                                 }
-                                
+
                                 // Dispatch event to notify Header component
-                                window.dispatchEvent(new CustomEvent("userProfileUpdated"));
-                                
-                                showToast("Thành công", "Đã cập nhật ảnh đại diện", "success");
+                                window.dispatchEvent(
+                                  new CustomEvent("userProfileUpdated")
+                                );
+
+                                showToast(
+                                  "Thành công",
+                                  "Đã cập nhật ảnh đại diện",
+                                  "success"
+                                );
                               }
                             } catch (error) {
                               console.error("Error uploading avatar:", error);
-                              showToast("Lỗi", "Không thể tải ảnh lên. Vui lòng thử lại.", "error");
+                              showToast(
+                                "Lỗi",
+                                "Không thể tải ảnh lên. Vui lòng thử lại.",
+                                "error"
+                              );
                             }
                           }}
                         />
@@ -2951,11 +3294,17 @@ export default function UserProfile() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 min-w-0">
                       {/* Họ & tên */}
                       <div className="min-w-0">
-                        <FieldLabel required className="text-white/90">Họ & tên</FieldLabel>
+                        <FieldLabel required className="text-white/90">
+                          Họ & tên
+                        </FieldLabel>
                         <Input
                           name="full-name"
                           autoComplete="name"
-                          aria-invalid={!!(touchedProfile.fullName && profileErrors.fullName)}
+                          aria-invalid={
+                            !!(
+                              touchedProfile.fullName && profileErrors.fullName
+                            )
+                          }
                           className={
                             !touchedProfile.fullName
                               ? "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
@@ -2964,21 +3313,31 @@ export default function UserProfile() {
                               : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
                           }
                           value={draft.fullName}
-                          onChange={(e) => setDraft({ ...draft, fullName: e.target.value })}
-                          onBlur={() => setTouchedProfile((t) => ({ ...t, fullName: true }))}
+                          onChange={(e) =>
+                            setDraft({ ...draft, fullName: e.target.value })
+                          }
+                          onBlur={() =>
+                            setTouchedProfile((t) => ({ ...t, fullName: true }))
+                          }
                           placeholder="Nhập họ và tên"
                         />
                         {touchedProfile.fullName && profileErrors.fullName ? (
-                          <p className="mt-1 text-xs text-rose-400 break-words">{profileErrors.fullName}</p>
+                          <p className="mt-1 text-xs text-rose-400 break-words">
+                            {profileErrors.fullName}
+                          </p>
                         ) : null}
                       </div>
 
                       {/* Email + OTP gate */}
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-start sm:items-center justify-between gap-2 mb-2 min-w-0">
-                          <FieldLabel className="text-white/80 break-words min-w-0 flex-1">Email (xác minh OTP trước khi đổi)</FieldLabel>
+                          <FieldLabel className="text-white/80 break-words min-w-0 flex-1">
+                            Email (xác minh OTP trước khi đổi)
+                          </FieldLabel>
                           {allowEditContact.email ? (
-                            <span className="text-xs text-emerald-400 whitespace-nowrap flex-shrink-0">Đã xác minh OTP ✓</span>
+                            <span className="text-xs text-emerald-400 whitespace-nowrap flex-shrink-0">
+                              Đã xác minh OTP ✓
+                            </span>
                           ) : (
                             <button
                               type="button"
@@ -2994,7 +3353,9 @@ export default function UserProfile() {
                           name="profile-email"
                           autoComplete="off"
                           readOnly={!allowEditContact.email}
-                          aria-invalid={!!(touchedProfile.contact && profileErrors.contact)}
+                          aria-invalid={
+                            !!(touchedProfile.contact && profileErrors.contact)
+                          }
                           className={
                             !touchedProfile.contact
                               ? "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
@@ -3003,21 +3364,31 @@ export default function UserProfile() {
                               : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
                           }
                           value={draft.email}
-                          onChange={(e) => setDraft({ ...draft, email: e.target.value })}
-                          onBlur={() => setTouchedProfile((t) => ({ ...t, contact: true }))}
+                          onChange={(e) =>
+                            setDraft({ ...draft, email: e.target.value })
+                          }
+                          onBlur={() =>
+                            setTouchedProfile((t) => ({ ...t, contact: true }))
+                          }
                           placeholder="name@company.com"
                         />
                         {touchedProfile.contact && profileErrors.contact ? (
-                          <p className="mt-1 text-xs text-rose-400 break-words">{profileErrors.contact}</p>
+                          <p className="mt-1 text-xs text-rose-400 break-words">
+                            {profileErrors.contact}
+                          </p>
                         ) : null}
                       </div>
 
                       {/* Số điện thoại */}
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-start sm:items-center justify-between gap-2 mb-2 min-w-0">
-                          <FieldLabel className="text-white/80 break-words min-w-0 flex-1">Số điện thoại (xác minh OTP trước khi đổi)</FieldLabel>
+                          <FieldLabel className="text-white/80 break-words min-w-0 flex-1">
+                            Số điện thoại (xác minh OTP trước khi đổi)
+                          </FieldLabel>
                           {allowEditContact.phone ? (
-                            <span className="text-xs text-emerald-400 whitespace-nowrap flex-shrink-0">Đã xác minh OTP ✓</span>
+                            <span className="text-xs text-emerald-400 whitespace-nowrap flex-shrink-0">
+                              Đã xác minh OTP ✓
+                            </span>
                           ) : (
                             <button
                               type="button"
@@ -3035,7 +3406,9 @@ export default function UserProfile() {
                           inputMode="numeric"
                           pattern="\d*"
                           readOnly={!allowEditContact.phone}
-                          aria-invalid={!!(touchedProfile.contact && profileErrors.contact)}
+                          aria-invalid={
+                            !!(touchedProfile.contact && profileErrors.contact)
+                          }
                           className={
                             !touchedProfile.contact
                               ? "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
@@ -3045,25 +3418,36 @@ export default function UserProfile() {
                           }
                           value={draft.phone}
                           onChange={(e) =>
-                            setDraft({ ...draft, phone: e.target.value.replace(/\D/g, "") })
+                            setDraft({
+                              ...draft,
+                              phone: e.target.value.replace(/\D/g, ""),
+                            })
                           }
-                          onBlur={() => setTouchedProfile((t) => ({ ...t, contact: true }))}
+                          onBlur={() =>
+                            setTouchedProfile((t) => ({ ...t, contact: true }))
+                          }
                           placeholder="0xxxxxxxxx"
                         />
                         {touchedProfile.contact && profileErrors.contact ? (
-                          <p className="mt-1 text-xs text-rose-400 break-words">{profileErrors.contact}</p>
+                          <p className="mt-1 text-xs text-rose-400 break-words">
+                            {profileErrors.contact}
+                          </p>
                         ) : null}
                       </div>
 
                       {/* Địa chỉ */}
                       <div className="min-w-0">
-                        <FieldLabel className="text-white/80 break-words">Địa chỉ</FieldLabel>
+                        <FieldLabel className="text-white/80 break-words">
+                          Địa chỉ
+                        </FieldLabel>
                         <Input
                           name="address"
                           autoComplete="street-address"
                           className="h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
                           value={draft.address}
-                          onChange={(e) => setDraft({ ...draft, address: e.target.value })}
+                          onChange={(e) =>
+                            setDraft({ ...draft, address: e.target.value })
+                          }
                           placeholder="Số nhà/đường, phường/xã, quận/huyện, tỉnh/thành"
                         />
                       </div>
@@ -3087,10 +3471,14 @@ export default function UserProfile() {
             {activeMenu === "password" && (
               <section className="space-y-6">
                 <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.15)]">
-              <CardContent className="p-8">
+                  <CardContent className="p-8">
                     <div className="mb-6">
-                      <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">Mật khẩu</h1>
-                      <p className="text-sm text-white/80">Bảo mật tài khoản của bạn</p>
+                      <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">
+                        Mật khẩu
+                      </h1>
+                      <p className="text-sm text-white/80">
+                        Bảo mật tài khoản của bạn
+                      </p>
                     </div>
 
                     <div className="space-y-6">
@@ -3098,36 +3486,54 @@ export default function UserProfile() {
                       <div className="p-6 rounded-2xl bg-white/20 border border-white/25">
                         <div className="flex items-center gap-3 mb-4">
                           <Lock className="h-6 w-6 text-yellow-400" />
-                          <h2 className="text-lg font-semibold text-white">Đổi mật khẩu</h2>
+                          <h2 className="text-lg font-semibold text-white">
+                            Đổi mật khẩu
+                          </h2>
                         </div>
                         <p className="text-sm text-white/70 mb-6">
-                          Để đảm bảo an toàn, vui lòng đổi mật khẩu định kỳ. Mật khẩu mới phải có ít nhất 8 ký tự.
+                          Để đảm bảo an toàn, vui lòng đổi mật khẩu định kỳ. Mật
+                          khẩu mới phải có ít nhất 8 ký tự.
                         </p>
 
-                        <form 
-                          autoComplete="off" 
-                          onSubmit={(e) => { e.preventDefault(); handlePasswordChange(); }}
-                          style={{ position: 'relative' }}
+                        <form
+                          autoComplete="off"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handlePasswordChange();
+                          }}
+                          style={{ position: "relative" }}
                         >
                           {/* Hidden inputs to trick password managers */}
-                          <input 
-                            type="text" 
-                            autoComplete="username" 
-                            className="hidden" 
-                            tabIndex="-1" 
-                            style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}
-                          />
-                          <input 
-                            type="password" 
-                            autoComplete="new-password" 
-                            className="hidden" 
+                          <input
+                            type="text"
+                            autoComplete="username"
+                            className="hidden"
                             tabIndex="-1"
-                            style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}
+                            style={{
+                              position: "absolute",
+                              left: "-9999px",
+                              opacity: 0,
+                              pointerEvents: "none",
+                            }}
+                          />
+                          <input
+                            type="password"
+                            autoComplete="new-password"
+                            className="hidden"
+                            tabIndex="-1"
+                            style={{
+                              position: "absolute",
+                              left: "-9999px",
+                              opacity: 0,
+                              pointerEvents: "none",
+                            }}
                           />
 
                           {/* Current password */}
                           <div className="space-y-2 mb-4">
-                            <label className="block text-sm font-bold text-white/90">Mật khẩu hiện tại</label>
+                            <label className="block text-sm font-bold text-white/90">
+                              Mật khẩu hiện tại
+                            </label>
                             <Input
                               ref={cpRef}
                               type="password"
@@ -3141,7 +3547,11 @@ export default function UserProfile() {
                                 setNp("");
                                 setCf("");
                                 setErrorsPw({ cp: "", np: "", cf: "" });
-                                setTouchedPw({ cp: false, np: false, cf: false });
+                                setTouchedPw({
+                                  cp: false,
+                                  np: false,
+                                  cf: false,
+                                });
                               }}
                               data-lpignore="true"
                               data-1p-ignore="true"
@@ -3166,17 +3576,23 @@ export default function UserProfile() {
                                   setErrorsPw((e) => ({ ...e, cp: "" }));
                                 }
                               }}
-                              onBlur={() => setTouchedPw((t) => ({ ...t, cp: true }))}
+                              onBlur={() =>
+                                setTouchedPw((t) => ({ ...t, cp: true }))
+                              }
                               placeholder="Nhập mật khẩu hiện tại"
                             />
                             {touchedPw.cp && errorsPw.cp && (
-                              <p className="text-xs text-rose-400">{errorsPw.cp}</p>
+                              <p className="text-xs text-rose-400">
+                                {errorsPw.cp}
+                              </p>
                             )}
                           </div>
 
                           {/* New password */}
                           <div className="space-y-2 mb-4">
-                            <label className="block text-sm font-bold text-white/80">Mật khẩu mới</label>
+                            <label className="block text-sm font-bold text-white/80">
+                              Mật khẩu mới
+                            </label>
                             <Input
                               ref={npRef}
                               type="password"
@@ -3205,7 +3621,11 @@ export default function UserProfile() {
                                   : errorsPw.np
                                   ? "border-rose-500 focus:ring-2 focus:ring-rose-500/40"
                                   : "border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/40"
-                              } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye ${!cp.trim() ? "opacity-50 cursor-not-allowed" : ""}`}
+                              } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye ${
+                                !cp.trim()
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : ""
+                              }`}
                               value={np}
                               onChange={(e) => {
                                 if (!cp.trim()) {
@@ -3217,7 +3637,9 @@ export default function UserProfile() {
                                   setErrorsPw((e) => ({ ...e, np: "" }));
                                 }
                               }}
-                              onBlur={() => setTouchedPw((t) => ({ ...t, np: true }))}
+                              onBlur={() =>
+                                setTouchedPw((t) => ({ ...t, np: true }))
+                              }
                               onPaste={(e) => {
                                 if (!cp.trim()) {
                                   e.preventDefault();
@@ -3231,17 +3653,29 @@ export default function UserProfile() {
                                   cpRef.current?.focus();
                                 }
                               }}
-                              placeholder={!cp.trim() ? "Vui lòng nhập mật khẩu hiện tại trước" : "Tối thiểu 8 ký tự"}
+                              placeholder={
+                                !cp.trim()
+                                  ? "Vui lòng nhập mật khẩu hiện tại trước"
+                                  : "Tối thiểu 8 ký tự"
+                              }
                             />
                             {touchedPw.np && errorsPw.np && (
-                              <p className="text-xs text-rose-400">{errorsPw.np}</p>
+                              <p className="text-xs text-rose-400">
+                                {errorsPw.np}
+                              </p>
                             )}
-                            {!cp.trim() && <p className="text-xs text-white/50">Vui lòng nhập mật khẩu hiện tại trước</p>}
+                            {!cp.trim() && (
+                              <p className="text-xs text-white/50">
+                                Vui lòng nhập mật khẩu hiện tại trước
+                              </p>
+                            )}
                           </div>
 
                           {/* Confirm new password */}
                           <div className="space-y-2 mb-6">
-                            <label className="block text-sm font-bold text-white/80">Xác nhận mật khẩu mới</label>
+                            <label className="block text-sm font-bold text-white/80">
+                              Xác nhận mật khẩu mới
+                            </label>
                             <Input
                               ref={cfRef}
                               type="password"
@@ -3270,7 +3704,11 @@ export default function UserProfile() {
                                   : errorsPw.cf
                                   ? "border-rose-500 focus:ring-2 focus:ring-rose-500/40"
                                   : "border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/40"
-                              } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye ${!cp.trim() ? "opacity-50 cursor-not-allowed" : ""}`}
+                              } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye ${
+                                !cp.trim()
+                                  ? "opacity-50 cursor-not-allowed"
+                                  : ""
+                              }`}
                               value={cf}
                               onChange={(e) => {
                                 if (!cp.trim()) {
@@ -3282,7 +3720,9 @@ export default function UserProfile() {
                                   setErrorsPw((e) => ({ ...e, cf: "" }));
                                 }
                               }}
-                              onBlur={() => setTouchedPw((t) => ({ ...t, cf: true }))}
+                              onBlur={() =>
+                                setTouchedPw((t) => ({ ...t, cf: true }))
+                              }
                               onPaste={(e) => {
                                 if (!cp.trim()) {
                                   e.preventDefault();
@@ -3296,10 +3736,16 @@ export default function UserProfile() {
                                   cpRef.current?.focus();
                                 }
                               }}
-                              placeholder={!cp.trim() ? "Vui lòng nhập mật khẩu hiện tại trước" : "Nhập lại mật khẩu mới"}
+                              placeholder={
+                                !cp.trim()
+                                  ? "Vui lòng nhập mật khẩu hiện tại trước"
+                                  : "Nhập lại mật khẩu mới"
+                              }
                             />
                             {touchedPw.cf && errorsPw.cf && (
-                              <p className="text-xs text-rose-400">{errorsPw.cf}</p>
+                              <p className="text-xs text-rose-400">
+                                {errorsPw.cf}
+                              </p>
                             )}
                           </div>
 
@@ -3315,14 +3761,18 @@ export default function UserProfile() {
                               Quên mật khẩu ?
                             </button>
                             <div className="flex gap-3">
-    <Button
+                              <Button
                                 type="button"
                                 className="h-12 px-6 rounded-xl bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
                                 onClick={() => {
                                   setCp("");
                                   setNp("");
                                   setCf("");
-                                  setTouchedPw({ cp: false, np: false, cf: false });
+                                  setTouchedPw({
+                                    cp: false,
+                                    np: false,
+                                    cf: false,
+                                  });
                                   setErrorsPw({ cp: "", np: "", cf: "" });
                                 }}
                               >
@@ -3333,22 +3783,26 @@ export default function UserProfile() {
                                 className="h-12 px-6 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white font-medium"
                               >
                                 Xác nhận
-    </Button>
-  </div>
+                              </Button>
+                            </div>
                           </div>
                         </form>
-</div>
+                      </div>
 
                       {/* Security Tips */}
                       <div className="p-6 rounded-2xl bg-white/20 border border-white/25">
                         <div className="flex items-center gap-3 mb-4">
                           <Shield className="h-6 w-6 text-emerald-400" />
-                          <h2 className="text-lg font-semibold text-white">Bảo mật tài khoản</h2>
-                              </div>
+                          <h2 className="text-lg font-semibold text-white">
+                            Bảo mật tài khoản
+                          </h2>
+                        </div>
                         <ul className="space-y-3 text-sm text-white/70">
                           <li className="flex items-start gap-2">
                             <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-                            <span>Sử dụng mật khẩu mạnh với ít nhất 8 ký tự</span>
+                            <span>
+                              Sử dụng mật khẩu mạnh với ít nhất 8 ký tự
+                            </span>
                           </li>
                           <li className="flex items-start gap-2">
                             <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
@@ -3356,11 +3810,13 @@ export default function UserProfile() {
                           </li>
                           <li className="flex items-start gap-2">
                             <CheckCircle2 className="h-5 w-5 text-emerald-400 shrink-0 mt-0.5" />
-                            <span>Đổi mật khẩu định kỳ để tăng cường bảo mật</span>
+                            <span>
+                              Đổi mật khẩu định kỳ để tăng cường bảo mật
+                            </span>
                           </li>
                         </ul>
-                            </div>
-                          </div>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </section>
@@ -3373,8 +3829,12 @@ export default function UserProfile() {
                   <CardContent className="p-6 sm:p-8">
                     {/* Header */}
                     <div className="mb-6">
-                      <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">Lịch sử giao dịch</h1>
-                      <p className="text-sm text-white/80">Xem và quản lý các giao dịch thanh toán của bạn</p>
+                      <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">
+                        Lịch sử giao dịch
+                      </h1>
+                      <p className="text-sm text-white/80">
+                        Xem và quản lý các giao dịch thanh toán của bạn
+                      </p>
                     </div>
 
                     {/* Filters Section */}
@@ -3396,13 +3856,28 @@ export default function UserProfile() {
                           <select
                             className="appearance-none px-5 py-3 pr-10 h-14 text-base border border-emerald-400/40 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 bg-white/20 backdrop-blur-sm text-white font-medium min-w-[200px]"
                             value={paymentStatusFilter}
-                            onChange={(e) => setPaymentStatusFilter(e.target.value)}
+                            onChange={(e) =>
+                              setPaymentStatusFilter(e.target.value)
+                            }
                           >
-                            <option value="Tất cả trạng thái" className="bg-gray-800">Tất cả trạng thái</option>
-                            <option value="Thành công" className="bg-gray-800">Thành công</option>
-                            <option value="Đang xử lý" className="bg-gray-800">Đang xử lý</option>
-                            <option value="Thất bại" className="bg-gray-800">Thất bại</option>
-                            <option value="Hoàn tiền" className="bg-gray-800">Hoàn tiền</option>
+                            <option
+                              value="Tất cả trạng thái"
+                              className="bg-gray-800"
+                            >
+                              Tất cả trạng thái
+                            </option>
+                            <option value="Thành công" className="bg-gray-800">
+                              Thành công
+                            </option>
+                            <option value="Đang xử lý" className="bg-gray-800">
+                              Đang xử lý
+                            </option>
+                            <option value="Thất bại" className="bg-gray-800">
+                              Thất bại
+                            </option>
+                            <option value="Hoàn tiền" className="bg-gray-800">
+                              Hoàn tiền
+                            </option>
                           </select>
                           <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/70 w-5 h-5 pointer-events-none" />
                         </div>
@@ -3420,32 +3895,59 @@ export default function UserProfile() {
                           Reset
                         </Button>
 
-                        <Button 
+                        <Button
                           onClick={() => {
                             // Export CSV logic - use paymentTransactions from API
                             if (paymentTransactions.length === 0) {
-                              showToast("Thông báo", "Không có dữ liệu để xuất", "info");
+                              showToast(
+                                "Thông báo",
+                                "Không có dữ liệu để xuất",
+                                "info"
+                              );
                               return;
                             }
-                            const headers = ["Mã đơn", "Thời gian", "Gói", "Số tiền", "Phương thức", "Trạng thái", "Mã giao dịch"];
+                            const headers = [
+                              "Mã đơn",
+                              "Thời gian",
+                              "Gói",
+                              "Số tiền",
+                              "Phương thức",
+                              "Trạng thái",
+                              "Mã giao dịch",
+                            ];
                             const rows = paymentTransactions.map((t) => [
                               `"${t.id || ""}"`,
                               `"${t.time || ""}"`,
                               `"${t.package || ""}"`,
-                              `"${(t.amount || "").toString().replace(/,/g, ".")}"`,
+                              `"${(t.amount || "")
+                                .toString()
+                                .replace(/,/g, ".")}"`,
                               `"${t.method || ""}"`,
                               `"${t.status || ""}"`,
                               `"${t.txId || ""}"`,
                             ]);
-                            let csvContent = "\uFEFF" + [headers, ...rows].map((e) => e.join(",")).join("\n");
-                            const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvContent);
+                            let csvContent =
+                              "\uFEFF" +
+                              [headers, ...rows]
+                                .map((e) => e.join(","))
+                                .join("\n");
+                            const encodedUri = encodeURI(
+                              "data:text/csv;charset=utf-8," + csvContent
+                            );
                             const link = document.createElement("a");
                             link.setAttribute("href", encodedUri);
-                            link.setAttribute("download", "payment_history.csv");
+                            link.setAttribute(
+                              "download",
+                              "payment_history.csv"
+                            );
                             document.body.appendChild(link);
                             link.click();
                             document.body.removeChild(link);
-                            showToast("Thành công", `Đã xuất ${paymentTransactions.length} giao dịch`, "success");
+                            showToast(
+                              "Thành công",
+                              `Đã xuất ${paymentTransactions.length} giao dịch`,
+                              "success"
+                            );
                           }}
                           disabled={paymentsLoading}
                           className="h-14 px-5 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 text-base font-medium disabled:opacity-50"
@@ -3458,7 +3960,9 @@ export default function UserProfile() {
                       <div className="flex flex-wrap items-center gap-3 p-2.5 rounded-xl bg-white/20 border border-white/10">
                         <div className="flex items-center gap-2 shrink-0">
                           <Calendar className="w-5 h-5 text-white/80" />
-                          <span className="text-white/90 text-base font-medium tracking-wide px-1">Lọc theo ngày:</span>
+                          <span className="text-white/90 text-base font-medium tracking-wide px-1">
+                            Lọc theo ngày:
+                          </span>
                         </div>
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="flex-1 min-w-0">
@@ -3467,7 +3971,9 @@ export default function UserProfile() {
                               onChange={setPaymentDateFrom}
                             />
                           </div>
-                          <span className="text-white/70 text-xl shrink-0 px-1">→</span>
+                          <span className="text-white/70 text-xl shrink-0 px-1">
+                            →
+                          </span>
                           <div className="flex-1 min-w-0">
                             <DateInput
                               value={paymentDateTo}
@@ -3479,7 +3985,10 @@ export default function UserProfile() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => { setPaymentDateFrom(""); setPaymentDateTo(""); }}
+                            onClick={() => {
+                              setPaymentDateFrom("");
+                              setPaymentDateTo("");
+                            }}
                             className="h-11 text-sm text-white/90 hover:text-white hover:bg-white/20 px-4 shrink-0"
                           >
                             <X className="w-4 h-4 mr-1" /> Xóa lọc
@@ -3510,110 +4019,161 @@ export default function UserProfile() {
                 <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
                   <CardContent className="p-8">
                     <div className="mb-6">
-                      <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">Nâng cấp gói</h1>
-                      <p className="text-sm text-white/80">Chọn gói phù hợp với nhu cầu của bạn</p>
+                      <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">
+                        Nâng cấp gói
+                      </h1>
+                      <p className="text-sm text-white/80">
+                        Chọn gói phù hợp với nhu cầu của bạn
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {plansLoading ? (
-                        // Loading skeleton
-                        [1, 2, 3].map((i) => (
-                          <div key={i} className="p-6 rounded-2xl bg-white/20 border border-white/25 animate-pulse">
-                            <div className="h-6 bg-white/30 rounded mb-4 w-1/2"></div>
-                            <div className="h-10 bg-white/30 rounded mb-6 w-3/4"></div>
-                            <div className="space-y-3 mb-6">
-                              {[1, 2, 3].map((j) => (
-                                <div key={j} className="h-4 bg-white/30 rounded"></div>
-                              ))}
-                            </div>
-                            <div className="h-12 bg-white/30 rounded"></div>
-                          </div>
-                        ))
-                      ) : (
-                        subscriptionPlans.map((plan, index) => {
-                          const isPopular = index === 1;
-                          // Check if this is the current plan or a lower priority plan (lower ID)
-                          const currentPlanId = currentSubscription?.planId || 1;
-                          const isCurrentPlan = plan.planId === currentPlanId;
-                          const isLowerPlan = plan.planId < currentPlanId;
-                          const shouldDisable = isCurrentPlan || isLowerPlan;
-                          const features = (() => {
-                            if (!plan.features) return [];
-                            // Handle JSON array string like "[\"item1\", \"item2\"]"
-                            if (typeof plan.features === 'string' && plan.features.startsWith('[')) {
-                              try {
-                                return JSON.parse(plan.features);
-                              } catch { return []; }
-                            }
-                            // Handle newline-separated string
-                            return plan.features.split('\n').filter(f => f.trim());
-                          })();
-                          
-                          return (
-                            <div 
-                              key={plan.planId}
-                              className={`p-6 rounded-2xl transition-colors relative ${
-                                isPopular 
-                                  ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50" 
-                                  : "bg-white/20 border border-white/25 hover:border-yellow-500/50"
-                              }`}
+                      {plansLoading
+                        ? // Loading skeleton
+                          [1, 2, 3].map((i) => (
+                            <div
+                              key={i}
+                              className="p-6 rounded-2xl bg-white/20 border border-white/25 animate-pulse"
                             >
-                              {isPopular && (
-                                <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                  Phổ biến
-                                </div>
-                              )}
-                              <div className="mb-4">
-                                <h3 className="text-xl font-semibold text-white mb-2">{plan.planName}</h3>
-                                <div className="text-3xl font-bold text-yellow-400 mb-1">
-                                  {plan.price.toLocaleString('vi-VN')}đ
-                                </div>
-                                <div className="text-sm text-white/80">/tháng</div>
+                              <div className="h-6 bg-white/30 rounded mb-4 w-1/2"></div>
+                              <div className="h-10 bg-white/30 rounded mb-6 w-3/4"></div>
+                              <div className="space-y-3 mb-6">
+                                {[1, 2, 3].map((j) => (
+                                  <div
+                                    key={j}
+                                    className="h-4 bg-white/30 rounded"
+                                  ></div>
+                                ))}
                               </div>
-                              <ul className="space-y-2 mb-6 text-sm text-white/70">
-                                {features.length > 0 ? (
-                                  features.map((feature, fIndex) => (
-                                    <li key={fIndex} className="flex items-center gap-2">
-                                      <CheckCircle2 className={`h-4 w-4 shrink-0 ${isPopular ? "text-yellow-400" : "text-emerald-400"}`} />
-                                      <span>{feature}</span>
-                                    </li>
-                                  ))
-                                ) : (
-                                  <>
-                                    <li className="flex items-center gap-2">
-                                      <CheckCircle2 className={`h-4 w-4 shrink-0 ${isPopular ? "text-yellow-400" : "text-emerald-400"}`} />
-                                      <span>{plan.maxGardens ? `Tối đa ${plan.maxGardens} vườn` : 'Không giới hạn vườn'}</span>
-                                    </li>
-                                    <li className="flex items-center gap-2">
-                                      <CheckCircle2 className={`h-4 w-4 shrink-0 ${isPopular ? "text-yellow-400" : "text-emerald-400"}`} />
-                                      <span>{plan.maxTreesPerGarden ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn` : 'Không giới hạn cây'}</span>
-                                    </li>
-                                  </>
-                                )}
-                              </ul>
-                              <Button
-                                className={`w-full h-12 rounded-xl font-medium ${
-                                  isCurrentPlan
-                                    ? "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
-                                    : isLowerPlan
-                                    ? "bg-neutral-500/50 hover:bg-neutral-500/50 text-white/50 cursor-not-allowed"
-                                    : isPopular
-                                    ? "bg-yellow-500 hover:bg-yellow-600 text-white"
-                                    : "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
-                                }`}
-                                disabled={shouldDisable}
-                                onClick={() => !shouldDisable && handleUpgradePlan(plan)}
-                              >
-                                {isCurrentPlan 
-                                  ? "Gói hiện tại" 
-                                  : isLowerPlan 
-                                  ? "Gói thấp hơn" 
-                                  : "Nâng cấp ngay"}
-                              </Button>
+                              <div className="h-12 bg-white/30 rounded"></div>
                             </div>
-                          );
-                        })
-                      )}
+                          ))
+                        : subscriptionPlans.map((plan, index) => {
+                            const isPopular = index === 1;
+                            // Check if this is the current plan or a lower priority plan (lower ID)
+                            const currentPlanId =
+                              currentSubscription?.planId || 1;
+                            const isCurrentPlan = plan.planId === currentPlanId;
+                            const isLowerPlan = plan.planId < currentPlanId;
+                            const shouldDisable = isCurrentPlan || isLowerPlan;
+                            const features = (() => {
+                              if (!plan.features) return [];
+                              // Handle JSON array string like "[\"item1\", \"item2\"]"
+                              if (
+                                typeof plan.features === "string" &&
+                                plan.features.startsWith("[")
+                              ) {
+                                try {
+                                  return JSON.parse(plan.features);
+                                } catch {
+                                  return [];
+                                }
+                              }
+                              // Handle newline-separated string
+                              return plan.features
+                                .split("\n")
+                                .filter((f) => f.trim());
+                            })();
+
+                            return (
+                              <div
+                                key={plan.planId}
+                                className={`p-6 rounded-2xl transition-colors relative ${
+                                  isPopular
+                                    ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50"
+                                    : "bg-white/20 border border-white/25 hover:border-yellow-500/50"
+                                }`}
+                              >
+                                {isPopular && (
+                                  <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                    Phổ biến
+                                  </div>
+                                )}
+                                <div className="mb-4">
+                                  <h3 className="text-xl font-semibold text-white mb-2">
+                                    {plan.planName}
+                                  </h3>
+                                  <div className="text-3xl font-bold text-yellow-400 mb-1">
+                                    {plan.price.toLocaleString("vi-VN")}đ
+                                  </div>
+                                  <div className="text-sm text-white/80">
+                                    /tháng
+                                  </div>
+                                </div>
+                                <ul className="space-y-2 mb-6 text-sm text-white/70">
+                                  {features.length > 0 ? (
+                                    features.map((feature, fIndex) => (
+                                      <li
+                                        key={fIndex}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <CheckCircle2
+                                          className={`h-4 w-4 shrink-0 ${
+                                            isPopular
+                                              ? "text-yellow-400"
+                                              : "text-emerald-400"
+                                          }`}
+                                        />
+                                        <span>{feature}</span>
+                                      </li>
+                                    ))
+                                  ) : (
+                                    <>
+                                      <li className="flex items-center gap-2">
+                                        <CheckCircle2
+                                          className={`h-4 w-4 shrink-0 ${
+                                            isPopular
+                                              ? "text-yellow-400"
+                                              : "text-emerald-400"
+                                          }`}
+                                        />
+                                        <span>
+                                          {plan.maxGardens
+                                            ? `Tối đa ${plan.maxGardens} vườn`
+                                            : "Không giới hạn vườn"}
+                                        </span>
+                                      </li>
+                                      <li className="flex items-center gap-2">
+                                        <CheckCircle2
+                                          className={`h-4 w-4 shrink-0 ${
+                                            isPopular
+                                              ? "text-yellow-400"
+                                              : "text-emerald-400"
+                                          }`}
+                                        />
+                                        <span>
+                                          {plan.maxTreesPerGarden
+                                            ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
+                                            : "Không giới hạn cây"}
+                                        </span>
+                                      </li>
+                                    </>
+                                  )}
+                                </ul>
+                                <Button
+                                  className={`w-full h-12 rounded-xl font-medium ${
+                                    isCurrentPlan
+                                      ? "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                      : isLowerPlan
+                                      ? "bg-neutral-500/50 hover:bg-neutral-500/50 text-white/50 cursor-not-allowed"
+                                      : isPopular
+                                      ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                                      : "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                  }`}
+                                  disabled={shouldDisable}
+                                  onClick={() =>
+                                    !shouldDisable && handleUpgradePlan(plan)
+                                  }
+                                >
+                                  {isCurrentPlan
+                                    ? "Gói hiện tại"
+                                    : isLowerPlan
+                                    ? "Gói thấp hơn"
+                                    : "Nâng cấp ngay"}
+                                </Button>
+                              </div>
+                            );
+                          })}
                     </div>
                   </CardContent>
                 </Card>
@@ -3622,120 +4182,136 @@ export default function UserProfile() {
 
             {/* Staffs - TẠM THỜI ẨN (để bật lại: bỏ comment và đổi false thành true) */}
             <section>
-            {false && (
-            <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
-              <CardContent className="p-8">
-              <div className="mb-3">
-  {/* Hàng 1: tiêu đề + CTA, luôn gọn gàng */}
-  <div className="flex items-center justify-between gap-3">
-    <div className="text-base font-semibold">Nhân viên & phân công</div>
-    <Button
-      className={`${COMPACT.btn} ${BTN.primary} ${BTN.base} gap-2 shrink-0`}
-      onClick={openStaffModal}
-      title="Tạo tài khoản nhân viên"
-    >
-      <Plus className="h-5 w-5" /> Thêm nhân viên
-    </Button>
-  </div>
+              {false && (
+                <Card className="bg-white rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.06)] border border-neutral-200/60">
+                  <CardContent className="p-8">
+                    <div className="mb-3">
+                      {/* Hàng 1: tiêu đề + CTA, luôn gọn gàng */}
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-base font-semibold">
+                          Nhân viên & phân công
+                        </div>
+                        <Button
+                          className={`${COMPACT.btn} ${BTN.primary} ${BTN.base} gap-2 shrink-0`}
+                          onClick={openStaffModal}
+                          title="Tạo tài khoản nhân viên"
+                        >
+                          <Plus className="h-5 w-5" /> Thêm nhân viên
+                        </Button>
+                      </div>
 
-  {/* Hàng 2: bộ lọc + tìm kiếm, cho phép xuống dòng khi thiếu chỗ */}
-  <div className="mt-2 flex items-center gap-2 flex-wrap xl:flex-nowrap">
-    <select
-      value={staffGardenFilter}
-      onChange={(e) => setStaffGardenFilter(e.target.value)}
-      className={`${COMPACT.select} w-[220px] shrink-0`}
-      title="Lọc theo vườn"
-    >
-      <option value="all">Tất cả vườn</option>
-      <option value="__none">Chưa phân công</option>
-      {gardens.map((g, i) => (
-        <option key={i} value={g.name}>
-          {g.name}
-        </option>
-      ))}
-    </select>
+                      {/* Hàng 2: bộ lọc + tìm kiếm, cho phép xuống dòng khi thiếu chỗ */}
+                      <div className="mt-2 flex items-center gap-2 flex-wrap xl:flex-nowrap">
+                        <select
+                          value={staffGardenFilter}
+                          onChange={(e) => setStaffGardenFilter(e.target.value)}
+                          className={`${COMPACT.select} w-[220px] shrink-0`}
+                          title="Lọc theo vườn"
+                        >
+                          <option value="all">Tất cả vườn</option>
+                          <option value="__none">Chưa phân công</option>
+                          {gardens.map((g, i) => (
+                            <option key={i} value={g.name}>
+                              {g.name}
+                            </option>
+                          ))}
+                        </select>
 
-    <select
-      value={staffStatusFilter}
-      onChange={(e) => setStaffStatusFilter(e.target.value)}
-      className={`${COMPACT.select} w-[200px] md:w-[220px] shrink-0`}
-      title="Lọc theo trạng thái"
-    >
-      <option value="all">Tất cả trạng thái</option>
-      <option value="active">Đang hoạt động</option>
-      <option value="inactive">Tạm ngưng</option>
-    </select>
+                        <select
+                          value={staffStatusFilter}
+                          onChange={(e) => setStaffStatusFilter(e.target.value)}
+                          className={`${COMPACT.select} w-[200px] md:w-[220px] shrink-0`}
+                          title="Lọc theo trạng thái"
+                        >
+                          <option value="all">Tất cả trạng thái</option>
+                          <option value="active">Đang hoạt động</option>
+                          <option value="inactive">Tạm ngưng</option>
+                        </select>
 
-    {/* Ô tìm kiếm co giãn: full chiều ngang khi cần, thu về 260/300/320px tuỳ breakpoint */}
-    <SearchInput
-      value={searchStaff}
-      onChange={setSearchStaff}
-      placeholder="Tìm tên / email / SĐT / vai trò…"
-      className="w-full sm:w-[260px] md:w-[300px] xl:w-[320px]"
-    />
-  </div>
-</div>
+                        {/* Ô tìm kiếm co giãn: full chiều ngang khi cần, thu về 260/300/320px tuỳ breakpoint */}
+                        <SearchInput
+                          value={searchStaff}
+                          onChange={setSearchStaff}
+                          placeholder="Tìm tên / email / SĐT / vai trò…"
+                          className="w-full sm:w-[260px] md:w-[300px] xl:w-[320px]"
+                        />
+                      </div>
+                    </div>
 
-
-                <div className="space-y-2">
-                  {filteredStaffs.map((s, idx) => (
-                    <div key={idx} className="rounded-2xl border p-3">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0 flex items-start gap-3">
-                          <SquareThumb src={s.avatarUrl} size={72} fallback="user" title={s.name} />
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-2">
-                              <Users className="h-4 w-4 text-emerald-600" />
-                              <div className="truncate font-medium text-neutral-900">
-                                {s.name}
+                    <div className="space-y-2">
+                      {filteredStaffs.map((s, idx) => (
+                        <div key={idx} className="rounded-2xl border p-3">
+                          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="min-w-0 flex items-start gap-3">
+                              <SquareThumb
+                                src={s.avatarUrl}
+                                size={72}
+                                fallback="user"
+                                title={s.name}
+                              />
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-4 w-4 text-emerald-600" />
+                                  <div className="truncate font-medium text-neutral-900">
+                                    {s.name}
+                                  </div>
+                                </div>
+                                <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-neutral-600">
+                                  {s.email ? (
+                                    <span>Email: {s.email}</span>
+                                  ) : null}
+                                  {s.phone ? <span>SĐT: {s.phone}</span> : null}
+                                  <span>
+                                    Vai trò: <b>{s.role}</b>
+                                  </span>
+                                  <span>Phân công: {s.assigned || "—"}</span>
+                                  <BadgeSoft color="emerald">
+                                    {s.status || "active"}
+                                  </BadgeSoft>
+                                </div>
                               </div>
                             </div>
-                            <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-neutral-600">
-                              {s.email ? <span>Email: {s.email}</span> : null}
-                              {s.phone ? <span>SĐT: {s.phone}</span> : null}
-                              <span>
-                                Vai trò: <b>{s.role}</b>
-                              </span>
-                              <span>Phân công: {s.assigned || "—"}</span>
-                              <BadgeSoft color="emerald">
-                                {s.status || "active"}
-                              </BadgeSoft>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                className={`${BTN.base} ${BTN.outline} h-11 px-5`}
+                                onClick={() =>
+                                  setAssignModal({
+                                    open: true,
+                                    index: idx,
+                                    staff: s,
+                                  })
+                                }
+                              >
+                                Phân công
+                              </Button>
+                              <Button
+                                className={`${BTN.base} ${BTN.outline} h-11 px-5`}
+                                onClick={() =>
+                                  setStaffDetail({
+                                    open: true,
+                                    index: idx,
+                                    staff: s,
+                                  })
+                                }
+                              >
+                                Chi tiết
+                              </Button>
+                              <Button
+                                className={`${BTN.base} ${BTN.outline} h-11 px-5 text-rose-600 hover:bg-rose-50`}
+                                onClick={() => openConfirmDeleteStaff(s)}
+                              >
+                                <Trash2 className="mr-1 h-5 w-5" /> Xóa
+                              </Button>
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            className={`${BTN.base} ${BTN.outline} h-11 px-5`}
-                            onClick={() =>
-                              setAssignModal({ open: true, index: idx, staff: s })
-                            }
-                          >
-                            Phân công
-                          </Button>
-                          <Button
-                            className={`${BTN.base} ${BTN.outline} h-11 px-5`}
-                            onClick={() =>
-                              setStaffDetail({ open: true, index: idx, staff: s })
-                            }
-                          >
-                            Chi tiết
-                          </Button>
-                          <Button
-                            className={`${BTN.base} ${BTN.outline} h-11 px-5 text-rose-600 hover:bg-rose-50`}
-                            onClick={() => openConfirmDeleteStaff(s)}
-                          >
-                            <Trash2 className="mr-1 h-5 w-5" /> Xóa
-                          </Button>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-            )}
-          </section>
-</div>
+                  </CardContent>
+                </Card>
+              )}
+            </section>
+          </div>
         </div>
       </main>
 
@@ -3801,9 +4377,7 @@ export default function UserProfile() {
           SELECT={SELECT}
           INPUT_OK={INPUT_OK}
           INPUT_ERR={INPUT_ERR}
-          onClose={() =>
-            setEditGarden({ open: false, index: -1, data: null })
-          }
+          onClose={() => setEditGarden({ open: false, index: -1, data: null })}
           onSubmit={(updated) => {
             setGardens((gs) =>
               gs.map((it, i) => (i === editGarden.index ? updated : it))
@@ -3816,78 +4390,101 @@ export default function UserProfile() {
 
       {/* Sửa nhân viên */}
       {editStaff.open && (
-  <EditStaffModal
-    open={editStaff.open}
-    initial={editStaff.data}
-    SELECT={SELECT}
-    INPUT_OK={INPUT_OK}
-    INPUT_ERR={INPUT_ERR}
-    
-    onClose={() => {
-      const idx = editStaff.index;
-      // ưu tiên staff hiện có trong danh sách; nếu không có thì rơi về dữ liệu đang sửa
-      const backStaff =
-        (typeof idx === "number" && idx >= 0 ? (staffs[idx] || null) : null) ||
-        editStaff.data;
+        <EditStaffModal
+          open={editStaff.open}
+          initial={editStaff.data}
+          SELECT={SELECT}
+          INPUT_OK={INPUT_OK}
+          INPUT_ERR={INPUT_ERR}
+          onClose={() => {
+            const idx = editStaff.index;
+            // ưu tiên staff hiện có trong danh sách; nếu không có thì rơi về dữ liệu đang sửa
+            const backStaff =
+              (typeof idx === "number" && idx >= 0
+                ? staffs[idx] || null
+                : null) || editStaff.data;
 
-      setEditStaff({ open: false, index: -1, data: null });
-      if (backStaff) {
-        setStaffDetail({ open: true, index: idx, staff: backStaff });
-     }
-    }}
-  />
-)}
+            setEditStaff({ open: false, index: -1, data: null });
+            if (backStaff) {
+              setStaffDetail({ open: true, index: idx, staff: backStaff });
+            }
+          }}
+        />
+      )}
 
       {/* Chi tiết vườn */}
       <GardenDetailModal
-  open={gardenDetail.open}
-  garden={gardenDetail.garden}
-  staffs={staffs}
-  trees={trees}
-  onClose={() => setGardenDetail({ open: false, garden: null })}
-  onRefresh={reloadTreesFromLS}
-  formatGardenLocation={formatGardenLocation}
-  onEditTree={(treeObj) => {
-    setEditTree({ open:true, data: treeObj });
-  }}
-/>
-<ErrorBoundary>
-  <EditTreeModal
-    open={editTree.open}
-    initial={editTree.data}
-    gardens={gardens}
-    INPUT_OK={INPUT_OK}
-    INPUT_ERR={INPUT_ERR}
-    SELECT={SELECT}
-    onClose={() => setEditTree({ open:false, data:null })}
-    onSubmit={(updated) => {
-      setTrees((ts) => ts.map((x) => x.code === (editTree.data?.code || "") ? { ...x, ...updated } : x));
-      setEditTree({ open:false, data:null });
-      // useEffect(save) đã lo lưu LS_TREES; nếu muốn chắc chắn:
-      try { localStorage.setItem(LS_TREES, JSON.stringify(
-        (trees || []).map((x) => x.code === (editTree.data?.code || "") ? { ...x, ...updated } : x)
-      )); } catch {}
-      showToast("Đã cập nhật cây", updated.code || "");
-    }}
-  />
-</ErrorBoundary>
+        open={gardenDetail.open}
+        garden={gardenDetail.garden}
+        staffs={staffs}
+        trees={trees}
+        onClose={() => setGardenDetail({ open: false, garden: null })}
+        onRefresh={reloadTreesFromLS}
+        formatGardenLocation={formatGardenLocation}
+        onEditTree={(treeObj) => {
+          setEditTree({ open: true, data: treeObj });
+        }}
+      />
+      <ErrorBoundary>
+        <EditTreeModal
+          open={editTree.open}
+          initial={editTree.data}
+          gardens={gardens}
+          INPUT_OK={INPUT_OK}
+          INPUT_ERR={INPUT_ERR}
+          SELECT={SELECT}
+          onClose={() => setEditTree({ open: false, data: null })}
+          onSubmit={(updated) => {
+            setTrees((ts) =>
+              ts.map((x) =>
+                x.code === (editTree.data?.code || "")
+                  ? { ...x, ...updated }
+                  : x
+              )
+            );
+            setEditTree({ open: false, data: null });
+            // useEffect(save) đã lo lưu LS_TREES; nếu muốn chắc chắn:
+            try {
+              localStorage.setItem(
+                LS_TREES,
+                JSON.stringify(
+                  (trees || []).map((x) =>
+                    x.code === (editTree.data?.code || "")
+                      ? { ...x, ...updated }
+                      : x
+                  )
+                )
+              );
+            } catch {}
+            showToast("Đã cập nhật cây", updated.code || "");
+          }}
+        />
+      </ErrorBoundary>
 
       {/* Chi tiết nhân viên (gộp Sửa & Đổi MK) */}
       <StaffDetailModal
-  open={staffDetail.open}
-  staff={staffDetail.staff}
-  onClose={() => setStaffDetail({ open: false, index: -1, staff: null })}
-  onEdit={() => {
-    const baseIdx = staffs.findIndex((x) => x === staffDetail.staff);
-    setEditStaff({ open: true, index: baseIdx, data: { ...staffDetail.staff } });
-    setStaffDetail({ open: false, index: -1, staff: null });
-  }}
-  onResetPw={() => {
-    const baseIdx = staffs.findIndex((x) => x === staffDetail.staff);
-    setResetPwModal({ open: true, index: baseIdx, staff: staffDetail.staff });
-    setStaffDetail({ open: false, index: -1, staff: null });
-  }}
-/>
+        open={staffDetail.open}
+        staff={staffDetail.staff}
+        onClose={() => setStaffDetail({ open: false, index: -1, staff: null })}
+        onEdit={() => {
+          const baseIdx = staffs.findIndex((x) => x === staffDetail.staff);
+          setEditStaff({
+            open: true,
+            index: baseIdx,
+            data: { ...staffDetail.staff },
+          });
+          setStaffDetail({ open: false, index: -1, staff: null });
+        }}
+        onResetPw={() => {
+          const baseIdx = staffs.findIndex((x) => x === staffDetail.staff);
+          setResetPwModal({
+            open: true,
+            index: baseIdx,
+            staff: staffDetail.staff,
+          });
+          setStaffDetail({ open: false, index: -1, staff: null });
+        }}
+      />
 
       {/* Confirm modal */}
       <ConfirmModal
@@ -3939,7 +4536,7 @@ export default function UserProfile() {
                 const p = (confirm.payload.phone || "").trim();
                 const e = (confirm.payload.email || "").trim();
                 if (!p && !e) return "Không có thông tin";
-                return p && e ? `${p} / ${e}` : (p || e);
+                return p && e ? `${p} / ${e}` : p || e;
               })()}
             </div>
             <div className="text-sm">
@@ -4010,52 +4607,105 @@ export default function UserProfile() {
       </ConfirmModal>
 
       <OTPModal
-  open={otpState.open}
-  target={otpState.target}
-  sendTo={profile.email}
-  onClose={closeOtp}
-  onVerified={() => {
-    setAllowEditContact((s) => ({ ...s, [otpState.target]: true }));
-    showToast(
-      "Xác minh thành công",
-      otpState.target === "email" ? "Bạn có thể đổi Email" : "Bạn có thể đổi SĐT",
-      "success"
-    );
-  }}
-/>
-{/* EditTreeModal được định nghĩa ở dưới file (ngoài JSX) */}
-
-
-
+        open={otpState.open}
+        target={otpState.target}
+        sendTo={
+          otpState.target === "email"
+            ? draft.email || profile.email || ""
+            : draft.phone || profile.phone || ""
+        }
+        userId={user?.userId}
+        newValue={
+          otpState.target === "email" ? draft.email || "" : draft.phone || ""
+        }
+        onClose={() => {
+          // Reset allowEditContact nếu chưa verify thành công
+          if (otpState.target) {
+            const currentValue =
+              otpState.target === "email" ? profile.email : profile.phone;
+            const draftValue =
+              otpState.target === "email" ? draft.email : draft.phone;
+            // Nếu giá trị đã thay đổi so với giá trị ban đầu, reset về giá trị cũ
+            if (currentValue && draftValue !== currentValue) {
+              setDraft((d) => ({
+                ...d,
+                [otpState.target === "email" ? "email" : "phone"]: currentValue,
+              }));
+            }
+            setAllowEditContact((s) => ({ ...s, [otpState.target]: false }));
+          }
+          closeOtp();
+        }}
+        onVerified={() => {
+          // OTP đã được verify và profile đã được update ở backend
+          // Chỉ cần giữ allowEditContact = true để user có thể tiếp tục edit
+          setAllowEditContact((s) => ({ ...s, [otpState.target]: true }));
+          showToast(
+            "Xác minh thành công",
+            otpState.target === "email"
+              ? "Email đã được cập nhật thành công!"
+              : "Số điện thoại đã được cập nhật thành công!",
+            "success"
+          );
+          // Reload profile để lấy giá trị mới từ backend
+          if (user?.userId) {
+            UserRepository.getProfile(user.userId)
+              .then((response) => {
+                if (response?.data) {
+                  const updatedProfile = response.data;
+                  setProfile((p) => ({
+                    ...p,
+                    email: updatedProfile.email || p.email,
+                    phone: updatedProfile.phone || p.phone,
+                  }));
+                  setDraft((d) => ({
+                    ...d,
+                    email: updatedProfile.email || d.email,
+                    phone: updatedProfile.phone || d.phone,
+                  }));
+                }
+              })
+              .catch((err) => console.error("Error reloading profile:", err));
+          }
+        }}
+      />
+      {/* EditTreeModal được định nghĩa ở dưới file (ngoài JSX) */}
 
       {/* Assign + Reset Password */}
       <AssignStaffModal
-  open={assignModal.open}
-  staff={assignModal.staff}
-  gardens={gardens}
-  onClose={() => setAssignModal({ open: false, index: -1, staff: null })}
-  onConfirm={(gardenName) => {
-    setStaffs((ss) => {
-      const baseIdx = ss.findIndex((x) => x === assignModal.staff);
-      return ss.map((it, i) => (i === baseIdx ? { ...it, assigned: gardenName } : it));
-    });
-    setAssignModal({ open: false, index: -1, staff: null });
-    showToast("Đã phân công", `Giao ${assignModal.staff?.name} quản lý ${gardenName}`);
-  }}
-/>
+        open={assignModal.open}
+        staff={assignModal.staff}
+        gardens={gardens}
+        onClose={() => setAssignModal({ open: false, index: -1, staff: null })}
+        onConfirm={(gardenName) => {
+          setStaffs((ss) => {
+            const baseIdx = ss.findIndex((x) => x === assignModal.staff);
+            return ss.map((it, i) =>
+              i === baseIdx ? { ...it, assigned: gardenName } : it
+            );
+          });
+          setAssignModal({ open: false, index: -1, staff: null });
+          showToast(
+            "Đã phân công",
+            `Giao ${assignModal.staff?.name} quản lý ${gardenName}`
+          );
+        }}
+      />
 
-<ResetStaffPwModal
-  open={resetPwModal.open}
-  staff={resetPwModal.staff}
-  onClose={() => setResetPwModal({ open: false, index: -1, staff: null })}
-  onConfirmed={(newPw) => {
-    setStaffs((ss) => {
-      const baseIdx = ss.findIndex((x) => x === resetPwModal.staff);
-      return ss.map((it, i) => (i === baseIdx ? { ...it, tempPassword: newPw } : it));
-    });
-    // Modal tự hiển thị trạng thái thành công + nút copy
-  }}
-/>
+      <ResetStaffPwModal
+        open={resetPwModal.open}
+        staff={resetPwModal.staff}
+        onClose={() => setResetPwModal({ open: false, index: -1, staff: null })}
+        onConfirmed={(newPw) => {
+          setStaffs((ss) => {
+            const baseIdx = ss.findIndex((x) => x === resetPwModal.staff);
+            return ss.map((it, i) =>
+              i === baseIdx ? { ...it, tempPassword: newPw } : it
+            );
+          });
+          // Modal tự hiển thị trạng thái thành công + nút copy
+        }}
+      />
 
       {/* Toast xác nhận */}
       <Toast
@@ -4107,13 +4757,28 @@ function EditTreeModal({
   // Nếu thiếu initial -> hiện thông báo thay vì crash
   if (!initial || typeof initial !== "object") {
     return (
-      <div className="fixed inset-0 z-[1350] grid place-items-center" onClick={onClose}>
+      <div
+        className="fixed inset-0 z-[1350] grid place-items-center"
+        onClick={onClose}
+      >
         <div className="absolute inset-0 bg-black/60" />
-        <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl" onClick={(e)=>e.stopPropagation()}>
-          <div className="text-lg font-semibold text-rose-700 mb-1">Không tìm thấy cây cần sửa</div>
-          <div className="text-sm text-neutral-700">Bản ghi có thể đã bị xoá hoặc mã cây không hợp lệ.</div>
+        <div
+          className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="text-lg font-semibold text-rose-700 mb-1">
+            Không tìm thấy cây cần sửa
+          </div>
+          <div className="text-sm text-neutral-700">
+            Bản ghi có thể đã bị xoá hoặc mã cây không hợp lệ.
+          </div>
           <div className="mt-4 flex justify-end">
-            <Button className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onClose}>Đóng</Button>
+            <Button
+              className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={onClose}
+            >
+              Đóng
+            </Button>
           </div>
         </div>
       </div>
@@ -4128,7 +4793,10 @@ function EditTreeModal({
   const canSave = !errs.code && !errs.gardenName;
 
   return (
-    <div className="fixed inset-0 z-[1350] grid place-items-center" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-[1350] grid place-items-center"
+      onClick={onClose}
+    >
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
@@ -4136,9 +4804,13 @@ function EditTreeModal({
       >
         <div className="mb-3 flex items-center justify-between">
           <div className="text-lg font-semibold">
-            Sửa thông tin cây — <span className="text-emerald-700">{initial.code}</span>
+            Sửa thông tin cây —{" "}
+            <span className="text-emerald-700">{initial.code}</span>
           </div>
-          <button className="rounded p-1 hover:bg-neutral-100" onClick={onClose}>
+          <button
+            className="rounded p-1 hover:bg-neutral-100"
+            onClick={onClose}
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -4148,10 +4820,12 @@ function EditTreeModal({
             <div>
               <FieldLabel required>Mã cây</FieldLabel>
               <Input
-                className={!touched.code ? INPUT_OK : errs.code ? INPUT_ERR : INPUT_OK}
+                className={
+                  !touched.code ? INPUT_OK : errs.code ? INPUT_ERR : INPUT_OK
+                }
                 value={form.code}
-                onChange={(e)=>setForm({...form, code: e.target.value})}
-                onBlur={()=>setTouched(t=>({...t, code:true}))}
+                onChange={(e) => setForm({ ...form, code: e.target.value })}
+                onBlur={() => setTouched((t) => ({ ...t, code: true }))}
                 placeholder="VD: XC-01"
               />
               {touched.code && errs.code ? (
@@ -4164,11 +4838,17 @@ function EditTreeModal({
               <select
                 className={SELECT}
                 value={form.gardenName}
-                onChange={(e)=>setForm({...form, gardenName: e.target.value})}
-                onBlur={()=>setTouched(t=>({...t, gardenName:true}))}
+                onChange={(e) =>
+                  setForm({ ...form, gardenName: e.target.value })
+                }
+                onBlur={() => setTouched((t) => ({ ...t, gardenName: true }))}
               >
                 <option value="">(Chưa chọn)</option>
-                {gardens.map((g,i)=>(<option key={i} value={g.name}>{g.name}</option>))}
+                {gardens.map((g, i) => (
+                  <option key={i} value={g.name}>
+                    {g.name}
+                  </option>
+                ))}
               </select>
               {touched.gardenName && errs.gardenName ? (
                 <p className="mt-1 text-xs text-rose-600">{errs.gardenName}</p>
@@ -4182,7 +4862,9 @@ function EditTreeModal({
               <Input
                 className={INPUT_OK}
                 value={form.speciesLabel}
-                onChange={(e)=>setForm({...form, speciesLabel: e.target.value})}
+                onChange={(e) =>
+                  setForm({ ...form, speciesLabel: e.target.value })
+                }
                 placeholder="VD: Bưởi / Sầu riêng…"
               />
             </div>
@@ -4191,7 +4873,7 @@ function EditTreeModal({
               <Input
                 className={INPUT_OK}
                 value={form.variety}
-                onChange={(e)=>setForm({...form, variety: e.target.value})}
+                onChange={(e) => setForm({ ...form, variety: e.target.value })}
                 placeholder="VD: Da Xanh, Ri6…"
               />
             </div>
@@ -4203,7 +4885,7 @@ function EditTreeModal({
               <Input
                 className={INPUT_OK}
                 value={form.status}
-                onChange={(e)=>setForm({...form, status: e.target.value})}
+                onChange={(e) => setForm({ ...form, status: e.target.value })}
                 placeholder="VD: tốt / ổn định / sâu bệnh…"
               />
             </div>
@@ -4212,7 +4894,7 @@ function EditTreeModal({
               <Input
                 className={INPUT_OK}
                 value={form.phase}
-                onChange={(e)=>setForm({...form, phase: e.target.value})}
+                onChange={(e) => setForm({ ...form, phase: e.target.value })}
                 placeholder="VD: Cây non / Thân lá / Ra hoa…"
               />
             </div>
@@ -4224,7 +4906,7 @@ function EditTreeModal({
               <Input
                 className={INPUT_OK}
                 value={form.soil}
-                onChange={(e)=>setForm({...form, soil: e.target.value})}
+                onChange={(e) => setForm({ ...form, soil: e.target.value })}
                 placeholder="VD: Đất phù sa / Đất đỏ bazan…"
               />
             </div>
@@ -4233,7 +4915,7 @@ function EditTreeModal({
               <Input
                 className={INPUT_OK}
                 value={form.region}
-                onChange={(e)=>setForm({...form, region: e.target.value})}
+                onChange={(e) => setForm({ ...form, region: e.target.value })}
                 placeholder="VD: Miền Bắc / Miền Tây…"
               />
             </div>
@@ -4246,7 +4928,9 @@ function EditTreeModal({
                 type="date"
                 className={INPUT_OK}
                 value={form.plantDate || ""}
-                onChange={(e)=>setForm({...form, plantDate: e.target.value})}
+                onChange={(e) =>
+                  setForm({ ...form, plantDate: e.target.value })
+                }
               />
             </div>
             <div>
@@ -4256,9 +4940,9 @@ function EditTreeModal({
                 pattern="\d*"
                 className={INPUT_OK}
                 value={String(form.preAge ?? 0)}
-                onChange={(e)=>{
-                  const v = String(e.target.value).replace(/\D/g,"");
-                  setForm({...form, preAge: v ? Number(v) : 0});
+                onChange={(e) => {
+                  const v = String(e.target.value).replace(/\D/g, "");
+                  setForm({ ...form, preAge: v ? Number(v) : 0 });
                 }}
               />
             </div>
@@ -4266,7 +4950,10 @@ function EditTreeModal({
 
           <div>
             <FieldLabel>Ảnh cây</FieldLabel>
-            <ImagePicker value={form.image} onChange={(v)=>setForm({...form, image: v})} />
+            <ImagePicker
+              value={form.image}
+              onChange={(v) => setForm({ ...form, image: v })}
+            />
           </div>
 
           <div className="mt-2 flex justify-end gap-2">
@@ -4279,7 +4966,7 @@ function EditTreeModal({
             <Button
               className="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white"
               disabled={!canSave}
-              onClick={()=> canSave && onSubmit(form)}
+              onClick={() => canSave && onSubmit(form)}
             >
               Lưu thay đổi
             </Button>
@@ -4289,7 +4976,6 @@ function EditTreeModal({
     </div>
   );
 }
-
 
 /* ------- Small components extracted for brevity ------- */
 function EditProfileForm({
@@ -4332,9 +5018,13 @@ function EditProfileForm({
       {/* Email + OTP gate */}
       <div className="min-w-0">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <FieldLabel className="break-words min-w-0 flex-1">Email (xác minh OTP trước khi đổi)</FieldLabel>
+          <FieldLabel className="break-words min-w-0 flex-1">
+            Email (xác minh OTP trước khi đổi)
+          </FieldLabel>
           {allowEdit.email ? (
-            <span className="text-xs text-emerald-700 whitespace-nowrap flex-shrink-0">Đã xác minh OTP ✓</span>
+            <span className="text-xs text-emerald-700 whitespace-nowrap flex-shrink-0">
+              Đã xác minh OTP ✓
+            </span>
           ) : (
             <button
               type="button"
@@ -4352,7 +5042,11 @@ function EditProfileForm({
           readOnly={!allowEdit.email}
           aria-invalid={!!(touchedProfile.contact && profileErrors.contact)}
           className={`${
-            !touchedProfile.contact ? INPUT_OK : profileErrors.contact ? INPUT_ERR : INPUT_OK
+            !touchedProfile.contact
+              ? INPUT_OK
+              : profileErrors.contact
+              ? INPUT_ERR
+              : INPUT_OK
           } min-w-0`}
           value={draft.email}
           onChange={(e) => setDraft({ ...draft, email: e.target.value })}
@@ -4362,10 +5056,16 @@ function EditProfileForm({
       </div>
 
       <div className="md:col-span-2 flex flex-col sm:flex-row justify-end gap-2 pt-1 min-w-0">
-        <Button className={`${BTN.base} ${BTN.outline} w-full sm:w-auto`} onClick={onCancel}>
+        <Button
+          className={`${BTN.base} ${BTN.outline} w-full sm:w-auto`}
+          onClick={onCancel}
+        >
           Huỷ
         </Button>
-        <Button className={`${BTN.base} ${BTN.primary} w-full sm:w-auto`} onClick={onSave}>
+        <Button
+          className={`${BTN.base} ${BTN.primary} w-full sm:w-auto`}
+          onClick={onSave}
+        >
           Lưu thay đổi
         </Button>
       </div>
@@ -4388,35 +5088,41 @@ function GardenModal({
 }) {
   // nhận thay đổi từ AddressPicker và đồng bộ cả object + string (để khớp backend)
   const onAddressChange = (val = {}) => {
-  const { province, ward, address } = val;
+    const { province, ward, address } = val;
 
-  setNewGarden((g) => {
-    // reset ward khi nhận ward === null
-    const shouldResetWard = ward === null;
+    setNewGarden((g) => {
+      // reset ward khi nhận ward === null
+      const shouldResetWard = ward === null;
 
-    return {
-      ...g,
-      // object đã chọn để dùng lại khi mở form
-      provinceObj: province !== undefined ? province : g.provinceObj,
-      wardObj: shouldResetWard ? null : (ward !== undefined ? ward : g.wardObj),
+      return {
+        ...g,
+        // object đã chọn để dùng lại khi mở form
+        provinceObj: province !== undefined ? province : g.provinceObj,
+        wardObj: shouldResetWard ? null : ward !== undefined ? ward : g.wardObj,
 
-      // chuỗi hiển thị để lưu ra backend
-      province:
-        province
-          ? (province.full_name || province.name || province.label || province.text || "")
+        // chuỗi hiển thị để lưu ra backend
+        province: province
+          ? province.full_name ||
+            province.name ||
+            province.label ||
+            province.text ||
+            ""
           : g.province,
-      ward: shouldResetWard
-        ? ""
-        : (ward
-            ? (ward.full_name || ward.name || ward.label || ward.text || "")
-            : g.ward),
-      address: address !== undefined ? address : g.address,
-    };
-  });
-};
+        ward: shouldResetWard
+          ? ""
+          : ward
+          ? ward.full_name || ward.name || ward.label || ward.text || ""
+          : g.ward,
+        address: address !== undefined ? address : g.address,
+      };
+    });
+  };
 
   return (
-    <div className="fixed inset-0 z-[1100] grid place-items-center" onClick={closeGardenModal}>
+    <div
+      className="fixed inset-0 z-[1100] grid place-items-center"
+      onClick={closeGardenModal}
+    >
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
@@ -4430,9 +5136,17 @@ function GardenModal({
             <FieldLabel required>Tên vườn</FieldLabel>
             <Input
               aria-invalid={!!(touchedGarden.name && gardenErrors.name)}
-              className={!touchedGarden.name ? INPUT_OK : gardenErrors.name ? INPUT_ERR : INPUT_OK}
+              className={
+                !touchedGarden.name
+                  ? INPUT_OK
+                  : gardenErrors.name
+                  ? INPUT_ERR
+                  : INPUT_OK
+              }
               value={newGarden.name}
-              onChange={(e) => setNewGarden({ ...newGarden, name: e.target.value })}
+              onChange={(e) =>
+                setNewGarden({ ...newGarden, name: e.target.value })
+              }
               onBlur={() => setTouchedGarden((t) => ({ ...t, name: true }))}
               placeholder="VD: Vườn số 1 FPT"
             />
@@ -4455,35 +5169,39 @@ function GardenModal({
               - Dùng dataset TTHC VN cập nhật (file useVnAdmin bạn đã có)
             */}
             <AddressPicker
-  value={{
-    province: newGarden.provinceObj,
-    ward: newGarden.wardObj,
-    address: newGarden.address,
-  }}
-  onChange={onAddressChange}
-  lockToSuggestion={true}
-  required={true}
-  inputClassOk={INPUT_OK}
-  inputClassErr={INPUT_ERR}
-  placeholders={{
-    province: "VD: Hà Nội",
-    ward: "VD: Dịch Vọng / Thạch Hoà…",
-    address: "Số nhà / Đường / Khu",
-  }}
-  /* ✅ chỉ đỏ sau khi bạn bấm TẠO VƯỜN (đã set touched) */
-  invalidProvince={!!(touchedGarden.province && gardenErrors.province)}
-  invalidWard={!!(touchedGarden.ward && gardenErrors.ward)}
-  invalidAddress={!!(touchedGarden.address && gardenErrors.address)}
-/>
+              value={{
+                province: newGarden.provinceObj,
+                ward: newGarden.wardObj,
+                address: newGarden.address,
+              }}
+              onChange={onAddressChange}
+              lockToSuggestion={true}
+              required={true}
+              inputClassOk={INPUT_OK}
+              inputClassErr={INPUT_ERR}
+              placeholders={{
+                province: "VD: Hà Nội",
+                ward: "VD: Dịch Vọng / Thạch Hoà…",
+                address: "Số nhà / Đường / Khu",
+              }}
+              /* ✅ chỉ đỏ sau khi bạn bấm TẠO VƯỜN (đã set touched) */
+              invalidProvince={
+                !!(touchedGarden.province && gardenErrors.province)
+              }
+              invalidWard={!!(touchedGarden.ward && gardenErrors.ward)}
+              invalidAddress={!!(touchedGarden.address && gardenErrors.address)}
+            />
 
             {/* hiển thị lỗi dưới từng trường (dựa vào touched + errors) */}
             <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 {touchedGarden.province && gardenErrors.province && (
-                  <p className="text-xs text-rose-600">{gardenErrors.province}</p>
+                  <p className="text-xs text-rose-600">
+                    {gardenErrors.province}
+                  </p>
                 )}
               </div>
-              
+
               <div>
                 {touchedGarden.ward && gardenErrors.ward && (
                   <p className="text-xs text-rose-600">{gardenErrors.ward}</p>
@@ -4491,7 +5209,9 @@ function GardenModal({
               </div>
               <div>
                 {touchedGarden.address && gardenErrors.address && (
-                  <p className="text-xs text-rose-600">{gardenErrors.address}</p>
+                  <p className="text-xs text-rose-600">
+                    {gardenErrors.address}
+                  </p>
                 )}
               </div>
             </div>
@@ -4502,7 +5222,9 @@ function GardenModal({
             <FieldLabel>Trạng thái</FieldLabel>
             <select
               value={newGarden.status}
-              onChange={(e) => setNewGarden({ ...newGarden, status: e.target.value })}
+              onChange={(e) =>
+                setNewGarden({ ...newGarden, status: e.target.value })
+              }
               className={SELECT}
             >
               <option>Đang hoạt động</option>
@@ -4521,7 +5243,10 @@ function GardenModal({
 
           {/* Action */}
           <div className="mt-2 flex justify-end gap-2">
-            <Button className="rounded-xl bg-white border border-neutral-300 hover:bg-neutral-100 text-slate-900" onClick={closeGardenModal}>
+            <Button
+              className="rounded-xl bg-white border border-neutral-300 hover:bg-neutral-100 text-slate-900"
+              onClick={closeGardenModal}
+            >
               Huỷ
             </Button>
             <Button
@@ -4529,7 +5254,12 @@ function GardenModal({
               disabled={!canSubmitGarden}
               onClick={() => {
                 // ép show lỗi nếu người dùng chưa chọn từ gợi ý
-                setTouchedGarden({ name: true, province: true, ward: true, address: true });
+                setTouchedGarden({
+                  name: true,
+                  province: true,
+                  ward: true,
+                  address: true,
+                });
 
                 if (!canSubmitGarden) return;
                 openConfirmAddGarden();
@@ -4559,7 +5289,10 @@ function StaffModal({
   closeStaffModal,
 }) {
   return (
-    <div className="fixed inset-0 z-[1100] grid place-items-center" onClick={closeStaffModal}>
+    <div
+      className="fixed inset-0 z-[1100] grid place-items-center"
+      onClick={closeStaffModal}
+    >
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
@@ -4571,9 +5304,17 @@ function StaffModal({
             <FieldLabel required>Họ tên</FieldLabel>
             <Input
               aria-invalid={!!(touchedStaff.name && staffErrors.name)}
-              className={!touchedStaff.name ? INPUT_OK : staffErrors.name ? INPUT_ERR : INPUT_OK}
+              className={
+                !touchedStaff.name
+                  ? INPUT_OK
+                  : staffErrors.name
+                  ? INPUT_ERR
+                  : INPUT_OK
+              }
               value={newStaff.name}
-              onChange={(e) => setNewStaff({ ...newStaff, name: e.target.value })}
+              onChange={(e) =>
+                setNewStaff({ ...newStaff, name: e.target.value })
+              }
               onBlur={() => setTouchedStaff((t) => ({ ...t, name: true }))}
               placeholder="VD: Nguyễn Văn A"
             />
@@ -4591,10 +5332,16 @@ function StaffModal({
                 autoComplete="email"
                 aria-invalid={!!(touchedStaff.contact && staffErrors.contact)}
                 className={
-                  !touchedStaff.contact ? INPUT_OK : staffErrors.contact ? INPUT_ERR : INPUT_OK
+                  !touchedStaff.contact
+                    ? INPUT_OK
+                    : staffErrors.contact
+                    ? INPUT_ERR
+                    : INPUT_OK
                 }
                 value={newStaff.email}
-                onChange={(e) => setNewStaff({ ...newStaff, email: e.target.value })}
+                onChange={(e) =>
+                  setNewStaff({ ...newStaff, email: e.target.value })
+                }
                 onBlur={() => setTouchedStaff((t) => ({ ...t, contact: true }))}
                 placeholder="name@company.com"
               />
@@ -4609,17 +5356,26 @@ function StaffModal({
                 pattern="\d*"
                 aria-invalid={!!(touchedStaff.contact && staffErrors.contact)}
                 className={
-                  !touchedStaff.contact ? INPUT_OK : staffErrors.contact ? INPUT_ERR : INPUT_OK
+                  !touchedStaff.contact
+                    ? INPUT_OK
+                    : staffErrors.contact
+                    ? INPUT_ERR
+                    : INPUT_OK
                 }
                 value={newStaff.phone}
                 onChange={(e) =>
-                  setNewStaff({ ...newStaff, phone: e.target.value.replace(/\D/g, "") })
+                  setNewStaff({
+                    ...newStaff,
+                    phone: e.target.value.replace(/\D/g, ""),
+                  })
                 }
                 onBlur={() => setTouchedStaff((t) => ({ ...t, contact: true }))}
                 placeholder="0xxxxxxxxx"
               />
               {touchedStaff.contact && staffErrors.contact && (
-                <p className="mt-1 text-xs text-rose-600">{staffErrors.contact}</p>
+                <p className="mt-1 text-xs text-rose-600">
+                  {staffErrors.contact}
+                </p>
               )}
             </div>
           </div>
@@ -4629,13 +5385,23 @@ function StaffModal({
               <FieldLabel required>Mật khẩu tạm</FieldLabel>
               <div className="flex gap-2">
                 <Input
-                  aria-invalid={!!(touchedStaff.tempPassword && staffErrors.tempPassword)}
+                  aria-invalid={
+                    !!(touchedStaff.tempPassword && staffErrors.tempPassword)
+                  }
                   className={
-                    !touchedStaff.tempPassword ? INPUT_OK : staffErrors.tempPassword ? INPUT_ERR : INPUT_OK
+                    !touchedStaff.tempPassword
+                      ? INPUT_OK
+                      : staffErrors.tempPassword
+                      ? INPUT_ERR
+                      : INPUT_OK
                   }
                   value={newStaff.tempPassword}
-                  onChange={(e) => setNewStaff({ ...newStaff, tempPassword: e.target.value })}
-                  onBlur={() => setTouchedStaff((t) => ({ ...t, tempPassword: true }))}
+                  onChange={(e) =>
+                    setNewStaff({ ...newStaff, tempPassword: e.target.value })
+                  }
+                  onBlur={() =>
+                    setTouchedStaff((t) => ({ ...t, tempPassword: true }))
+                  }
                   placeholder="Tối thiểu 8 ký tự"
                 />
                 <Button
@@ -4687,7 +5453,10 @@ function StaffModal({
           </div>
 
           <div className="mt-2 flex justify-end gap-2">
-            <Button className={`${BTN.base} ${BTN.outline}`} onClick={closeStaffModal}>
+            <Button
+              className={`${BTN.base} ${BTN.outline}`}
+              onClick={closeStaffModal}
+            >
               Huỷ
             </Button>
             <Button
@@ -4898,8 +5667,18 @@ function DateInput({ value, onChange, error }) {
   const days = Array.from({ length: daysInMonth }).map((_, i) => i + 1);
 
   const monthNames = [
-    "Th1", "Th2", "Th3", "Th4", "Th5", "Th6",
-    "Th7", "Th8", "Th9", "Th10", "Th11", "Th12",
+    "Th1",
+    "Th2",
+    "Th3",
+    "Th4",
+    "Th5",
+    "Th6",
+    "Th7",
+    "Th8",
+    "Th9",
+    "Th10",
+    "Th11",
+    "Th12",
   ];
 
   function pickDay(day) {
@@ -4973,7 +5752,7 @@ function DateInput({ value, onChange, error }) {
               e.stopPropagation();
             }
           }}
-          style={{ maxWidth: 'min(18rem, calc(100vw - 2rem))' }}
+          style={{ maxWidth: "min(18rem, calc(100vw - 2rem))" }}
         >
           <div className="flex items-center justify-between mb-2">
             <button
@@ -5031,7 +5810,8 @@ function DateInput({ value, onChange, error }) {
               if (isSelected) {
                 extraClass = "bg-emerald-500 text-white";
               } else if (isToday) {
-                extraClass = "border border-emerald-500 text-emerald-700 font-semibold";
+                extraClass =
+                  "border border-emerald-500 text-emerald-700 font-semibold";
               } else {
                 extraClass = "hover:bg-emerald-50 text-neutral-800";
               }
@@ -5070,9 +5850,10 @@ function genPassword() {
   const chars =
     "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@$!%*?&";
   let s = "";
-  for (let i = 0; i < 10; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  for (let i = 0; i < 10; i++)
+    s += chars[Math.floor(Math.random() * chars.length)];
   return s;
 }
 function genOTP() {
   return String(Math.floor(100000 + Math.random() * 900000));
-} 
+}

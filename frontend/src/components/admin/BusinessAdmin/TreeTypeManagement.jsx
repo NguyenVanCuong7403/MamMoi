@@ -159,21 +159,21 @@ const truncateText = (text = "", maxChars = 60) => {
 const ensureArray = (value, defaultValue = []) => {
   if (!value) return defaultValue;
   if (Array.isArray(value)) return value;
-  
+
   // If it's a string, try to parse as JSON
-  if (typeof value === 'string') {
+  if (typeof value === "string") {
     try {
       const parsed = JSON.parse(value);
       if (Array.isArray(parsed)) return parsed;
       // If parsed is an object, try to extract array from it
-      if (typeof parsed === 'object' && parsed !== null) {
+      if (typeof parsed === "object" && parsed !== null) {
         // Check common property names
         if (Array.isArray(parsed.items)) return parsed.items;
         if (Array.isArray(parsed.data)) return parsed.data;
         if (Array.isArray(parsed.steps)) return parsed.steps;
         // If it's an object with numeric keys, convert to array
         const keys = Object.keys(parsed);
-        if (keys.length > 0 && keys.every(k => !isNaN(Number(k)))) {
+        if (keys.length > 0 && keys.every((k) => !isNaN(Number(k)))) {
           return Object.values(parsed);
         }
       }
@@ -182,20 +182,20 @@ const ensureArray = (value, defaultValue = []) => {
       return defaultValue;
     }
   }
-  
+
   // If it's an object, try to convert to array
-  if (typeof value === 'object' && value !== null) {
+  if (typeof value === "object" && value !== null) {
     // Check if it has array-like properties
     if (Array.isArray(value.items)) return value.items;
     if (Array.isArray(value.data)) return value.data;
     if (Array.isArray(value.steps)) return value.steps;
     // If it's an object with numeric keys, convert to array
     const keys = Object.keys(value);
-    if (keys.length > 0 && keys.every(k => !isNaN(Number(k)))) {
+    if (keys.length > 0 && keys.every((k) => !isNaN(Number(k)))) {
       return Object.values(value);
     }
   }
-  
+
   return defaultValue;
 };
 
@@ -657,13 +657,26 @@ const mapSoilToFormValues = (soil) =>
       }
     : soilDefaultValues;
 
-function ImageDropzone({ value, onChange }) {
+function ImageDropzone({ value, onChange, onFileChange }) {
   const [isDragging, setIsDragging] = useState(false);
   const inputRef = React.useRef(null);
 
   const handleFiles = (fileList) => {
     const file = fileList?.[0];
     if (!file) return;
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Kích thước ảnh không được vượt quá 2MB");
+      return;
+    }
+
+    // Store the file object for later upload
+    if (onFileChange) {
+      onFileChange(file);
+    }
+
+    // Create preview (base64) for immediate display
     const reader = new FileReader();
     reader.onload = () => {
       onChange(reader.result);
@@ -700,7 +713,7 @@ function ImageDropzone({ value, onChange }) {
       }}
     >
       <div className="flex h-20 w-20 items-center justify-center overflow-hidden rounded-xl border bg-white">
-        {value ? (
+        {value && value.trim() !== "" ? (
           <img
             src={value}
             alt="Tree preview"
@@ -725,6 +738,9 @@ function ImageDropzone({ value, onChange }) {
             onClick={(e) => {
               e.stopPropagation();
               onChange("");
+              if (onFileChange) {
+                onFileChange(null);
+              }
             }}
           >
             Xoá ảnh
@@ -851,11 +867,17 @@ function TreeTable({
               >
                 <TableCell>
                   <div className="flex gap-4">
-                    <img
-                      src={tree.ImageUrl}
-                      alt={tree.TreeTypeName}
-                      className="h-14 w-14 rounded-2xl object-cover"
-                    />
+                    {tree.ImageUrl ? (
+                      <img
+                        src={tree.ImageUrl}
+                        alt={tree.TreeTypeName}
+                        className="h-14 w-14 rounded-2xl object-cover"
+                      />
+                    ) : (
+                      <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
+                        <ImageIcon className="h-6 w-6 text-slate-400" />
+                      </div>
+                    )}
                     <div className="space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <p className="text-lg font-semibold text-slate-900">
@@ -1058,6 +1080,7 @@ export default function TreeTypeManagement() {
     useState(false);
   const [varietyRevertConfirmOpen, setVarietyRevertConfirmOpen] =
     useState(false);
+  const [imageFile, setImageFile] = useState(null);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -1233,6 +1256,7 @@ export default function TreeTypeManagement() {
   const handleOpenCreate = () => {
     form.reset(defaultFormValues);
     setEditingTree(null);
+    setImageFile(null);
     setSheetOpen(true);
   };
 
@@ -1257,6 +1281,7 @@ export default function TreeTypeManagement() {
       Pests: ensureArray(tree.Pests, []),
     });
     setEditingTree(tree);
+    setImageFile(null);
     setSheetOpen(true);
   };
 
@@ -1353,6 +1378,34 @@ export default function TreeTypeManagement() {
 
     setSaving(true);
     try {
+      // Upload image if a new file was selected
+      let imageUrl = values.ImageUrl;
+      if (imageFile) {
+        try {
+          const uploadResponse = await AdminTreeRepository.uploadTreeTypeImage(
+            imageFile
+          );
+          if (uploadResponse?.success && uploadResponse?.url) {
+            imageUrl = uploadResponse.url;
+          } else {
+            throw new Error("Không thể tải ảnh lên server");
+          }
+        } catch (error) {
+          console.error("Error uploading image:", error);
+          form.setError("ImageUrl", {
+            type: "manual",
+            message: error.message || "Lỗi khi tải ảnh lên. Vui lòng thử lại.",
+          });
+          setSaving(false);
+          return;
+        }
+      }
+
+      // Update ImageUrl if it was uploaded
+      if (imageUrl !== values.ImageUrl) {
+        values.ImageUrl = imageUrl;
+      }
+
       if (editingTree) {
         const updated = await updateTreeType(editingTree.TreeTypeID, {
           ...editingTree,
@@ -1390,7 +1443,14 @@ export default function TreeTypeManagement() {
           })
         );
       }
+      setImageFile(null);
       setSheetOpen(false);
+    } catch (error) {
+      console.error("Error saving tree type:", error);
+      form.setError("root", {
+        type: "manual",
+        message: error.message || "Có lỗi xảy ra khi lưu. Vui lòng thử lại.",
+      });
     } finally {
       setSaving(false);
     }
@@ -1835,7 +1895,8 @@ export default function TreeTypeManagement() {
           detail: {
             treeTypeId: updated.TreeTypeID,
             treeTypeID: updated.TreeTypeID,
-            varietyId: updated.Varieties?.[updated.Varieties.length - 1]?.VarietyID,
+            varietyId:
+              updated.Varieties?.[updated.Varieties.length - 1]?.VarietyID,
           },
         })
       );
@@ -1985,6 +2046,7 @@ export default function TreeTypeManagement() {
                           <ImageDropzone
                             value={field.value}
                             onChange={field.onChange}
+                            onFileChange={setImageFile}
                           />
                         </FormControl>
                         <FormMessage />
@@ -2277,7 +2339,9 @@ export default function TreeTypeManagement() {
                         variant="outline"
                         onClick={() => {
                           const current = form.getValues("CareGuide");
-                          const currentArray = Array.isArray(current) ? current : [];
+                          const currentArray = Array.isArray(current)
+                            ? current
+                            : [];
                           form.setValue("CareGuide", [...currentArray, ""]);
                         }}
                         className="h-8"
@@ -2295,45 +2359,58 @@ export default function TreeTypeManagement() {
                         <FormItem>
                           <FormControl>
                             <div className="space-y-3 pb-4">
-                              {Array.isArray(field.value) ? field.value.map((step, index) => (
-                                <div
-                                  key={index}
-                                  className="flex gap-3 items-start"
-                                >
-                                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 mt-1">
-                                    {index + 1}
-                                  </div>
-                                  <div className="flex-1 space-y-2">
-                                    <Textarea
-                                      placeholder={`Bước ${
-                                        index + 1
-                                      }: Mô tả hướng dẫn chăm sóc...`}
-                                      value={step}
-                                      onChange={(e) => {
-                                        const currentValue = Array.isArray(field.value) ? field.value : [];
-                                        const newSteps = [...currentValue];
-                                        newSteps[index] = e.target.value;
-                                        field.onChange(newSteps);
-                                      }}
-                                      className="min-h-[80px] text-sm"
-                                    />
-                                  </div>
-                                  <Button
-                                    type="button"
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
-                                    onClick={() => {
-                                      const currentValue = Array.isArray(field.value) ? field.value : [];
-                                      const newSteps = currentValue.filter((_, i) => i !== index);
-                                      field.onChange(newSteps);
-                                    }}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              )) : null}
-                              {(!Array.isArray(field.value) || field.value.length === 0) && (
+                              {Array.isArray(field.value)
+                                ? field.value.map((step, index) => (
+                                    <div
+                                      key={index}
+                                      className="flex gap-3 items-start"
+                                    >
+                                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 mt-1">
+                                        {index + 1}
+                                      </div>
+                                      <div className="flex-1 space-y-2">
+                                        <Textarea
+                                          placeholder={`Bước ${
+                                            index + 1
+                                          }: Mô tả hướng dẫn chăm sóc...`}
+                                          value={step}
+                                          onChange={(e) => {
+                                            const currentValue = Array.isArray(
+                                              field.value
+                                            )
+                                              ? field.value
+                                              : [];
+                                            const newSteps = [...currentValue];
+                                            newSteps[index] = e.target.value;
+                                            field.onChange(newSteps);
+                                          }}
+                                          className="min-h-[80px] text-sm"
+                                        />
+                                      </div>
+                                      <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                                        onClick={() => {
+                                          const currentValue = Array.isArray(
+                                            field.value
+                                          )
+                                            ? field.value
+                                            : [];
+                                          const newSteps = currentValue.filter(
+                                            (_, i) => i !== index
+                                          );
+                                          field.onChange(newSteps);
+                                        }}
+                                      >
+                                        <X className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  ))
+                                : null}
+                              {(!Array.isArray(field.value) ||
+                                field.value.length === 0) && (
                                 <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-8 text-center text-sm text-slate-500">
                                   <Leaf className="h-8 w-8 text-emerald-300" />
                                   <p>Chưa có hướng dẫn nào.</p>
@@ -2366,7 +2443,9 @@ export default function TreeTypeManagement() {
                         variant="outline"
                         onClick={() => {
                           const current = form.getValues("Pests");
-                          const currentArray = Array.isArray(current) ? current : [];
+                          const currentArray = Array.isArray(current)
+                            ? current
+                            : [];
                           form.setValue("Pests", [
                             ...currentArray,
                             { name: "", description: "", severity: "" },
@@ -2387,163 +2466,189 @@ export default function TreeTypeManagement() {
                         <FormItem>
                           <FormControl>
                             <div className="space-y-3 pb-4">
-                              {Array.isArray(field.value) ? field.value.map((pest, index) => {
-                                const nameError = form.formState.isSubmitted
-                                  ? form.formState.errors?.Pests?.[index]?.name
-                                  : null;
-                                const descriptionError = form.formState
-                                  .isSubmitted
-                                  ? form.formState.errors?.Pests?.[index]
-                                      ?.description
-                                  : null;
-                                const severityError = form.formState.isSubmitted
-                                  ? form.formState.errors?.Pests?.[index]
-                                      ?.severity
-                                  : null;
-                                const hasError =
-                                  nameError ||
-                                  descriptionError ||
-                                  severityError;
-                                const severityColor = pest.severity
-                                  ? severityColors[pest.severity]
-                                  : null;
+                              {Array.isArray(field.value)
+                                ? field.value.map((pest, index) => {
+                                    const nameError = form.formState.isSubmitted
+                                      ? form.formState.errors?.Pests?.[index]
+                                          ?.name
+                                      : null;
+                                    const descriptionError = form.formState
+                                      .isSubmitted
+                                      ? form.formState.errors?.Pests?.[index]
+                                          ?.description
+                                      : null;
+                                    const severityError = form.formState
+                                      .isSubmitted
+                                      ? form.formState.errors?.Pests?.[index]
+                                          ?.severity
+                                      : null;
+                                    const hasError =
+                                      nameError ||
+                                      descriptionError ||
+                                      severityError;
+                                    const severityColor = pest.severity
+                                      ? severityColors[pest.severity]
+                                      : null;
 
-                                return (
-                                  <div
-                                    key={index}
-                                    className={cn(
-                                      "rounded-xl border bg-slate-50/50 p-3 space-y-2",
-                                      hasError
-                                        ? "border-red-300 bg-red-50/30"
-                                        : "border-slate-200"
-                                    )}
-                                  >
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="flex-1 space-y-2">
-                                        <div>
-                                          <Input
-                                            placeholder="Tên bệnh..."
-                                            value={pest.name || ""}
-                                            onChange={(e) => {
-                                              const currentValue = Array.isArray(field.value) ? field.value : [];
-                                              const newPests = [...currentValue];
-                                              newPests[index] = {
-                                                ...(newPests[index] || {}),
-                                                name: e.target.value,
-                                              };
-                                              field.onChange(newPests);
-                                            }}
-                                            className={cn(
-                                              "h-9",
-                                              nameError &&
-                                                "border-red-500 focus-visible:ring-red-500"
-                                            )}
-                                          />
-                                          {nameError && (
-                                            <p className="text-xs text-red-600 mt-1">
-                                              {nameError.message}
-                                            </p>
-                                          )}
-                                        </div>
-                                        <div>
-                                          <Textarea
-                                            placeholder="Mô tả bệnh và cách phòng trừ..."
-                                            value={pest.description || ""}
-                                            onChange={(e) => {
-                                              const currentValue = Array.isArray(field.value) ? field.value : [];
-                                              const newPests = [...currentValue];
-                                              newPests[index] = {
-                                                ...(newPests[index] || {}),
-                                                description: e.target.value,
-                                              };
-                                              field.onChange(newPests);
-                                            }}
-                                            className={cn(
-                                              "min-h-[60px] text-sm",
-                                              descriptionError &&
-                                                "border-red-500 focus-visible:ring-red-500"
-                                            )}
-                                          />
-                                          {descriptionError && (
-                                            <p className="text-xs text-red-600 mt-1">
-                                              {descriptionError.message}
-                                            </p>
-                                          )}
-                                        </div>
-                                        <div>
-                                          <Select
-                                            value={pest.severity || ""}
-                                            onValueChange={(value) => {
-                                              const currentValue = Array.isArray(field.value) ? field.value : [];
-                                              const newPests = [...currentValue];
-                                              newPests[index] = {
-                                                ...(newPests[index] || {}),
-                                                severity: value,
-                                              };
+                                    return (
+                                      <div
+                                        key={index}
+                                        className={cn(
+                                          "rounded-xl border bg-slate-50/50 p-3 space-y-2",
+                                          hasError
+                                            ? "border-red-300 bg-red-50/30"
+                                            : "border-slate-200"
+                                        )}
+                                      >
+                                        <div className="flex items-start justify-between gap-2">
+                                          <div className="flex-1 space-y-2">
+                                            <div>
+                                              <Input
+                                                placeholder="Tên bệnh..."
+                                                value={pest.name || ""}
+                                                onChange={(e) => {
+                                                  const currentValue =
+                                                    Array.isArray(field.value)
+                                                      ? field.value
+                                                      : [];
+                                                  const newPests = [
+                                                    ...currentValue,
+                                                  ];
+                                                  newPests[index] = {
+                                                    ...(newPests[index] || {}),
+                                                    name: e.target.value,
+                                                  };
+                                                  field.onChange(newPests);
+                                                }}
+                                                className={cn(
+                                                  "h-9",
+                                                  nameError &&
+                                                    "border-red-500 focus-visible:ring-red-500"
+                                                )}
+                                              />
+                                              {nameError && (
+                                                <p className="text-xs text-red-600 mt-1">
+                                                  {nameError.message}
+                                                </p>
+                                              )}
+                                            </div>
+                                            <div>
+                                              <Textarea
+                                                placeholder="Mô tả bệnh và cách phòng trừ..."
+                                                value={pest.description || ""}
+                                                onChange={(e) => {
+                                                  const currentValue =
+                                                    Array.isArray(field.value)
+                                                      ? field.value
+                                                      : [];
+                                                  const newPests = [
+                                                    ...currentValue,
+                                                  ];
+                                                  newPests[index] = {
+                                                    ...(newPests[index] || {}),
+                                                    description: e.target.value,
+                                                  };
+                                                  field.onChange(newPests);
+                                                }}
+                                                className={cn(
+                                                  "min-h-[60px] text-sm",
+                                                  descriptionError &&
+                                                    "border-red-500 focus-visible:ring-red-500"
+                                                )}
+                                              />
+                                              {descriptionError && (
+                                                <p className="text-xs text-red-600 mt-1">
+                                                  {descriptionError.message}
+                                                </p>
+                                              )}
+                                            </div>
+                                            <div>
+                                              <Select
+                                                value={pest.severity || ""}
+                                                onValueChange={(value) => {
+                                                  const currentValue =
+                                                    Array.isArray(field.value)
+                                                      ? field.value
+                                                      : [];
+                                                  const newPests = [
+                                                    ...currentValue,
+                                                  ];
+                                                  newPests[index] = {
+                                                    ...(newPests[index] || {}),
+                                                    severity: value,
+                                                  };
+                                                  field.onChange(newPests);
+                                                }}
+                                              >
+                                                <SelectTrigger
+                                                  className={cn(
+                                                    "h-9",
+                                                    severityError &&
+                                                      "border-red-500 focus-visible:ring-red-500",
+                                                    severityColor &&
+                                                      cn(
+                                                        severityColor.bg,
+                                                        severityColor.text,
+                                                        severityColor.border
+                                                      )
+                                                  )}
+                                                >
+                                                  <SelectValue placeholder="Chọn mức độ" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem
+                                                    value="High"
+                                                    className="text-red-700 focus:bg-red-50"
+                                                  >
+                                                    Cao
+                                                  </SelectItem>
+                                                  <SelectItem
+                                                    value="Medium"
+                                                    className="text-orange-700 focus:bg-orange-50"
+                                                  >
+                                                    Trung bình
+                                                  </SelectItem>
+                                                  <SelectItem
+                                                    value="Low"
+                                                    className="text-yellow-700 focus:bg-yellow-50"
+                                                  >
+                                                    Thấp
+                                                  </SelectItem>
+                                                </SelectContent>
+                                              </Select>
+                                              {severityError && (
+                                                <p className="text-xs text-red-600 mt-1">
+                                                  {severityError.message}
+                                                </p>
+                                              )}
+                                            </div>
+                                          </div>
+                                          <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                                            onClick={() => {
+                                              const currentValue =
+                                                Array.isArray(field.value)
+                                                  ? field.value
+                                                  : [];
+                                              const newPests =
+                                                currentValue.filter(
+                                                  (_, i) => i !== index
+                                                );
                                               field.onChange(newPests);
                                             }}
                                           >
-                                            <SelectTrigger
-                                              className={cn(
-                                                "h-9",
-                                                severityError &&
-                                                  "border-red-500 focus-visible:ring-red-500",
-                                                severityColor &&
-                                                  cn(
-                                                    severityColor.bg,
-                                                    severityColor.text,
-                                                    severityColor.border
-                                                  )
-                                              )}
-                                            >
-                                              <SelectValue placeholder="Chọn mức độ" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                              <SelectItem
-                                                value="High"
-                                                className="text-red-700 focus:bg-red-50"
-                                              >
-                                                Cao
-                                              </SelectItem>
-                                              <SelectItem
-                                                value="Medium"
-                                                className="text-orange-700 focus:bg-orange-50"
-                                              >
-                                                Trung bình
-                                              </SelectItem>
-                                              <SelectItem
-                                                value="Low"
-                                                className="text-yellow-700 focus:bg-yellow-50"
-                                              >
-                                                Thấp
-                                              </SelectItem>
-                                            </SelectContent>
-                                          </Select>
-                                          {severityError && (
-                                            <p className="text-xs text-red-600 mt-1">
-                                              {severityError.message}
-                                            </p>
-                                          )}
+                                            <X className="h-4 w-4" />
+                                          </Button>
                                         </div>
                                       </div>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
-                                        onClick={() => {
-                                          const currentValue = Array.isArray(field.value) ? field.value : [];
-                                          const newPests = currentValue.filter((_, i) => i !== index);
-                                          field.onChange(newPests);
-                                        }}
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                );
-                              }) : null}
-                              {(!Array.isArray(field.value) || field.value.length === 0) && (
+                                    );
+                                  })
+                                : null}
+                              {(!Array.isArray(field.value) ||
+                                field.value.length === 0) && (
                                 <p className="text-sm text-slate-500 text-center py-4">
                                   Chưa có bệnh nào. Bấm "Thêm bệnh" để bắt đầu.
                                 </p>

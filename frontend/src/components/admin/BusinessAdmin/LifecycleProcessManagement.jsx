@@ -31,6 +31,16 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Table,
   TableBody,
   TableCell,
@@ -145,6 +155,9 @@ export default function BusinessAdminLifecycleProcessManagement() {
   const [draggedStageId, setDraggedStageId] = useState(null);
   const iconInputRef = useRef(null);
   const [iconUploading, setIconUploading] = useState(false);
+  const [stageToDelete, setStageToDelete] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleSelectTreeType = useCallback(async (treeTypeId) => {
     if (!treeTypeId) return;
@@ -371,22 +384,25 @@ export default function BusinessAdminLifecycleProcessManagement() {
     [prepareStageForEdit]
   );
 
-  const handleDeleteStage = async (stage) => {
-    const hasTrees = (stage?.treesCount ?? 0) > 0;
-    const message = hasTrees
-      ? `Giai đoạn "${stage.stageName}" đang được áp dụng cho ${stage.treesCount} cây. Khi xóa, những cây này sẽ được chuyển sang giai đoạn lân cận. Bạn có chắc chắn muốn tiếp tục?`
-      : `Bạn có chắc chắn muốn xóa giai đoạn "${stage.stageName}" không?`;
+  const handleDeleteStage = (stage) => {
+    setStageToDelete(stage);
+    setIsDeleteDialogOpen(true);
+  };
 
-    if (!confirm(message)) {
-      return;
-    }
+  const handleConfirmDeleteStage = async () => {
+    if (!stageToDelete) return;
 
+    setDeleting(true);
     try {
-      await AdminGrowthStageRepository.deleteTreeGrowthStage(stage.stageId);
+      await AdminGrowthStageRepository.deleteTreeGrowthStage(
+        stageToDelete.stageId
+      );
       setNotice({
         type: "success",
         message: "Đã xóa giai đoạn thành công.",
       });
+      setIsDeleteDialogOpen(false);
+      setStageToDelete(null);
       // Reload stages
       if (selectedTreeTypeId) {
         await handleSelectTreeType(selectedTreeTypeId);
@@ -396,6 +412,8 @@ export default function BusinessAdminLifecycleProcessManagement() {
         type: "error",
         message: err.message || "Không thể xóa giai đoạn.",
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -1295,6 +1313,59 @@ export default function BusinessAdminLifecycleProcessManagement() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={(open) => {
+          if (!open && !deleting) {
+            setIsDeleteDialogOpen(false);
+            setStageToDelete(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Xác nhận xóa giai đoạn</AlertDialogTitle>
+            <AlertDialogDescription>
+              {stageToDelete ? (
+                (stageToDelete?.treesCount ?? 0) > 0 ? (
+                  <>
+                    Giai đoạn "{stageToDelete.stageName}" đang được áp dụng cho{" "}
+                    <span className="font-semibold text-rose-600">
+                      {stageToDelete.treesCount}
+                    </span>{" "}
+                    cây. Khi xóa, những cây này sẽ được chuyển sang giai đoạn
+                    lân cận. Bạn có chắc chắn muốn tiếp tục?
+                  </>
+                ) : (
+                  <>
+                    Bạn có chắc chắn muốn xóa giai đoạn "
+                    {stageToDelete.stageName}" không?
+                  </>
+                )
+              ) : null}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Hủy</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteStage}
+              disabled={deleting}
+              className="bg-rose-600 hover:bg-rose-700"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Đang xóa...
+                </>
+              ) : (
+                "Xác nhận xóa"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }
