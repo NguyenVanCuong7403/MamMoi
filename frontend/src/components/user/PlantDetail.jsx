@@ -648,7 +648,50 @@ function CareStep({ step, index }) {
   );
 }
 
-// Variety Card Component
+// Tree Card Component - displays actual trees with same treeTypeId
+function TreeCard({ tree, index, navigate }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      className="group overflow-hidden rounded-xl border-2 border-emerald-100/50 bg-white/95 backdrop-blur-sm transition-all hover:border-emerald-300 hover:shadow-md cursor-pointer"
+      onClick={() => {
+        if (tree.id) {
+          navigate(`/tree_detail/${tree.id}`);
+        }
+      }}
+    >
+      <div className="flex gap-4 p-4">
+        {tree.imageUrl && (
+          <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg">
+            <img
+              key={tree.imageUrl} // Force re-render when imageUrl changes
+              src={tree.imageUrl}
+              alt={tree.name}
+              className="h-full w-full object-cover transition-transform group-hover:scale-110"
+              onError={(e) => {
+                // Fallback if image fails to load
+                e.target.src =
+                  "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400";
+              }}
+            />
+          </div>
+        )}
+        <div className="flex-1 min-w-0">
+          <h4
+            className="font-bold text-slate-900 break-words"
+            style={{ fontSize: "clamp(0.75rem, 1.25vw + 0.125rem, 0.9375rem)" }}
+          >
+            {tree.name}
+          </h4>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// Variety Card Component (kept for backward compatibility)
 function VarietyCard({ variety, index }) {
   return (
     <motion.div
@@ -806,29 +849,76 @@ export default function PlantDetail() {
           }
         };
 
-        // Get varieties from API
-        let varieties = [];
+        // Get trees from API - filter by treeTypeId to show trees of the same type
+        let trees = [];
         try {
-          const varietiesResponse = await TreeRepository.getTreeVarieties(id);
-          if (Array.isArray(varietiesResponse)) {
-            varieties = varietiesResponse
-              .map((v) => {
-                const imageUrl = v.imageUrl || v.ImageUrl;
-                return {
-                  name: v.varietyName || v.VarietyName || "",
-                  description:
-                    v.varietyDescription || v.VarietyDescription || "",
-                  imageUrl:
-                    forceRefresh && imageUrl
-                      ? addCacheBust(imageUrl)
-                      : imageUrl ||
-                        "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
-                };
-              })
-              .filter((v) => v.name); // Only include varieties with names
+          // Get treeTypeId from foundTree to filter trees - only show trees with same treeTypeId
+          const treeTypeId =
+            foundTree.treeTypeId ||
+            foundTree.treeTypeID ||
+            foundTree.TreeTypeId ||
+            foundTree.TreeTypeID ||
+            parseInt(id);
+
+          if (treeTypeId && !isNaN(treeTypeId)) {
+            // Search for trees with this treeTypeId (public search, no authentication required)
+            const searchResponse = await TreeRepository.searchTrees({
+              q: "",
+              treeTypeId: treeTypeId,
+              page: 1,
+              pageSize: VARIETY_LIMIT, // Use same limit as varieties
+            });
+
+            // Handle response - search returns PagedResult
+            let treesArray = [];
+            if (searchResponse?.items && Array.isArray(searchResponse.items)) {
+              treesArray = searchResponse.items;
+            } else if (Array.isArray(searchResponse)) {
+              treesArray = searchResponse;
+            } else if (
+              searchResponse?.data?.items &&
+              Array.isArray(searchResponse.data.items)
+            ) {
+              treesArray = searchResponse.data.items;
+            }
+
+            if (Array.isArray(treesArray) && treesArray.length > 0) {
+              trees = treesArray
+                .map((t) => {
+                  // Support both camelCase and PascalCase property names
+                  const imageUrl =
+                    t.imageUrl ||
+                    t.ImageUrl ||
+                    t.treeImageUrl ||
+                    t.TreeImageUrl ||
+                    null;
+                  const treeName = t.treeName || t.TreeName || "";
+                  const varietyName =
+                    t.treeVarietyName ||
+                    t.TreeVarietyName ||
+                    t.varietyName ||
+                    t.VarietyName ||
+                    "";
+                  const stageName = t.stageName || t.StageName || "";
+                  const healthStatus = t.healthStatus || t.HealthStatus || "";
+
+                  return {
+                    id: t.treeId || t.TreeId || t.id || null,
+                    name: treeName,
+                    variety: varietyName,
+                    description: stageName || healthStatus || "", // Use stage or health status as description
+                    imageUrl:
+                      forceRefresh && imageUrl
+                        ? addCacheBust(imageUrl)
+                        : imageUrl ||
+                          "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
+                  };
+                })
+                .filter((t) => t.name && t.name.trim().length > 0); // Only include trees with non-empty names
+            }
           }
         } catch (err) {
-          console.warn("Failed to fetch varieties:", err);
+          console.error("PlantDetail: Failed to fetch trees:", err);
         }
 
         // Parse JSON fields from API
@@ -837,8 +927,14 @@ export default function PlantDetail() {
         const seasonalRoadmap = parseJsonField(foundTree.seasonalRoadmap);
 
         // Merge API data with demo data - prioritize backend/DB data
-        const demoData =
-          demoPlantData[foundTree.treeTypeId || foundTree.treeTypeID];
+        // Get treeTypeId with multiple format support (for other fields, not varieties)
+        const treeTypeIdForDemo =
+          foundTree.treeTypeId ||
+          foundTree.treeTypeID ||
+          foundTree.TreeTypeId ||
+          foundTree.TreeTypeID ||
+          parseInt(id);
+        const demoData = demoPlantData[treeTypeIdForDemo];
         const baseImageUrl = foundTree.imageUrl || demoData?.imageUrl;
         const mergedData = {
           ...foundTree,
@@ -871,8 +967,8 @@ export default function PlantDetail() {
             foundTree.soilMasterId ||
             foundTree.soilMasterID ||
             demoData?.soilMasterId,
-          // Use parsed JSON fields from API - no fallback to demo data
-          varieties: varieties,
+          // Use only API data - show trees with same treeTypeId instead of varieties
+          varieties: trees, // Reuse varieties field to store trees for display
           careGuide: careGuide,
           pests: pests,
           seasonalRoadmap: seasonalRoadmap,
@@ -915,7 +1011,11 @@ export default function PlantDetail() {
       if (updatedId && String(updatedId) === String(id)) {
         // Refresh data with cache busting for images
         console.log("PlantDetail: TreeType updated, refreshing images...");
-        fetchPlantDetail(true);
+        // Force a complete refresh by clearing plantData first, then fetching
+        setPlantData(null);
+        setTimeout(() => {
+          fetchPlantDetail(true);
+        }, 100);
       }
     };
 
@@ -1029,7 +1129,7 @@ export default function PlantDetail() {
         <div className="absolute inset-0">
           {plantData.imageUrl && (
             <img
-              key={plantData.imageUrl} // Force re-render when imageUrl changes
+              key={plantData.imageUrl} // Force re-render when imageUrl changes (cache busting adds timestamp to URL)
               src={plantData.imageUrl}
               alt={plantData.treeTypeName}
               className="h-full w-full object-cover opacity-15 scale-75"
@@ -1559,13 +1659,25 @@ export default function PlantDetail() {
                                   : "none",
                               }}
                             >
-                              {displayedVarieties.map((variety, index) => (
-                                <VarietyCard
-                                  key={index}
-                                  variety={variety}
-                                  index={index}
-                                />
-                              ))}
+                              {displayedVarieties.map((item, index) => {
+                                // Check if this is a tree (has id, variety, garden) or variety (has description)
+                                const isTree =
+                                  item.id || item.variety || item.garden;
+                                return isTree ? (
+                                  <TreeCard
+                                    key={item.id || index}
+                                    tree={item}
+                                    index={index}
+                                    navigate={navigate}
+                                  />
+                                ) : (
+                                  <VarietyCard
+                                    key={index}
+                                    variety={item}
+                                    index={index}
+                                  />
+                                );
+                              })}
                             </div>
                             {hasMoreVarieties && (
                               <p className="mt-3 text-xs text-slate-500 text-center">

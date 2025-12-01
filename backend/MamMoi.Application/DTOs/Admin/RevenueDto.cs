@@ -62,6 +62,8 @@ public class AdminPaymentListDto
     public bool IsRefunded { get; set; }
     public decimal? RefundAmount { get; set; }
     public DateTime? RefundDate { get; set; }
+    public DateTime? SubscriptionStartDate { get; set; }
+    public DateTime? SubscriptionEndDate { get; set; }
 }
 
 /// <summary>

@@ -199,6 +199,81 @@ public class AdminController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Update user's subscription plan
+    /// PUT /api/admin/users/{id}/subscription-plan
+    /// </summary>
+    [HttpPut("users/{id}/subscription-plan")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateUserSubscriptionPlan(int id, [FromBody] UpdateUserSubscriptionPlanDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { success = false, message = "Invalid input", errors = ModelState });
+
+            DateOnly? startDate = dto.StartDate.HasValue
+                ? DateOnly.FromDateTime(dto.StartDate.Value.Date)
+                : null;
+            DateOnly? endDate = dto.EndDate.HasValue
+                ? DateOnly.FromDateTime(dto.EndDate.Value.Date)
+                : null;
+
+            var result = await _adminUserService.UpdateUserSubscriptionPlanAsync(
+                id,
+                dto.PlanType,
+                startDate,
+                endDate);
+            if (!result)
+                return NotFound(new { success = false, message = "User not found" });
+
+            return Ok(new { success = true, message = "User subscription plan updated successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating user subscription plan: {UserId}", id);
+            return StatusCode(500, new { success = false, message = "Internal server error" });
+        }
+    }
+
+    /// <summary>
+    /// Reset user password (admin only)
+    /// POST /api/admin/users/{id}/reset-password
+    /// </summary>
+    [HttpPost("users/{id}/reset-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResetUserPassword(int id, [FromBody] AdminResetPasswordDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { success = false, message = "Invalid input", errors = ModelState });
+
+            var result = await _adminUserService.ResetUserPasswordAsync(id, dto.NewPassword);
+            if (!result)
+                return NotFound(new { success = false, message = "User not found" });
+
+            return Ok(new { success = true, message = "Password reset successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error resetting user password: {UserId}", id);
+            return StatusCode(500, new { success = false, message = "Internal server error" });
+        }
+    }
+
     #endregion
 
     #region Image Upload

@@ -57,12 +57,6 @@ const ROLE_NAV_ITEMS = {
       path: "/admin/business/reports",
     },
     {
-      key: "tasks",
-      label: "Quản lý công việc",
-      icon: ClipboardList,
-      path: "/admin/business/tasks",
-    },
-    {
       key: "lifecycle",
       label: "Quy trình vòng đời",
       icon: RefreshCcw,

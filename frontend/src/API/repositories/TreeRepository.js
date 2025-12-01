@@ -7,12 +7,6 @@ export default class TreeRepository {
   static async getTreeTypes() {
     return ApiClient.get("/api/trees/types");
   }
-  /**
-   * Get all tree varieties
-   */
-  static async getTreeVarieties() {
-    return ApiClient.get("/api/trees/varieties");
-  }
 
   /**
    * Get AI recommendation(s) for a tree.
@@ -55,7 +49,9 @@ export default class TreeRepository {
   static async getSingleDayRecommendation(id, forDate) {
     if (!id) throw new Error("Missing tree id");
     if (!forDate) throw new Error("Missing forDate");
-    return ApiClient.get(`/api/trees/${id}/recommendation/single?forDate=${forDate}`);
+    return ApiClient.get(
+      `/api/trees/${id}/recommendation/single?forDate=${forDate}`
+    );
   }
 
   /**
@@ -102,13 +98,6 @@ export default class TreeRepository {
       : null;
 
     return found ? { data: found } : null;
-  }
-
-  /**
-   * Get all tree varieties
-   */
-  static async getTreeVarieties() {
-    return ApiClient.get("/api/trees/varieties");
   }
 
   /**

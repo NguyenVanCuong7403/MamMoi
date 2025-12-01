@@ -390,16 +390,31 @@ public class NotificationService : INotificationService
             return;
         }
 
-        var notifications = adminUsers.Select(adminUserId => new Notification
+        // Get admin roles to set correct ActionUrl based on role
+        var adminUsersWithRoles = await _dbContext.Users
+            .Include(u => u.Role)
+            .Where(u => u.IsActive && (u.Role.RoleName == "SystemAdmin" || u.Role.RoleName == "BusinessAdmin"))
+            .Select(u => new { u.UserId, u.Role.RoleName })
+            .ToListAsync();
+
+        if (!adminUsersWithRoles.Any())
         {
-            UserId = adminUserId,
+            _logger.LogWarning("No admin users found to notify about support request {RequestId}", requestId);
+            return;
+        }
+
+        var notifications = adminUsersWithRoles.Select(admin => new Notification
+        {
+            UserId = admin.UserId,
             Title = "Yêu cầu hỗ trợ mới",
             Message = $"Người dùng đã gửi yêu cầu hỗ trợ: {subject}",
             NotificationType = "SupportRequest",
             Priority = "High",
             Category = "Support",
-            ActionUrl = $"/admin/support-requests/{requestId}",
-            ActionLabel = "Xem yêu cầu",
+            // Set ActionUrl to null to let frontend route based on RelatedEntityType and user role
+            // Frontend will route to /admin/reports for SystemAdmin or /admin/business/reports for BusinessAdmin
+            ActionUrl = null,
+            ActionLabel = "Xem báo cáo",
             RelatedEntityType = "SupportRequest",
             RelatedEntityId = requestId,
             Status = "Sent",

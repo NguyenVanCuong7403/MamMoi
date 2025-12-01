@@ -224,18 +224,40 @@ function save(k, v) {
 function normalizeImageUrl(raw = "") {
   if (!raw) return "";
   let u = String(raw).trim();
-  if (u.startsWith("http://")) u = "https://" + u.slice(7);
+
+  // Xử lý relative URLs (bắt đầu với /)
+  if (u.startsWith("/") && !u.startsWith("//")) {
+    const API_BASE = import.meta.env.VITE_API_BASE || "https://localhost:7237";
+    // Loại bỏ trailing slash từ API_BASE nếu có
+    const baseUrl = API_BASE.replace(/\/$/, "");
+    u = `${baseUrl}${u}`;
+  }
+
+  // Xử lý protocol-relative URLs (bắt đầu với //)
+  if (u.startsWith("//")) {
+    u = `https:${u}`;
+  }
+
+  // Chỉ chuyển http sang https nếu không phải localhost (để tránh SSL issues trong development)
+  if (u.startsWith("http://") && !u.includes("localhost")) {
+    u = "https://" + u.slice(7);
+  }
+
+  // Xử lý Google Drive URLs
   let m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
   m = u.match(/drive\.google\.com\/open\?id=([^&]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
   m = u.match(/drive\.google\.com\/uc\?(?:export=[^&]+&)?id=([^&]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
+
+  // Xử lý Dropbox URLs
   if (/dropbox\.com/.test(u)) {
     u = u
       .replace("www.dropbox.com", "dl.dropboxusercontent.com")
       .replace(/\?dl=0$/, "?dl=1");
   }
+
   return u;
 }
 function looksBlockedHost(u = "") {
@@ -258,11 +280,29 @@ function SafeImage({ src, alt = "", className = "" }) {
   }, [src]);
 
   function onError() {
-    if (tried) return setFailed(true);
+    if (tried) {
+      setFailed(true);
+      return;
+    }
     setTried(true);
+
+    // Thử fallback cho Google Drive
     if (/drive\.google\.com\/uc\?/.test(url)) {
       setUrl(url.replace("export=view", "export=download"));
-    } else setFailed(true);
+      return;
+    }
+
+    // Thử fallback từ HTTPS sang HTTP cho localhost (development)
+    if (
+      url.includes("https://localhost") &&
+      !url.includes("http://localhost")
+    ) {
+      const httpUrl = url.replace("https://", "http://");
+      setUrl(httpUrl);
+      return;
+    }
+
+    setFailed(true);
   }
 
   if (!url || failed)
@@ -2359,7 +2399,12 @@ export default function UserProfile() {
   const isAdmin = React.useMemo(() => {
     if (!user) return false;
     const role = (user.role || "").toLowerCase();
-    return role === "systemadmin" || role === "businessadmin" || user.roleId === 1 || user.roleId === 2;
+    return (
+      role === "systemadmin" ||
+      role === "businessadmin" ||
+      user.roleId === 1 ||
+      user.roleId === 2
+    );
   }, [user]);
 
   // Loading states
@@ -2386,13 +2431,30 @@ export default function UserProfile() {
   };
   const [demoPw, setDemoPw] = useState(loadDemoPw);
 
-  // Load profile from API or fallback to localStorage
+  // Load profile from API or fallback to localStorage (user-specific)
   const [profile, setProfile] = useState(() => {
+    // Initial load: try old key for backward compatibility
     const p = load(LS_PROFILE, defaultProfile);
     const address = p.address || p.organization || defaultProfile.address;
     const { organization, ...rest } = p || {};
     return { ...defaultProfile, ...rest, address };
   });
+
+  // Load from user-specific key when user becomes available
+  useEffect(() => {
+    if (user?.userId) {
+      const userSpecificKey = `${LS_PROFILE}_${user.userId}`;
+      const userProfile = load(userSpecificKey, null);
+      if (userProfile) {
+        const address =
+          userProfile.address ||
+          userProfile.organization ||
+          defaultProfile.address;
+        const { organization, ...rest } = userProfile || {};
+        setProfile({ ...defaultProfile, ...rest, address });
+      }
+    }
+  }, [user?.userId]);
 
   const [gardens, setGardens] = useState(() =>
     load(LS_GARDENS, defaultGardens)
@@ -2412,14 +2474,20 @@ export default function UserProfile() {
       try {
         const data = await UserRepository.getProfile(user.userId);
         if (data) {
-          setProfile({
+          const updatedProfile = {
             fullName: data.fullName || data.name || defaultProfile.fullName,
             email: data.email || defaultProfile.email,
             phone: data.phone || data.phoneNumber || defaultProfile.phone,
             address: data.address || defaultProfile.address,
             avatarUrl: data.profileImageUrl || data.avatar || "",
             gender: data.gender || defaultProfile.gender,
-          });
+          };
+          setProfile(updatedProfile);
+          // Save to user-specific localStorage immediately
+          const userSpecificKey = `${LS_PROFILE}_${user.userId}`;
+          save(userSpecificKey, updatedProfile);
+          // Dispatch event to notify Header component
+          window.dispatchEvent(new CustomEvent("userProfileUpdated"));
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -2544,7 +2612,15 @@ export default function UserProfile() {
     return colorMap[status] || "bg-gray-50 text-gray-700 border-gray-200";
   };
 
-  useEffect(() => save(LS_PROFILE, profile), [profile]);
+  // Save profile to user-specific localStorage key
+  useEffect(() => {
+    if (user?.userId) {
+      const userSpecificKey = `${LS_PROFILE}_${user.userId}`;
+      save(userSpecificKey, profile);
+      // Dispatch event to notify Header component
+      window.dispatchEvent(new CustomEvent("userProfileUpdated"));
+    }
+  }, [profile, user?.userId]);
   useEffect(() => save(LS_GARDENS, gardens), [gardens]);
   useEffect(() => save(LS_STAFFS, staffs), [staffs]);
   useEffect(() => save(LS_TREES, trees), [trees]);
@@ -3973,7 +4049,7 @@ export default function UserProfile() {
                           disabled={paymentsLoading}
                           className="h-12 sm:h-14 px-4 sm:px-5 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-white flex items-center gap-2 text-sm sm:text-base font-medium disabled:opacity-50 whitespace-nowrap"
                         >
-                          <Download className="w-4 h-4 sm:w-5 sm:h-5" /> 
+                          <Download className="w-4 h-4 sm:w-5 sm:h-5" />
                           <span className="hidden sm:inline">Xuất CSV</span>
                           <span className="sm:hidden">CSV</span>
                         </Button>
@@ -4076,7 +4152,8 @@ export default function UserProfile() {
                               // Check if this is the current plan or a lower priority plan (lower ID)
                               const currentPlanId =
                                 currentSubscription?.planId || 1;
-                              const isCurrentPlan = plan.planId === currentPlanId;
+                              const isCurrentPlan =
+                                plan.planId === currentPlanId;
                               const isLowerPlan = plan.planId < currentPlanId;
                               const features = (() => {
                                 if (!plan.features) return [];

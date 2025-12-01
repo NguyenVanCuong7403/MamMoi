@@ -572,9 +572,9 @@ public class CareScheduleService : ICareScheduleService
         {
             searchKeyword = searchKeyword.Trim().ToLower();
             query = query.Where(c =>
-                c.TaskName.ToLower().Contains(searchKeyword) ||
-                c.Description.ToLower().Contains(searchKeyword) ||
-                c.TaskType.ToLower().Contains(searchKeyword));
+                (c.TaskName != null && c.TaskName.ToLower().Contains(searchKeyword)) ||
+                (c.Description != null && c.Description.ToLower().Contains(searchKeyword)) ||
+                (c.TaskType != null && c.TaskType.ToLower().Contains(searchKeyword)));
         }
 
         var totalCount = await query.CountAsync();

@@ -720,7 +720,11 @@ function ImageDropzone({ value, onChange, onFileChange }) {
             className="h-full w-full object-cover"
           />
         ) : (
-          <ImageIcon className="h-8 w-8 text-slate-300" />
+          <img
+            src="/vite.svg"
+            alt="Default logo"
+            className="h-full w-full object-contain p-2"
+          />
         )}
       </div>
       <div>
@@ -730,14 +734,15 @@ function ImageDropzone({ value, onChange, onFileChange }) {
         <p className="text-xs text-slate-500">
           Kéo thả hoặc bấm để chọn. Hỗ trợ PNG, JPG (max 2MB).
         </p>
-        {value && (
+        {value && value.trim() !== "" && value !== "/vite.svg" && (
           <Button
             size="sm"
             variant="link"
             className="px-0 text-emerald-600"
             onClick={(e) => {
               e.stopPropagation();
-              onChange("");
+              // Set về logo default của trang web thay vì để trống
+              onChange("/vite.svg");
               if (onFileChange) {
                 onFileChange(null);
               }
@@ -952,13 +957,6 @@ function TreeTable({
                 <TableCell className="text-right">
                   <div className="flex flex-wrap justify-end gap-2">
                     <Button
-                      size="sm"
-                      className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700"
-                      onClick={() => onManageVarieties(tree)}
-                    >
-                      Thêm giống
-                    </Button>
-                    <Button
                       variant="ghost"
                       size="icon"
                       className="text-slate-500 hover:text-emerald-600"
@@ -1038,7 +1036,7 @@ export default function TreeTypeManagement() {
   const [filters, setFilters] = useState({
     search: "",
     soil: "all",
-    status: "all",
+    status: "active",
   });
   const [saving, setSaving] = useState(false);
   const [soilDialogOpen, setSoilDialogOpen] = useState(false);
@@ -1267,7 +1265,10 @@ export default function TreeTypeManagement() {
       AverageLifespanYears: tree.AverageLifespanYears,
       SoilMasterID: tree.SoilMasterID ?? "",
       Description: tree.Description ?? "",
-      ImageUrl: tree.ImageUrl ?? "",
+      ImageUrl:
+        tree.ImageUrl && tree.ImageUrl.trim() !== ""
+          ? tree.ImageUrl
+          : "/vite.svg",
       OptimalTemperatureMin: tree.OptimalTemperatureMin,
       OptimalTemperatureMax: tree.OptimalTemperatureMax,
       OptimalHumidityMin: tree.OptimalHumidityMin,
@@ -1379,7 +1380,7 @@ export default function TreeTypeManagement() {
     setSaving(true);
     try {
       // Upload image if a new file was selected
-      let imageUrl = values.ImageUrl;
+      let imageUrl = values.ImageUrl || "/vite.svg";
       if (imageFile) {
         try {
           const uploadResponse = await AdminTreeRepository.uploadTreeTypeImage(
@@ -1401,9 +1402,11 @@ export default function TreeTypeManagement() {
         }
       }
 
-      // Update ImageUrl if it was uploaded
+      // Update ImageUrl if it was uploaded, or ensure default logo if empty
       if (imageUrl !== values.ImageUrl) {
         values.ImageUrl = imageUrl;
+      } else if (!imageUrl || imageUrl.trim() === "") {
+        values.ImageUrl = "/vite.svg";
       }
 
       if (editingTree) {
@@ -3457,9 +3460,9 @@ export default function TreeTypeManagement() {
     >
       <DialogContent className="max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Quản lý giống cây</DialogTitle>
+          <DialogTitle>Xem giống cây</DialogTitle>
           <DialogDescription>
-            Thêm, tìm kiếm và chỉnh sửa các giống thuộc loại cây{" "}
+            Danh sách các giống thuộc loại cây{" "}
             <span className="font-semibold text-slate-900">
               {activeVarietyTree?.TreeTypeName || ""}
             </span>
@@ -3480,14 +3483,6 @@ export default function TreeTypeManagement() {
                 />
               </div>
             </div>
-            <Button
-              className="w-full gap-2 rounded-2xl bg-emerald-600 px-5 py-2 text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-500 sm:w-auto"
-              onClick={() => setCreateVarietyOverlayOpen(true)}
-              disabled={!activeVarietyTree}
-            >
-              <Plus className="h-4 w-4" />
-              Thêm giống mới
-            </Button>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
@@ -3605,119 +3600,29 @@ export default function TreeTypeManagement() {
                         {selectedVariety?.VarietyName}
                       </h3>
                     </div>
-                    {!varietyDetailEditMode && (
-                      <Button
-                        variant="outline"
-                        className="rounded-2xl border-emerald-200 text-emerald-600 hover:bg-emerald-50"
-                        onClick={handleStartVarietyEdit}
-                      >
-                        Sửa
-                      </Button>
-                    )}
                   </div>
                   <Separator className="my-4" />
-                  <Form {...varietyDetailForm}>
-                    <form
-                      className="space-y-4"
-                      onSubmit={varietyDetailForm.handleSubmit(
-                        handlePrepareUpdateVariety
-                      )}
-                    >
-                      <FormField
-                        control={varietyDetailForm.control}
-                        name="VarietyName"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Tên giống</FormLabel>
-                            <FormControl>
-                              <Input
-                                {...field}
-                                disabled={
-                                  !varietyDetailEditMode || varietySaving
-                                }
-                                className={cn(
-                                  "h-11 rounded-2xl",
-                                  !varietyDetailEditMode &&
-                                    "bg-slate-50 text-slate-500"
-                                )}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={varietyDetailForm.control}
-                        name="VarietyDescription"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Mô tả</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                {...field}
-                                disabled={
-                                  !varietyDetailEditMode || varietySaving
-                                }
-                                className={cn(
-                                  "min-h-[120px] rounded-2xl",
-                                  !varietyDetailEditMode &&
-                                    "bg-slate-50 text-slate-500"
-                                )}
-                                placeholder="Đặc điểm nổi bật, vùng canh tác phù hợp..."
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      {varietyDetailEditMode ? (
-                        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="text-amber-600 hover:bg-amber-50"
-                            onClick={() => setVarietyRevertConfirmOpen(true)}
-                            disabled={varietySaving}
-                          >
-                            Hoàn tác
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="border-rose-200 text-rose-600 hover:bg-rose-50"
-                            onClick={() =>
-                              setVarietyCancelEditConfirmOpen(true)
-                            }
-                            disabled={varietySaving}
-                          >
-                            Huỷ
-                          </Button>
-                          <Button
-                            type="submit"
-                            disabled={!varietyDetailEditMode || varietySaving}
-                            className="bg-emerald-600 text-white hover:bg-emerald-500"
-                          >
-                            {varietySaving ? "Đang lưu..." : "Lưu thay đổi"}
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-500">
-                          Trạng thái chỉ xem. Bấm &quot;Sửa&quot; để mở khoá
-                          chỉnh sửa.
-                        </p>
-                      )}
-                    </form>
-                  </Form>
-                  <Separator className="my-4" />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full rounded-2xl border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                    onClick={() => setVarietyDeleteConfirmOpen(true)}
-                    disabled={varietyDeleting}
-                  >
-                    Xoá giống
-                  </Button>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">
+                        Tên giống
+                      </label>
+                      <div className="mt-1 rounded-2xl bg-slate-50 px-4 py-3 text-slate-900">
+                        {selectedVariety?.VarietyName || "-"}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700">
+                        Mô tả
+                      </label>
+                      <div className="mt-1 min-h-[120px] rounded-2xl bg-slate-50 px-4 py-3 text-slate-600">
+                        {selectedVariety?.VarietyDescription || "Chưa có mô tả"}
+                      </div>
+                    </div>
+                    <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                      Chế độ chỉ xem - Không thể chỉnh sửa
+                    </p>
+                  </div>
                 </>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-3 py-12 text-center text-slate-500">
@@ -3903,14 +3808,6 @@ export default function TreeTypeManagement() {
                   />
                 </div>
                 <div className="flex flex-wrap justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    className="gap-2 border-white/40 bg-white/10 text-white transition hover:bg-white/20 hover:text-white"
-                    onClick={() => setSoilDialogOpen(true)}
-                  >
-                    <Layers className="h-4 w-4" />
-                    Quản lý đất
-                  </Button>
                   <Button
                     onClick={handleOpenCreate}
                     className="gap-2 bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-400"

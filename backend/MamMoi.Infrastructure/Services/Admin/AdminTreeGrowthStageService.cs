@@ -183,6 +183,112 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
         throw new InvalidOperationException("Icon phải là emoji ngắn hoặc URL hình ảnh hợp lệ.");
     }
 
+    /// <summary>
+    /// Validates that MaxAge > MinAge for a stage
+    /// </summary>
+    private static void ValidateAgeRange(int? minAge, int? maxAge)
+    {
+        if (minAge.HasValue && maxAge.HasValue)
+        {
+            if (maxAge.Value <= minAge.Value)
+            {
+                throw new InvalidOperationException($"Tuổi tối đa ({maxAge}) phải lớn hơn tuổi tối thiểu ({minAge}).");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Checks if two age ranges overlap
+    /// </summary>
+    private static bool AgeRangesOverlap(int? min1, int? max1, int? min2, int? max2)
+    {
+        if (!min1.HasValue || !max1.HasValue || !min2.HasValue || !max2.HasValue)
+            return false;
+
+        // Two ranges overlap if: min1 <= max2 && min2 <= max1
+        return min1.Value <= max2.Value && min2.Value <= max1.Value;
+    }
+
+    /// <summary>
+    /// Validates age ranges don't overlap with existing stages (excluding the current stage if updating)
+    /// </summary>
+    private void ValidateNoOverlappingAges(
+        List<TreeGrowthStage> existingStages,
+        int? newMinAge,
+        int? newMaxAge,
+        int? excludeStageId = null)
+    {
+        if (!newMinAge.HasValue || !newMaxAge.HasValue)
+            return;
+
+        foreach (var existingStage in existingStages)
+        {
+            if (excludeStageId.HasValue && existingStage.StageId == excludeStageId.Value)
+                continue;
+
+            if (existingStage.MinAgeInMonths.HasValue && existingStage.MaxAgeInMonths.HasValue)
+            {
+                if (AgeRangesOverlap(newMinAge, newMaxAge, existingStage.MinAgeInMonths, existingStage.MaxAgeInMonths))
+                {
+                    throw new InvalidOperationException(
+                        $"Khoảng tuổi ({newMinAge}-{newMaxAge} tháng) chồng lên giai đoạn '{existingStage.StageName}' ({existingStage.MinAgeInMonths}-{existingStage.MaxAgeInMonths} tháng).");
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Automatically adjusts MinAge of subsequent stages to maintain continuity after a stage is updated or deleted
+    /// </summary>
+    private async Task AdjustSubsequentStagesAgesAsync(int treeTypeId, int currentStageOrder, int? previousMaxAge)
+    {
+        var subsequentStages = await _dbContext.TreeGrowthStages
+            .Where(s => s.TreeTypeId == treeTypeId && s.StageOrder > currentStageOrder)
+            .OrderBy(s => s.StageOrder)
+            .ToListAsync();
+
+        if (!subsequentStages.Any())
+            return;
+
+        // If previous stage has a MaxAge, set the first subsequent stage's MinAge to MaxAge + 1
+        if (previousMaxAge.HasValue)
+        {
+            var firstSubsequent = subsequentStages.First();
+            if (!firstSubsequent.MinAgeInMonths.HasValue || firstSubsequent.MinAgeInMonths.Value < previousMaxAge.Value + 1)
+            {
+                firstSubsequent.MinAgeInMonths = previousMaxAge.Value + 1;
+                
+                // If MaxAge is less than MinAge, adjust MaxAge too
+                if (firstSubsequent.MaxAgeInMonths.HasValue && firstSubsequent.MaxAgeInMonths.Value <= firstSubsequent.MinAgeInMonths.Value)
+                {
+                    firstSubsequent.MaxAgeInMonths = firstSubsequent.MinAgeInMonths.Value + 1;
+                }
+            }
+        }
+
+        // Cascade adjustment: each stage's MinAge should be previous stage's MaxAge + 1
+        for (int i = 0; i < subsequentStages.Count - 1; i++)
+        {
+            var current = subsequentStages[i];
+            var next = subsequentStages[i + 1];
+
+            if (current.MaxAgeInMonths.HasValue)
+            {
+                var expectedMinAge = current.MaxAgeInMonths.Value + 1;
+                if (!next.MinAgeInMonths.HasValue || next.MinAgeInMonths.Value < expectedMinAge)
+                {
+                    next.MinAgeInMonths = expectedMinAge;
+                    
+                    // If MaxAge is less than MinAge, adjust MaxAge too
+                    if (next.MaxAgeInMonths.HasValue && next.MaxAgeInMonths.Value <= next.MinAgeInMonths.Value)
+                    {
+                        next.MaxAgeInMonths = next.MinAgeInMonths.Value + 1;
+                    }
+                }
+            }
+        }
+    }
+
     public async Task<TreeGrowthStageDetailDto> CreateTreeGrowthStageAsync(CreateTreeGrowthStageDto dto)
     {
         // Validate TreeTypeId
@@ -234,14 +340,48 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
             actualStageOrder = existingStages.Count > 0 ? existingStages.Max(s => s.StageOrder) + 1 : 1;
         }
 
+        // Determine MinAge and MaxAge with validation and auto-adjustment
+        int? finalMinAge = dto.MinAgeInMonths;
+        int? finalMaxAge = dto.MaxAgeInMonths;
+
+        // Find the previous stage (stage with order < actualStageOrder)
+        var previousStage = existingStages
+            .Where(s => s.StageOrder < actualStageOrder)
+            .OrderByDescending(s => s.StageOrder)
+            .FirstOrDefault();
+
+        // Auto-set MinAge based on previous stage's MaxAge if not provided or too low
+        if (previousStage != null && previousStage.MaxAgeInMonths.HasValue)
+        {
+            var expectedMinAge = previousStage.MaxAgeInMonths.Value + 1;
+            if (!finalMinAge.HasValue || finalMinAge.Value < expectedMinAge)
+            {
+                finalMinAge = expectedMinAge;
+            }
+        }
+        else if (!finalMinAge.HasValue && actualStageOrder == 1)
+        {
+            // First stage defaults to 0 if not specified
+            finalMinAge = 0;
+        }
+
+        // Validate age range
+        if (finalMinAge.HasValue && finalMaxAge.HasValue)
+        {
+            ValidateAgeRange(finalMinAge, finalMaxAge);
+        }
+
+        // Validate no overlapping ages with existing stages
+        ValidateNoOverlappingAges(existingStages, finalMinAge, finalMaxAge);
+
         var stage = new TreeGrowthStage
         {
             TreeTypeId = dto.TreeTypeId,
             StageName = dto.StageName,
             StageOrder = actualStageOrder,
             Description = dto.Description,
-            MinAgeInMonths = dto.MinAgeInMonths,
-            MaxAgeInMonths = dto.MaxAgeInMonths,
+            MinAgeInMonths = finalMinAge,
+            MaxAgeInMonths = finalMaxAge,
             WateringFrequencyDays = dto.WateringFrequencyDays,
             WateringAmountLiters = dto.WateringAmountLiters,
             FertilizingFrequencyDays = dto.FertilizingFrequencyDays,
@@ -260,6 +400,26 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
 
         _dbContext.TreeGrowthStages.Add(stage);
         await _dbContext.SaveChangesAsync();
+
+        // Adjust subsequent stages' ages to maintain continuity
+        if (finalMaxAge.HasValue)
+        {
+            await AdjustSubsequentStagesAgesAsync(dto.TreeTypeId, actualStageOrder, finalMaxAge);
+            await _dbContext.SaveChangesAsync();
+        }
+
+        // Tự động kích hoạt TreeType khi có ít nhất 1 stage
+        var treeType = await _dbContext.TreeTypes.FindAsync(dto.TreeTypeId);
+        if (treeType != null && !treeType.IsActive)
+        {
+            var stageCount = await _dbContext.TreeGrowthStages
+                .CountAsync(s => s.TreeTypeId == dto.TreeTypeId);
+            if (stageCount > 0)
+            {
+                treeType.IsActive = true;
+                await _dbContext.SaveChangesAsync();
+            }
+        }
 
         return await GetTreeGrowthStageByIdAsync(stage.StageId) ?? throw new Exception("Failed to create tree growth stage");
     }
@@ -331,11 +491,48 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
         if (dto.Description != null)
             stage.Description = dto.Description;
 
-        if (dto.MinAgeInMonths.HasValue)
-            stage.MinAgeInMonths = dto.MinAgeInMonths;
+        // Handle age updates with validation
+        int? newMinAge = dto.MinAgeInMonths ?? stage.MinAgeInMonths;
+        int? newMaxAge = dto.MaxAgeInMonths ?? stage.MaxAgeInMonths;
 
-        if (dto.MaxAgeInMonths.HasValue)
-            stage.MaxAgeInMonths = dto.MaxAgeInMonths;
+        if (dto.MinAgeInMonths.HasValue || dto.MaxAgeInMonths.HasValue)
+        {
+            // Get all stages for this TreeType (excluding current stage) for overlap check
+            var otherStages = await _dbContext.TreeGrowthStages
+                .Where(s => s.TreeTypeId == stage.TreeTypeId && s.StageId != stageId)
+                .OrderBy(s => s.StageOrder)
+                .ToListAsync();
+
+            // Find previous stage
+            var previousStage = otherStages
+                .Where(s => s.StageOrder < stage.StageOrder)
+                .OrderByDescending(s => s.StageOrder)
+                .FirstOrDefault();
+
+            // Auto-adjust MinAge based on previous stage if needed
+            if (previousStage != null && previousStage.MaxAgeInMonths.HasValue)
+            {
+                var expectedMinAge = previousStage.MaxAgeInMonths.Value + 1;
+                if (!newMinAge.HasValue || newMinAge.Value < expectedMinAge)
+                {
+                    newMinAge = expectedMinAge;
+                }
+            }
+            else if (!newMinAge.HasValue && stage.StageOrder == 1)
+            {
+                // First stage defaults to 0 if not specified
+                newMinAge = 0;
+            }
+
+            // Validate age range
+            ValidateAgeRange(newMinAge, newMaxAge);
+
+            // Validate no overlapping ages
+            ValidateNoOverlappingAges(otherStages, newMinAge, newMaxAge, stageId);
+
+            stage.MinAgeInMonths = newMinAge;
+            stage.MaxAgeInMonths = newMaxAge;
+        }
 
         if (dto.WateringFrequencyDays.HasValue)
             stage.WateringFrequencyDays = dto.WateringFrequencyDays;
@@ -392,6 +589,13 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
 
         await _dbContext.SaveChangesAsync();
 
+        // Adjust subsequent stages' ages to maintain continuity if age was updated
+        if (dto.MinAgeInMonths.HasValue || dto.MaxAgeInMonths.HasValue)
+        {
+            await AdjustSubsequentStagesAgesAsync(stage.TreeTypeId, stage.StageOrder, stage.MaxAgeInMonths);
+            await _dbContext.SaveChangesAsync();
+        }
+
         return await GetTreeGrowthStageByIdAsync(stageId);
     }
 
@@ -433,6 +637,12 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
         var deletedOrder = stage.StageOrder;
         var treeTypeId = stage.TreeTypeId;
 
+        // Find the previous stage (before deletion) to get its MaxAge for continuity
+        var previousStage = siblingStages
+            .Where(s => s.StageOrder < deletedOrder)
+            .OrderByDescending(s => s.StageOrder)
+            .FirstOrDefault();
+
         // Delete image file if exists
         if (!string.IsNullOrEmpty(stage.ImageUrl))
         {
@@ -452,6 +662,25 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
         }
 
         await _dbContext.SaveChangesAsync();
+
+        // Adjust subsequent stages' ages to maintain continuity after deletion
+        // The next stage's MinAge should connect with the previous stage's MaxAge
+        // After deletion and shifting, stages starting from deletedOrder need adjustment
+        // (the stage that was at deletedOrder + 1 is now at deletedOrder)
+        var previousStageOrder = previousStage?.StageOrder ?? 0;
+        await AdjustSubsequentStagesAgesAsync(treeTypeId, previousStageOrder, previousStage?.MaxAgeInMonths);
+        await _dbContext.SaveChangesAsync();
+
+        // Kiểm tra và cập nhật IsActive của TreeType
+        var remainingStagesCount = await _dbContext.TreeGrowthStages
+            .CountAsync(s => s.TreeTypeId == treeTypeId);
+        var treeType = await _dbContext.TreeTypes.FindAsync(treeTypeId);
+        if (treeType != null)
+        {
+            // Nếu không còn stage nào, set IsActive = false
+            treeType.IsActive = remainingStagesCount > 0;
+            await _dbContext.SaveChangesAsync();
+        }
 
         return true;
     }

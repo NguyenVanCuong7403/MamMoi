@@ -43,12 +43,6 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -90,6 +84,13 @@ const PERIOD_TYPES = {
 };
 
 const PAGE_SIZE = 10;
+
+const formatDate = (value, fallback = "—") => {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString("vi-VN");
+};
 
 // Format currency helper
 function formatCurrency(value) {
@@ -161,6 +162,8 @@ export default function RevenueManagement() {
   const [timeframe, setTimeframe] = useState("month");
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [startDateStr, setStartDateStr] = useState("");
+  const [endDateStr, setEndDateStr] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -187,12 +190,50 @@ export default function RevenueManagement() {
   const [paymentHistoryTotalPages, setPaymentHistoryTotalPages] = useState(1);
   const [paymentHistoryTotalCount, setPaymentHistoryTotalCount] = useState(0);
 
+  // Convert date string to Date object for API calls
+  const getStartDate = () => {
+    if (!startDateStr) return null;
+    const date = new Date(startDateStr + "T00:00:00");
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  const getEndDate = () => {
+    if (!endDateStr) return null;
+    const date = new Date(endDateStr + "T23:59:59");
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // Sync date strings with Date objects for backward compatibility
+  useEffect(() => {
+    if (startDate) {
+      const year = startDate.getFullYear();
+      const month = String(startDate.getMonth() + 1).padStart(2, "0");
+      const day = String(startDate.getDate()).padStart(2, "0");
+      setStartDateStr(`${year}-${month}-${day}`);
+    } else {
+      setStartDateStr("");
+    }
+  }, [startDate]);
+
+  useEffect(() => {
+    if (endDate) {
+      const year = endDate.getFullYear();
+      const month = String(endDate.getMonth() + 1).padStart(2, "0");
+      const day = String(endDate.getDate()).padStart(2, "0");
+      setEndDateStr(`${year}-${month}-${day}`);
+    } else {
+      setEndDateStr("");
+    }
+  }, [endDate]);
+
   // Fetch revenue statistics
   const fetchStatistics = async () => {
     try {
+      const start = getStartDate();
+      const end = getEndDate();
       const stats = await AdminRevenueRepository.getRevenueStatistics(
-        startDate || null,
-        endDate || null
+        start || null,
+        end || null
       );
       setStatistics(stats);
     } catch (err) {
@@ -204,10 +245,12 @@ export default function RevenueManagement() {
   const fetchRevenueByPeriod = async () => {
     try {
       const periodType = PERIOD_TYPES[timeframe] || "monthly";
+      const start = getStartDate();
+      const end = getEndDate();
       const data = await AdminRevenueRepository.getRevenueByPeriod(
         periodType,
-        startDate || null,
-        endDate || null
+        start || null,
+        end || null
       );
       setRevenueByPeriod(data || []);
     } catch (err) {
@@ -218,9 +261,11 @@ export default function RevenueManagement() {
   // Fetch revenue by plan
   const fetchRevenueByPlan = async () => {
     try {
+      const start = getStartDate();
+      const end = getEndDate();
       const data = await AdminRevenueRepository.getRevenueByPlan(
-        startDate || null,
-        endDate || null
+        start || null,
+        end || null
       );
       setRevenueByPlan(data || []);
     } catch (err) {
@@ -232,11 +277,13 @@ export default function RevenueManagement() {
   const fetchPayments = async () => {
     try {
       setLoading(true);
+      const start = getStartDate();
+      const end = getEndDate();
       const response = await AdminRevenueRepository.getPayments(
         page,
         PAGE_SIZE,
-        startDate || null,
-        endDate || null,
+        start || null,
+        end || null,
         userIdFilter || null,
         statusFilter || null
       );
@@ -261,11 +308,50 @@ export default function RevenueManagement() {
     fetchStatistics();
     fetchRevenueByPeriod();
     fetchRevenueByPlan();
-  }, [timeframe, startDate, endDate]);
+  }, [timeframe, startDateStr, endDateStr]);
 
   useEffect(() => {
     fetchPayments();
-  }, [page, startDate, endDate, userIdFilter, statusFilter]);
+  }, [page, startDateStr, endDateStr, userIdFilter, statusFilter]);
+
+  // Handle date string changes
+  const handleStartDateChange = (e) => {
+    const value = e.target.value;
+    setStartDateStr(value);
+    if (value) {
+      const date = new Date(value + "T00:00:00");
+      if (!isNaN(date.getTime())) {
+        setStartDate(date);
+      }
+    } else {
+      setStartDate(null);
+    }
+    setPage(1);
+  };
+
+  const handleEndDateChange = (e) => {
+    const value = e.target.value;
+    setEndDateStr(value);
+    if (value) {
+      const date = new Date(value + "T23:59:59");
+      if (!isNaN(date.getTime())) {
+        setEndDate(date);
+      }
+    } else {
+      setEndDate(null);
+    }
+    setPage(1);
+  };
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setStartDateStr("");
+    setEndDateStr("");
+    setStartDate(null);
+    setEndDate(null);
+    setStatusFilter(null);
+    setPage(1);
+  };
 
   // Fetch payment history for selected user
   const fetchUserPaymentHistory = async (
@@ -596,48 +682,28 @@ export default function RevenueManagement() {
                 {/* Filters */}
                 <div className="mb-6 grid gap-4 lg:grid-cols-12">
                   <div className="lg:col-span-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {startDate
-                            ? new Date(startDate).toLocaleDateString("vi-VN")
-                            : "Từ ngày"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <CalendarComponent
-                          mode="single"
-                          selected={startDate}
-                          onSelect={setStartDate}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <Input
+                        type="date"
+                        value={startDateStr}
+                        onChange={handleStartDateChange}
+                        placeholder="Từ ngày"
+                        className="pl-10 w-full"
+                      />
+                    </div>
                   </div>
                   <div className="lg:col-span-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {endDate
-                            ? new Date(endDate).toLocaleDateString("vi-VN")
-                            : "Đến ngày"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <CalendarComponent
-                          mode="single"
-                          selected={endDate}
-                          onSelect={setEndDate}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <Input
+                        type="date"
+                        value={endDateStr}
+                        onChange={handleEndDateChange}
+                        placeholder="Đến ngày"
+                        className="pl-10 w-full"
+                      />
+                    </div>
                   </div>
                   <div className="lg:col-span-3">
                     <Select
@@ -658,6 +724,17 @@ export default function RevenueManagement() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="lg:col-span-3">
+                    <Button
+                      variant="outline"
+                      onClick={handleResetFilters}
+                      className="w-full"
+                      disabled={!startDateStr && !endDateStr && !statusFilter}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Đặt lại bộ lọc
+                    </Button>
+                  </div>
                 </div>
 
                 {loading && payments.length === 0 ? (
@@ -676,6 +753,8 @@ export default function RevenueManagement() {
                             <TableHead>ID</TableHead>
                             <TableHead>Khách hàng</TableHead>
                             <TableHead>Gói dịch vụ</TableHead>
+                            <TableHead>Ngày bắt đầu</TableHead>
+                            <TableHead>Ngày kết thúc</TableHead>
                             <TableHead>Số tiền</TableHead>
                             <TableHead>Ngày thanh toán</TableHead>
                             <TableHead>Trạng thái</TableHead>
@@ -685,7 +764,7 @@ export default function RevenueManagement() {
                           {payments.length === 0 ? (
                             <TableRow>
                               <TableCell
-                                colSpan={6}
+                                colSpan={8}
                                 className="py-8 text-center text-slate-500"
                               >
                                 Không có giao dịch nào.
@@ -717,6 +796,20 @@ export default function RevenueManagement() {
                                 </TableCell>
                                 <TableCell className="text-slate-800">
                                   {payment.planName}
+                                </TableCell>
+                                <TableCell className="text-slate-600">
+                                  {formatDate(
+                                    payment.subscriptionStartDate,
+                                    "Chưa xác định"
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-slate-600">
+                                  {payment.subscriptionEndDate
+                                    ? formatDate(
+                                        payment.subscriptionEndDate,
+                                        "Không giới hạn"
+                                      )
+                                    : "Không giới hạn"}
                                 </TableCell>
                                 <TableCell className="font-semibold text-emerald-700">
                                   {payment.amount.toLocaleString("vi-VN", {
@@ -863,6 +956,8 @@ export default function RevenueManagement() {
                       <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
                         <TableHead>ID</TableHead>
                         <TableHead>Gói dịch vụ</TableHead>
+                        <TableHead>Ngày bắt đầu</TableHead>
+                        <TableHead>Ngày kết thúc</TableHead>
                         <TableHead>Số tiền</TableHead>
                         <TableHead>Phương thức</TableHead>
                         <TableHead>Ngày thanh toán</TableHead>
@@ -881,6 +976,20 @@ export default function RevenueManagement() {
                           <TableCell className="text-slate-800">
                             {payment.planName}
                           </TableCell>
+                      <TableCell className="text-slate-600">
+                        {formatDate(
+                          payment.subscriptionStartDate,
+                          "Chưa xác định"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {payment.subscriptionEndDate
+                          ? formatDate(
+                              payment.subscriptionEndDate,
+                              "Không giới hạn"
+                            )
+                          : "Không giới hạn"}
+                      </TableCell>
                           <TableCell className="font-semibold text-emerald-700">
                             {payment.amount.toLocaleString("vi-VN", {
                               style: "currency",

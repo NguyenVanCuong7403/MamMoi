@@ -1,10 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Loader2,
   RefreshCcw,
@@ -15,7 +9,6 @@ import {
   Trash2,
   GripVertical,
   Edit,
-  Upload,
 } from "lucide-react";
 import AdminLayout from "../layout/AdminLayout";
 import { LivingBackground } from "@/components/background";
@@ -153,11 +146,86 @@ export default function BusinessAdminLifecycleProcessManagement() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [draggedStageId, setDraggedStageId] = useState(null);
-  const iconInputRef = useRef(null);
-  const [iconUploading, setIconUploading] = useState(false);
   const [stageToDelete, setStageToDelete] = useState(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  const sanitizeStagePayload = useCallback((stage, overrides = {}) => {
+    if (!stage) return { ...overrides };
+    const { treeTypeName, treesCount, ...payload } = stage;
+    return { ...payload, ...overrides };
+  }, []);
+
+  const ensureSequentialMinAges = useCallback(
+    async (stagesList) => {
+      if (!Array.isArray(stagesList) || stagesList.length < 2) {
+        return stagesList;
+      }
+
+      const ordered = [...stagesList].sort(
+        (a, b) => (a.stageOrder ?? 0) - (b.stageOrder ?? 0)
+      );
+      const updates = new Map();
+
+      for (let index = 1; index < ordered.length; index += 1) {
+        const prev = ordered[index - 1];
+        const current = ordered[index];
+        const prevMax = Number(prev?.maxAgeInMonths);
+        if (!Number.isFinite(prevMax)) continue;
+        const expectedMin = prevMax + 1;
+        const currentMin = Number(current?.minAgeInMonths);
+        if (!Number.isFinite(currentMin) || currentMin !== expectedMin) {
+          updates.set(current.stageId, expectedMin);
+        }
+      }
+
+      if (!updates.size) {
+        return stagesList;
+      }
+
+      const stageMap = new Map(
+        stagesList.map((stage) => [stage.stageId, stage])
+      );
+
+      for (const [stageId, expectedMin] of updates.entries()) {
+        const sourceStage = stageMap.get(stageId);
+        if (!sourceStage) continue;
+        const payload = sanitizeStagePayload(sourceStage, {
+          minAgeInMonths: expectedMin,
+        });
+        try {
+          await AdminGrowthStageRepository.updateTreeGrowthStage(
+            stageId,
+            payload
+          );
+        } catch (error) {
+          console.error("Failed to auto-adjust min age", error);
+        }
+      }
+
+      return stagesList.map((stage) =>
+        updates.has(stage.stageId)
+          ? { ...stage, minAgeInMonths: updates.get(stage.stageId) }
+          : stage
+      );
+    },
+    [sanitizeStagePayload]
+  );
+
+  const getAutoMinAgeForNewStage = useCallback(() => {
+    if (!stages.length) return 0;
+    const ordered = [...stages].sort(
+      (a, b) => (a.stageOrder ?? 0) - (b.stageOrder ?? 0)
+    );
+    const lastStage = ordered[ordered.length - 1];
+    const lastMaxAge = Number(lastStage?.maxAgeInMonths);
+    if (Number.isFinite(lastMaxAge)) {
+      return lastMaxAge + 1;
+    }
+    const fallbackMin = Number(lastStage?.minAgeInMonths);
+    return Number.isFinite(fallbackMin) ? fallbackMin : 0;
+  }, [stages]);
 
   const handleSelectTreeType = useCallback(async (treeTypeId) => {
     if (!treeTypeId) return;
@@ -194,6 +262,11 @@ export default function BusinessAdminLifecycleProcessManagement() {
         };
       });
       setStages(normalizedStages);
+      const adjustedStages = await ensureSequentialMinAges(normalizedStages);
+      if (adjustedStages !== normalizedStages) {
+        setStages(adjustedStages);
+      }
+      return adjustedStages;
     } catch (err) {
       setNotice({
         type: "error",
@@ -202,7 +275,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
     } finally {
       setStagesLoading(false);
     }
-  }, []);
+  }, [ensureSequentialMinAges]);
 
   useEffect(() => {
     const fetchTreeTypes = async () => {
@@ -242,15 +315,25 @@ export default function BusinessAdminLifecycleProcessManagement() {
           ...stage,
           _order: stage.stageOrder ?? index + 1,
         }))
-        .sort((a, b) => a._order - b._order)
-        .slice(0, PHASE_IDS.length),
+        .sort((a, b) => a._order - b._order),
     [stages]
   );
 
   const previewPhaseTheme = useMemo(() => {
     if (!limitedStages.length) return [];
 
-    const FALLBACK_ICONS = ["🌱", "🌸", "🍈", "🔍", "🌿"];
+    const FALLBACK_ICONS = [
+      "🌱",
+      "🌸",
+      "🍈",
+      "🔍",
+      "🌿",
+      "🌳",
+      "🍃",
+      "🌾",
+      "🌺",
+      "🌻",
+    ];
 
     return limitedStages.map((stage, idx) => {
       const phaseId = PHASE_IDS[idx] || `custom_${idx}`;
@@ -353,7 +436,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
         stages.length > 0
           ? Math.max(...stages.map((s) => s.stageOrder)) + 1
           : 1,
-      minAgeInMonths: null,
+      minAgeInMonths: getAutoMinAgeForNewStage(),
       maxAgeInMonths: null,
       wateringFrequencyDays: null,
       wateringAmountLiters: null,
@@ -370,6 +453,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
       nodeColor: DEFAULT_NODE_COLOR,
       lineColor: DEFAULT_LINE_COLOR,
     });
+    setValidationErrors({});
     setIsCreateDialogOpen(true);
   };
 
@@ -378,6 +462,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
       const prepared = prepareStageForEdit(stage);
       if (prepared) {
         setEditingStage(prepared);
+        setValidationErrors({});
         setIsEditDialogOpen(true);
       }
     },
@@ -417,9 +502,69 @@ export default function BusinessAdminLifecycleProcessManagement() {
     }
   };
 
+  const validateStage = (stage) => {
+    const errors = {};
+
+    if (!stage?.stageName || !stage.stageName.trim()) {
+      errors.stageName = "Tên giai đoạn là bắt buộc.";
+    }
+
+    if (!stage?.description || !stage.description.trim()) {
+      errors.description = "Mô tả là bắt buộc.";
+    }
+
+    // Validate minAgeInMonths - check if it's null, undefined, or empty string
+    if (stage?.minAgeInMonths == null || stage.minAgeInMonths === "") {
+      errors.minAgeInMonths = "Tuổi tối thiểu là bắt buộc.";
+    } else {
+      const minAge = Number(stage.minAgeInMonths);
+      if (isNaN(minAge) || minAge < 0) {
+        errors.minAgeInMonths = "Tuổi tối thiểu phải là số không âm.";
+      }
+    }
+
+    // Validate maxAgeInMonths - check if it's null, undefined, or empty string
+    if (stage?.maxAgeInMonths == null || stage.maxAgeInMonths === "") {
+      errors.maxAgeInMonths = "Tuổi tối đa là bắt buộc.";
+    } else {
+      const maxAge = Number(stage.maxAgeInMonths);
+      if (isNaN(maxAge) || maxAge < 0) {
+        errors.maxAgeInMonths = "Tuổi tối đa phải là số không âm.";
+      }
+    }
+
+    // Validate min <= max if both are provided and valid
+    if (
+      !errors.minAgeInMonths &&
+      !errors.maxAgeInMonths &&
+      stage?.minAgeInMonths != null &&
+      stage?.maxAgeInMonths != null &&
+      stage.minAgeInMonths !== "" &&
+      stage.maxAgeInMonths !== ""
+    ) {
+      const minAge = Number(stage.minAgeInMonths);
+      const maxAge = Number(stage.maxAgeInMonths);
+      if (!isNaN(minAge) && !isNaN(maxAge) && minAge > maxAge) {
+        errors.maxAgeInMonths =
+          "Tuổi tối đa phải lớn hơn hoặc bằng tuổi tối thiểu.";
+      }
+    }
+
+    return errors;
+  };
+
   const handleSaveStage = async () => {
     if (!editingStage) return;
 
+    // Validate before saving
+    const errors = validateStage(editingStage);
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+
+    // Clear validation errors if validation passes
+    setValidationErrors({});
     setSaving(true);
     setNotice(null);
 
@@ -478,9 +623,12 @@ export default function BusinessAdminLifecycleProcessManagement() {
         selectedTreeTypeId,
         stageIdToNewOrder
       );
-      setStages(
-        newOrder.map((stage, index) => ({ ...stage, stageOrder: index + 1 }))
-      );
+      const reorderedStages = newOrder.map((stage, index) => ({
+        ...stage,
+        stageOrder: index + 1,
+      }));
+      const adjustedStages = await ensureSequentialMinAges(reorderedStages);
+      setStages(adjustedStages);
       setNotice({
         type: "success",
         message: "Đã sắp xếp lại thứ tự giai đoạn.",
@@ -523,65 +671,11 @@ export default function BusinessAdminLifecycleProcessManagement() {
     setDraggedStageId(null);
   };
 
-  const handleIconUploadClick = () => {
-    iconInputRef.current?.click();
-  };
-
-  const handleIconFileChange = async (event) => {
-    if (!editingStage) return;
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setNotice({
-        type: "error",
-        message: "Vui lòng chọn file hình ảnh hợp lệ.",
-      });
-      event.target.value = "";
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      setNotice({
-        type: "error",
-        message: "Kích thước ảnh không được vượt quá 5MB.",
-      });
-      event.target.value = "";
-      return;
-    }
-
-    try {
-      setIconUploading(true);
-      const response = await AdminGrowthStageRepository.uploadStageImage(file);
-      const url = response?.data?.url ?? response?.url;
-      if (!url) {
-        throw new Error("Không nhận được đường dẫn hình ảnh từ máy chủ.");
-      }
-      setEditingStage((prev) => ({
-        ...prev,
-        icon: url,
-      }));
-    } catch (err) {
-      setNotice({
-        type: "error",
-        message: err.message || "Upload icon thất bại. Vui lòng thử lại.",
-      });
-    } finally {
-      setIconUploading(false);
-      if (event.target) {
-        event.target.value = "";
-      }
-    }
-  };
-
   const handleRemoveIcon = () => {
     setEditingStage((prev) => ({
       ...prev,
       icon: "",
     }));
-    if (iconInputRef.current) {
-      iconInputRef.current.value = "";
-    }
   };
 
   const renderColorPicker = useCallback(
@@ -847,24 +941,18 @@ export default function BusinessAdminLifecycleProcessManagement() {
                 </div>
 
                 <div className="rounded-3xl border border-slate-100 bg-gradient-to-br from-slate-50 to-white p-6 shadow-inner space-y-4">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col items-center text-center space-y-2">
                     <div>
                       <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-500">
                         Xem trước vòng đời
                       </p>
-                      <h3 className="text-lg font-semibold text-slate-800">
+                      <h3 className="text-lg font-semibold text-slate-800 mt-1">
                         {selectedTreeType?.treeTypeName || "Loại cây"}
                       </h3>
-                      <p className="text-sm text-slate-500">
-                        Hiển thị tối đa 5 giai đoạn đầu tiên
+                      <p className="text-sm text-slate-500 mt-1">
+                        Hiển thị tất cả {stages.length} giai đoạn
                       </p>
                     </div>
-                    {stages.length > PHASE_IDS.length && (
-                      <p className="text-xs text-amber-600">
-                        * Giai đoạn vượt quá 5 mục sẽ không hiển thị trên vòng
-                        tròn preview
-                      </p>
-                    )}
                   </div>
 
                   <div className="flex justify-center">
@@ -906,6 +994,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
             setIsCreateDialogOpen(false);
             setIsEditDialogOpen(false);
             setEditingStage(null);
+            setValidationErrors({});
           }
         }}
       >
@@ -914,14 +1003,43 @@ export default function BusinessAdminLifecycleProcessManagement() {
             <DialogTitle>
               {editingStage?.stageId
                 ? "Chỉnh sửa giai đoạn"
-                : "Tạo giai đoạn mới"}
+                : `Tạo giai đoạn mới của ${
+                    selectedTreeType?.treeTypeName || "loại cây này"
+                  }`}
             </DialogTitle>
             <DialogDescription>
               {editingStage?.stageId
                 ? "Cập nhật thông tin giai đoạn phát triển."
-                : "Tạo giai đoạn phát triển mới cho loại cây này."}
+                : "Tạo giai đoạn phát triển mới cho loại cây đã chọn."}
             </DialogDescription>
           </DialogHeader>
+
+          {Object.keys(validationErrors).length > 0 && (
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-1">
+                  <p className="text-sm font-semibold text-rose-800">
+                    Vui lòng sửa các lỗi sau:
+                  </p>
+                  <ul className="text-xs text-rose-700 list-disc list-inside space-y-0.5">
+                    {validationErrors.stageName && (
+                      <li>{validationErrors.stageName}</li>
+                    )}
+                    {validationErrors.description && (
+                      <li>{validationErrors.description}</li>
+                    )}
+                    {validationErrors.minAgeInMonths && (
+                      <li>{validationErrors.minAgeInMonths}</li>
+                    )}
+                    {validationErrors.maxAgeInMonths && (
+                      <li>{validationErrors.maxAgeInMonths}</li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
 
           {editingStage && (
             <div className="space-y-4">
@@ -932,14 +1050,31 @@ export default function BusinessAdminLifecycleProcessManagement() {
                   </label>
                   <Input
                     value={editingStage.stageName || ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
                       setEditingStage({
                         ...editingStage,
                         stageName: e.target.value,
-                      })
-                    }
+                      });
+                      // Clear error when user starts typing
+                      if (validationErrors.stageName) {
+                        setValidationErrors((prev) => {
+                          const newErrors = { ...prev };
+                          delete newErrors.stageName;
+                          return newErrors;
+                        });
+                      }
+                    }}
                     placeholder="Ví dụ: Sinh trưởng & Phát triển"
+                    className={
+                      validationErrors.stageName ? "border-rose-500" : ""
+                    }
                   />
+                  {validationErrors.stageName && (
+                    <p className="text-xs text-rose-600 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {validationErrors.stageName}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold">Thứ tự</label>
@@ -959,18 +1094,37 @@ export default function BusinessAdminLifecycleProcessManagement() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold">Mô tả</label>
+                <label className="text-sm font-semibold">
+                  Mô tả <span className="text-rose-500">*</span>
+                </label>
                 <Textarea
                   rows={2}
                   value={editingStage.description || ""}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setEditingStage({
                       ...editingStage,
                       description: e.target.value,
-                    })
-                  }
+                    });
+                    // Clear error when user starts typing
+                    if (validationErrors.description) {
+                      setValidationErrors((prev) => {
+                        const newErrors = { ...prev };
+                        delete newErrors.description;
+                        return newErrors;
+                      });
+                    }
+                  }}
                   placeholder="Mô tả ngắn gọn về giai đoạn này"
+                  className={
+                    validationErrors.description ? "border-rose-500" : ""
+                  }
                 />
+                {validationErrors.description && (
+                  <p className="text-xs text-rose-600 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    {validationErrors.description}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -992,35 +1146,19 @@ export default function BusinessAdminLifecycleProcessManagement() {
                             </span>
                           )
                         ) : (
-                          <Upload className="h-5 w-5 text-slate-400" />
+                          <span className="text-2xl text-slate-400">🌿</span>
                         )}
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={handleIconUploadClick}
-                          disabled={iconUploading}
-                        >
-                          {iconUploading ? "Đang tải..." : "Upload icon"}
-                        </Button>
+                      {editingStage.icon && (
                         <Button
                           type="button"
                           variant="ghost"
                           onClick={handleRemoveIcon}
-                          disabled={!editingStage.icon || iconUploading}
                         >
                           Xóa
                         </Button>
-                      </div>
+                      )}
                     </div>
-                    <input
-                      ref={iconInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleIconFileChange}
-                    />
                     <Input
                       maxLength={8}
                       value={
@@ -1035,11 +1173,10 @@ export default function BusinessAdminLifecycleProcessManagement() {
                           icon: e.target.value,
                         }))
                       }
-                      placeholder="Hoặc nhập emoji (ví dụ: 🌱)"
+                      placeholder="Nhập emoji (ví dụ: 🌱)"
                     />
                     <p className="text-xs text-slate-500">
-                      Có thể upload PNG/SVG ≤5MB hoặc nhập emoji để hiển thị
-                      trên vòng tròn.
+                      Nhập emoji để hiển thị trên vòng tròn.
                     </p>
                   </div>
                 </div>
@@ -1053,41 +1190,83 @@ export default function BusinessAdminLifecycleProcessManagement() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold">
-                    Tuổi tối thiểu (tháng)
+                    Tuổi tối thiểu (tháng){" "}
+                    <span className="text-rose-500">*</span>
                   </label>
                   <Input
                     type="number"
                     min="0"
                     value={editingStage.minAgeInMonths ?? ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const value = e.target.value;
                       setEditingStage({
                         ...editingStage,
-                        minAgeInMonths: e.target.value
-                          ? parseInt(e.target.value)
-                          : null,
-                      })
-                    }
+                        minAgeInMonths: value ? parseInt(value) : null,
+                      });
+                      // Clear error when user starts typing
+                      if (validationErrors.minAgeInMonths) {
+                        setValidationErrors((prev) => {
+                          const newErrors = { ...prev };
+                          delete newErrors.minAgeInMonths;
+                          // Also clear maxAgeInMonths error if it was about comparison
+                          if (
+                            newErrors.maxAgeInMonths &&
+                            newErrors.maxAgeInMonths.includes(
+                              "lớn hơn hoặc bằng"
+                            )
+                          ) {
+                            delete newErrors.maxAgeInMonths;
+                          }
+                          return newErrors;
+                        });
+                      }
+                    }}
                     placeholder="0"
+                    className={
+                      validationErrors.minAgeInMonths ? "border-rose-500" : ""
+                    }
                   />
+                  {validationErrors.minAgeInMonths && (
+                    <p className="text-xs text-rose-600 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {validationErrors.minAgeInMonths}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-semibold">
-                    Tuổi tối đa (tháng)
+                    Tuổi tối đa (tháng) <span className="text-rose-500">*</span>
                   </label>
                   <Input
                     type="number"
                     min="0"
                     value={editingStage.maxAgeInMonths ?? ""}
-                    onChange={(e) =>
+                    onChange={(e) => {
+                      const value = e.target.value;
                       setEditingStage({
                         ...editingStage,
-                        maxAgeInMonths: e.target.value
-                          ? parseInt(e.target.value)
-                          : null,
-                      })
-                    }
+                        maxAgeInMonths: value ? parseInt(value) : null,
+                      });
+                      // Clear error when user starts typing
+                      if (validationErrors.maxAgeInMonths) {
+                        setValidationErrors((prev) => {
+                          const newErrors = { ...prev };
+                          delete newErrors.maxAgeInMonths;
+                          return newErrors;
+                        });
+                      }
+                    }}
                     placeholder="Không giới hạn"
+                    className={
+                      validationErrors.maxAgeInMonths ? "border-rose-500" : ""
+                    }
                   />
+                  {validationErrors.maxAgeInMonths && (
+                    <p className="text-xs text-rose-600 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      {validationErrors.maxAgeInMonths}
+                    </p>
+                  )}
                 </div>
               </div>
 

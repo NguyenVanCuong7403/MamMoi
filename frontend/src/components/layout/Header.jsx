@@ -1,10 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import {
-  Menu,
-  Bell,
-  User as UserIcon,
-  ArrowLeft,
-} from "lucide-react";
+import { Menu, Bell, User as UserIcon, ArrowLeft } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/API/context/AuthContext";
 import NotificationRepository from "@/API/repositories/NotificationRepository";
@@ -47,18 +42,40 @@ const getAdminPath = (user) => {
 function normalizeImageUrl(raw = "") {
   if (!raw) return "";
   let u = String(raw).trim();
-  if (u.startsWith("http://")) u = "https://" + u.slice(7);
+
+  // Xử lý relative URLs (bắt đầu với /)
+  if (u.startsWith("/") && !u.startsWith("//")) {
+    const API_BASE = import.meta.env.VITE_API_BASE || "https://localhost:7237";
+    // Loại bỏ trailing slash từ API_BASE nếu có
+    const baseUrl = API_BASE.replace(/\/$/, "");
+    u = `${baseUrl}${u}`;
+  }
+
+  // Xử lý protocol-relative URLs (bắt đầu với //)
+  if (u.startsWith("//")) {
+    u = `https:${u}`;
+  }
+
+  // Chỉ chuyển http sang https nếu không phải localhost (để tránh SSL issues trong development)
+  if (u.startsWith("http://") && !u.includes("localhost")) {
+    u = "https://" + u.slice(7);
+  }
+
+  // Xử lý Google Drive URLs
   let m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
   m = u.match(/drive\.google\.com\/open\?id=([^&]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
   m = u.match(/drive\.google\.com\/uc\?(?:export=[^&]+&)?id=([^&]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
+
+  // Xử lý Dropbox URLs
   if (/dropbox\.com/.test(u)) {
     u = u
       .replace("www.dropbox.com", "dl.dropboxusercontent.com")
       .replace(/\?dl=0$/, "?dl=1");
   }
+
   return u;
 }
 
@@ -74,11 +91,29 @@ function SafeImage({ src, alt = "", className = "" }) {
   }, [src]);
 
   function onError() {
-    if (tried) return setFailed(true);
+    if (tried) {
+      setFailed(true);
+      return;
+    }
     setTried(true);
+
+    // Thử fallback cho Google Drive
     if (/drive\.google\.com\/uc\?/.test(url)) {
       setUrl(url.replace("export=view", "export=download"));
-    } else setFailed(true);
+      return;
+    }
+
+    // Thử fallback từ HTTPS sang HTTP cho localhost (development)
+    if (
+      url.includes("https://localhost") &&
+      !url.includes("http://localhost")
+    ) {
+      const httpUrl = url.replace("https://", "http://");
+      setUrl(httpUrl);
+      return;
+    }
+
+    setFailed(true);
   }
 
   if (!url || failed) {
@@ -118,9 +153,12 @@ export default function MMHeader({
   const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   // Đọc avatar từ localStorage profile nếu user.ProfileImageUrl không có
+  // Sử dụng key theo userId để tránh avatar bị dùng chung giữa các tài khoản
   const [profileAvatar, setProfileAvatar] = useState(() => {
+    if (!user?.userId) return "";
     try {
-      const profile = localStorage.getItem("mm_user_profile_v3");
+      const profileKey = `mm_user_profile_v3_${user.userId}`;
+      const profile = localStorage.getItem(profileKey);
       if (profile) {
         const parsed = JSON.parse(profile);
         return parsed?.avatarUrl || "";
@@ -129,14 +167,37 @@ export default function MMHeader({
     return "";
   });
 
-  // Lắng nghe thay đổi trong localStorage profile
+  // Lắng nghe thay đổi trong localStorage profile (theo userId)
+  // Và cập nhật user từ localStorage để sync ProfileImageUrl
   useEffect(() => {
+    if (!user?.userId) {
+      setProfileAvatar("");
+      return;
+    }
+
     function handleStorageChange() {
       try {
-        const profile = localStorage.getItem("mm_user_profile_v3");
+        // Đọc từ user-specific profile localStorage
+        const profileKey = `mm_user_profile_v3_${user.userId}`;
+        const profile = localStorage.getItem(profileKey);
         if (profile) {
           const parsed = JSON.parse(profile);
           setProfileAvatar(parsed?.avatarUrl || "");
+        } else {
+          setProfileAvatar("");
+        }
+
+        // Cũng cập nhật user từ localStorage để sync ProfileImageUrl
+        // (vì AuthContext có thể chưa cập nhật state)
+        const userStr = localStorage.getItem("user");
+        if (userStr) {
+          try {
+            const userFromStorage = JSON.parse(userStr);
+            if (userFromStorage?.ProfileImageUrl) {
+              // Trigger re-render bằng cách dispatch event để Header re-read
+              // Hoặc có thể dùng một state khác, nhưng hiện tại profileAvatar đã đủ
+            }
+          } catch {}
         }
       } catch {}
     }
@@ -145,11 +206,14 @@ export default function MMHeader({
     window.addEventListener("storage", handleStorageChange);
     window.addEventListener("userProfileUpdated", handleStorageChange);
 
+    // Load initial value
+    handleStorageChange();
+
     return () => {
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("userProfileUpdated", handleStorageChange);
     };
-  }, []);
+  }, [user?.userId]);
 
   const [activeMenu, setActiveMenu] = useState(menuItems?.[0]?.id || "");
   const [isTop, setIsTop] = useState(true);
@@ -208,7 +272,8 @@ export default function MMHeader({
   useEffect(() => {
     const close = (e) => {
       if (!e.target.closest(".avatar-menu-area")) setAvatarMenu(false);
-      if (!e.target.closest(".notification-menu-area")) setNotificationMenu(false);
+      if (!e.target.closest(".notification-menu-area"))
+        setNotificationMenu(false);
     };
     document.addEventListener("click", close);
     return () => document.removeEventListener("click", close);
@@ -218,7 +283,7 @@ export default function MMHeader({
     const onScroll = () => {
       const currentScrollY = window.scrollY;
       setIsTop(currentScrollY < 60);
-      
+
       // Show header when scrolling up, hide when scrolling down
       if (currentScrollY < 60) {
         // Always show header at the top
@@ -230,7 +295,7 @@ export default function MMHeader({
         // Scrolling up - show header
         setIsHeaderVisible(true);
       }
-      
+
       lastScrollY.current = currentScrollY;
     };
     onScroll();
@@ -554,7 +619,8 @@ export default function MMHeader({
             {/* If logged in → avatar dropdown. If not → login/register */}
             {user ? (
               <div className="hidden md:block relative avatar-menu-area">
-                {user.ProfileImageUrl || profileAvatar ? (
+                {/* Ưu tiên profileAvatar (từ user-specific localStorage) vì nó được cập nhật ngay lập tức */}
+                {profileAvatar || user.ProfileImageUrl ? (
                   <button
                     onClick={() => setAvatarMenu((prev) => !prev)}
                     className="w-9 h-9 sm:w-11 sm:h-11 rounded-full overflow-hidden border border-white/40 shadow focus:outline-none transition hover:scale-[1.03] grid place-items-center flex-shrink-0"
@@ -563,7 +629,7 @@ export default function MMHeader({
                     title="Tài khoản"
                   >
                     <SafeImage
-                      src={user.ProfileImageUrl || profileAvatar}
+                      src={profileAvatar || user.ProfileImageUrl}
                       alt="avatar"
                       className="w-full h-full object-cover object-center"
                     />
@@ -586,16 +652,19 @@ export default function MMHeader({
                     {/* Avatar and Name Section */}
                     <div className="px-4 py-3 flex items-center gap-3 border-b border-gray-200">
                       <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 flex-shrink-0">
-                        {user.ProfileImageUrl || profileAvatar ? (
+                        {profileAvatar || user.ProfileImageUrl ? (
                           <SafeImage
-                            src={user.ProfileImageUrl || profileAvatar}
+                            src={profileAvatar || user.ProfileImageUrl}
                             alt="avatar"
                             className="w-full h-full object-cover object-center"
                           />
                         ) : (
                           <div
                             className="w-full h-full grid place-items-center"
-                            style={{ background: palette.ivory, color: palette.bg }}
+                            style={{
+                              background: palette.ivory,
+                              color: palette.bg,
+                            }}
                           >
                             <UserIcon className="w-5 h-5" />
                           </div>
@@ -637,37 +706,37 @@ export default function MMHeader({
                         </button>
                       ) : null}
 
-                    <button
-                      className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap"
-                      onClick={() => {
-                        navigate("/profile");
-                        setAvatarMenu((prev) => !prev);
-                      }}
-                      title="Hồ sơ"
-                    >
-                      Hồ sơ
-                    </button>
-
-                    {!isAdmin(user) && (
                       <button
-                        className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+                        className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap"
                         onClick={() => {
-                          navigate("/reports");
+                          navigate("/profile");
                           setAvatarMenu((prev) => !prev);
                         }}
-                        title="Quản lý báo cáo"
+                        title="Hồ sơ"
                       >
-                        Quản lý báo cáo
+                        Hồ sơ
                       </button>
-                    )}
 
-                    <button
-                      className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap text-red-500"
-                      onClick={handleLogoutClick}
-                      title="Đăng xuất"
-                    >
-                      Đăng xuất
-                    </button>
+                      {!isAdmin(user) && (
+                        <button
+                          className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap overflow-hidden text-ellipsis"
+                          onClick={() => {
+                            navigate("/reports");
+                            setAvatarMenu((prev) => !prev);
+                          }}
+                          title="Quản lý báo cáo"
+                        >
+                          Quản lý báo cáo
+                        </button>
+                      )}
+
+                      <button
+                        className="block w-full text-left px-4 py-2.5 hover:bg-gray-100 text-sm whitespace-nowrap text-red-500"
+                        onClick={handleLogoutClick}
+                        title="Đăng xuất"
+                      >
+                        Đăng xuất
+                      </button>
                     </div>
                   </div>
                 )}

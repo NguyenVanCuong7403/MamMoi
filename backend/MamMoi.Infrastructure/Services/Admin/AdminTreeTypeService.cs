@@ -162,7 +162,7 @@ public class AdminTreeTypeService : IAdminTreeTypeService
             FrostTolerance = dto.FrostTolerance,
             WindTolerance = dto.WindTolerance,
             ImageUrl = dto.ImageUrl,
-            IsActive = dto.IsActive,
+            IsActive = false, // Mặc định inactive, chỉ active khi có stage
             CareGuide = dto.CareGuide,
             LightRequirement = dto.LightRequirement,
             WaterRequirement = dto.WaterRequirement,

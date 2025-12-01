@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/pagination";
 import NotificationRepository from "@/API/repositories/NotificationRepository";
 import { getNotificationRoute } from "@/lib/notificationRoutes";
+import { USER_NOTIFICATION_TYPES, translateNotificationType } from "@/lib/notificationTypes";
 import { useAuth } from "@/API/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -70,36 +71,6 @@ function getPriorityBadgeVariant(priority) {
       return "secondary";
     default:
       return "default";
-  }
-}
-
-// Translate notification type to Vietnamese (matching Report.jsx style)
-function translateNotificationType(type) {
-  if (!type) return "Chung";
-  
-  const typeLower = type.toLowerCase();
-  
-  switch (typeLower) {
-    case "supportrequest":
-      return "Hỗ trợ";
-    case "broadcast":
-      return "Thông báo chung";
-    case "taskexpiration":
-    case "task":
-      return "Nhiệm vụ";
-    case "promotion":
-      return "Khuyến mãi";
-    case "payment":
-    case "subscription":
-      return "Thanh toán";
-    case "tree":
-      return "Cây";
-    case "auth":
-      return "Đăng nhập & Đăng ký";
-    case "system":
-      return "Hệ thống";
-    default:
-      return type;
   }
 }
 
@@ -347,13 +318,11 @@ export default function Notifications() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Tất cả loại</SelectItem>
-                      <SelectItem value="SupportRequest">{translateNotificationType("SupportRequest")}</SelectItem>
-                      <SelectItem value="Broadcast">{translateNotificationType("Broadcast")}</SelectItem>
-                      <SelectItem value="TaskExpiration">{translateNotificationType("TaskExpiration")}</SelectItem>
-                      <SelectItem value="Promotion">{translateNotificationType("Promotion")}</SelectItem>
-                      <SelectItem value="Payment">{translateNotificationType("Payment")}</SelectItem>
-                      <SelectItem value="Tree">{translateNotificationType("Tree")}</SelectItem>
-                      <SelectItem value="System">{translateNotificationType("System")}</SelectItem>
+                      {USER_NOTIFICATION_TYPES.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -398,12 +367,14 @@ export default function Notifications() {
                       </TableHeader>
                       <TableBody>
                         {filteredNotifications.map((notification) => {
+                          const route = getNotificationRoute(
+                            notification,
+                            user
+                          );
+                          // Chỉ cho phép navigation nếu có route hợp lệ và khác với trang notifications hiện tại
+                          const hasValidRoute = route && route !== "/notifications";
                           const handleNotificationClick = () => {
-                            const route = getNotificationRoute(
-                              notification,
-                              user
-                            );
-                            if (route) {
+                            if (hasValidRoute) {
                               navigate(route);
                             }
                           };
@@ -412,13 +383,17 @@ export default function Notifications() {
                             <TableRow
                               key={notification.notificationId}
                               className={cn(
-                                "transition cursor-pointer",
+                                "transition",
                                 !notification.isRead &&
                                   "bg-blue-50/50 font-semibold"
                               )}
-                              onClick={handleNotificationClick}
                             >
-                              <TableCell>
+                              <TableCell
+                                className={cn(
+                                  hasValidRoute && "cursor-pointer hover:bg-slate-50"
+                                )}
+                                onClick={hasValidRoute ? handleNotificationClick : undefined}
+                              >
                                 <div className="space-y-1 min-w-0">
                                   <div className="font-medium text-slate-900 mm-text-wrap-safe break-words">
                                     {notification.title}
@@ -428,18 +403,20 @@ export default function Notifications() {
                                       {notification.message}
                                     </div>
                                   )}
-                                  <div className="text-sm text-emerald-600 hover:underline mm-text-wrap-safe break-words">
-                                    {notification.actionLabel || "Xem chi tiết"}{" "}
-                                    →
-                                  </div>
+                                  {hasValidRoute && (
+                                    <div className="text-sm text-emerald-600 hover:underline mm-text-wrap-safe break-words">
+                                      {notification.actionLabel || "Xem chi tiết"}{" "}
+                                      →
+                                    </div>
+                                  )}
                                 </div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="pointer-events-none">
                                 <Badge variant="outline">
                                   {translateNotificationType(notification.notificationType)}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="pointer-events-none">
                                 <Badge
                                   variant={getPriorityBadgeVariant(
                                     notification.priority
@@ -448,7 +425,7 @@ export default function Notifications() {
                                   {notification.priority}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-slate-600">
+                              <TableCell className="text-slate-600 pointer-events-none">
                                 {formatDate(notification.sentAt)}
                               </TableCell>
                               <TableCell className="text-right">

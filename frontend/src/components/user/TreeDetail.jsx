@@ -31,7 +31,41 @@ import {
 
 import { Label } from "@/components/ui/label"; // nếu bạn dùng Label trong edit modal
 
-const FIELD_EDIT_LOCK_DAYS = 30;
+// Giai đoạn sinh trưởng (đồng bộ đơn giản với TreeManagement)
+const PHASE_META = {
+  growth_development: {
+    name: "Sinh trưởng & Phát triển",
+    icon: "🌱",
+    description:
+      "Cây tập trung phát triển thân, lá và hệ rễ, cần chăm sóc dinh dưỡng và nước ổn định để tạo nền tảng khỏe mạnh.",
+  },
+  flowering: {
+    name: "Ra hoa",
+    icon: "🌸",
+    description:
+      "Cây hình thành và phát triển nụ hoa, cần chú ý nước, dinh dưỡng và phòng trừ sâu bệnh để tỷ lệ đậu hoa tốt.",
+  },
+  fruiting: {
+    name: "Ra quả",
+    icon: "🍎",
+    description:
+      "Quả được hình thành và lớn dần, cây cần dinh dưỡng cân đối và nước ổn định để quả phát triển đồng đều, hạn chế rụng.",
+  },
+  pre_harvest: {
+    name: "Trước thu hoạch",
+    icon: "🔍",
+    description:
+      "Giai đoạn hoàn thiện chất lượng quả, cần theo dõi kỹ tình trạng sâu bệnh và điều chỉnh chăm sóc để chuẩn bị thu hoạch.",
+  },
+  post_harvest: {
+    name: "Sau thu hoạch",
+    icon: "🌿",
+    description:
+      "Cây phục hồi sau thu hoạch, cần cắt tỉa, bón phân và chăm sóc để tái tạo tán lá và chuẩn bị cho vụ mới.",
+  },
+};
+
+const FIELD_EDIT_LOCK_DAYS = 14;
 
 const STAGE_ICON_PALETTE = ["🌱", "🌿", "🌸", "🍇", "🌾", "🍂", "🍋", "🌻"];
 const STAGE_COLOR_PALETTE = [
@@ -102,9 +136,10 @@ function buildPhaseThemeFromStages(stages = []) {
 
   if (!sorted.length) return null;
 
-  const limited = sorted.slice(0, PHASE_IDS.length);
-  return limited.map((stage, index) => {
-    const phaseId = PHASE_IDS[index];
+  // Hiển thị tất cả các giai đoạn, không giới hạn
+  return sorted.map((stage, index) => {
+    // Sử dụng PHASE_IDS nếu có, nếu không thì dùng custom_${index}
+    const phaseId = PHASE_IDS[index] || `custom_${index}`;
     const baseTheme = DEFAULT_PHASE_THEME[phaseId] || {};
     const label =
       stage.stageName ||
@@ -113,11 +148,17 @@ function buildPhaseThemeFromStages(stages = []) {
       stage.label ||
       `Giai đoạn ${index + 1}`;
     const subtitle = formatAgeRangeLabel(stage);
+    // Sử dụng fallback icon từ baseTheme hoặc STAGE_ICON_PALETTE
     const fallbackIcon =
       baseTheme.icon || STAGE_ICON_PALETTE[index % STAGE_ICON_PALETTE.length];
+    // Sử dụng fallback color từ baseTheme hoặc STAGE_COLOR_PALETTE
+    const fallbackColorKey =
+      baseTheme.colorKey ||
+      STAGE_COLOR_PALETTE[index % STAGE_COLOR_PALETTE.length] ||
+      "emerald";
     const nodeColorMeta = buildStageColorMeta(
       stage.nodeColor || stage.colorKey || stage.colorHex || baseTheme.colorHex,
-      baseTheme.colorKey
+      fallbackColorKey
     );
     const lineColorMeta = buildStageColorMeta(
       stage.lineColor ||
@@ -713,7 +754,11 @@ function ComboBox({
   }
 
   return (
-    <div ref={boxRef} className={"relative " + className} style={{ zIndex: 100 }}>
+    <div
+      ref={boxRef}
+      className={"relative " + className}
+      style={{ zIndex: 100 }}
+    >
       <input
         ref={inputRef}
         value={query}
@@ -774,11 +819,11 @@ function ComboBox({
         <div
           className="absolute left-0 right-0 mt-1 rounded-2xl border bg-white shadow-2xl"
           role="listbox"
-          style={{ 
-            maxHeight: '240px', 
-            overflowY: 'auto',
-            overflowX: 'visible',
-            zIndex: 1000
+          style={{
+            maxHeight: "240px",
+            overflowY: "auto",
+            overflowX: "visible",
+            zIndex: 1000,
           }}
         >
           <div className="py-1">
@@ -826,7 +871,9 @@ function ComboBox({
 function DateInput({ value, onChange, error }) {
   const [parts, setParts] = React.useState(() => parseIsoToParts(value));
   const [open, setOpen] = React.useState(false);
+  const [dropdownStyle, setDropdownStyle] = React.useState({});
   const wrapRef = React.useRef(null);
+  const dropdownRef = React.useRef(null);
   const dayRef = React.useRef(null);
   const monthRef = React.useRef(null);
   const yearRef = React.useRef(null);
@@ -839,40 +886,10 @@ function DateInput({ value, onChange, error }) {
     setParts(parseIsoToParts(value));
   }, [value]);
 
-  // Đóng & commit khi click ra ngoài
-  React.useEffect(() => {
-    const handleClick = (e) => {
-      if (!wrapRef.current) return;
-      if (!wrapRef.current.contains(e.target)) {
-        commitParts();
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [parts]);
-
   function parseIsoToParts(iso) {
     if (!iso) return { d: "", m: "", y: "" };
     const [y, m, d] = iso.split("-");
     return { d: d || "", m: m || "", y: y || "" };
-  }
-
-  function getDaysInMonthSafe(yearStr, monthStr) {
-    const monthNum = Number(monthStr);
-    if (!monthNum || monthNum < 1 || monthNum > 12) return 31;
-
-    const yearNum = Number(yearStr);
-    // Năm chưa đủ 4 số: chỉ phân biệt tháng 30/31,
-    // tháng 2 cho phép tối đa 29, còn chính xác 28/29 sẽ xử lý khi có đủ năm thật
-    if (!yearStr || String(yearStr).length < 4 || !yearNum) {
-      if ([1, 3, 5, 7, 8, 10, 12].includes(monthNum)) return 31;
-      if ([4, 6, 9, 11].includes(monthNum)) return 30;
-      if (monthNum === 2) return 29;
-    }
-
-    // Khi đã có năm đầy đủ: dùng Date để tính chính xác 28/29/30/31
-    return new Date(yearNum, monthNum, 0).getDate();
   }
 
   function buildIsoFromParts({ d, m, y }) {
@@ -900,7 +917,7 @@ function DateInput({ value, onChange, error }) {
     )}-${String(dayNum).padStart(2, "0")}`;
   }
 
-  function commitParts() {
+  const commitParts = React.useCallback(() => {
     const iso = buildIsoFromParts(parts);
     // Nếu chưa điền đủ / sai => reset như yêu cầu
     if (!iso) {
@@ -910,6 +927,110 @@ function DateInput({ value, onChange, error }) {
       onChange(iso);
       setParts(parseIsoToParts(iso));
     }
+  }, [parts, onChange]);
+
+  // Tính toán vị trí dropdown để tránh overflow (sử dụng fixed positioning)
+  React.useEffect(() => {
+    if (!open || !wrapRef.current) {
+      setDropdownStyle({});
+      return;
+    }
+
+    const updatePosition = () => {
+      if (!wrapRef.current) return;
+      const rect = wrapRef.current.getBoundingClientRect();
+      const dropdownWidth = 288; // w-72 = 18rem = 288px
+      const dropdownHeight = 320; // Ước tính chiều cao dropdown
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const spaceOnRight = viewportWidth - rect.left;
+      const spaceOnLeft = rect.left;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      // Tính toán vị trí ngang
+      let left = rect.left;
+      let right = "auto";
+      if (spaceOnRight < dropdownWidth && spaceOnLeft >= dropdownWidth) {
+        // Căn phải
+        left = "auto";
+        right = viewportWidth - rect.right;
+      } else if (spaceOnRight < dropdownWidth) {
+        // Không đủ chỗ cả 2 bên, căn trái nhưng giới hạn
+        left = Math.max(8, rect.left);
+      }
+
+      // Tính toán vị trí dọc
+      let top = "auto";
+      let bottom = "auto";
+      if (spaceBelow < dropdownHeight && spaceAbove >= dropdownHeight) {
+        // Hiển thị phía trên
+        bottom = viewportHeight - rect.top;
+        top = "auto";
+      } else {
+        // Hiển thị phía dưới
+        top = rect.bottom + 4;
+        bottom = "auto";
+      }
+
+      setDropdownStyle({
+        position: "fixed",
+        left: typeof left === "number" ? `${left}px` : left,
+        right: typeof right === "number" ? `${right}px` : right,
+        top: typeof top === "number" ? `${top}px` : top,
+        bottom: typeof bottom === "number" ? `${bottom}px` : bottom,
+        width: `${dropdownWidth}px`,
+        maxWidth: "calc(100vw - 1rem)",
+        maxHeight: "calc(100vh - 1rem)",
+        zIndex: 9999,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
+  // Đóng & commit khi click ra ngoài
+  React.useEffect(() => {
+    if (!open) return;
+
+    const handleClick = (e) => {
+      if (!wrapRef.current || !dropdownRef.current) return;
+      const target = e.target;
+      // Kiểm tra xem click có nằm trong input wrapper hoặc dropdown không
+      if (
+        !wrapRef.current.contains(target) &&
+        !dropdownRef.current.contains(target)
+      ) {
+        commitParts();
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open, commitParts]);
+
+  function getDaysInMonthSafe(yearStr, monthStr) {
+    const monthNum = Number(monthStr);
+    if (!monthNum || monthNum < 1 || monthNum > 12) return 31;
+
+    const yearNum = Number(yearStr);
+    // Năm chưa đủ 4 số: chỉ phân biệt tháng 30/31,
+    // tháng 2 cho phép tối đa 29, còn chính xác 28/29 sẽ xử lý khi có đủ năm thật
+    if (!yearStr || String(yearStr).length < 4 || !yearNum) {
+      if ([1, 3, 5, 7, 8, 10, 12].includes(monthNum)) return 31;
+      if ([4, 6, 9, 11].includes(monthNum)) return 30;
+      if (monthNum === 2) return 29;
+    }
+
+    // Khi đã có năm đầy đủ: dùng Date để tính chính xác 28/29/30/31
+    return new Date(yearNum, monthNum, 0).getDate();
   }
 
   function getDaysInMonth(y, m) {
@@ -1112,7 +1233,8 @@ function DateInput({ value, onChange, error }) {
             onFocus={() => setOpen(true)}
             placeholder="Năm"
             inputMode="numeric"
-            className="w-14 bg-transparent border-none outline-none text-sm text-center placeholder:text-neutral-400"
+            className="w-16 bg-transparent border-none outline-none text-sm text-center placeholder:text-neutral-400"
+            style={{ minWidth: "4ch" }}
           />
         </div>
         <button
@@ -1127,98 +1249,102 @@ function DateInput({ value, onChange, error }) {
         </button>
       </div>
 
-      {open && (
-        <div
-          className="absolute left-0 mt-1 w-72 rounded-xl border bg-white shadow-xl z-[1600] p-3"
-          // Chặn Enter trong popup lịch không cho bubble lên window
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.stopPropagation();
-            }
-          }}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <button
-              type="button"
-              className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
-              onClick={() => {
-                if (month === 0) {
-                  setMonth(11);
-                  setYear((y) => y - 1);
-                } else setMonth((m) => m - 1);
-              }}
-            >
-              ←
-            </button>
-            <div className="text-sm font-medium">
-              {monthNames[month]} {year}
-            </div>
-            <button
-              type="button"
-              className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
-              onClick={() => {
-                if (month === 11) {
-                  setMonth(0);
-                  setYear((y) => y + 1);
-                } else setMonth((m) => m + 1);
-              }}
-            >
-              →
-            </button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-[11px] text-center text-neutral-500 mb-1">
-            {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((d) => (
-              <div key={d}>{d}</div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-sm">
-            {blanks.map((b) => (
-              <div key={`b-${b}`} />
-            ))}
-            {days.map((d) => {
-              const isSelected =
-                selected &&
-                d === selected.getDate() &&
-                month === selected.getMonth() &&
-                year === selected.getFullYear();
-
-              // Khi CHƯA có value (chưa chọn ngày trồng) thì đánh dấu ngày hôm nay
-              const isToday =
-                !selected &&
-                d === today.getDate() &&
-                month === today.getMonth() &&
-                year === today.getFullYear();
-
-              let extraClass = "";
-              if (isSelected) {
-                extraClass = "bg-emerald-500 text-white";
-              } else if (isToday) {
-                // Đánh dấu hôm nay bằng viền + chữ đậm
-                extraClass =
-                  "border border-emerald-500 text-emerald-700 font-semibold";
-              } else {
-                extraClass = "hover:bg-emerald-50 text-neutral-800";
+      {open &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className="rounded-xl border bg-white shadow-xl p-3"
+            style={dropdownStyle}
+            // Chặn Enter trong popup lịch không cho bubble lên window
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.stopPropagation();
               }
+            }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <button
+                type="button"
+                className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
+                onClick={() => {
+                  if (month === 0) {
+                    setMonth(11);
+                    setYear((y) => y - 1);
+                  } else setMonth((m) => m - 1);
+                }}
+              >
+                ←
+              </button>
+              <div className="text-sm font-medium">
+                {monthNames[month]} {year}
+              </div>
+              <button
+                type="button"
+                className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
+                onClick={() => {
+                  if (month === 11) {
+                    setMonth(0);
+                    setYear((y) => y + 1);
+                  } else setMonth((m) => m + 1);
+                }}
+              >
+                →
+              </button>
+            </div>
 
-              return (
-                <button
-                  type="button"
-                  key={d}
-                  onClick={() => pickDay(d)}
-                  className={
-                    "h-7 w-7 rounded-full flex items-center justify-center text-xs " +
-                    extraClass
-                  }
-                >
-                  {d}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+            <div className="grid grid-cols-7 gap-1 text-[11px] text-center text-neutral-500 mb-1">
+              {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((d) => (
+                <div key={d}>{d}</div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-sm">
+              {blanks.map((b) => (
+                <div key={`b-${b}`} />
+              ))}
+              {days.map((d) => {
+                const isSelected =
+                  selected &&
+                  d === selected.getDate() &&
+                  month === selected.getMonth() &&
+                  year === selected.getFullYear();
+
+                // Khi CHƯA có value (chưa chọn ngày trồng) thì đánh dấu ngày hôm nay
+                const isToday =
+                  !selected &&
+                  d === today.getDate() &&
+                  month === today.getMonth() &&
+                  year === today.getFullYear();
+
+                let extraClass = "";
+                if (isSelected) {
+                  extraClass = "bg-emerald-500 text-white";
+                } else if (isToday) {
+                  // Đánh dấu hôm nay bằng viền + chữ đậm
+                  extraClass =
+                    "border border-emerald-500 text-emerald-700 font-semibold";
+                } else {
+                  extraClass = "hover:bg-emerald-50 text-neutral-800";
+                }
+
+                return (
+                  <button
+                    type="button"
+                    key={d}
+                    onClick={() => pickDay(d)}
+                    className={
+                      "h-7 w-7 rounded-full flex items-center justify-center text-xs " +
+                      extraClass
+                    }
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+          </div>,
+          document.body
+        )}
 
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
@@ -1315,14 +1441,18 @@ function Field({
         {/* Text label */}
         <div className="flex flex-col leading-tight">
           <div className={labelCls}>
-            {typeof label === "string" ? <span>{label}</span> : label}
+            {typeof label === "string" ? <span>{label}:</span> : label}
             {inlineBadge}
           </div>
         </div>
       </LeftTag>
 
       {/* Cột value bên phải */}
-      <div className={`flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words min-w-0 ${isEditing ? 'overflow-visible' : 'overflow-hidden'}`}>
+      <div
+        className={`flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words min-w-0 ${
+          isEditing ? "overflow-visible" : "overflow-hidden"
+        }`}
+      >
         {isEditing ? editor : <span className="block truncate">{value}</span>}
       </div>
     </div>
@@ -1595,10 +1725,9 @@ const imageRegistry = {
   },
 };
 function ImagePicker({ code, value, onChange, disabled, treeId }) {
-  const [urlInput, setUrlInput] = useState("");
-  const [linkOpen, setLinkOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!code) return;
@@ -1654,86 +1783,54 @@ function ImagePicker({ code, value, onChange, disabled, treeId }) {
     await uploadRealImage(f, objectUrl);
   };
 
-  const applyUrl = async () => {
-    if (disabled) return;
-    const u = (urlInput || "").trim();
-    if (!u) return;
-    onChange(u);
-    if (code) imageRegistry.set(code, u);
-
-    await TreeRepository.uploadTreeImage(treeId, { imageUrl: u });
-    setUrlInput("");
-    setLinkOpen(false);
-  };
-
   return (
-    <div className="space-y-3">
-      {!disabled ? (
-        <div className="flex flex-wrap gap-3">
-          <label className="flex items-center justify-center gap-2 h-10 rounded-xl border bg-white px-3 text-sm cursor-pointer hover:bg-neutral-50">
-            <Upload className="w-4 h-4" />
-            <span>Chọn ảnh (tải lên)</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFile}
-            />
-          </label>
-
-          <Button onClick={() => setLinkOpen((v) => !v)} className="rounded-xl">
-            <Link2 className="w-4 h-4 mr-1" />
-            Dùng link
-          </Button>
-        </div>
-      ) : (
-        <div className="text-xs text-neutral-500">
-          * Cây đang <b>Dừng hoạt động</b> — không thể thay ảnh. Bạn vẫn có thể
-          bấm vào ảnh để mở.
-        </div>
+    <div className="space-y-2">
+      {uploadError && (
+        <div className="text-xs text-rose-600">{uploadError}</div>
       )}
 
-      {linkOpen && !disabled && (
-        <div className="flex gap-2">
-          <Input
-            placeholder="Dán link ảnh (https://...)"
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            className="rounded-xl bg-white"
-          />
-          <Button onClick={applyUrl} className="rounded-xl">
-            Áp dụng
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setLinkOpen(false);
-              setUrlInput("");
-            }}
-            className="rounded-xl"
-          >
-            Huỷ
-          </Button>
-        </div>
-      )}
+      <div
+        className={
+          "relative w-full overflow-hidden rounded-2xl border bg-neutral-100 " +
+          (disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer group")
+        }
+        style={{ aspectRatio: "4 / 3" }}
+        onClick={() => {
+          if (disabled) return;
+          fileInputRef.current?.click();
+        }}
+      >
+        {value ? (
+          <img alt="tree" src={value} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-neutral-400">
+            <ImageIcon className="h-10 w-10" />
+          </div>
+        )}
 
-      <div className="rounded-xl overflow-hidden border">
-        <button
-          type="button"
-          onClick={() => value && window.open(value, "_blank")}
-          title={value ? "Bấm để mở ảnh gốc" : ""}
-          className={
-            "w-full h-48 grid place-items-center bg-neutral-100 text-neutral-400 " +
-            (value ? "cursor-zoom-in" : "cursor-default")
-          }
-        >
-          {value ? (
-            <img alt="tree" src={value} className="w-full h-48 object-cover" />
-          ) : (
-            <ImageIcon className="h-8 w-8" />
-          )}
-        </button>
+        {!disabled && (
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+            <Upload className="h-7 w-7 text-white" />
+            <span className="mt-1 text-xs font-medium text-white">
+              {uploading ? "Đang tải ảnh..." : "Tải / đổi ảnh"}
+            </span>
+          </div>
+        )}
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFile}
+      />
+
+      {disabled && (
+        <div className="text-xs text-neutral-500">
+          * Cây đang <b>Dừng hoạt động</b> — không thể thay ảnh.
+        </div>
+      )}
     </div>
   );
 }
@@ -3138,6 +3235,7 @@ function mapDtoToTree(dto) {
     tree_type: dto.treeTypeName,
 
     updatedAt: dto.updatedAt,
+    createdAt: dto.createdAt,
     soil: dto.gardenSoilId,
     notes: dto.notes,
     qrUrl: dto.qrcodeUrl,
@@ -3313,6 +3411,56 @@ export default function TreeDetail() {
       // TODO: show toast / message
     } finally {
       setSaving(false);
+    }
+  }
+
+  // Refresh lifecycle sau khi update tuổi (plantedAt hoặc preNurseryAgeMonths)
+  async function refreshLifecycleAfterAgeUpdate() {
+    if (!treeId || !lifecycleAutoEnabled) return;
+
+    try {
+      // Đợi một chút để backend có thời gian xử lý update tree
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const lifecycleRes = await TreeRepository.getLifecycle(treeId);
+      const lifecycleDto = lifecycleRes?.data ?? lifecycleRes;
+      if (lifecycleDto) {
+        // Store lifecycle data from API
+        setLifecycleFromAPI(lifecycleDto);
+
+        // Update lifecycle state from API (single source of truth)
+        const apiPhaseId = normalizePhaseId(lifecycleDto.phaseId);
+        const apiPhase1Completed =
+          lifecycleDto.phase1Completed ?? apiPhaseId !== "growth_development";
+        const apiCycleCount = lifecycleDto.cycleCount ?? 0;
+        const apiAutoEnabled =
+          typeof lifecycleDto.lifecycleAutoEnabled === "boolean"
+            ? lifecycleDto.lifecycleAutoEnabled
+            : lifecycleAutoEnabled;
+        const apiAutoDisabledAt =
+          lifecycleDto.lifecycleAutoDisabledAt ?? lifecycleAutoDisabledAt;
+
+        setCurrentPhaseId(apiPhaseId);
+        setPhase1Completed(apiPhase1Completed);
+        setCycleCount(apiCycleCount);
+        setLifecycleAutoEnabled(apiAutoEnabled);
+        setLifecycleAutoDisabledAt(apiAutoDisabledAt);
+
+        // Update stageId in meta if available
+        if (lifecycleDto.stageId != null) {
+          setMeta((prev) => ({
+            ...prev,
+            stageId: lifecycleDto.stageId,
+          }));
+        }
+
+        console.log("[TreeDetail] Lifecycle refreshed after age update", {
+          phaseId: apiPhaseId,
+          stageId: lifecycleDto.stageId,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to refresh lifecycle after age update", err);
     }
   }
 
@@ -3505,12 +3653,19 @@ export default function TreeDetail() {
 
             // fill lại dropdown soil bằng CustomLabel của các GardenSoil
             DROPDOWN_OPTIONS.soils = soils
-              .map((s) => (s.customLabel ? `${s.customLabel} - ${s.soilName}` : `${s.soilName}`).trim())
+              .map((s) =>
+                (s.customLabel
+                  ? `${s.customLabel} - ${s.soilName}`
+                  : `${s.soilName}`
+                ).trim()
+              )
               .filter(Boolean);
             // Lấy customLabel của soil hiện tại từ GardenSoilId trong dto
             const currentSoil =
               dto.gardenSoilId != null ? map[dto.gardenSoilId] : null;
-            const soilLabel = currentSoil?.customLabel ? `${currentSoil.customLabel} - ${currentSoil.soilName}` : (currentSoil?.soilName || "");
+            const soilLabel = currentSoil?.customLabel
+              ? `${currentSoil.customLabel} - ${currentSoil.soilName}`
+              : currentSoil?.soilName || "";
 
             // cập nhật meta để UI hiển thị đúng loại đất
             setMeta((prev) => ({
@@ -4026,18 +4181,24 @@ export default function TreeDetail() {
   const [fieldDraft, setFieldDraft] = useState("");
   const [fieldError, setFieldError] = useState("");
 
-  const daysSincePlanted = useMemo(() => {
-    if (!meta.plantedAt) return 0;
+  // Tính số ngày từ ngày tạo cây (CreatedAt) thay vì ngày trồng
+  const daysSinceCreated = useMemo(() => {
+    const createdAt = baseTree?.createdAt || apiTree?.createdAt || null;
+    if (!createdAt) return 0;
     try {
-      const planted = new Date(`${meta.plantedAt}T00:00:00`);
+      const created = new Date(createdAt);
       const today = new Date();
-      const diffMs = today.getTime() - planted.getTime();
+      today.setHours(0, 0, 0, 0);
+      created.setHours(0, 0, 0, 0);
+      const diffMs = today.getTime() - created.getTime();
       return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
     } catch {
       return 0;
     }
-  }, [meta.plantedAt]);
-  const plantInfoLocked = daysSincePlanted >= FIELD_EDIT_LOCK_DAYS;
+  }, [baseTree?.createdAt, apiTree?.createdAt]);
+
+  const daysRemaining = Math.max(0, FIELD_EDIT_LOCK_DAYS - daysSinceCreated);
+  const plantInfoLocked = daysSinceCreated >= FIELD_EDIT_LOCK_DAYS;
 
   // options giống theo loại cây đang có
   const allVarieties = useMemo(
@@ -4055,7 +4216,10 @@ export default function TreeDetail() {
     if (isStopped) return; // nếu cây đã dừng hoạt động thì không cho sửa
     if (
       plantInfoLocked &&
-      (fieldKey === "plantedAt" || fieldKey === "preNurseryAgeMonths")
+      (fieldKey === "plantedAt" ||
+        fieldKey === "preNurseryAgeMonths" ||
+        fieldKey === "code" ||
+        fieldKey === "name")
     )
       return;
 
@@ -4083,9 +4247,14 @@ export default function TreeDetail() {
     if (!editingField || isStopped) return;
     if (
       plantInfoLocked &&
-      (editingField === "plantedAt" || editingField === "preNurseryAgeMonths")
+      (editingField === "plantedAt" ||
+        editingField === "preNurseryAgeMonths" ||
+        editingField === "code" ||
+        editingField === "name")
     ) {
-      setFieldError("Đã khóa chỉnh sửa sau 30 ngày.");
+      setFieldError(
+        `Đã khóa chỉnh sửa sau ${FIELD_EDIT_LOCK_DAYS} ngày kể từ ngày tạo cây.`
+      );
       return;
     }
 
@@ -4162,7 +4331,12 @@ export default function TreeDetail() {
         status: nextMeta.status,
       });
 
-      persistTreePatch({ plantDate: next });
+      persistTreePatch({ plantDate: next }).then(() => {
+        // Nếu auto lifecycle enabled, refresh lifecycle sau khi update tuổi
+        if (lifecycleAutoEnabled && treeId) {
+          refreshLifecycleAfterAgeUpdate();
+        }
+      });
       cancelFieldEdit();
       return;
     }
@@ -4185,7 +4359,12 @@ export default function TreeDetail() {
         status: nextMeta.status,
       });
 
-      persistTreePatch({ preMonths: n });
+      persistTreePatch({ preMonths: n }).then(() => {
+        // Nếu auto lifecycle enabled, refresh lifecycle sau khi update tuổi
+        if (lifecycleAutoEnabled && treeId) {
+          refreshLifecycleAfterAgeUpdate();
+        }
+      });
       cancelFieldEdit();
       return;
     }
@@ -4263,12 +4442,19 @@ export default function TreeDetail() {
 
   // Ảnh theo mã cây
 
-  const [image, setImage] = useState(() => stateTree?.imageUrl || "");
+  const [image, setImage] = useState(() => {
+    // Check both img and imageUrl from stateTree (TreeManagement uses 'img', API uses 'imageUrl')
+    return stateTree?.imageUrl || stateTree?.img || "";
+  });
   useEffect(() => {
     if (!codeKey) return;
     const saved = imageRegistry.get(codeKey);
     if (saved) setImage(saved);
-  }, [codeKey]);
+    // Also check if stateTree has image and use it if no saved image
+    else if (stateTree?.imageUrl || stateTree?.img) {
+      setImage(stateTree.imageUrl || stateTree.img);
+    }
+  }, [codeKey, stateTree]);
 
   // Ghi chú theo mã cây
   const [note, setNote] = useState("");
@@ -5640,6 +5826,36 @@ export default function TreeDetail() {
                 </Button>
               </CardHeader>
 
+              {/* Thông báo về việc khóa sau 14 ngày */}
+              {daysRemaining > 0 && daysRemaining <= FIELD_EDIT_LOCK_DAYS && (
+                <div className="px-6 pt-0 pb-4">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <div className="font-semibold mb-1">
+                      ⏰ Còn {daysRemaining} ngày để chỉnh sửa
+                    </div>
+                    <div className="text-xs">
+                      Các thông tin cơ bản của cây sẽ lưu sau{" "}
+                      {FIELD_EDIT_LOCK_DAYS} ngày kể từ ngày tạo cây và không
+                      thể sửa đổi.
+                    </div>
+                  </div>
+                </div>
+              )}
+              {plantInfoLocked && (
+                <div className="px-6 pt-0 pb-4">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <div className="font-semibold mb-1">
+                      🔒 Đã khóa chỉnh sửa
+                    </div>
+                    <div className="text-xs">
+                      Các thông tin cơ bản của cây đã được lưu sau{" "}
+                      {FIELD_EDIT_LOCK_DAYS} ngày kể từ ngày tạo cây và không
+                      thể sửa đổi.
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <CardContent>
                 <div className="grid md:grid-cols-3 gap-6">
                   {/* LEFT: thông tin fields */}
@@ -5656,8 +5872,15 @@ export default function TreeDetail() {
                       label="Mã cây"
                       value={`#${codeKey}`}
                       editable
-                      disabled={isStopped}
+                      disabled={isStopped || plantInfoLocked}
                       isEditing={editingField === "code"}
+                      inlineBadge={
+                        plantInfoLocked ? (
+                          <span className="ml-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
+                            Đã khóa
+                          </span>
+                        ) : null
+                      }
                       onEdit={() => startFieldEdit("code", codeKey)}
                       editor={
                         <div className="space-y-2">
@@ -5709,7 +5932,7 @@ export default function TreeDetail() {
                       inlineBadge={
                         plantInfoLocked ? (
                           <span className="ml-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
-                            Khóa sau 30 ngày
+                            Đã khóa
                           </span>
                         ) : null
                       }
@@ -5768,7 +5991,7 @@ export default function TreeDetail() {
                       inlineBadge={
                         plantInfoLocked ? (
                           <span className="ml-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
-                            Khóa sau 30 ngày
+                            Đã khóa
                           </span>
                         ) : null
                       }
@@ -5827,7 +6050,9 @@ export default function TreeDetail() {
                       editor={
                         <div className="space-y-2">
                           <ComboBox
-                            key={`soil-combobox-${DROPDOWN_OPTIONS.soils.length}-${editingField === "soil" ? "open" : "closed"}`}
+                            key={`soil-combobox-${
+                              DROPDOWN_OPTIONS.soils.length
+                            }-${editingField === "soil" ? "open" : "closed"}`}
                             value={fieldDraft}
                             onChange={(v) => {
                               setFieldDraft(v);
@@ -5863,7 +6088,45 @@ export default function TreeDetail() {
                       }
                     />
 
-                    {/* 7. TỔNG TUỔI — CHỈ HIỂN THỊ, KHÔNG CÓ BÚT */}
+                    {/* 7. GIAI ĐOẠN HIỆN TẠI */}
+                    <Field
+                      label="Giai đoạn"
+                      value={(() => {
+                        const phaseId = currentPhaseId;
+                        const metaPhase = PHASE_META[phaseId] || null;
+
+                        // Lấy giai đoạn hiện tại từ lifecycle theme (đồng bộ với vòng tròn bên phải)
+                        const phaseIndex = PHASE_IDS.indexOf(phaseId);
+                        const stageFromTheme =
+                          phaseIndex >= 0 && Array.isArray(stageTheme)
+                            ? stageTheme[phaseIndex]
+                            : null;
+
+                        const stageLabel =
+                          stageFromTheme?.label ||
+                          meta?.stageName ||
+                          metaPhase?.name ||
+                          "—";
+
+                        const mainLabel = stageLabel;
+                        const description =
+                          stageFromTheme?.description || metaPhase?.description;
+
+                        return (
+                          <div className="flex flex-col gap-1">
+                            <span className="truncate">{mainLabel}</span>
+                            {description && (
+                              <span className="text-[13px] font-normal text-neutral-500 leading-snug">
+                                {description}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      editable={false}
+                    />
+
+                    {/* 8. TỔNG TUỔI — CHỈ HIỂN THỊ, KHÔNG CÓ BÚT */}
                     <Field
                       label="Tổng tuổi"
                       value={`${totalAge} tháng`}
@@ -5893,8 +6156,23 @@ export default function TreeDetail() {
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="flex items-center justify-between gap-3">
                 <CardTitle>Tình trạng hiện tại</CardTitle>
+                <div className="flex items-center gap-2 text-xs text-neutral-500">
+                  {baseTree?.updatedAt && (
+                    <span>
+                      Lần cuối cập nhật:{" "}
+                      {formatVN(String(baseTree.updatedAt).slice(0, 10))}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full border border-neutral-200 px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-50"
+                  >
+                    <span>📅</span>
+                    <span>Lịch sử</span>
+                  </button>
+                </div>
               </CardHeader>
 
               <CardContent>
@@ -5986,6 +6264,8 @@ export default function TreeDetail() {
                         value={
                           canEditFlower && phen.flower && phen.flower.trim()
                             ? formatStatus(phen.flower.trim())
+                            : canEditFlower
+                            ? "Cập nhật thông tin"
                             : "Chưa đến giai đoạn"
                         }
                         editable={canEditFlower}
@@ -6001,6 +6281,8 @@ export default function TreeDetail() {
                         value={
                           canEditFruit && phen.fruit && phen.fruit.trim()
                             ? formatStatus(phen.fruit.trim())
+                            : canEditFruit
+                            ? "Cập nhật thông tin"
                             : "Chưa đến giai đoạn"
                         }
                         editable={canEditFruit}
@@ -6055,7 +6337,8 @@ export default function TreeDetail() {
                         lifecycleAutoEnabled:
                           typeof payload.lifecycleAutoEnabled === "boolean"
                             ? payload.lifecycleAutoEnabled
-                            : prev?.lifecycleAutoEnabled ?? lifecycleAutoEnabled,
+                            : prev?.lifecycleAutoEnabled ??
+                              lifecycleAutoEnabled,
                         lifecycleAutoDisabledAt:
                           payload.lifecycleAutoDisabledAt ??
                           prev?.lifecycleAutoDisabledAt ??
@@ -6077,7 +6360,8 @@ export default function TreeDetail() {
                         lifecycleAutoEnabled:
                           typeof payload.lifecycleAutoEnabled === "boolean"
                             ? payload.lifecycleAutoEnabled
-                            : prev?.lifecycleAutoEnabled ?? lifecycleAutoEnabled,
+                            : prev?.lifecycleAutoEnabled ??
+                              lifecycleAutoEnabled,
                         lifecycleAutoDisabledAt:
                           payload.lifecycleAutoDisabledAt ??
                           prev?.lifecycleAutoDisabledAt ??
@@ -6513,6 +6797,13 @@ export default function TreeDetail() {
                   (field.key === "flower" && !canEditFlower) ||
                   (field.key === "fruit" && !canEditFruit);
 
+                // Determine placeholder: if field is enabled and it's flower/fruit, show "Cập nhật thông tin"
+                const placeholder = isDisabled
+                  ? field.defaultText
+                  : field.key === "flower" || field.key === "fruit"
+                  ? "Cập nhật thông tin"
+                  : field.defaultText;
+
                 return (
                   <div key={field.key} className="space-y-2">
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -6530,7 +6821,7 @@ export default function TreeDetail() {
                       onChange={(e) =>
                         handleDailyHealthChange(field.key, e.target.value)
                       }
-                      placeholder={field.defaultText}
+                      placeholder={placeholder}
                       disabled={isDisabled}
                       className={
                         isDisabled

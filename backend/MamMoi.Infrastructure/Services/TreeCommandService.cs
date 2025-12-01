@@ -9,7 +9,11 @@ namespace MamMoi.Infrastructure.Services
     public class TreeCommandService : ITreeCommandService
     {
         private readonly MamMoiDbContext _db;
-        public TreeCommandService(MamMoiDbContext db) => _db = db;
+        
+        public TreeCommandService(MamMoiDbContext db)
+        {
+            _db = db;
+        }
 
         private Task<bool> IsGardenOwner(int userId, int gardenId, CancellationToken ct)
             => _db.Gardens.AnyAsync(g => g.GardenId == gardenId && g.UserId == userId, ct);
@@ -79,6 +83,27 @@ namespace MamMoi.Infrastructure.Services
             if (tree == null) return null;
             if (!await IsGardenOwner(userId, tree.GardenId, ct)) throw new UnauthorizedAccessException();
 
+            // Kiểm tra khóa chỉnh sửa sau 14 ngày kể từ ngày tạo cây
+            const int LOCK_DAYS = 14;
+            var daysSinceCreated = (DateTime.UtcNow - tree.CreatedAt).TotalDays;
+            var isLocked = daysSinceCreated >= LOCK_DAYS;
+
+            // Các trường cơ bản không được chỉnh sửa sau 14 ngày
+            if (isLocked)
+            {
+                if (req.TreeName != null && req.TreeName != tree.TreeName)
+                    throw new InvalidOperationException($"Không thể chỉnh sửa tên cây sau {LOCK_DAYS} ngày kể từ ngày tạo cây.");
+                
+                if (req.TreeCode != null && req.TreeCode != tree.TreeCode)
+                    throw new InvalidOperationException($"Không thể chỉnh sửa mã cây sau {LOCK_DAYS} ngày kể từ ngày tạo cây.");
+                
+                if (req.PlantDate.HasValue && req.PlantDate != tree.PlantDate)
+                    throw new InvalidOperationException($"Không thể chỉnh sửa ngày trồng sau {LOCK_DAYS} ngày kể từ ngày tạo cây.");
+                
+                if (req.preMonths.HasValue && req.preMonths != tree.preMonths)
+                    throw new InvalidOperationException($"Không thể chỉnh sửa tuổi trước khi trồng sau {LOCK_DAYS} ngày kể từ ngày tạo cây.");
+            }
+
             if (req.StageId.HasValue && req.StageId.Value != tree.StageId)
             {
                 var minStageId = await _db.TreeGrowthStages
@@ -113,6 +138,11 @@ namespace MamMoi.Infrastructure.Services
                 tree.GardenSoilId = req.GardenSoilId;
             }
 
+            // Track if age-related fields changed (for auto lifecycle sync)
+            bool ageChanged = false;
+            var oldPlantDate = tree.PlantDate;
+            var oldPreMonths = tree.preMonths;
+
             tree.TreeName = req.TreeName ?? tree.TreeName;
             tree.TreeCode = req.TreeCode ?? tree.TreeCode;
             tree.PlantDate = req.PlantDate ?? tree.PlantDate;
@@ -123,6 +153,12 @@ namespace MamMoi.Infrastructure.Services
             tree.Notes = req.Notes ?? tree.Notes;
             tree.preMonths = req.preMonths ?? tree.preMonths;
 
+            // Check if age-related fields changed
+            if (req.PlantDate.HasValue && req.PlantDate != oldPlantDate)
+                ageChanged = true;
+            if (req.preMonths.HasValue && req.preMonths != oldPreMonths)
+                ageChanged = true;
+
             // cập nhật 4 trạng thái nếu FE gửi
             tree.LeafStatus = req.LeafStatus ?? tree.LeafStatus;
             tree.BranchStatus = req.BranchStatus ?? tree.BranchStatus;
@@ -132,6 +168,20 @@ namespace MamMoi.Infrastructure.Services
             tree.UpdatedAt = DateTime.UtcNow;
 
             await _db.SaveChangesAsync(ct);
+
+            // Auto-sync lifecycle if age changed and auto lifecycle is enabled
+            if (ageChanged && tree.LifecycleAutoEnabled && tree.PlantDate.HasValue)
+            {
+                try
+                {
+                    await SyncLifecycleForTreeAsync(tree, ct);
+                }
+                catch (Exception ex)
+                {
+                    // Log but don't fail the update
+                    Console.WriteLine($"Failed to auto-sync lifecycle for tree {treeId}: {ex.Message}");
+                }
+            }
 
             _db.ActivityLogs.Add(new ActivityLog
             {
@@ -144,6 +194,75 @@ namespace MamMoi.Infrastructure.Services
             await _db.SaveChangesAsync(ct);
 
             return new TreeSummaryDto(tree.TreeId, tree.TreeName, tree.TreeCode);
+        }
+
+        // Helper method to sync lifecycle for a single tree
+        private async Task SyncLifecycleForTreeAsync(Tree tree, CancellationToken ct)
+        {
+            if (!tree.PlantDate.HasValue) return;
+
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var stages = await _db.TreeGrowthStages
+                .Where(s => s.TreeTypeId == tree.TreeTypeId)
+                .OrderBy(s => s.StageOrder)
+                .ToListAsync(ct);
+
+            if (stages.Count == 0) return;
+
+            // Calculate total age
+            var ageMonths = CalculateAgeInMonths(tree.PlantDate.Value, today);
+            var extraMonths = Math.Max(0, tree.preMonths ?? 0);
+            var totalAge = ageMonths + extraMonths;
+
+            // Find the appropriate stage based on age
+            var expectedStage = ResolveStageForAge(stages, totalAge);
+            if (expectedStage != null && expectedStage.StageId != tree.StageId)
+            {
+                tree.StageId = expectedStage.StageId;
+                tree.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync(ct);
+            }
+        }
+
+        private static int CalculateAgeInMonths(DateOnly plantedAt, DateOnly today)
+        {
+            var months = (today.Year - plantedAt.Year) * 12 + (today.Month - plantedAt.Month);
+            if (today.Day < plantedAt.Day)
+            {
+                months--;
+            }
+            return Math.Max(0, months);
+        }
+
+        private static TreeGrowthStage? ResolveStageForAge(IReadOnlyList<TreeGrowthStage> stages, int totalAgeMonths)
+        {
+            if (stages == null || stages.Count == 0) return null;
+
+            var sortedStages = stages.OrderBy(s => s.StageOrder).ToList();
+            TreeGrowthStage? fallback = null;
+
+            foreach (var stage in sortedStages)
+            {
+                var min = stage.MinAgeInMonths ?? int.MinValue;
+                var max = stage.MaxAgeInMonths ?? int.MaxValue;
+
+                if (stage.MaxAgeInMonths == null)
+                {
+                    fallback = stage;
+                }
+
+                if (totalAgeMonths >= min && (max == int.MaxValue || totalAgeMonths < max))
+                {
+                    return stage;
+                }
+
+                if (max != int.MaxValue)
+                {
+                    fallback = stage;
+                }
+            }
+
+            return fallback ?? sortedStages.LastOrDefault();
         }
 
         public async Task<bool> UpdateStatusAsync(int userId, int treeId, UpdateTreeStatusRequest req, CancellationToken ct)

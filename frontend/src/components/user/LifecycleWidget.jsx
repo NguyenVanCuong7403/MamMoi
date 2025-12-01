@@ -246,7 +246,9 @@ function LifecycleTimeline({
     const cfg = phaseConfigs.phase1;
     const colorKey = (cfg.colorKey || defaultPhase1.color).toLowerCase();
     const colorHex =
-      cfg.colorHex || LIFECYCLE_COLOR_LOOKUP[colorKey] || defaultPhase1.colorHex;
+      cfg.colorHex ||
+      LIFECYCLE_COLOR_LOOKUP[colorKey] ||
+      defaultPhase1.colorHex;
     const lineColorHex =
       cfg.lineColorHex ||
       LIFECYCLE_COLOR_LOOKUP[cfg.lineColorKey || colorKey] ||
@@ -276,7 +278,9 @@ function LifecycleTimeline({
         "emerald"
       ).toLowerCase();
       const colorHex =
-        phase.colorHex || LIFECYCLE_COLOR_LOOKUP[colorKey] || LIFECYCLE_COLOR_LOOKUP.emerald;
+        phase.colorHex ||
+        LIFECYCLE_COLOR_LOOKUP[colorKey] ||
+        LIFECYCLE_COLOR_LOOKUP.emerald;
       const lineColorHex =
         phase.lineColorHex ||
         LIFECYCLE_COLOR_LOOKUP[phase.lineColorKey || colorKey] ||
@@ -348,8 +352,12 @@ function LifecycleTimeline({
   const getPingTone = (color) => palette[getToneKey(color)].ping;
 
   // ==== Geometry (đã thu gọn để vừa cột Aside) ====
-  const RING_SIZE = 240; // ⟵ nhỏ hơn bản demo
-  const radius = 92;
+  const cycleCount = cyclePhases.length || 1;
+  // Scale radius and ring size based on number of phases
+  // Base: 4 phases -> radius 92, RING_SIZE 240
+  // Each additional phase adds 12px to radius and 40px to RING_SIZE
+  const radius = 92 + Math.max(0, (cycleCount - 4) * 12);
+  const RING_SIZE = 240 + Math.max(0, (cycleCount - 4) * 40);
   const centerX = RING_SIZE / 2,
     centerY = RING_SIZE / 2;
   const nodeR = 26,
@@ -366,7 +374,6 @@ function LifecycleTimeline({
       return acc;
     }, {});
   }, [cyclePhases]);
-  const cycleCount = cyclePhases.length || 1;
 
   const getCirclePosition = (index, total = cycleCount) => {
     const angle = index * ((2 * Math.PI) / total) - Math.PI / 2;
@@ -576,10 +583,7 @@ function LifecycleTimeline({
       const angle = Math.atan2(relY, relX);
       const normalized = (angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
       const rawIndex = Math.round(normalized / segmentAngle);
-      const clamped = Math.min(
-        Math.max(rawIndex, 0),
-        cyclePhases.length - 1
-      );
+      const clamped = Math.min(Math.max(rawIndex, 0), cyclePhases.length - 1);
       return clamped;
     },
     [centerX, centerY, cyclePhases.length, segmentAngle]
@@ -614,10 +618,7 @@ function LifecycleTimeline({
         editableNodes &&
         typeof onNodeReorder === "function"
       ) {
-        const dropIndex = computeIndexFromPointer(
-          event.clientX,
-          event.clientY
-        );
+        const dropIndex = computeIndexFromPointer(event.clientX, event.clientY);
         if (
           dropIndex !== null &&
           dropIndex !== state.originIndex &&
@@ -715,22 +716,24 @@ function LifecycleTimeline({
             </span>
           </div>
 
-        <div
-          className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg mb-1.5 ${
-            allowPhase1Click ? "cursor-pointer pointer-events-auto" : "pointer-events-none"
-          }
+          <div
+            className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg mb-1.5 ${
+              allowPhase1Click
+                ? "cursor-pointer pointer-events-auto"
+                : "pointer-events-none"
+            }
               ${getColorClasses(phase1.color, activePhase === phase1.id)} ${
-            isPhase1Completed ? "opacity-40 grayscale" : ""
-          }`}
-          onClick={
-            allowPhase1Click
-              ? (event) => {
-                  event.stopPropagation();
-                  onNodeClick(phase1.id);
-                }
-              : undefined
-          }
-        >
+              isPhase1Completed ? "opacity-40 grayscale" : ""
+            }`}
+            onClick={
+              allowPhase1Click
+                ? (event) => {
+                    event.stopPropagation();
+                    onNodeClick(phase1.id);
+                  }
+                : undefined
+            }
+          >
             {phase1.iconImageUrl ? (
               <img
                 src={phase1.iconImageUrl}
@@ -1007,14 +1010,10 @@ function LifecycleTimeline({
                 ) {
                   nodeStyle = {
                     left: `${
-                      dragState.pointer.x -
-                      layerRect.left -
-                      dragState.offset.x
+                      dragState.pointer.x - layerRect.left - dragState.offset.x
                     }px`,
                     top: `${
-                      dragState.pointer.y -
-                      layerRect.top -
-                      dragState.offset.y
+                      dragState.pointer.y - layerRect.top - dragState.offset.y
                     }px`,
                     transform: "translate(-50%, -50%)",
                     zIndex: 50,
@@ -1208,7 +1207,7 @@ function LCPhaseDropdown({
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full mt-2 w-56 bg-white/95 backdrop-blur rounded-xl shadow-2xl border border-gray-200 z-[60] overflow-hidden">
+        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-56 bg-white/95 backdrop-blur rounded-xl shadow-2xl border border-gray-200 z-[60] overflow-hidden">
           <div className="max-h-[70vh] overflow-y-auto p-2">
             {items.map((it) => (
               <div key={it.id}>
@@ -1322,7 +1321,8 @@ export default function LifecycleWidget({
   );
 
   const allowPartialPhases =
-    phaseThemeAllowPartial || (Array.isArray(themeSource) && themeSource.length);
+    phaseThemeAllowPartial ||
+    (Array.isArray(themeSource) && themeSource.length);
 
   const mergedThemeMap = useMemo(() => {
     const buildEntry = (phaseId, override = {}, index = 0) => {
@@ -1943,7 +1943,7 @@ export default function LifecycleWidget({
 
   return (
     <div className="relative">
-      {/* nút điều khiển gọn, bám góc phải */}
+      {/* nút điều khiển căn giữa */}
       {!disabled &&
         (portalEl ? (
           createPortal(
@@ -1958,7 +1958,7 @@ export default function LifecycleWidget({
             portalEl
           )
         ) : (
-          <div className="absolute right-0 -top-1">
+          <div className="flex justify-center mb-4">
             <LCPhaseDropdown
               activePhase={activePhase}
               onPickPhase={(id) => requestChangePhase(id, "pick")}
@@ -1970,7 +1970,7 @@ export default function LifecycleWidget({
           </div>
         ))}
       {disabled && (
-        <div className="absolute right-0 -top-1">
+        <div className="flex justify-center mb-4">
           <span
             className="inline-flex items-center px-2.5 py-1.5 rounded-full text-[11px] font-extrabold text-white bg-gray-400 cursor-not-allowed"
             title="Đã dừng hoạt động"
@@ -1980,7 +1980,7 @@ export default function LifecycleWidget({
         </div>
       )}
 
-      <div className="mb-5 flex flex-col gap-2 rounded-2xl bg-neutral-50/80 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-5 flex flex-col items-center gap-3 rounded-2xl bg-neutral-50/80 px-4 py-3 text-center">
         <p
           className={`text-xs sm:text-sm ${
             autoSyncEnabled ? "text-emerald-700" : "text-amber-700"

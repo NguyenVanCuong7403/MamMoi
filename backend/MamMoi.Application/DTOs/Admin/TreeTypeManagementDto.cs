@@ -54,7 +54,7 @@ public class CreateTreeTypeDto
     [StringLength(500)]
     public string? ImageUrl { get; set; }
 
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; set; } = false;
 
     // New fields for PlantDetail page
     public string? CareGuide { get; set; } // JSON array of care instruction strings

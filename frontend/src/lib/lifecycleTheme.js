@@ -208,11 +208,77 @@ export function normalizeLifecycleTheme(input) {
     ? Object.values(data)
     : [];
 
+  // Nếu là mảng và có nhiều phase, giữ nguyên tất cả (kể cả khi phaseId trùng)
+  // Sử dụng index làm key để tránh mất phase khi phaseId trùng
+  if (Array.isArray(data) && data.length > 0) {
+    return entries.reduce((map, raw, index) => {
+      if (!raw) return map;
+      // Giữ nguyên phaseId nếu nó là custom (bắt đầu bằng 'custom_')
+      // Chỉ normalize nếu phaseId là phaseId chuẩn
+      const rawPhaseId = raw.phaseId || raw.id || raw.stage || raw.name;
+      let phaseId;
+      if (rawPhaseId && typeof rawPhaseId === 'string' && rawPhaseId.startsWith('custom_')) {
+        // Giữ nguyên custom phaseId
+        phaseId = rawPhaseId;
+      } else {
+        // Normalize phaseId chuẩn
+        phaseId = normalizePhaseId(rawPhaseId);
+      }
+      const base = DEFAULT_PHASE_THEME[phaseId] || {};
+      const colorKey =
+        normalizeColorKey(
+          raw.colorKey || raw.nodeColor || raw.lineColorKey || raw.lineColor
+        ) || base.colorKey;
+      const colorHex = normalizeColorHex(
+        raw.colorHex || raw.nodeColor || raw.colorKey || raw.color,
+        colorKey || base.colorKey
+      );
+      const lineColorKey =
+        normalizeColorKey(raw.lineColorKey || raw.lineColor) || colorKey;
+      const lineColorHex = normalizeColorHex(
+        raw.lineColorHex ||
+          raw.lineColor ||
+          raw.lineColorKey ||
+          raw.colorHex ||
+          raw.color,
+        lineColorKey || colorKey
+      );
+      // Sử dụng index trong key để tránh mất phase khi phaseId trùng
+      const mapKey = `${phaseId}_${index}`;
+      map[mapKey] = {
+        phaseId,
+        label: raw.label || raw.stage || base.label,
+        subtitle: raw.subtitle || raw.timing || "",
+        description: raw.description || raw.action || "",
+        icon: raw.icon || base.icon,
+        iconImageUrl: raw.iconImageUrl || raw.iconUrl || null,
+        colorKey: colorKey || base.colorKey,
+        colorHex: colorHex || base.colorHex,
+        lineColorKey: lineColorKey || colorKey || base.colorKey,
+        lineColorHex: lineColorHex || colorHex,
+        lineStyle: normalizeLineStyle(raw.lineStyle),
+        durationMs: Number(raw.durationMs) > 0 ? Number(raw.durationMs) : null,
+        order:
+          typeof raw.order === "number" ? raw.order : (typeof raw.order === "number" ? raw.order : index),
+      };
+      return map;
+    }, {});
+  }
+
+  // Xử lý object như cũ
   return entries.reduce((map, raw) => {
     if (!raw) return map;
-    const phaseId = normalizePhaseId(
-      raw.phaseId || raw.id || raw.stage || raw.name
-    );
+    // Giữ nguyên phaseId nếu nó là custom (bắt đầu bằng 'custom_')
+    // Chỉ normalize nếu phaseId là phaseId chuẩn
+    const rawPhaseId = raw.phaseId || raw.id || raw.stage || raw.name;
+    let phaseId;
+    if (rawPhaseId && typeof rawPhaseId === 'string' && rawPhaseId.startsWith('custom_')) {
+      // Giữ nguyên custom phaseId
+      phaseId = rawPhaseId;
+    } else {
+      // Normalize phaseId chuẩn
+      phaseId = normalizePhaseId(rawPhaseId);
+    }
     const base = DEFAULT_PHASE_THEME[phaseId] || {};
     const colorKey =
       normalizeColorKey(

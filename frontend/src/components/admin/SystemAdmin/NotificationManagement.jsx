@@ -49,6 +49,10 @@ import {
 } from "@/components/ui/dialog";
 import NotificationRepository from "@/API/repositories/NotificationRepository";
 import AdminUserRepository from "@/API/repositories/AdminUserRepository";
+import {
+  ADMIN_NOTIFICATION_TYPES,
+  getAdminNotificationTypeLabel,
+} from "@/lib/notificationTypes";
 
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
@@ -65,12 +69,7 @@ const PRIORITY_OPTIONS = [
   { value: "Critical", label: "Khẩn cấp" },
 ];
 
-const NOTIFICATION_TYPE_OPTIONS = [
-  { value: "Broadcast", label: "Thông báo chung" },
-  { value: "Promotion", label: "Khuyến mãi" },
-  { value: "System", label: "Hệ thống" },
-  { value: "Announcement", label: "Thông báo" },
-];
+const NOTIFICATION_TYPE_OPTIONS = ADMIN_NOTIFICATION_TYPES;
 
 const CATEGORY_OPTIONS = [
   { value: "General", label: "Chung" },
@@ -776,11 +775,9 @@ export default function NotificationManagement() {
                       {filters.notificationType && (
                         <Badge variant="secondary" className="gap-1">
                           Loại:{" "}
-                          {
-                            NOTIFICATION_TYPE_OPTIONS.find(
-                              (opt) => opt.value === filters.notificationType
-                            )?.label
-                          }
+                          {getAdminNotificationTypeLabel(
+                            filters.notificationType
+                          )}
                           <button
                             onClick={() =>
                               setFilters({ ...filters, notificationType: "" })
@@ -1375,11 +1372,9 @@ export default function NotificationManagement() {
                     Loại thông báo
                   </label>
                   <p className="mt-1 text-base text-slate-900">
-                    {NOTIFICATION_TYPE_OPTIONS.find(
-                      (opt) => opt.value === selectedBroadcast.notificationType
-                    )?.label ||
-                      selectedBroadcast.notificationType ||
-                      "N/A"}
+                    {getAdminNotificationTypeLabel(
+                      selectedBroadcast.notificationType
+                    )}
                   </p>
                 </div>
 

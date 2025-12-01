@@ -98,6 +98,13 @@ const PLAN_COLORS = {
   harvest: "#064e3b",
 };
 
+const formatDate = (value, fallback = "—") => {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString("vi-VN");
+};
+
 // Hàm format số tiền linh động (k, triệu, tỷ)
 function formatCurrency(value) {
   if (value < 1_000_000) {
@@ -1021,6 +1028,8 @@ function SubscriptionManagement() {
                             <TableHead>ID</TableHead>
                             <TableHead>Khách hàng</TableHead>
                             <TableHead>Gói dịch vụ</TableHead>
+                            <TableHead>Ngày bắt đầu</TableHead>
+                            <TableHead>Ngày kết thúc</TableHead>
                             <TableHead>Số tiền</TableHead>
                             <TableHead>Ngày thanh toán</TableHead>
                             <TableHead>Trạng thái</TableHead>
@@ -1030,7 +1039,7 @@ function SubscriptionManagement() {
                           {revenuePayments.length === 0 ? (
                             <TableRow>
                               <TableCell
-                                colSpan={6}
+                                colSpan={8}
                                 className="py-8 text-center text-slate-500"
                               >
                                 Không có giao dịch nào.
@@ -1057,6 +1066,20 @@ function SubscriptionManagement() {
                                 </TableCell>
                                 <TableCell className="text-slate-800">
                                   {payment.planName}
+                                </TableCell>
+                                <TableCell className="text-slate-600">
+                                  {formatDate(
+                                    payment.subscriptionStartDate,
+                                    "Chưa xác định"
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-slate-600">
+                                  {payment.subscriptionEndDate
+                                    ? formatDate(
+                                        payment.subscriptionEndDate,
+                                        "Không giới hạn"
+                                      )
+                                    : "Không giới hạn"}
                                 </TableCell>
                                 <TableCell className="font-semibold text-emerald-700">
                                   {payment.amount.toLocaleString("vi-VN", {
