@@ -129,7 +129,7 @@ public class GardensController : ControllerBase
             return StatusCode(500, new
             {
                 success = false,
-                message = "Đã xảy ra lỗi khi tạo vườn. Vui lòng thử lại sau."
+                message = ex.Message,
             });
         }
     }

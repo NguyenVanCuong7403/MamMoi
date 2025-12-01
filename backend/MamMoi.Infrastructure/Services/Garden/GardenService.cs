@@ -18,23 +18,27 @@ public class GardenService : IGardenService
     private readonly IUserRepository _userRepository;
     private readonly IGardenMemberRepository _gardenMemberRepository;
     private readonly MamMoiDbContext _dbContext;
+    private readonly ISubscriptionPlanService _subscriptionPlanService;
 
     public GardenService(
         IGardenRepository gardenRepository,
         IUserRepository userRepository,
         IGardenMemberRepository gardenMemberRepository,
-        MamMoiDbContext dbContext)
+        MamMoiDbContext dbContext,
+        ISubscriptionPlanService subscriptionPlanService)
     {
         _gardenRepository = gardenRepository;
         _userRepository = userRepository;
         _gardenMemberRepository = gardenMemberRepository;
         _dbContext = dbContext;
+        _subscriptionPlanService = subscriptionPlanService;
     }
 
     /// <summary>
     /// CHỨC NĂNG 1: Tạo vườn mới
-    /// - Chỉ Farmer (RoleId = 4) mới được tạo vườn
+    /// - Chỉ Farmer (RoleId = 3) mới được tạo vườn
     /// - Tự động thêm Owner vào GardenMember
+    /// - Kiểm tra giới hạn MaxGardens từ subscription plan
     /// </summary>
     public async Task<GardenResponseDto> CreateGardenAsync(int userId, CreateGardenDto dto)
     {
@@ -50,6 +54,22 @@ public class GardenService : IGardenService
         if (userEntity.RoleId != 3)
         {
             throw new UnauthorizedAccessException("Chỉ Farmer mới được tạo vườn.");
+        }
+
+        // 3. Kiểm tra giới hạn số vườn từ subscription plan
+        var subscriptionPlan = await _subscriptionPlanService.GetCurrentUserSubscriptionAsync(userId);
+        if (subscriptionPlan != null && subscriptionPlan.MaxGardens.HasValue)
+        {
+            // Đếm số vườn hiện tại của user (chỉ đếm vườn mà user là owner)
+            var currentGardenCount = await _dbContext.Gardens
+                .CountAsync(g => g.UserId == userId);
+
+            if (currentGardenCount >= subscriptionPlan.MaxGardens.Value)
+            {
+                throw new InvalidOperationException(
+                    $"Bạn đã đạt giới hạn số vườn cho phép ({subscriptionPlan.MaxGardens.Value} vườn) theo gói đăng ký của bạn. " +
+                    "Vui lòng nâng cấp gói để tạo thêm vườn.");
+            }
         }
 
         // 3. Tạo Garden entity

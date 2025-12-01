@@ -9,10 +9,12 @@ namespace MamMoi.Infrastructure.Services
     public class TreeCommandService : ITreeCommandService
     {
         private readonly MamMoiDbContext _db;
+        private readonly ISubscriptionPlanService _subscriptionPlanService;
         
-        public TreeCommandService(MamMoiDbContext db)
+        public TreeCommandService(MamMoiDbContext db, ISubscriptionPlanService subscriptionPlanService)
         {
             _db = db;
+            _subscriptionPlanService = subscriptionPlanService;
         }
 
         private Task<bool> IsGardenOwner(int userId, int gardenId, CancellationToken ct)
@@ -22,6 +24,22 @@ namespace MamMoi.Infrastructure.Services
         {
             if (!await IsGardenOwner(userId, req.GardenId, ct))
                 throw new UnauthorizedAccessException("User is not garden owner.");
+
+            // Kiểm tra giới hạn số cây mỗi vườn từ subscription plan
+            var subscriptionPlan = await _subscriptionPlanService.GetCurrentUserSubscriptionAsync(userId);
+            if (subscriptionPlan != null && subscriptionPlan.MaxTreesPerGarden.HasValue)
+            {
+                // Đếm số cây hiện tại trong vườn này
+                var currentTreeCount = await _db.Trees
+                    .CountAsync(t => t.GardenId == req.GardenId, ct);
+
+                if (currentTreeCount >= subscriptionPlan.MaxTreesPerGarden.Value)
+                {
+                    throw new InvalidOperationException(
+                        $"Bạn đã đạt giới hạn số cây cho phép mỗi vườn ({subscriptionPlan.MaxTreesPerGarden.Value} cây) theo gói đăng ký của bạn. " +
+                        "Vui lòng nâng cấp gói để thêm cây vào vườn này.");
+                }
+            }
 
             // Stage phải thuộc TreeType
             bool okStage = await _db.TreeGrowthStages

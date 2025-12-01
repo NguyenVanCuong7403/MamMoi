@@ -245,6 +245,7 @@ public class SubscriptionPlanService : ISubscriptionPlanService
 
     /// <summary>
     /// Get current user's active subscription plan
+    /// Returns the free plan (first plan with PlanName "Free") if no active subscription exists
     /// </summary>
     public async Task<SubscriptionPlanDto?> GetCurrentUserSubscriptionAsync(int userId)
     {
@@ -258,7 +259,15 @@ public class SubscriptionPlanService : ISubscriptionPlanService
             .FirstOrDefaultAsync();
 
         if (subscription == null)
-            return null;
+        {
+            // If no subscription, return the free plan (first plan with PlanName "Free")
+            var freePlan = await _dbContext.SubscriptionPlans
+                .Where(p => p.PlanName.ToLower() == "free")
+                .OrderBy(p => p.PlanId)
+                .FirstOrDefaultAsync();
+
+            return freePlan == null ? null : MapToDto(freePlan);
+        }
 
         // Match the subscription's PlanName to a SubscriptionPlan
         var plan = await _dbContext.SubscriptionPlans
