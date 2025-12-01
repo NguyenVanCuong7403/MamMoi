@@ -597,9 +597,19 @@ function ComboBox({
     return options.filter((o) => norm(o).includes(q));
   }, [options, query]);
 
-  const visible = showAll ? options : filtered;
+  // When showAll is true, always show all options regardless of query
+  // When showAll is false and query is empty, show all options
+  // When showAll is false and query has value, show filtered options
+  const visible = showAll || !query.trim() ? options : filtered;
 
   React.useEffect(() => setQuery(value || ""), [value]);
+
+  // Debug: Log when options change
+  React.useEffect(() => {
+    if (options && options.length > 0) {
+      console.log("ComboBox options updated:", options.length, options);
+    }
+  }, [options]);
 
   // Đóng khi click ngoài
   React.useEffect(() => {
@@ -703,7 +713,7 @@ function ComboBox({
   }
 
   return (
-    <div ref={boxRef} className={"relative " + className}>
+    <div ref={boxRef} className={"relative " + className} style={{ zIndex: 100 }}>
       <input
         ref={inputRef}
         value={query}
@@ -714,9 +724,15 @@ function ComboBox({
           setShowAll(false);
         }}
         onFocus={() => {
-          if (!isCommittingRef.current) setOpen(true);
-          setShowAll(true); // ← mở FULL danh sách khi vừa focus
-          setActive(0);
+          if (!isCommittingRef.current) {
+            setOpen(true);
+            setShowAll(true); // ← mở FULL danh sách khi vừa focus
+            setActive(0);
+            // Reset query to empty when opening to show all options
+            if (query.trim()) {
+              setQuery("");
+            }
+          }
         }}
         onKeyDown={onKeyDown}
         onBlur={onBlur}
@@ -756,10 +772,16 @@ function ComboBox({
 
       {open && (
         <div
-          className="absolute left-0 right-0 mt-1 z-[100] rounded-2xl border bg-white shadow-2xl overflow-hidden"
+          className="absolute left-0 right-0 mt-1 rounded-2xl border bg-white shadow-2xl"
           role="listbox"
+          style={{ 
+            maxHeight: '240px', 
+            overflowY: 'auto',
+            overflowX: 'visible',
+            zIndex: 1000
+          }}
         >
-          <div className="max-h-60 overflow-auto py-1">
+          <div className="py-1">
             {visible.length === 0 ? (
               <div className="px-3 py-2 text-sm text-neutral-500">
                 {emptyText}
@@ -1300,7 +1322,7 @@ function Field({
       </LeftTag>
 
       {/* Cột value bên phải */}
-      <div className="flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words overflow-hidden min-w-0">
+      <div className={`flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words min-w-0 ${isEditing ? 'overflow-visible' : 'overflow-hidden'}`}>
         {isEditing ? editor : <span className="block truncate">{value}</span>}
       </div>
     </div>
@@ -3469,6 +3491,7 @@ export default function TreeDetail() {
           const soilRes = await GardenSoilRepository.getGardenSoilsByGarden(
             dto.gardenId
           );
+          //console.log("Fetched garden soils:", soilRes);
           if (!cancelled) {
             const soils = soilRes?.data ?? soilRes ?? [];
             setGardenSoils(soils);
@@ -3484,7 +3507,6 @@ export default function TreeDetail() {
             DROPDOWN_OPTIONS.soils = soils
               .map((s) => (s.customLabel ? `${s.customLabel} - ${s.soilName}` : `${s.soilName}`).trim())
               .filter(Boolean);
-
             // Lấy customLabel của soil hiện tại từ GardenSoilId trong dto
             const currentSoil =
               dto.gardenSoilId != null ? map[dto.gardenSoilId] : null;
@@ -3593,6 +3615,7 @@ export default function TreeDetail() {
   // - Modal can only be shown once per day (tracked by localStorage key: healthUpdate_{treeId}_{YYYY-MM-DD})
   React.useEffect(() => {
     const currentTreeId = treeId;
+    /*
     console.log("[DailyHealthModal] useEffect triggered", {
       treeId: currentTreeId,
       loading,
@@ -3601,7 +3624,7 @@ export default function TreeDetail() {
       baseTreeKeys: baseTree ? Object.keys(baseTree).length : 0,
       hasPhenology: baseTree?.phenology !== undefined,
       modalOpen: dailyHealthModal.open,
-    });
+    });*/
 
     if (!currentTreeId) {
       console.log("[DailyHealthModal] No treeId, returning");
@@ -3638,12 +3661,13 @@ export default function TreeDetail() {
     const storageKey = `healthUpdate_${currentTreeId}_${today}`;
     const hasConfirmedToday = localStorage.getItem(storageKey) === "true";
 
+    /*
     console.log("[DailyHealthModal] Checking localStorage", {
       today,
       storageKey,
       hasConfirmedToday,
       localStorageValue: localStorage.getItem(storageKey),
-    });
+    });*/
 
     // Only show if user hasn't confirmed today
     // This ensures modal shows automatically when:
@@ -5803,6 +5827,7 @@ export default function TreeDetail() {
                       editor={
                         <div className="space-y-2">
                           <ComboBox
+                            key={`soil-combobox-${DROPDOWN_OPTIONS.soils.length}-${editingField === "soil" ? "open" : "closed"}`}
                             value={fieldDraft}
                             onChange={(v) => {
                               setFieldDraft(v);
@@ -6454,10 +6479,11 @@ export default function TreeDetail() {
 
       {/* Daily Health Update Modal */}
       {(() => {
+        /*
         console.log("[DailyHealthModal] Render check", {
           modalOpen: dailyHealthModal.open,
           willRender: dailyHealthModal.open,
-        });
+        });*/
         return null;
       })()}
       {dailyHealthModal.open && (

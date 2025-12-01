@@ -1538,7 +1538,7 @@ export default function GardenManagement() {
                           e.stopPropagation();
                           if (idx >= 0) askToggleStatus(idx);
                         }}
-                        className={`inline-flex items-center justify-center h-10 px-4 rounded-full text-[clamp(11px,1.4vw,13px)] font-semibold shadow-sm transition-all duration-200 hover:scale-110 hover:shadow-lg active:scale-[0.95] mm-text-wrap-safe ${
+                        className={`hidden inline-flex items-center justify-center h-10 px-4 rounded-full text-[clamp(11px,1.4vw,13px)] font-semibold shadow-sm transition-all duration-200 hover:scale-110 hover:shadow-lg active:scale-[0.95] mm-text-wrap-safe ${
                           isActive
                             ? "bg-rose-500 text-white hover:bg-rose-600 shadow-[0_8px_18px_rgba(244,63,94,0.28)] hover:shadow-[0_12px_28px_rgba(244,63,94,0.40)]"
                             : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_8px_18px_rgba(16,185,129,0.28)] hover:shadow-[0_12px_28px_rgba(16,185,129,0.40)]"
