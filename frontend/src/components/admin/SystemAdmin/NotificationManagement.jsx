@@ -529,7 +529,8 @@ export default function NotificationManagement() {
       />
       <div className="relative z-10 min-h-screen">
         <AdminLayout>
-          <div className="space-y-8">
+          <>
+            <div className="space-y-8">
             {/* Header */}
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
@@ -968,6 +969,7 @@ export default function NotificationManagement() {
               </CardContent>
             </Card>
           </div>
+          </>
         </AdminLayout>
       </div>
 

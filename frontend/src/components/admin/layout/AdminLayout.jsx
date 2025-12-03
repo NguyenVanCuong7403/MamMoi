@@ -119,11 +119,11 @@ export default function AdminLayout({ children }) {
   };
 
   return (
-    <div className="flex min-h-screen w-full text-slate-50">
+    <div className="flex min-h-screen w-full text-slate-50" style={{ margin: 0, padding: 0 }}>
       {/* Sidebar */}
-      <aside className="relative flex w-72 flex-col border-r border-emerald-900/40 bg-black/20 px-5 pb-6 text-emerald-50 backdrop-blur-2xl">
+      <aside className="relative z-20 flex w-72 flex-col border-r border-emerald-900/40 bg-black/20 px-5 pb-6 text-emerald-50 backdrop-blur-2xl">
         {/* Wrapper dùng sticky để khối sidebar luôn ở giữa viewport khi cuộn */}
-        <div className="sticky top-1/2 -translate-y-1/2 pt-28 lg:pt-32">
+        <div className="sticky" style={{ top: '80px', paddingTop: '2rem' }}>
           <div className="mb-8">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-300">
               Mầm Mới
@@ -164,7 +164,7 @@ export default function AdminLayout({ children }) {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      <main className="relative z-10 flex-1 overflow-auto">
         <div className="mx-auto flex h-full w-full flex-col px-4 pb-8 pt-28 text-slate-900 sm:px-6 lg:px-10">
           {children}
         </div>
