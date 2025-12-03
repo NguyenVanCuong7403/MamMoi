@@ -201,6 +201,14 @@ public class AuthService : IAuthService
         // 2. Kiểm tra tài khoản có bị khóa không
         if (userEntity.IsActive != true)
         {
+            // Phân biệt giữa tài khoản bị khóa và tài khoản chưa xác thực
+            // Nếu LastLoginAt != null, tài khoản đã từng đăng nhập (đã verify) → bị khóa bởi admin
+            if (userEntity.LastLoginAt != null)
+            {
+                // Tài khoản đã từng active nhưng bị khóa bởi admin - không cho phép resend OTP
+                throw new InvalidOperationException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.");
+            }
+
             // Đối với Farmer (RoleId = 3): luôn cho phép resend OTP nếu chưa verify
             // Chỉ khóa hoàn toàn đối với Staff không có garden active
             if (userEntity.RoleId == 4) // Staff role
@@ -214,7 +222,7 @@ public class AuthService : IAuthService
                 }
             }
 
-            // Farmer hoặc Staff có garden active: cho phép resend OTP
+            // Farmer hoặc Staff có garden active: cho phép resend OTP (tài khoản chưa verify)
         }
         else
         {
@@ -280,6 +288,15 @@ public class AuthService : IAuthService
         // 3. Kiểm tra tài khoản có active không
         if (userEntity.IsActive != true)
         {
+            // Phân biệt giữa tài khoản bị khóa và tài khoản chưa xác thực
+            // Nếu LastLoginAt != null, tài khoản đã từng đăng nhập (đã verify) → bị khóa bởi admin
+            // Nếu LastLoginAt == null, tài khoản chưa từng đăng nhập → chưa verify
+            if (userEntity.LastLoginAt != null)
+            {
+                // Tài khoản đã từng active nhưng bị khóa bởi admin
+                throw new InvalidOperationException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.");
+            }
+
             // Đối với Farmer (RoleId = 3): luôn cho phép resend OTP nếu chưa verify
             // Chỉ khóa hoàn toàn đối với Staff không có garden active
             if (userEntity.RoleId == 4) // Staff role
@@ -293,7 +310,7 @@ public class AuthService : IAuthService
                 }
             }
 
-            // Farmer hoặc Staff có garden active: cho phép resend OTP
+            // Farmer hoặc Staff có garden active: cho phép resend OTP (tài khoản chưa verify)
             throw new InvalidOperationException("Tài khoản chưa được xác thực. Vui lòng kiểm tra email để nhận mã OTP hoặc sử dụng tính năng 'Gửi lại OTP'.");
         }
 
@@ -432,6 +449,14 @@ public class AuthService : IAuthService
         // 2. Kiểm tra tài khoản đã được kích hoạt chưa
         if (user.IsActive != true)
         {
+            var userEntity = (User)user;
+            // Phân biệt giữa tài khoản bị khóa và tài khoản chưa xác thực
+            if (userEntity.LastLoginAt != null)
+            {
+                // Tài khoản đã từng active nhưng bị khóa bởi admin
+                throw new InvalidOperationException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.");
+            }
+            // Tài khoản chưa được xác thực
             throw new InvalidOperationException("Tài khoản chưa được kích hoạt. Vui lòng xác thực OTP trước.");
         }
 
@@ -478,6 +503,13 @@ public class AuthService : IAuthService
         // 1.5. Kiểm tra tài khoản có bị khóa không
         if (userEntity.IsActive != true)
         {
+            // Phân biệt giữa tài khoản bị khóa và tài khoản chưa xác thực
+            if (userEntity.LastLoginAt != null)
+            {
+                // Tài khoản đã từng active nhưng bị khóa bởi admin
+                throw new InvalidOperationException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.");
+            }
+
             // Nếu là staff và không có vườn active nào → tài khoản bị khóa hoàn toàn
             if (userEntity.RoleId == 4) // Staff role
             {
@@ -486,9 +518,12 @@ public class AuthService : IAuthService
 
                 if (!hasActiveGarden)
                 {
-                    throw new InvalidOperationException("Tài khoản đã bị vô hiệu hóa. Liên hệ admin để kích hoạt lại.");
+                    throw new InvalidOperationException("Tài khoản nhân viên tạm thời bị khóa do không có vườn hoạt động. Vui lòng liên hệ quản lý vườn để được phân công.");
                 }
             }
+
+            // Tài khoản chưa được xác thực - không cho phép reset password
+            throw new InvalidOperationException("Tài khoản chưa được kích hoạt. Vui lòng xác thực OTP trước.");
         }
 
         // 2. Lấy reset token từ cache

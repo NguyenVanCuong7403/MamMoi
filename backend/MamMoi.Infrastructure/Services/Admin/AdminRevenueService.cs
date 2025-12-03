@@ -259,7 +259,13 @@ public class AdminRevenueService : IAdminRevenueService
                 TransactionStatus = p.TransactionStatus,
                 IsRefunded = p.IsRefunded,
                 RefundAmount = p.RefundAmount,
-                RefundDate = p.RefundDate
+                RefundDate = p.RefundDate,
+                SubscriptionStartDate = p.Subscription != null
+                    ? (DateTime?)p.Subscription.StartDate.ToDateTime(TimeOnly.MinValue)
+                    : null,
+                SubscriptionEndDate = p.Subscription != null && p.Subscription.EndDate.HasValue
+                    ? (DateTime?)p.Subscription.EndDate.Value.ToDateTime(TimeOnly.MinValue)
+                    : null
             })
             .ToListAsync();
 

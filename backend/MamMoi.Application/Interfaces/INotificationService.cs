@@ -60,7 +60,7 @@ public interface INotificationService
     /// <summary>
     /// Get broadcast notifications list (SystemAdmin only)
     /// </summary>
-    Task<List<(string GroupId, DateTime SentAt, int RecipientCount, string Title)>> GetBroadcastNotificationsAsync();
+    Task<List<(string GroupId, DateTime SentAt, int RecipientCount, string Title, string? Message, string? NotificationType, string Priority, string? Category, string? ActionUrl, string? ActionLabel, string? ImageUrl, string? IconName, DateTime? ExpiresAt)>> GetBroadcastNotificationsAsync();
 
     /// <summary>
     /// Create notification when user sends support request (notify admin)

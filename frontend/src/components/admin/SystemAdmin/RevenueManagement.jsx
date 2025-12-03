@@ -10,6 +10,7 @@ import {
   Loader2,
   Calendar,
   FileDown,
+  X,
 } from "lucide-react";
 import { LivingBackground } from "@/components/background";
 import AdminLayout from "../layout/AdminLayout";
@@ -42,11 +43,11 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import AdminRevenueRepository from "@/API/repositories/AdminRevenueRepository";
 import {
   Area,
@@ -83,6 +84,13 @@ const PERIOD_TYPES = {
 };
 
 const PAGE_SIZE = 10;
+
+const formatDate = (value, fallback = "—") => {
+  if (!value) return fallback;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString("vi-VN");
+};
 
 // Format currency helper
 function formatCurrency(value) {
@@ -154,6 +162,8 @@ export default function RevenueManagement() {
   const [timeframe, setTimeframe] = useState("month");
   const [startDate, setStartDate] = useState(null);
   const [endDate, setEndDate] = useState(null);
+  const [startDateStr, setStartDateStr] = useState("");
+  const [endDateStr, setEndDateStr] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -170,12 +180,60 @@ export default function RevenueManagement() {
 
   const [actionNotice, setActionNotice] = useState(null);
 
+  // Payment history dialog states
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [isPaymentHistoryDialogOpen, setIsPaymentHistoryDialogOpen] =
+    useState(false);
+  const [userPaymentHistory, setUserPaymentHistory] = useState([]);
+  const [paymentHistoryLoading, setPaymentHistoryLoading] = useState(false);
+  const [paymentHistoryPage, setPaymentHistoryPage] = useState(1);
+  const [paymentHistoryTotalPages, setPaymentHistoryTotalPages] = useState(1);
+  const [paymentHistoryTotalCount, setPaymentHistoryTotalCount] = useState(0);
+
+  // Convert date string to Date object for API calls
+  const getStartDate = () => {
+    if (!startDateStr) return null;
+    const date = new Date(startDateStr + "T00:00:00");
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  const getEndDate = () => {
+    if (!endDateStr) return null;
+    const date = new Date(endDateStr + "T23:59:59");
+    return isNaN(date.getTime()) ? null : date;
+  };
+
+  // Sync date strings with Date objects for backward compatibility
+  useEffect(() => {
+    if (startDate) {
+      const year = startDate.getFullYear();
+      const month = String(startDate.getMonth() + 1).padStart(2, "0");
+      const day = String(startDate.getDate()).padStart(2, "0");
+      setStartDateStr(`${year}-${month}-${day}`);
+    } else {
+      setStartDateStr("");
+    }
+  }, [startDate]);
+
+  useEffect(() => {
+    if (endDate) {
+      const year = endDate.getFullYear();
+      const month = String(endDate.getMonth() + 1).padStart(2, "0");
+      const day = String(endDate.getDate()).padStart(2, "0");
+      setEndDateStr(`${year}-${month}-${day}`);
+    } else {
+      setEndDateStr("");
+    }
+  }, [endDate]);
+
   // Fetch revenue statistics
   const fetchStatistics = async () => {
     try {
+      const start = getStartDate();
+      const end = getEndDate();
       const stats = await AdminRevenueRepository.getRevenueStatistics(
-        startDate || null,
-        endDate || null
+        start || null,
+        end || null
       );
       setStatistics(stats);
     } catch (err) {
@@ -187,10 +245,12 @@ export default function RevenueManagement() {
   const fetchRevenueByPeriod = async () => {
     try {
       const periodType = PERIOD_TYPES[timeframe] || "monthly";
+      const start = getStartDate();
+      const end = getEndDate();
       const data = await AdminRevenueRepository.getRevenueByPeriod(
         periodType,
-        startDate || null,
-        endDate || null
+        start || null,
+        end || null
       );
       setRevenueByPeriod(data || []);
     } catch (err) {
@@ -201,9 +261,11 @@ export default function RevenueManagement() {
   // Fetch revenue by plan
   const fetchRevenueByPlan = async () => {
     try {
+      const start = getStartDate();
+      const end = getEndDate();
       const data = await AdminRevenueRepository.getRevenueByPlan(
-        startDate || null,
-        endDate || null
+        start || null,
+        end || null
       );
       setRevenueByPlan(data || []);
     } catch (err) {
@@ -215,11 +277,13 @@ export default function RevenueManagement() {
   const fetchPayments = async () => {
     try {
       setLoading(true);
+      const start = getStartDate();
+      const end = getEndDate();
       const response = await AdminRevenueRepository.getPayments(
         page,
         PAGE_SIZE,
-        startDate || null,
-        endDate || null,
+        start || null,
+        end || null,
         userIdFilter || null,
         statusFilter || null
       );
@@ -244,11 +308,109 @@ export default function RevenueManagement() {
     fetchStatistics();
     fetchRevenueByPeriod();
     fetchRevenueByPlan();
-  }, [timeframe, startDate, endDate]);
+  }, [timeframe, startDateStr, endDateStr]);
 
   useEffect(() => {
     fetchPayments();
-  }, [page, startDate, endDate, userIdFilter, statusFilter]);
+  }, [page, startDateStr, endDateStr, userIdFilter, statusFilter]);
+
+  // Handle date string changes
+  const handleStartDateChange = (e) => {
+    const value = e.target.value;
+    setStartDateStr(value);
+    if (value) {
+      const date = new Date(value + "T00:00:00");
+      if (!isNaN(date.getTime())) {
+        setStartDate(date);
+      }
+    } else {
+      setStartDate(null);
+    }
+    setPage(1);
+  };
+
+  const handleEndDateChange = (e) => {
+    const value = e.target.value;
+    setEndDateStr(value);
+    if (value) {
+      const date = new Date(value + "T23:59:59");
+      if (!isNaN(date.getTime())) {
+        setEndDate(date);
+      }
+    } else {
+      setEndDate(null);
+    }
+    setPage(1);
+  };
+
+  // Reset all filters
+  const handleResetFilters = () => {
+    setStartDateStr("");
+    setEndDateStr("");
+    setStartDate(null);
+    setEndDate(null);
+    setStatusFilter(null);
+    setPage(1);
+  };
+
+  // Fetch payment history for selected user
+  const fetchUserPaymentHistory = async (
+    userId,
+    userName,
+    userEmail,
+    pageNum = 1
+  ) => {
+    try {
+      setPaymentHistoryLoading(true);
+      const response = await AdminRevenueRepository.getPayments(
+        pageNum,
+        PAGE_SIZE,
+        null,
+        null,
+        userId,
+        null
+      );
+
+      if (response.success) {
+        setUserPaymentHistory(response.data || []);
+        setPaymentHistoryTotalCount(response.pagination?.totalCount || 0);
+        setPaymentHistoryTotalPages(response.pagination?.totalPages || 1);
+        setSelectedUser({ userId, userName, userEmail });
+        setIsPaymentHistoryDialogOpen(true);
+      }
+    } catch (err) {
+      console.error("Error fetching user payment history:", err);
+      setActionNotice({
+        message: "Có lỗi xảy ra khi tải lịch sử thanh toán",
+        tone: "error",
+      });
+    } finally {
+      setPaymentHistoryLoading(false);
+    }
+  };
+
+  // Handle click on user name
+  const handleUserNameClick = (payment) => {
+    fetchUserPaymentHistory(
+      payment.userId,
+      payment.userName,
+      payment.userEmail,
+      1
+    );
+  };
+
+  // Handle payment history dialog page change
+  const handlePaymentHistoryPageChange = (newPage) => {
+    if (selectedUser) {
+      setPaymentHistoryPage(newPage);
+      fetchUserPaymentHistory(
+        selectedUser.userId,
+        selectedUser.userName,
+        selectedUser.userEmail,
+        newPage
+      );
+    }
+  };
 
   useEffect(() => {
     if (!actionNotice) return;
@@ -520,48 +682,28 @@ export default function RevenueManagement() {
                 {/* Filters */}
                 <div className="mb-6 grid gap-4 lg:grid-cols-12">
                   <div className="lg:col-span-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {startDate
-                            ? new Date(startDate).toLocaleDateString("vi-VN")
-                            : "Từ ngày"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <CalendarComponent
-                          mode="single"
-                          selected={startDate}
-                          onSelect={setStartDate}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <Input
+                        type="date"
+                        value={startDateStr}
+                        onChange={handleStartDateChange}
+                        placeholder="Từ ngày"
+                        className="pl-10 w-full"
+                      />
+                    </div>
                   </div>
                   <div className="lg:col-span-3">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full justify-start text-left font-normal"
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {endDate
-                            ? new Date(endDate).toLocaleDateString("vi-VN")
-                            : "Đến ngày"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <CalendarComponent
-                          mode="single"
-                          selected={endDate}
-                          onSelect={setEndDate}
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                      <Input
+                        type="date"
+                        value={endDateStr}
+                        onChange={handleEndDateChange}
+                        placeholder="Đến ngày"
+                        className="pl-10 w-full"
+                      />
+                    </div>
                   </div>
                   <div className="lg:col-span-3">
                     <Select
@@ -582,6 +724,17 @@ export default function RevenueManagement() {
                       </SelectContent>
                     </Select>
                   </div>
+                  <div className="lg:col-span-3">
+                    <Button
+                      variant="outline"
+                      onClick={handleResetFilters}
+                      className="w-full"
+                      disabled={!startDateStr && !endDateStr && !statusFilter}
+                    >
+                      <X className="mr-2 h-4 w-4" />
+                      Đặt lại bộ lọc
+                    </Button>
+                  </div>
                 </div>
 
                 {loading && payments.length === 0 ? (
@@ -600,6 +753,8 @@ export default function RevenueManagement() {
                             <TableHead>ID</TableHead>
                             <TableHead>Khách hàng</TableHead>
                             <TableHead>Gói dịch vụ</TableHead>
+                            <TableHead>Ngày bắt đầu</TableHead>
+                            <TableHead>Ngày kết thúc</TableHead>
                             <TableHead>Số tiền</TableHead>
                             <TableHead>Ngày thanh toán</TableHead>
                             <TableHead>Trạng thái</TableHead>
@@ -609,7 +764,7 @@ export default function RevenueManagement() {
                           {payments.length === 0 ? (
                             <TableRow>
                               <TableCell
-                                colSpan={6}
+                                colSpan={8}
                                 className="py-8 text-center text-slate-500"
                               >
                                 Không có giao dịch nào.
@@ -626,9 +781,14 @@ export default function RevenueManagement() {
                                 </TableCell>
                                 <TableCell>
                                   <div>
-                                    <p className="font-medium text-slate-900">
+                                    <button
+                                      onClick={() =>
+                                        handleUserNameClick(payment)
+                                      }
+                                      className="font-medium text-slate-900 hover:text-emerald-600 hover:underline cursor-pointer transition-colors text-left"
+                                    >
                                       {payment.userName}
-                                    </p>
+                                    </button>
                                     <p className="text-xs text-slate-500">
                                       {payment.userEmail}
                                     </p>
@@ -636,6 +796,20 @@ export default function RevenueManagement() {
                                 </TableCell>
                                 <TableCell className="text-slate-800">
                                   {payment.planName}
+                                </TableCell>
+                                <TableCell className="text-slate-600">
+                                  {formatDate(
+                                    payment.subscriptionStartDate,
+                                    "Chưa xác định"
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-slate-600">
+                                  {payment.subscriptionEndDate
+                                    ? formatDate(
+                                        payment.subscriptionEndDate,
+                                        "Không giới hạn"
+                                      )
+                                    : "Không giới hạn"}
                                 </TableCell>
                                 <TableCell className="font-semibold text-emerald-700">
                                   {payment.amount.toLocaleString("vi-VN", {
@@ -734,6 +908,201 @@ export default function RevenueManagement() {
           </div>
         </AdminLayout>
       </div>
+
+      {/* Payment History Dialog */}
+      <Dialog
+        open={isPaymentHistoryDialogOpen}
+        onOpenChange={(open) => {
+          setIsPaymentHistoryDialogOpen(open);
+          if (!open) {
+            setSelectedUser(null);
+            setUserPaymentHistory([]);
+            setPaymentHistoryPage(1);
+          }
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-semibold text-slate-900">
+              Lịch sử thanh toán
+              {selectedUser && (
+                <div className="mt-2 text-base font-normal text-slate-600">
+                  <p className="font-medium">{selectedUser.userName}</p>
+                  <p className="text-sm text-slate-500">
+                    {selectedUser.userEmail}
+                  </p>
+                </div>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-4">
+            {paymentHistoryLoading ? (
+              <div className="flex items-center justify-center p-12">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                <span className="ml-3 text-slate-600">
+                  Đang tải lịch sử thanh toán...
+                </span>
+              </div>
+            ) : userPaymentHistory.length === 0 ? (
+              <div className="py-8 text-center text-slate-500">
+                Không có giao dịch nào.
+              </div>
+            ) : (
+              <>
+                <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                  <Table>
+                    <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
+                      <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
+                        <TableHead>ID</TableHead>
+                        <TableHead>Gói dịch vụ</TableHead>
+                        <TableHead>Ngày bắt đầu</TableHead>
+                        <TableHead>Ngày kết thúc</TableHead>
+                        <TableHead>Số tiền</TableHead>
+                        <TableHead>Phương thức</TableHead>
+                        <TableHead>Ngày thanh toán</TableHead>
+                        <TableHead>Trạng thái</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {userPaymentHistory.map((payment) => (
+                        <TableRow
+                          key={payment.paymentId}
+                          className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
+                        >
+                          <TableCell className="font-semibold text-slate-900">
+                            #{payment.paymentId}
+                          </TableCell>
+                          <TableCell className="text-slate-800">
+                            {payment.planName}
+                          </TableCell>
+                      <TableCell className="text-slate-600">
+                        {formatDate(
+                          payment.subscriptionStartDate,
+                          "Chưa xác định"
+                        )}
+                      </TableCell>
+                      <TableCell className="text-slate-600">
+                        {payment.subscriptionEndDate
+                          ? formatDate(
+                              payment.subscriptionEndDate,
+                              "Không giới hạn"
+                            )
+                          : "Không giới hạn"}
+                      </TableCell>
+                          <TableCell className="font-semibold text-emerald-700">
+                            {payment.amount.toLocaleString("vi-VN", {
+                              style: "currency",
+                              currency: payment.currency || "VND",
+                            })}
+                          </TableCell>
+                          <TableCell className="text-slate-600">
+                            {payment.paymentMethod || "N/A"}
+                          </TableCell>
+                          <TableCell className="text-slate-500">
+                            {new Date(payment.paymentDate).toLocaleDateString(
+                              "vi-VN",
+                              {
+                                year: "numeric",
+                                month: "2-digit",
+                                day: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              }
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              className={cn(
+                                "border-0",
+                                payment.transactionStatus === "Success"
+                                  ? "bg-emerald-50 text-emerald-700"
+                                  : payment.transactionStatus === "Failed"
+                                  ? "bg-rose-50 text-rose-700"
+                                  : "bg-amber-50 text-amber-700"
+                              )}
+                            >
+                              {payment.transactionStatus === "Success"
+                                ? "Thành công"
+                                : payment.transactionStatus === "Failed"
+                                ? "Thất bại"
+                                : "Đang xử lý"}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Pagination */}
+                {paymentHistoryTotalPages > 1 && (
+                  <Pagination className="mt-6">
+                    <PaginationContent>
+                      <PaginationItem>
+                        <PaginationPrevious
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePaymentHistoryPageChange(
+                              Math.max(1, paymentHistoryPage - 1)
+                            );
+                          }}
+                          className={
+                            paymentHistoryPage === 1
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }
+                        />
+                      </PaginationItem>
+                      {Array.from(
+                        { length: paymentHistoryTotalPages },
+                        (_, i) => i + 1
+                      ).map((p) => (
+                        <PaginationItem key={p}>
+                          <PaginationLink
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              handlePaymentHistoryPageChange(p);
+                            }}
+                            isActive={paymentHistoryPage === p}
+                          >
+                            {p}
+                          </PaginationLink>
+                        </PaginationItem>
+                      ))}
+                      <PaginationItem>
+                        <PaginationNext
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handlePaymentHistoryPageChange(
+                              Math.min(
+                                paymentHistoryTotalPages,
+                                paymentHistoryPage + 1
+                              )
+                            );
+                          }}
+                          className={
+                            paymentHistoryPage === paymentHistoryTotalPages
+                              ? "pointer-events-none opacity-50"
+                              : ""
+                          }
+                        />
+                      </PaginationItem>
+                    </PaginationContent>
+                  </Pagination>
+                )}
+
+                <div className="mt-4 text-sm text-slate-500 text-center">
+                  Tổng cộng: {paymentHistoryTotalCount} giao dịch
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

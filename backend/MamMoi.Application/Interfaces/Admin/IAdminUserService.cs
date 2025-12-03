@@ -36,5 +36,15 @@ public interface IAdminUserService
     /// Deactivate a user account
     /// </summary>
     Task<bool> DeactivateUserAsync(int userId);
+
+    /// <summary>
+    /// Update user's subscription plan
+    /// </summary>
+    Task<bool> UpdateUserSubscriptionPlanAsync(int userId, string? planType, DateOnly? startDate, DateOnly? endDate);
+
+    /// <summary>
+    /// Reset user password (admin only)
+    /// </summary>
+    Task<bool> ResetUserPasswordAsync(int userId, string newPassword);
 }
 

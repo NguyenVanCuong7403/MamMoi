@@ -15,9 +15,8 @@ public class CreateTreeTypeDto
     [StringLength(100)]
     public string TreeTypeName { get; set; } = null!;
 
-    [Required]
     [StringLength(150)]
-    public string ScientificName { get; set; } = null!;
+    public string? ScientificName { get; set; }
 
     [StringLength(500)]
     public string? Description { get; set; }
@@ -55,7 +54,7 @@ public class CreateTreeTypeDto
     [StringLength(500)]
     public string? ImageUrl { get; set; }
 
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; set; } = false;
 
     // New fields for PlantDetail page
     public string? CareGuide { get; set; } // JSON array of care instruction strings

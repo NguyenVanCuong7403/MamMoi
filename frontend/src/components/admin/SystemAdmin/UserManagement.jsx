@@ -150,6 +150,21 @@ const PLAN_DESCRIPTIONS = {
 
 const normalizePlanValue = (planValue) => (planValue ? planValue : "free");
 
+const toDateInputValue = (dateString) => {
+  if (!dateString) return "";
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "";
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().split("T")[0];
+};
+
+const formatDateDisplay = (dateString, fallback = "—") => {
+  if (!dateString) return fallback;
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return fallback;
+  return date.toLocaleDateString("vi-VN");
+};
+
 const getPlanLabel = (planValue) => {
   const normalized = normalizePlanValue(planValue);
   if (normalized === "free") return "Người dùng Free";
@@ -757,6 +772,12 @@ function ActionMenu({ user, onOpenModal }) {
   );
 }
 
+const getLocalDateInputValue = () => {
+  const now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  return now.toISOString().split("T")[0];
+};
+
 export default function SystemAdminUserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -769,7 +790,12 @@ export default function SystemAdminUserManagement() {
   const [activeModal, setActiveModal] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [planDraft, setPlanDraft] = useState("");
+  const [planStartDate, setPlanStartDate] = useState(() =>
+    getLocalDateInputValue()
+  );
+  const [planEndDate, setPlanEndDate] = useState("");
   const [passwordDraft, setPasswordDraft] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [pendingRandomConfirm, setPendingRandomConfirm] = useState(false);
   const [editDraft, setEditDraft] = useState({
@@ -797,7 +823,7 @@ export default function SystemAdminUserManagement() {
       const isActive =
         filters.status === "active"
           ? true
-          : filters.status === "inactive"
+          : filters.status === "inactive" || filters.status === "banned"
           ? false
           : null;
 
@@ -818,8 +844,10 @@ export default function SystemAdminUserManagement() {
           email: user.email,
           phone: user.phone || "",
           role: user.roleName,
-          status: user.isActive ? "active" : "inactive",
-          plan: "free", // TODO: Get from subscription data
+          status: user.isActive ? "active" : "banned",
+          plan: user.planType || "free", // Use planType from backend, default to "free" if null
+          planStartDate: user.planStartDate || null,
+          planEndDate: user.planEndDate || null,
           province: "", // TODO: Get from user data
           createdAt: user.createdAt,
           lastLogin: user.lastLoginAt || user.createdAt,
@@ -844,11 +872,12 @@ export default function SystemAdminUserManagement() {
 
   // Helper function to get role ID from role name
   const getRoleIdFromName = (roleName) => {
-    // Map role names to IDs - you may need to fetch this from API
+    // Map role names to IDs - matches database schema:
+    // Role 1: SystemAdmin, Role 2: BusinessAdmin, Role 3: Farmer
     const roleMap = {
-      Farmer: 1,
+      SystemAdmin: 1,
       BusinessAdmin: 2,
-      SystemAdmin: 3,
+      Farmer: 3,
     };
     return roleMap[roleName] || null;
   };
@@ -1160,19 +1189,32 @@ export default function SystemAdminUserManagement() {
     setSelectedUser(user);
     setActiveModal(type);
     if (type === "plan") {
-      setPlanDraft(normalizePlanValue(user?.plan));
+      const normalizedPlan = normalizePlanValue(user?.plan);
+      setPlanDraft(normalizedPlan);
       setPlanAcknowledged(false);
+      const existingStart = user?.planStartDate
+        ? toDateInputValue(user.planStartDate)
+        : "";
+      const defaultStart =
+        normalizedPlan === "free" ? "" : getLocalDateInputValue();
+      setPlanStartDate(existingStart || defaultStart);
+      setPlanEndDate(
+        user?.planEndDate ? toDateInputValue(user.planEndDate) : ""
+      );
     }
     if (type === "password") {
       setPasswordDraft("");
+      setPasswordConfirm("");
       setGeneratedPassword("");
       setPendingRandomConfirm(false);
     }
     if (type === "edit") {
+      // Đảm bảo role SystemAdmin không thể bị thay đổi
+      const userRole = user?.role ?? "Farmer";
       setEditDraft({
         name: user?.name ?? "",
         phone: user?.phone ?? "",
-        role: user?.role ?? "Farmer",
+        role: userRole === "SystemAdmin" ? "SystemAdmin" : userRole,
         email: user?.email ?? "",
       });
     }
@@ -1185,16 +1227,21 @@ export default function SystemAdminUserManagement() {
     setSelectedUser(null);
     setPasswordError("");
     setEditError("");
+    setPasswordDraft("");
+    setPasswordConfirm("");
     setGeneratedPassword("");
     setPendingRandomConfirm(false);
+    setPlanDraft("");
     setPlanAcknowledged(false);
+    setPlanStartDate(getLocalDateInputValue());
+    setPlanEndDate("");
   };
 
   const showNotice = (message, tone = "success") => {
     setActionNotice({ message, tone });
   };
 
-  const handlePlanSave = () => {
+  const handlePlanSave = async () => {
     if (!selectedUser || !planDraft) return;
     if (!planAcknowledged) {
       setActionNotice({
@@ -1203,32 +1250,113 @@ export default function SystemAdminUserManagement() {
       });
       return;
     }
-    updateUser(selectedUser.id, { plan: planDraft });
-    const planLabel = getPlanLabel(planDraft);
-    showNotice(
-      `Đã cập nhật gói dịch vụ của ${selectedUser.name} thành ${planLabel}.`
-    );
-    closeModal();
+    if (!planStartDate && planDraft !== "free") {
+      setActionNotice({
+        message: "Vui lòng chọn ngày bắt đầu cho gói mới.",
+        tone: "warning",
+      });
+      return;
+    }
+    if (planStartDate && planEndDate && planEndDate < planStartDate) {
+      setActionNotice({
+        message: "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu.",
+        tone: "warning",
+      });
+      return;
+    }
+
+    try {
+      const numericUserId =
+        typeof selectedUser.userId === "number"
+          ? selectedUser.userId
+          : typeof selectedUser.id === "string"
+          ? parseInt(selectedUser.id.replace("USR-", ""))
+          : selectedUser.id;
+
+      await AdminUserRepository.updateUserSubscriptionPlan(numericUserId, {
+        planType: planDraft,
+        startDate: planStartDate || null,
+        endDate: planEndDate || null,
+      });
+      const planLabel = getPlanLabel(planDraft);
+      showNotice(
+        `Đã cập nhật gói dịch vụ của ${selectedUser.name} thành ${planLabel}.`
+      );
+      await fetchUsers(); // Refresh users list to show updated plan
+      closeModal();
+    } catch (err) {
+      console.error("Error updating subscription plan:", err);
+      const errorMsg =
+        err.response?.data?.message ||
+        err.message ||
+        "Có lỗi xảy ra khi cập nhật gói dịch vụ";
+      showNotice(errorMsg, "error");
+    }
   };
 
-  const applyPasswordChange = (nextPassword) => {
+  const normalizedSelectedPlan = normalizePlanValue(selectedUser?.plan);
+  const existingPlanStartInput = selectedUser?.planStartDate
+    ? toDateInputValue(selectedUser.planStartDate)
+    : "";
+  const existingPlanEndInput = selectedUser?.planEndDate
+    ? toDateInputValue(selectedUser.planEndDate)
+    : "";
+  const hasPlanChanges =
+    planDraft !== normalizedSelectedPlan ||
+    (planStartDate || "") !== (existingPlanStartInput || "") ||
+    (planEndDate || "") !== (existingPlanEndInput || "");
+  const isPlanActionDisabled =
+    !selectedUser || !planAcknowledged || !planDraft || !hasPlanChanges;
+
+  const applyPasswordChange = async (nextPassword) => {
     if (!selectedUser) return;
-    // Mock UI: tuỳ backend sẽ call API thật ở đây
-    console.log("New password for", selectedUser.id, "=>", nextPassword);
-    showNotice(
-      `Đã đặt lại mật khẩu cho ${selectedUser.name}. Hệ thống vừa gửi email xác nhận tới ${selectedUser.email}.`
-    );
-    closeModal();
+
+    try {
+      const numericUserId =
+        typeof selectedUser.userId === "number"
+          ? selectedUser.userId
+          : typeof selectedUser.id === "string"
+          ? parseInt(selectedUser.id.replace("USR-", ""))
+          : selectedUser.id;
+
+      await AdminUserRepository.resetUserPassword(numericUserId, nextPassword);
+      showNotice(
+        `Đã đặt lại mật khẩu cho ${selectedUser.name}. Hệ thống vừa gửi email xác nhận tới ${selectedUser.email}.`
+      );
+      closeModal();
+    } catch (err) {
+      console.error("Error resetting password:", err);
+      const errorMsg =
+        err.response?.data?.message ||
+        err.message ||
+        "Có lỗi xảy ra khi đặt lại mật khẩu";
+      setPasswordError(errorMsg);
+      showNotice(errorMsg, "error");
+    }
   };
 
-  const handlePasswordReset = () => {
+  const handlePasswordReset = async () => {
     if (!selectedUser) return;
+
+    // Validate password length
     if (passwordDraft.length < 10) {
       setPasswordError("Mật khẩu cần tối thiểu 10 ký tự.");
       return;
     }
+
+    // Validate password confirmation
+    if (!passwordConfirm) {
+      setPasswordError("Vui lòng xác nhận lại mật khẩu mới.");
+      return;
+    }
+
+    if (passwordDraft !== passwordConfirm) {
+      setPasswordError("Mật khẩu xác nhận không khớp.");
+      return;
+    }
+
     setPasswordError("");
-    applyPasswordChange(passwordDraft);
+    await applyPasswordChange(passwordDraft);
   };
 
   const handleEditSave = async () => {
@@ -1241,6 +1369,21 @@ export default function SystemAdminUserManagement() {
       setEditError("Vui lòng nhập đủ họ tên, email và số điện thoại.");
       return;
     }
+
+    // Ngăn không cho chuyển đổi thành role SystemAdmin
+    if (editDraft.role === "SystemAdmin") {
+      setEditError("Không thể chuyển đổi vai trò thành Quản trị hệ thống.");
+      return;
+    }
+
+    // Ngăn không cho thay đổi role của SystemAdmin (nếu user đã là SystemAdmin)
+    if (selectedUser.role === "SystemAdmin") {
+      if (editDraft.role !== "SystemAdmin") {
+        setEditError("Không thể thay đổi vai trò của Quản trị hệ thống.");
+        return;
+      }
+    }
+
     try {
       await updateUser(selectedUser.userId || selectedUser.id, {
         name: editDraft.name.trim(),
@@ -1318,6 +1461,7 @@ export default function SystemAdminUserManagement() {
     setGeneratedPassword(random);
     setPendingRandomConfirm(true);
     setPasswordDraft("");
+    setPasswordConfirm("");
     setPasswordError("");
   };
 
@@ -1328,6 +1472,8 @@ export default function SystemAdminUserManagement() {
 
   const confirmRandomPasswordFlow = () => {
     if (!generatedPassword) return;
+    setPasswordDraft(generatedPassword);
+    setPasswordConfirm(generatedPassword);
     applyPasswordChange(generatedPassword);
   };
 
@@ -1827,6 +1973,23 @@ export default function SystemAdminUserManagement() {
                         <p className="text-lg font-semibold text-slate-900">
                           {getPlanLabel(selectedUser.plan)}
                         </p>
+                        {(selectedUser?.planStartDate ||
+                          selectedUser?.planEndDate) && (
+                          <p className="text-sm text-slate-500">
+                            Hiệu lực:{" "}
+                            <span className="font-medium text-slate-700">
+                              {formatDateDisplay(
+                                selectedUser?.planStartDate,
+                                "Chưa xác định"
+                              )}
+                              {" - "}
+                              {formatDateDisplay(
+                                selectedUser?.planEndDate,
+                                "Không giới hạn"
+                              )}
+                            </span>
+                          </p>
+                        )}
                       </div>
                       <div className="rounded-xl border border-slate-100 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1976,6 +2139,37 @@ export default function SystemAdminUserManagement() {
                       ))}
                     </SelectContent>
                   </Select>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-600">
+                        Ngày bắt đầu
+                      </label>
+                      <Input
+                        type="date"
+                        value={planStartDate}
+                        onChange={(event) =>
+                          setPlanStartDate(event.target.value)
+                        }
+                        className="rounded-xl border-slate-200 bg-white"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-600">
+                        Ngày kết thúc (tuỳ chọn)
+                      </label>
+                      <Input
+                        type="date"
+                        value={planEndDate}
+                        min={planStartDate || undefined}
+                        onChange={(event) => setPlanEndDate(event.target.value)}
+                        className="rounded-xl border-slate-200 bg-white"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Nếu để trống ngày kết thúc, hệ thống sẽ tự tính dựa trên
+                    thời hạn gói.
+                  </p>
                   <div className="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-900">
                     <p>
                       Gói hiện tại:{" "}
@@ -1987,6 +2181,35 @@ export default function SystemAdminUserManagement() {
                       Gói đề xuất:{" "}
                       <span className="font-semibold">
                         {getPlanLabel(planDraft)}
+                      </span>
+                    </p>
+                    <p className="mt-2 text-xs">
+                      Hiệu lực hiện tại:{" "}
+                      <span className="font-semibold">
+                        {formatDateDisplay(
+                          selectedUser?.planStartDate,
+                          "Chưa xác định"
+                        )}{" "}
+                        -{" "}
+                        {formatDateDisplay(
+                          selectedUser?.planEndDate,
+                          "Không giới hạn"
+                        )}
+                      </span>
+                    </p>
+                    <p className="text-xs">
+                      Hiệu lực mới:{" "}
+                      <span className="font-semibold">
+                        {planDraft === "free"
+                          ? "Không áp dụng"
+                          : `${formatDateDisplay(
+                              planStartDate,
+                              "Chưa chọn"
+                            )} - ${
+                              planEndDate
+                                ? formatDateDisplay(planEndDate)
+                                : "Theo thời hạn gói"
+                            }`}
                       </span>
                     </p>
                     <p className="mt-2 text-xs text-emerald-700">
@@ -2015,11 +2238,7 @@ export default function SystemAdminUserManagement() {
                   <Button
                     className="bg-emerald-600 text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
                     onClick={handlePlanSave}
-                    disabled={
-                      !selectedUser ||
-                      planDraft === normalizePlanValue(selectedUser?.plan) ||
-                      !planAcknowledged
-                    }
+                    disabled={isPlanActionDisabled}
                   >
                     Xác nhận thay đổi
                   </Button>
@@ -2043,13 +2262,36 @@ export default function SystemAdminUserManagement() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <Input
-                    type="text"
-                    placeholder="Nhập mật khẩu mới (hiển thị rõ)"
-                    value={passwordDraft}
-                    onChange={(event) => setPasswordDraft(event.target.value)}
-                    className="rounded-xl border-slate-200 bg-white"
-                  />
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-600">
+                      Mật khẩu mới
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Nhập mật khẩu mới (hiển thị rõ)"
+                      value={passwordDraft}
+                      onChange={(event) => {
+                        setPasswordDraft(event.target.value);
+                        setPasswordError("");
+                      }}
+                      className="rounded-xl border-slate-200 bg-white"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-600">
+                      Xác nhận mật khẩu mới
+                    </label>
+                    <Input
+                      type="text"
+                      placeholder="Nhập lại mật khẩu mới để xác nhận"
+                      value={passwordConfirm}
+                      onChange={(event) => {
+                        setPasswordConfirm(event.target.value);
+                        setPasswordError("");
+                      }}
+                      className="rounded-xl border-slate-200 bg-white"
+                    />
+                  </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <Button
                       type="button"
@@ -2110,7 +2352,12 @@ export default function SystemAdminUserManagement() {
                   <Button
                     className="bg-emerald-600 text-white hover:bg-emerald-700"
                     onClick={handlePasswordReset}
-                    disabled={!passwordDraft}
+                    disabled={
+                      !passwordDraft ||
+                      !passwordConfirm ||
+                      passwordDraft.length < 10 ||
+                      passwordDraft !== passwordConfirm
+                    }
                   >
                     Xác nhận
                   </Button>
@@ -2185,23 +2432,47 @@ export default function SystemAdminUserManagement() {
                     </label>
                     <Select
                       value={editDraft.role}
-                      onValueChange={(value) =>
-                        setEditDraft((prev) => ({ ...prev, role: value }))
-                      }
+                      onValueChange={(value) => {
+                        // Ngăn không cho chọn SystemAdmin
+                        if (value === "SystemAdmin") {
+                          return;
+                        }
+                        // Ngăn không cho thay đổi role nếu user là SystemAdmin
+                        if (selectedUser?.role === "SystemAdmin") {
+                          return;
+                        }
+                        setEditDraft((prev) => ({ ...prev, role: value }));
+                      }}
+                      disabled={selectedUser?.role === "SystemAdmin"}
                     >
                       <SelectTrigger className="rounded-xl border-slate-200 bg-white">
                         <SelectValue placeholder="Chọn vai trò" />
                       </SelectTrigger>
                       <SelectContent>
-                        {ROLE_OPTIONS.filter(
-                          (option) => option.value !== "all"
-                        ).map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
+                        {ROLE_OPTIONS.filter((option) => option.value !== "all")
+                          .filter((option) => {
+                            // Ẩn SystemAdmin cho user không phải SystemAdmin
+                            if (option.value === "SystemAdmin") {
+                              return selectedUser?.role === "SystemAdmin";
+                            }
+                            return true;
+                          })
+                          .map((option) => (
+                            <SelectItem
+                              key={option.value}
+                              value={option.value}
+                              disabled={option.value === "SystemAdmin"}
+                            >
+                              {option.label}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
+                    {selectedUser?.role === "SystemAdmin" && (
+                      <p className="text-xs text-amber-600 mt-1">
+                        Không thể thay đổi vai trò của Quản trị hệ thống
+                      </p>
+                    )}
                   </div>
                 </div>
                 {editError && (

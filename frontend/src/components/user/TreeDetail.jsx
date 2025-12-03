@@ -22,10 +22,171 @@ import LifecycleWidget, {
   normalizePhaseId,
   mapPhaseIdFromText,
 } from "./LifecycleWidget";
+import {
+  DEFAULT_PHASE_THEME,
+  PHASE_IDS,
+  LIFECYCLE_COLOR_LOOKUP,
+  getColorKeyFromHex,
+} from "@/lib/lifecycleTheme";
 
 import { Label } from "@/components/ui/label"; // nếu bạn dùng Label trong edit modal
 
-const FIELD_EDIT_LOCK_DAYS = 30;
+// Giai đoạn sinh trưởng (đồng bộ đơn giản với TreeManagement)
+const PHASE_META = {
+  growth_development: {
+    name: "Sinh trưởng & Phát triển",
+    icon: "🌱",
+    description:
+      "Cây tập trung phát triển thân, lá và hệ rễ, cần chăm sóc dinh dưỡng và nước ổn định để tạo nền tảng khỏe mạnh.",
+  },
+  flowering: {
+    name: "Ra hoa",
+    icon: "🌸",
+    description:
+      "Cây hình thành và phát triển nụ hoa, cần chú ý nước, dinh dưỡng và phòng trừ sâu bệnh để tỷ lệ đậu hoa tốt.",
+  },
+  fruiting: {
+    name: "Ra quả",
+    icon: "🍎",
+    description:
+      "Quả được hình thành và lớn dần, cây cần dinh dưỡng cân đối và nước ổn định để quả phát triển đồng đều, hạn chế rụng.",
+  },
+  pre_harvest: {
+    name: "Trước thu hoạch",
+    icon: "🔍",
+    description:
+      "Giai đoạn hoàn thiện chất lượng quả, cần theo dõi kỹ tình trạng sâu bệnh và điều chỉnh chăm sóc để chuẩn bị thu hoạch.",
+  },
+  post_harvest: {
+    name: "Sau thu hoạch",
+    icon: "🌿",
+    description:
+      "Cây phục hồi sau thu hoạch, cần cắt tỉa, bón phân và chăm sóc để tái tạo tán lá và chuẩn bị cho vụ mới.",
+  },
+};
+
+const FIELD_EDIT_LOCK_DAYS = 14;
+
+const STAGE_ICON_PALETTE = ["🌱", "🌿", "🌸", "🍇", "🌾", "🍂", "🍋", "🌻"];
+const STAGE_COLOR_PALETTE = [
+  "emerald",
+  "pink",
+  "lime",
+  "amber",
+  "teal",
+  "sky",
+  "rose",
+  "slate",
+];
+
+const HEX_COLOR_REGEX = /^#([0-9a-f]{6})$/i;
+
+const isStageIconUrl = (value) =>
+  typeof value === "string" &&
+  (value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("/"));
+
+function normalizeStageColorHex(value) {
+  if (!value) return "";
+  const raw = value.toString().trim().toLowerCase();
+  if (HEX_COLOR_REGEX.test(raw)) return raw;
+  if (LIFECYCLE_COLOR_LOOKUP[raw]) return LIFECYCLE_COLOR_LOOKUP[raw];
+  const mappedKey = getColorKeyFromHex(raw);
+  if (mappedKey && LIFECYCLE_COLOR_LOOKUP[mappedKey]) {
+    return LIFECYCLE_COLOR_LOOKUP[mappedKey];
+  }
+  return "";
+}
+
+function buildStageColorMeta(value, fallbackKey = "emerald") {
+  const hex = normalizeStageColorHex(value);
+  const key = getColorKeyFromHex(hex) || fallbackKey;
+  return {
+    hex: hex || LIFECYCLE_COLOR_LOOKUP[key] || "#059669",
+    key,
+  };
+}
+
+function formatAgeRangeLabel(stage) {
+  const min =
+    stage?.minAgeInMonths != null ? Number(stage.minAgeInMonths) : null;
+  const max =
+    stage?.maxAgeInMonths != null ? Number(stage.maxAgeInMonths) : null;
+  if (Number.isFinite(min) && Number.isFinite(max)) {
+    return `${min}-${max} tháng`;
+  }
+  if (Number.isFinite(min)) {
+    return `≥${min} tháng`;
+  }
+  if (Number.isFinite(max)) {
+    return `<${max} tháng`;
+  }
+  return "";
+}
+
+function buildPhaseThemeFromStages(stages = []) {
+  if (!Array.isArray(stages) || stages.length === 0) return null;
+  const sorted = [...stages]
+    .filter((stage) => stage && (stage.stageName || stage.stage_name))
+    .sort(
+      (a, b) =>
+        (a?.stageOrder ?? a?.order ?? 0) - (b?.stageOrder ?? b?.order ?? 0)
+    );
+
+  if (!sorted.length) return null;
+
+  // Hiển thị tất cả các giai đoạn, không giới hạn
+  return sorted.map((stage, index) => {
+    // Sử dụng PHASE_IDS nếu có, nếu không thì dùng custom_${index}
+    const phaseId = PHASE_IDS[index] || `custom_${index}`;
+    const baseTheme = DEFAULT_PHASE_THEME[phaseId] || {};
+    const label =
+      stage.stageName ||
+      stage.stage_name ||
+      stage.name ||
+      stage.label ||
+      `Giai đoạn ${index + 1}`;
+    const subtitle = formatAgeRangeLabel(stage);
+    // Sử dụng fallback icon từ baseTheme hoặc STAGE_ICON_PALETTE
+    const fallbackIcon =
+      baseTheme.icon || STAGE_ICON_PALETTE[index % STAGE_ICON_PALETTE.length];
+    // Sử dụng fallback color từ baseTheme hoặc STAGE_COLOR_PALETTE
+    const fallbackColorKey =
+      baseTheme.colorKey ||
+      STAGE_COLOR_PALETTE[index % STAGE_COLOR_PALETTE.length] ||
+      "emerald";
+    const nodeColorMeta = buildStageColorMeta(
+      stage.nodeColor || stage.colorKey || stage.colorHex || baseTheme.colorHex,
+      fallbackColorKey
+    );
+    const lineColorMeta = buildStageColorMeta(
+      stage.lineColor ||
+        stage.lineColorKey ||
+        stage.lineColorHex ||
+        nodeColorMeta.hex,
+      nodeColorMeta.key
+    );
+    const iconValue = stage.icon || "";
+    const isImageIcon = isStageIconUrl(iconValue);
+
+    return {
+      id: `${phaseId}-${stage.stageId ?? stage.stage_id ?? index}`,
+      phaseId,
+      label,
+      subtitle,
+      description:
+        stage.description || stage.careInstructions || stage.notes || "",
+      icon: isImageIcon ? null : iconValue || fallbackIcon,
+      iconImageUrl: isImageIcon ? iconValue : null,
+      colorKey: nodeColorMeta.key,
+      colorHex: nodeColorMeta.hex,
+      lineColorKey: lineColorMeta.key,
+      lineColorHex: lineColorMeta.hex || nodeColorMeta.hex,
+      order: index,
+    };
+  });
+}
 
 // Đồng bộ lại dữ liệu cây vào demoTrees (TREES + TREES_ARRAY)
 // để các màn khác (TreeManagement) đọc được cùng 1 nguồn.
@@ -477,9 +638,19 @@ function ComboBox({
     return options.filter((o) => norm(o).includes(q));
   }, [options, query]);
 
-  const visible = showAll ? options : filtered;
+  // When showAll is true, always show all options regardless of query
+  // When showAll is false and query is empty, show all options
+  // When showAll is false and query has value, show filtered options
+  const visible = showAll || !query.trim() ? options : filtered;
 
   React.useEffect(() => setQuery(value || ""), [value]);
+
+  // Debug: Log when options change
+  React.useEffect(() => {
+    if (options && options.length > 0) {
+      console.log("ComboBox options updated:", options.length, options);
+    }
+  }, [options]);
 
   // Đóng khi click ngoài
   React.useEffect(() => {
@@ -583,7 +754,11 @@ function ComboBox({
   }
 
   return (
-    <div ref={boxRef} className={"relative " + className}>
+    <div
+      ref={boxRef}
+      className={"relative " + className}
+      style={{ zIndex: 100 }}
+    >
       <input
         ref={inputRef}
         value={query}
@@ -594,9 +769,15 @@ function ComboBox({
           setShowAll(false);
         }}
         onFocus={() => {
-          if (!isCommittingRef.current) setOpen(true);
-          setShowAll(true); // ← mở FULL danh sách khi vừa focus
-          setActive(0);
+          if (!isCommittingRef.current) {
+            setOpen(true);
+            setShowAll(true); // ← mở FULL danh sách khi vừa focus
+            setActive(0);
+            // Reset query to empty when opening to show all options
+            if (query.trim()) {
+              setQuery("");
+            }
+          }
         }}
         onKeyDown={onKeyDown}
         onBlur={onBlur}
@@ -636,10 +817,16 @@ function ComboBox({
 
       {open && (
         <div
-          className="absolute left-0 right-0 mt-1 z-[100] rounded-2xl border bg-white shadow-2xl overflow-hidden"
+          className="absolute left-0 right-0 mt-1 rounded-2xl border bg-white shadow-2xl"
           role="listbox"
+          style={{
+            maxHeight: "240px",
+            overflowY: "auto",
+            overflowX: "visible",
+            zIndex: 1000,
+          }}
         >
-          <div className="max-h-60 overflow-auto py-1">
+          <div className="py-1">
             {visible.length === 0 ? (
               <div className="px-3 py-2 text-sm text-neutral-500">
                 {emptyText}
@@ -684,7 +871,9 @@ function ComboBox({
 function DateInput({ value, onChange, error }) {
   const [parts, setParts] = React.useState(() => parseIsoToParts(value));
   const [open, setOpen] = React.useState(false);
+  const [dropdownStyle, setDropdownStyle] = React.useState({});
   const wrapRef = React.useRef(null);
+  const dropdownRef = React.useRef(null);
   const dayRef = React.useRef(null);
   const monthRef = React.useRef(null);
   const yearRef = React.useRef(null);
@@ -697,40 +886,10 @@ function DateInput({ value, onChange, error }) {
     setParts(parseIsoToParts(value));
   }, [value]);
 
-  // Đóng & commit khi click ra ngoài
-  React.useEffect(() => {
-    const handleClick = (e) => {
-      if (!wrapRef.current) return;
-      if (!wrapRef.current.contains(e.target)) {
-        commitParts();
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [parts]);
-
   function parseIsoToParts(iso) {
     if (!iso) return { d: "", m: "", y: "" };
     const [y, m, d] = iso.split("-");
     return { d: d || "", m: m || "", y: y || "" };
-  }
-
-  function getDaysInMonthSafe(yearStr, monthStr) {
-    const monthNum = Number(monthStr);
-    if (!monthNum || monthNum < 1 || monthNum > 12) return 31;
-
-    const yearNum = Number(yearStr);
-    // Năm chưa đủ 4 số: chỉ phân biệt tháng 30/31,
-    // tháng 2 cho phép tối đa 29, còn chính xác 28/29 sẽ xử lý khi có đủ năm thật
-    if (!yearStr || String(yearStr).length < 4 || !yearNum) {
-      if ([1, 3, 5, 7, 8, 10, 12].includes(monthNum)) return 31;
-      if ([4, 6, 9, 11].includes(monthNum)) return 30;
-      if (monthNum === 2) return 29;
-    }
-
-    // Khi đã có năm đầy đủ: dùng Date để tính chính xác 28/29/30/31
-    return new Date(yearNum, monthNum, 0).getDate();
   }
 
   function buildIsoFromParts({ d, m, y }) {
@@ -758,7 +917,7 @@ function DateInput({ value, onChange, error }) {
     )}-${String(dayNum).padStart(2, "0")}`;
   }
 
-  function commitParts() {
+  const commitParts = React.useCallback(() => {
     const iso = buildIsoFromParts(parts);
     // Nếu chưa điền đủ / sai => reset như yêu cầu
     if (!iso) {
@@ -768,6 +927,110 @@ function DateInput({ value, onChange, error }) {
       onChange(iso);
       setParts(parseIsoToParts(iso));
     }
+  }, [parts, onChange]);
+
+  // Tính toán vị trí dropdown để tránh overflow (sử dụng fixed positioning)
+  React.useEffect(() => {
+    if (!open || !wrapRef.current) {
+      setDropdownStyle({});
+      return;
+    }
+
+    const updatePosition = () => {
+      if (!wrapRef.current) return;
+      const rect = wrapRef.current.getBoundingClientRect();
+      const dropdownWidth = 288; // w-72 = 18rem = 288px
+      const dropdownHeight = 320; // Ước tính chiều cao dropdown
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const spaceOnRight = viewportWidth - rect.left;
+      const spaceOnLeft = rect.left;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
+      // Tính toán vị trí ngang
+      let left = rect.left;
+      let right = "auto";
+      if (spaceOnRight < dropdownWidth && spaceOnLeft >= dropdownWidth) {
+        // Căn phải
+        left = "auto";
+        right = viewportWidth - rect.right;
+      } else if (spaceOnRight < dropdownWidth) {
+        // Không đủ chỗ cả 2 bên, căn trái nhưng giới hạn
+        left = Math.max(8, rect.left);
+      }
+
+      // Tính toán vị trí dọc
+      let top = "auto";
+      let bottom = "auto";
+      if (spaceBelow < dropdownHeight && spaceAbove >= dropdownHeight) {
+        // Hiển thị phía trên
+        bottom = viewportHeight - rect.top;
+        top = "auto";
+      } else {
+        // Hiển thị phía dưới
+        top = rect.bottom + 4;
+        bottom = "auto";
+      }
+
+      setDropdownStyle({
+        position: "fixed",
+        left: typeof left === "number" ? `${left}px` : left,
+        right: typeof right === "number" ? `${right}px` : right,
+        top: typeof top === "number" ? `${top}px` : top,
+        bottom: typeof bottom === "number" ? `${bottom}px` : bottom,
+        width: `${dropdownWidth}px`,
+        maxWidth: "calc(100vw - 1rem)",
+        maxHeight: "calc(100vh - 1rem)",
+        zIndex: 9999,
+      });
+    };
+
+    updatePosition();
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
+  }, [open]);
+
+  // Đóng & commit khi click ra ngoài
+  React.useEffect(() => {
+    if (!open) return;
+
+    const handleClick = (e) => {
+      if (!wrapRef.current || !dropdownRef.current) return;
+      const target = e.target;
+      // Kiểm tra xem click có nằm trong input wrapper hoặc dropdown không
+      if (
+        !wrapRef.current.contains(target) &&
+        !dropdownRef.current.contains(target)
+      ) {
+        commitParts();
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open, commitParts]);
+
+  function getDaysInMonthSafe(yearStr, monthStr) {
+    const monthNum = Number(monthStr);
+    if (!monthNum || monthNum < 1 || monthNum > 12) return 31;
+
+    const yearNum = Number(yearStr);
+    // Năm chưa đủ 4 số: chỉ phân biệt tháng 30/31,
+    // tháng 2 cho phép tối đa 29, còn chính xác 28/29 sẽ xử lý khi có đủ năm thật
+    if (!yearStr || String(yearStr).length < 4 || !yearNum) {
+      if ([1, 3, 5, 7, 8, 10, 12].includes(monthNum)) return 31;
+      if ([4, 6, 9, 11].includes(monthNum)) return 30;
+      if (monthNum === 2) return 29;
+    }
+
+    // Khi đã có năm đầy đủ: dùng Date để tính chính xác 28/29/30/31
+    return new Date(yearNum, monthNum, 0).getDate();
   }
 
   function getDaysInMonth(y, m) {
@@ -970,7 +1233,8 @@ function DateInput({ value, onChange, error }) {
             onFocus={() => setOpen(true)}
             placeholder="Năm"
             inputMode="numeric"
-            className="w-14 bg-transparent border-none outline-none text-sm text-center placeholder:text-neutral-400"
+            className="w-16 bg-transparent border-none outline-none text-sm text-center placeholder:text-neutral-400"
+            style={{ minWidth: "4ch" }}
           />
         </div>
         <button
@@ -985,98 +1249,102 @@ function DateInput({ value, onChange, error }) {
         </button>
       </div>
 
-      {open && (
-        <div
-          className="absolute left-0 mt-1 w-72 rounded-xl border bg-white shadow-xl z-[1600] p-3"
-          // Chặn Enter trong popup lịch không cho bubble lên window
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.stopPropagation();
-            }
-          }}
-        >
-          <div className="flex items-center justify-between mb-2">
-            <button
-              type="button"
-              className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
-              onClick={() => {
-                if (month === 0) {
-                  setMonth(11);
-                  setYear((y) => y - 1);
-                } else setMonth((m) => m - 1);
-              }}
-            >
-              ←
-            </button>
-            <div className="text-sm font-medium">
-              {monthNames[month]} {year}
-            </div>
-            <button
-              type="button"
-              className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
-              onClick={() => {
-                if (month === 11) {
-                  setMonth(0);
-                  setYear((y) => y + 1);
-                } else setMonth((m) => m + 1);
-              }}
-            >
-              →
-            </button>
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-[11px] text-center text-neutral-500 mb-1">
-            {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((d) => (
-              <div key={d}>{d}</div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-1 text-sm">
-            {blanks.map((b) => (
-              <div key={`b-${b}`} />
-            ))}
-            {days.map((d) => {
-              const isSelected =
-                selected &&
-                d === selected.getDate() &&
-                month === selected.getMonth() &&
-                year === selected.getFullYear();
-
-              // Khi CHƯA có value (chưa chọn ngày trồng) thì đánh dấu ngày hôm nay
-              const isToday =
-                !selected &&
-                d === today.getDate() &&
-                month === today.getMonth() &&
-                year === today.getFullYear();
-
-              let extraClass = "";
-              if (isSelected) {
-                extraClass = "bg-emerald-500 text-white";
-              } else if (isToday) {
-                // Đánh dấu hôm nay bằng viền + chữ đậm
-                extraClass =
-                  "border border-emerald-500 text-emerald-700 font-semibold";
-              } else {
-                extraClass = "hover:bg-emerald-50 text-neutral-800";
+      {open &&
+        createPortal(
+          <div
+            ref={dropdownRef}
+            className="rounded-xl border bg-white shadow-xl p-3"
+            style={dropdownStyle}
+            // Chặn Enter trong popup lịch không cho bubble lên window
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.stopPropagation();
               }
+            }}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <button
+                type="button"
+                className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
+                onClick={() => {
+                  if (month === 0) {
+                    setMonth(11);
+                    setYear((y) => y - 1);
+                  } else setMonth((m) => m - 1);
+                }}
+              >
+                ←
+              </button>
+              <div className="text-sm font-medium">
+                {monthNames[month]} {year}
+              </div>
+              <button
+                type="button"
+                className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
+                onClick={() => {
+                  if (month === 11) {
+                    setMonth(0);
+                    setYear((y) => y + 1);
+                  } else setMonth((m) => m + 1);
+                }}
+              >
+                →
+              </button>
+            </div>
 
-              return (
-                <button
-                  type="button"
-                  key={d}
-                  onClick={() => pickDay(d)}
-                  className={
-                    "h-7 w-7 rounded-full flex items-center justify-center text-xs " +
-                    extraClass
-                  }
-                >
-                  {d}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
+            <div className="grid grid-cols-7 gap-1 text-[11px] text-center text-neutral-500 mb-1">
+              {["CN", "T2", "T3", "T4", "T5", "T6", "T7"].map((d) => (
+                <div key={d}>{d}</div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-sm">
+              {blanks.map((b) => (
+                <div key={`b-${b}`} />
+              ))}
+              {days.map((d) => {
+                const isSelected =
+                  selected &&
+                  d === selected.getDate() &&
+                  month === selected.getMonth() &&
+                  year === selected.getFullYear();
+
+                // Khi CHƯA có value (chưa chọn ngày trồng) thì đánh dấu ngày hôm nay
+                const isToday =
+                  !selected &&
+                  d === today.getDate() &&
+                  month === today.getMonth() &&
+                  year === today.getFullYear();
+
+                let extraClass = "";
+                if (isSelected) {
+                  extraClass = "bg-emerald-500 text-white";
+                } else if (isToday) {
+                  // Đánh dấu hôm nay bằng viền + chữ đậm
+                  extraClass =
+                    "border border-emerald-500 text-emerald-700 font-semibold";
+                } else {
+                  extraClass = "hover:bg-emerald-50 text-neutral-800";
+                }
+
+                return (
+                  <button
+                    type="button"
+                    key={d}
+                    onClick={() => pickDay(d)}
+                    className={
+                      "h-7 w-7 rounded-full flex items-center justify-center text-xs " +
+                      extraClass
+                    }
+                  >
+                    {d}
+                  </button>
+                );
+              })}
+            </div>
+          </div>,
+          document.body
+        )}
 
       {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
     </div>
@@ -1173,14 +1441,18 @@ function Field({
         {/* Text label */}
         <div className="flex flex-col leading-tight">
           <div className={labelCls}>
-            {typeof label === "string" ? <span>{label}</span> : label}
+            {typeof label === "string" ? <span>{label}:</span> : label}
             {inlineBadge}
           </div>
         </div>
       </LeftTag>
 
       {/* Cột value bên phải */}
-      <div className="flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words overflow-hidden min-w-0">
+      <div
+        className={`flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words min-w-0 ${
+          isEditing ? "overflow-visible" : "overflow-hidden"
+        }`}
+      >
         {isEditing ? editor : <span className="block truncate">{value}</span>}
       </div>
     </div>
@@ -1373,15 +1645,37 @@ function inList(val, list = []) {
 // === Phase normalization (DB ↔ UI) ===
 const PHASE_ID_ALIASES = {
   growth_development: [
-    "growth", "sinh trưởng", "sinh truong", "phát triển", "phat trien",
-    "sinh trưởng & phát triển", "phase1", "1"
+    "growth",
+    "sinh trưởng",
+    "sinh truong",
+    "phát triển",
+    "phat trien",
+    "sinh trưởng & phát triển",
+    "phase1",
+    "1",
   ],
   flowering: ["ra hoa", "flower", "2"],
- fruiting: ["ra quả","ra qua","đậu quả","dau qua","kết trái","ket trai","nuôi quả","nuoi qua","fruit","3"],
-  pre_harvest: ["trước thu hoạch","truoc thu hoach","pre harvest","pre-harvest","4"],
+  fruiting: [
+    "ra quả",
+    "ra qua",
+    "đậu quả",
+    "dau qua",
+    "kết trái",
+    "ket trai",
+    "nuôi quả",
+    "nuoi qua",
+    "fruit",
+    "3",
+  ],
+  pre_harvest: [
+    "trước thu hoạch",
+    "truoc thu hoach",
+    "pre harvest",
+    "pre-harvest",
+    "4",
+  ],
   post_harvest: ["sau thu hoạch", "sau thu hoach", "post harvest", "5"],
 };
-
 
 function labelPhaseId(id) {
   switch (normalizePhaseId(id)) {
@@ -1397,8 +1691,6 @@ function labelPhaseId(id) {
       return "Sinh trưởng & Phát triển";
   }
 }
-
-
 
 /* =========================================================================
    Local Image Registry + ImagePicker
@@ -1433,10 +1725,9 @@ const imageRegistry = {
   },
 };
 function ImagePicker({ code, value, onChange, disabled, treeId }) {
-  const [urlInput, setUrlInput] = useState("");
-  const [linkOpen, setLinkOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (!code) return;
@@ -1492,86 +1783,54 @@ function ImagePicker({ code, value, onChange, disabled, treeId }) {
     await uploadRealImage(f, objectUrl);
   };
 
-  const applyUrl = async () => {
-    if (disabled) return;
-    const u = (urlInput || "").trim();
-    if (!u) return;
-    onChange(u);
-    if (code) imageRegistry.set(code, u);
-
-    await TreeRepository.uploadTreeImage(treeId, { imageUrl: u });
-    setUrlInput("");
-    setLinkOpen(false);
-  };
-
   return (
-    <div className="space-y-3">
-      {!disabled ? (
-        <div className="flex flex-wrap gap-3">
-          <label className="flex items-center justify-center gap-2 h-10 rounded-xl border bg-white px-3 text-sm cursor-pointer hover:bg-neutral-50">
-            <Upload className="w-4 h-4" />
-            <span>Chọn ảnh (tải lên)</span>
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFile}
-            />
-          </label>
-
-          <Button onClick={() => setLinkOpen((v) => !v)} className="rounded-xl">
-            <Link2 className="w-4 h-4 mr-1" />
-            Dùng link
-          </Button>
-        </div>
-      ) : (
-        <div className="text-xs text-neutral-500">
-          * Cây đang <b>Dừng hoạt động</b> — không thể thay ảnh. Bạn vẫn có thể
-          bấm vào ảnh để mở.
-        </div>
+    <div className="space-y-2">
+      {uploadError && (
+        <div className="text-xs text-rose-600">{uploadError}</div>
       )}
 
-      {linkOpen && !disabled && (
-        <div className="flex gap-2">
-          <Input
-            placeholder="Dán link ảnh (https://...)"
-            value={urlInput}
-            onChange={(e) => setUrlInput(e.target.value)}
-            className="rounded-xl bg-white"
-          />
-          <Button onClick={applyUrl} className="rounded-xl">
-            Áp dụng
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => {
-              setLinkOpen(false);
-              setUrlInput("");
-            }}
-            className="rounded-xl"
-          >
-            Huỷ
-          </Button>
-        </div>
-      )}
+      <div
+        className={
+          "relative w-full overflow-hidden rounded-2xl border bg-neutral-100 " +
+          (disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer group")
+        }
+        style={{ aspectRatio: "4 / 3" }}
+        onClick={() => {
+          if (disabled) return;
+          fileInputRef.current?.click();
+        }}
+      >
+        {value ? (
+          <img alt="tree" src={value} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-neutral-400">
+            <ImageIcon className="h-10 w-10" />
+          </div>
+        )}
 
-      <div className="rounded-xl overflow-hidden border">
-        <button
-          type="button"
-          onClick={() => value && window.open(value, "_blank")}
-          title={value ? "Bấm để mở ảnh gốc" : ""}
-          className={
-            "w-full h-48 grid place-items-center bg-neutral-100 text-neutral-400 " +
-            (value ? "cursor-zoom-in" : "cursor-default")
-          }
-        >
-          {value ? (
-            <img alt="tree" src={value} className="w-full h-48 object-cover" />
-          ) : (
-            <ImageIcon className="h-8 w-8" />
-          )}
-        </button>
+        {!disabled && (
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+            <Upload className="h-7 w-7 text-white" />
+            <span className="mt-1 text-xs font-medium text-white">
+              {uploading ? "Đang tải ảnh..." : "Tải / đổi ảnh"}
+            </span>
+          </div>
+        )}
       </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFile}
+      />
+
+      {disabled && (
+        <div className="text-xs text-neutral-500">
+          * Cây đang <b>Dừng hoạt động</b> — không thể thay ảnh.
+        </div>
+      )}
     </div>
   );
 }
@@ -1970,8 +2229,134 @@ function PlannedRow({
 // Bạn có thể tự chỉnh con số này (ví dụ 100, 150, 230, ...)
 const NOTE_PREVIEW_MAX = 230;
 
+/* =========================================================================
+   NoteCardTablet - Ghi chú card for tablet view (in left column)
+   ========================================================================= */
+function NoteCardTablet({ note, saveNote, readOnly, codeKey, meta }) {
+  const [editNote, setEditNote] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(note || "");
+  const rawNote = (note || "").trim();
+  const displayNote =
+    rawNote.length > NOTE_PREVIEW_MAX
+      ? rawNote.slice(0, NOTE_PREVIEW_MAX) + "…"
+      : rawNote;
+  const noteCardRef = useRef(null);
 
-function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openEditNote, note, onSaveNote, readOnly = false, showImageTop = false, currentPhaseId, onPhaseChange, cycleCount, phase1Completed, loai, giong, treeId, treeOwnerId, lifecycleAutoEnabled, lifecycleAutoDisabledAt }) {
+  useEffect(() => setNoteDraft(note || ""), [note]);
+  useEffect(() => {
+    if (readOnly && editNote) setEditNote(false);
+  }, [readOnly, editNote]);
+
+  useEffect(() => {
+    if (!editNote || readOnly) return;
+
+    function handleClickOutside(e) {
+      if (!noteCardRef.current) return;
+      if (!noteCardRef.current.contains(e.target)) {
+        saveNote(noteDraft);
+        setEditNote(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [editNote, readOnly, noteDraft, saveNote]);
+
+  return (
+    <Card className="block md:block xl:hidden">
+      <CardHeader className="pb-2">
+        <CardTitle>Ghi chú</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div ref={noteCardRef}>
+          {!editNote ? (
+            <button
+              type="button"
+              disabled={readOnly}
+              onClick={() => {
+                if (readOnly) return;
+                setEditNote(true);
+                setNoteDraft(note || "");
+              }}
+              className={
+                "w-full text-left text-sm whitespace-pre-wrap break-words min-h-20 rounded-2xl border px-3 py-2 " +
+                (readOnly
+                  ? "border-neutral-200 bg-neutral-50 text-neutral-700 cursor-default"
+                  : "border-neutral-300 bg-white hover:border-emerald-400 hover:bg-emerald-50/40 cursor-text transition-colors")
+              }
+            >
+              {rawNote ? (
+                displayNote
+              ) : (
+                <span className="text-neutral-500 italic">
+                  Bấm vào đây để thêm ghi chú cho cây này.
+                </span>
+              )}
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <Textarea
+                rows={6}
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                placeholder="Nhập ghi chú cho cây này (lưu theo mã cây)"
+                autoFocus
+              />
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setEditNote(false);
+                    setNoteDraft(note || "");
+                  }}
+                >
+                  Hủy
+                </Button>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    saveNote(noteDraft.trim());
+                    setEditNote(false);
+                  }}
+                >
+                  Lưu
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function AsideCards({
+  image,
+  setImage,
+  codeKey,
+  phen,
+  tree,
+  meta,
+  planned,
+  openEditNote,
+  note,
+  onSaveNote,
+  readOnly = false,
+  showImageTop = false,
+  currentPhaseId,
+  onPhaseChange,
+  cycleCount,
+  phase1Completed,
+  loai,
+  giong,
+  treeId,
+  treeOwnerId,
+  lifecycleAutoEnabled,
+  lifecycleAutoDisabledAt,
+  phaseTheme,
+  phaseThemeAllowPartial,
+}) {
   const [editNote, setEditNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || "");
   // Chuẩn bị text hiển thị cho khung "Ghi chú" (chỉ xem)
@@ -2104,7 +2489,8 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
     <>
       {/* Ghi chú */}
       {/* Ghi chú (click để sửa, auto-save khi click ra ngoài) */}
-      <div ref={noteCardRef}>
+      {/* Hidden on tablets (md), shown on desktop (xl) */}
+      <div ref={noteCardRef} className="hidden xl:block">
         <Card ref={noteCardRef}>
           <CardHeader className="pb-2">
             <CardTitle>Ghi chú</CardTitle>
@@ -2175,7 +2561,8 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
       </div>
 
       {/* Chu kỳ sinh trưởng (timeline) — đặt ngay dưới Ghi chú */}
-      <Card>
+      {/* Hidden on tablets (md), shown on desktop (xl) */}
+      <Card className="hidden xl:block">
         <CardHeader className="flex items-center justify-between gap-3">
           <CardTitle>Chu kỳ sinh trưởng</CardTitle>
           {/* Điểm gắn nút bằng portal */}
@@ -2195,10 +2582,12 @@ function AsideCards({ image, setImage, codeKey, phen, tree, meta, planned, openE
             disabled={meta.status === "stopped"}
             treeId={treeId}
             treeOwnerId={treeOwnerId}
-            treeType={loai}         // 👈 thêm
+            treeType={loai} // 👈 thêm
             treeVariety={giong}
             autoLifecycleEnabled={lifecycleAutoEnabled}
             autoLifecycleDisabledAt={lifecycleAutoDisabledAt}
+            phaseTheme={phaseTheme}
+            phaseThemeAllowPartial={phaseThemeAllowPartial}
           />
         </CardContent>
       </Card>
@@ -2831,6 +3220,7 @@ function mapDtoToTree(dto) {
     id: dto.treeId,
     code: dto.treeCode,
     name: dto.treeName,
+    treeTypeId: dto.treeTypeId,
 
     // Ngày & vị trí
     plantedAt,
@@ -2845,6 +3235,7 @@ function mapDtoToTree(dto) {
     tree_type: dto.treeTypeName,
 
     updatedAt: dto.updatedAt,
+    createdAt: dto.createdAt,
     soil: dto.gardenSoilId,
     notes: dto.notes,
     qrUrl: dto.qrcodeUrl,
@@ -2900,9 +3291,35 @@ export default function TreeDetail() {
   }, []);
 
   const [saving, setSaving] = useState(false);
-  
+
   // Ref for AI refresh function (defined later but used in persistTreePatch)
   const refreshAiRecommendationsRef = React.useRef(null);
+  const [stageTheme, setStageTheme] = useState(null);
+  const stageTypeLoadedRef = useRef(null);
+
+  const loadTreeTypeStages = React.useCallback(
+    async (treeTypeId, { force } = {}) => {
+      if (!treeTypeId) return;
+      if (
+        !force &&
+        stageTypeLoadedRef.current === treeTypeId &&
+        stageTheme?.length
+      ) {
+        return;
+      }
+      try {
+        const response = await TreeRepository.getStagesByTreeType(treeTypeId);
+        const list = response?.data ?? response ?? [];
+        stageTypeLoadedRef.current = treeTypeId;
+        setStageTheme(buildPhaseThemeFromStages(list));
+      } catch (error) {
+        console.warn("Failed to load tree type stages", error);
+        stageTypeLoadedRef.current = treeTypeId;
+        setStageTheme(null);
+      }
+    },
+    [stageTheme?.length]
+  );
 
   async function persistTreePatch(partial) {
     if (!treeId) return;
@@ -2934,7 +3351,7 @@ export default function TreeDetail() {
         stageId: partial.stageId ?? meta?.stageId ?? null,
         gardenSoilId:
           partial.gardenSoilId ??
-          partial.GardenSoilId ?? 
+          partial.GardenSoilId ??
           meta?.gardenSoilId ??
           null,
 
@@ -2965,19 +3382,27 @@ export default function TreeDetail() {
         fruitStatus: partial.fruitStatus ?? meta?.fruitStatus ?? null,
       };
 
-
       await TreeRepository.updateTree(treeId, payload);
 
       // cập nhật lại meta local cho đồng bộ
+      // Nếu partial.isActive là "stopped" hoặc "active", cập nhật cả status và isActive
+      const updatedPartial = { ...partial };
+      if (partial.isActive === "stopped" || partial.isActive === "active") {
+        updatedPartial.status = partial.isActive;
+        updatedPartial.isActive = partial.isActive === "active";
+      } else if (typeof partial.isActive === "boolean") {
+        updatedPartial.status = partial.isActive ? "active" : "stopped";
+      }
+
       setMeta((prev) => ({
         ...prev,
-        ...partial,
+        ...updatedPartial,
       }));
 
       // Refresh AI recommendations after tree update
       // Run in background, don't block the UI
       if (refreshAiRecommendationsRef.current) {
-        refreshAiRecommendationsRef.current().catch(err => {
+        refreshAiRecommendationsRef.current().catch((err) => {
           console.error("Failed to refresh AI after tree update:", err);
         });
       }
@@ -2986,6 +3411,56 @@ export default function TreeDetail() {
       // TODO: show toast / message
     } finally {
       setSaving(false);
+    }
+  }
+
+  // Refresh lifecycle sau khi update tuổi (plantedAt hoặc preNurseryAgeMonths)
+  async function refreshLifecycleAfterAgeUpdate() {
+    if (!treeId || !lifecycleAutoEnabled) return;
+
+    try {
+      // Đợi một chút để backend có thời gian xử lý update tree
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const lifecycleRes = await TreeRepository.getLifecycle(treeId);
+      const lifecycleDto = lifecycleRes?.data ?? lifecycleRes;
+      if (lifecycleDto) {
+        // Store lifecycle data from API
+        setLifecycleFromAPI(lifecycleDto);
+
+        // Update lifecycle state from API (single source of truth)
+        const apiPhaseId = normalizePhaseId(lifecycleDto.phaseId);
+        const apiPhase1Completed =
+          lifecycleDto.phase1Completed ?? apiPhaseId !== "growth_development";
+        const apiCycleCount = lifecycleDto.cycleCount ?? 0;
+        const apiAutoEnabled =
+          typeof lifecycleDto.lifecycleAutoEnabled === "boolean"
+            ? lifecycleDto.lifecycleAutoEnabled
+            : lifecycleAutoEnabled;
+        const apiAutoDisabledAt =
+          lifecycleDto.lifecycleAutoDisabledAt ?? lifecycleAutoDisabledAt;
+
+        setCurrentPhaseId(apiPhaseId);
+        setPhase1Completed(apiPhase1Completed);
+        setCycleCount(apiCycleCount);
+        setLifecycleAutoEnabled(apiAutoEnabled);
+        setLifecycleAutoDisabledAt(apiAutoDisabledAt);
+
+        // Update stageId in meta if available
+        if (lifecycleDto.stageId != null) {
+          setMeta((prev) => ({
+            ...prev,
+            stageId: lifecycleDto.stageId,
+          }));
+        }
+
+        console.log("[TreeDetail] Lifecycle refreshed after age update", {
+          phaseId: apiPhaseId,
+          stageId: lifecycleDto.stageId,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to refresh lifecycle after age update", err);
     }
   }
 
@@ -3113,6 +3588,11 @@ export default function TreeDetail() {
           setApiTree(mapDtoToTree(dto));
         }
 
+        if (dto.treeTypeId) {
+          setMeta((prev) => ({ ...prev, treeTypeId: dto.treeTypeId }));
+          await loadTreeTypeStages(dto.treeTypeId, { force: true });
+        }
+
         // ====== Fetch lifecycle data ======
         try {
           const lifecycleRes = await TreeRepository.getLifecycle(treeId);
@@ -3156,9 +3636,10 @@ export default function TreeDetail() {
         // ====== NEW: load GardenSoils của vườn này ======
         // giả sử DTO từ backend có: dto.treeId và dto.gardenSoilId
         if (dto.treeId) {
-          const soilRes = await GardenSoilRepository.getGardenSoilsByTree(
-            dto.treeId
+          const soilRes = await GardenSoilRepository.getGardenSoilsByGarden(
+            dto.gardenId
           );
+          //console.log("Fetched garden soils:", soilRes);
           if (!cancelled) {
             const soils = soilRes?.data ?? soilRes ?? [];
             setGardenSoils(soils);
@@ -3172,13 +3653,19 @@ export default function TreeDetail() {
 
             // fill lại dropdown soil bằng CustomLabel của các GardenSoil
             DROPDOWN_OPTIONS.soils = soils
-              .map((s) => (s.customLabel || "").trim())
+              .map((s) =>
+                (s.customLabel
+                  ? `${s.customLabel} - ${s.soilName}`
+                  : `${s.soilName}`
+                ).trim()
+              )
               .filter(Boolean);
-
             // Lấy customLabel của soil hiện tại từ GardenSoilId trong dto
             const currentSoil =
               dto.gardenSoilId != null ? map[dto.gardenSoilId] : null;
-            const soilLabel = currentSoil?.customLabel || "";
+            const soilLabel = currentSoil?.customLabel
+              ? `${currentSoil.customLabel} - ${currentSoil.soilName}`
+              : currentSoil?.soilName || "";
 
             // cập nhật meta để UI hiển thị đúng loại đất
             setMeta((prev) => ({
@@ -3213,7 +3700,7 @@ export default function TreeDetail() {
     return () => {
       cancelled = true;
     };
-  }, [treeId, stateTree]);
+  }, [treeId, stateTree, location.key]); // Thêm location.key để force reload khi navigate (back/forward)
 
   // Chọn cây theo query
   // Chọn cây theo id + merge với stateTree nếu có
@@ -3239,7 +3726,6 @@ export default function TreeDetail() {
       merged.phenology.flowerStatus = fromApi.flowerStatus;
       merged.phenology.fruitStatus = fromApi.fruitStatus;
     }
-
 
     // Ưu tiên stateTree (navigate từ danh sách có đủ field),
     // nếu không có thì dùng dữ liệu đã map từ API
@@ -3267,8 +3753,8 @@ export default function TreeDetail() {
   function getTodayDateString() {
     const today = new Date();
     const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
-    const day = String(today.getDate()).padStart(2, '0');
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`;
   }
 
@@ -3284,6 +3770,7 @@ export default function TreeDetail() {
   // - Modal can only be shown once per day (tracked by localStorage key: healthUpdate_{treeId}_{YYYY-MM-DD})
   React.useEffect(() => {
     const currentTreeId = treeId;
+    /*
     console.log("[DailyHealthModal] useEffect triggered", {
       treeId: currentTreeId,
       loading,
@@ -3292,7 +3779,7 @@ export default function TreeDetail() {
       baseTreeKeys: baseTree ? Object.keys(baseTree).length : 0,
       hasPhenology: baseTree?.phenology !== undefined,
       modalOpen: dailyHealthModal.open,
-    });
+    });*/
 
     if (!currentTreeId) {
       console.log("[DailyHealthModal] No treeId, returning");
@@ -3329,12 +3816,13 @@ export default function TreeDetail() {
     const storageKey = `healthUpdate_${currentTreeId}_${today}`;
     const hasConfirmedToday = localStorage.getItem(storageKey) === "true";
 
+    /*
     console.log("[DailyHealthModal] Checking localStorage", {
       today,
       storageKey,
       hasConfirmedToday,
       localStorageValue: localStorage.getItem(storageKey),
-    });
+    });*/
 
     // Only show if user hasn't confirmed today
     // This ensures modal shows automatically when:
@@ -3554,41 +4042,55 @@ export default function TreeDetail() {
     [currentPhaseId]
   );
 
-
- // ==== META (data thật) + DRAFT (để sửa, không làm bẩn state khi Hủy) ====
-const [meta, setMeta] = useState({
-  name: baseTree.treeName || "",
-  plantedAt: baseTree.plantedAt || today(),
-  variety: baseTree.variety || "",
-  preNurseryAgeMonths: Number(baseTree.preMonths || 0),
-  soil: baseTree.soil || "",
-  status: baseTree.status || "active",
-  notes: baseTree.notes || "",
-});
-
-
-useEffect(() => {
-  if (!baseTree) return;
-
-  setNote(baseTree.notes || "");
-
-  setMeta((prev) => ({
-    ...prev,
-    name: baseTree.treeName ?? baseTree.name ?? prev.name,
-    plantedAt: baseTree.plantedAt ?? prev.plantedAt,
-    variety: baseTree.variety ?? prev.variety,
-    preNurseryAgeMonths: Number(
-      baseTree.preNurseryAgeMonths ?? prev.preNurseryAgeMonths ?? 0
-    ),
-    soil: baseTree.soil ?? prev.soil,
-    status: baseTree.status ?? prev.status,
+  // ==== META (data thật) + DRAFT (để sửa, không làm bẩn state khi Hủy) ====
+  const [meta, setMeta] = useState({
+    name: baseTree.treeName || "",
+    plantedAt: baseTree.plantedAt || today(),
+    variety: baseTree.variety || "",
+    preNurseryAgeMonths: Number(baseTree.preMonths || 0),
+    soil: baseTree.soil || "",
+    status: baseTree.status || "active",
+    isActive:
+      baseTree.isActive ??
+      (baseTree.status === "active"
+        ? true
+        : baseTree.status === "stopped"
+        ? false
+        : true),
     notes: baseTree.notes || "",
-  }));
-}, [
-  baseTree?.updatedAt,  
-  baseTree?.notes,
-]);
+  });
 
+  useEffect(() => {
+    if (!baseTree) return;
+
+    setNote(baseTree.notes || "");
+
+    setMeta((prev) => ({
+      ...prev,
+      name: baseTree.treeName ?? baseTree.name ?? prev.name,
+      plantedAt: baseTree.plantedAt ?? prev.plantedAt,
+      variety: baseTree.variety ?? prev.variety,
+      preNurseryAgeMonths: Number(
+        baseTree.preNurseryAgeMonths ?? prev.preNurseryAgeMonths ?? 0
+      ),
+      soil: baseTree.soil ?? prev.soil,
+      status: baseTree.status ?? prev.status,
+      isActive:
+        baseTree.isActive ??
+        (baseTree.status === "active"
+          ? true
+          : baseTree.status === "stopped"
+          ? false
+          : prev.isActive),
+      notes: baseTree.notes || "",
+      treeTypeId: baseTree.treeTypeId ?? prev.treeTypeId ?? null,
+    }));
+  }, [
+    baseTree?.updatedAt,
+    baseTree?.notes,
+    baseTree?.status,
+    baseTree?.isActive,
+  ]);
 
   useEffect(() => {
     if (!baseTree) return;
@@ -3606,16 +4108,27 @@ useEffect(() => {
       ),
       soil: baseTree.soil ?? prev.soil,
       status: baseTree.status ?? prev.status,
+      isActive:
+        baseTree.isActive ??
+        (baseTree.status === "active"
+          ? true
+          : baseTree.status === "stopped"
+          ? false
+          : prev.isActive),
       notes: baseTree.notes || "",
       stageId: baseTree.stageId ?? prev.stageId ?? null,
       userId: baseTree.userId ?? prev.userId ?? null,
+      treeTypeId: baseTree.treeTypeId ?? prev.treeTypeId ?? null,
     }));
   }, [
     baseTree?.updatedAt,
     baseTree?.notes,
     baseTree?.stageId,
     baseTree?.userId,
+    baseTree?.treeTypeId,
     baseTree?.id,
+    baseTree?.status,
+    baseTree?.isActive,
   ]);
 
   const resolvedTreeId =
@@ -3627,6 +4140,24 @@ useEffect(() => {
     apiTree?.userId ??
     stateTree?.userId ??
     null;
+
+  useEffect(() => {
+    const typeId =
+      baseTree?.treeTypeId ??
+      meta?.treeTypeId ??
+      apiTree?.treeTypeId ??
+      stateTree?.treeTypeId ??
+      null;
+    if (typeId) {
+      loadTreeTypeStages(typeId);
+    }
+  }, [
+    baseTree?.treeTypeId,
+    meta?.treeTypeId,
+    apiTree?.treeTypeId,
+    stateTree?.treeTypeId,
+    loadTreeTypeStages,
+  ]);
 
   // danh sách GardenSoil của vườn hiện tại & map id -> object
   const [gardenSoils, setGardenSoils] = useState([]);
@@ -3650,18 +4181,24 @@ useEffect(() => {
   const [fieldDraft, setFieldDraft] = useState("");
   const [fieldError, setFieldError] = useState("");
 
-  const daysSincePlanted = useMemo(() => {
-    if (!meta.plantedAt) return 0;
+  // Tính số ngày từ ngày tạo cây (CreatedAt) thay vì ngày trồng
+  const daysSinceCreated = useMemo(() => {
+    const createdAt = baseTree?.createdAt || apiTree?.createdAt || null;
+    if (!createdAt) return 0;
     try {
-      const planted = new Date(`${meta.plantedAt}T00:00:00`);
+      const created = new Date(createdAt);
       const today = new Date();
-      const diffMs = today.getTime() - planted.getTime();
+      today.setHours(0, 0, 0, 0);
+      created.setHours(0, 0, 0, 0);
+      const diffMs = today.getTime() - created.getTime();
       return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
     } catch {
       return 0;
     }
-  }, [meta.plantedAt]);
-  const plantInfoLocked = daysSincePlanted >= FIELD_EDIT_LOCK_DAYS;
+  }, [baseTree?.createdAt, apiTree?.createdAt]);
+
+  const daysRemaining = Math.max(0, FIELD_EDIT_LOCK_DAYS - daysSinceCreated);
+  const plantInfoLocked = daysSinceCreated >= FIELD_EDIT_LOCK_DAYS;
 
   // options giống theo loại cây đang có
   const allVarieties = useMemo(
@@ -3679,7 +4216,10 @@ useEffect(() => {
     if (isStopped) return; // nếu cây đã dừng hoạt động thì không cho sửa
     if (
       plantInfoLocked &&
-      (fieldKey === "plantedAt" || fieldKey === "preNurseryAgeMonths")
+      (fieldKey === "plantedAt" ||
+        fieldKey === "preNurseryAgeMonths" ||
+        fieldKey === "code" ||
+        fieldKey === "name")
     )
       return;
 
@@ -3707,9 +4247,14 @@ useEffect(() => {
     if (!editingField || isStopped) return;
     if (
       plantInfoLocked &&
-      (editingField === "plantedAt" || editingField === "preNurseryAgeMonths")
+      (editingField === "plantedAt" ||
+        editingField === "preNurseryAgeMonths" ||
+        editingField === "code" ||
+        editingField === "name")
     ) {
-      setFieldError("Đã khóa chỉnh sửa sau 30 ngày.");
+      setFieldError(
+        `Đã khóa chỉnh sửa sau ${FIELD_EDIT_LOCK_DAYS} ngày kể từ ngày tạo cây.`
+      );
       return;
     }
 
@@ -3786,7 +4331,12 @@ useEffect(() => {
         status: nextMeta.status,
       });
 
-      persistTreePatch({ plantDate: next });
+      persistTreePatch({ plantDate: next }).then(() => {
+        // Nếu auto lifecycle enabled, refresh lifecycle sau khi update tuổi
+        if (lifecycleAutoEnabled && treeId) {
+          refreshLifecycleAfterAgeUpdate();
+        }
+      });
       cancelFieldEdit();
       return;
     }
@@ -3809,7 +4359,12 @@ useEffect(() => {
         status: nextMeta.status,
       });
 
-      persistTreePatch({ preMonths: n });
+      persistTreePatch({ preMonths: n }).then(() => {
+        // Nếu auto lifecycle enabled, refresh lifecycle sau khi update tuổi
+        if (lifecycleAutoEnabled && treeId) {
+          refreshLifecycleAfterAgeUpdate();
+        }
+      });
       cancelFieldEdit();
       return;
     }
@@ -3887,12 +4442,19 @@ useEffect(() => {
 
   // Ảnh theo mã cây
 
-  const [image, setImage] = useState(() => stateTree?.imageUrl || "");
+  const [image, setImage] = useState(() => {
+    // Check both img and imageUrl from stateTree (TreeManagement uses 'img', API uses 'imageUrl')
+    return stateTree?.imageUrl || stateTree?.img || "";
+  });
   useEffect(() => {
     if (!codeKey) return;
     const saved = imageRegistry.get(codeKey);
     if (saved) setImage(saved);
-  }, [codeKey]);
+    // Also check if stateTree has image and use it if no saved image
+    else if (stateTree?.imageUrl || stateTree?.img) {
+      setImage(stateTree.imageUrl || stateTree.img);
+    }
+  }, [codeKey, stateTree]);
 
   // Ghi chú theo mã cây
   const [note, setNote] = useState("");
@@ -3975,7 +4537,11 @@ useEffect(() => {
   }, [planned]);
 
   const [aiSuggestions, setAiSuggestions] = useState([]);
-  const [aiLoading, setAiLoading] = useState({ day0: false, day1: false, day2: false });
+  const [aiLoading, setAiLoading] = useState({
+    day0: false,
+    day1: false,
+    day2: false,
+  });
 
   // Progressive AI loading - load one day at a time
   useEffect(() => {
@@ -3984,7 +4550,7 @@ useEffect(() => {
 
     const loadProgressively = async () => {
       const today = new Date();
-      const dates = [0, 1, 2].map(offset => {
+      const dates = [0, 1, 2].map((offset) => {
         const d = new Date(today);
         d.setDate(d.getDate() + offset);
         const yyyy = d.getFullYear();
@@ -3995,22 +4561,25 @@ useEffect(() => {
 
       for (let i = 0; i < dates.length; i++) {
         if (cancelled) return;
-        
+
         const dayKey = `day${i}`;
-        setAiLoading(prev => ({ ...prev, [dayKey]: true }));
+        setAiLoading((prev) => ({ ...prev, [dayKey]: true }));
 
         try {
-          const resp = await TreeRepository.getSingleDayRecommendation(baseTree.treeId, dates[i]);
+          const resp = await TreeRepository.getSingleDayRecommendation(
+            baseTree.treeId,
+            dates[i]
+          );
           if (cancelled) return;
 
           const dto = resp?.data ?? resp;
           const suggestions = parseSingleDayDto(dto);
-          
+
           // Append to existing suggestions
-          setAiSuggestions(prev => {
+          setAiSuggestions((prev) => {
             // Remove any existing suggestions for this date
-            const filtered = prev.filter(s => s._sourceForDate !== dates[i]);
-            return [...filtered, ...suggestions].sort((a, b) => 
+            const filtered = prev.filter((s) => s._sourceForDate !== dates[i]);
+            return [...filtered, ...suggestions].sort((a, b) =>
               (a.due || "").localeCompare(b.due || "")
             );
           });
@@ -4018,20 +4587,22 @@ useEffect(() => {
           console.error(`Failed to load AI for ${dates[i]}:`, err);
         } finally {
           if (!cancelled) {
-            setAiLoading(prev => ({ ...prev, [dayKey]: false }));
+            setAiLoading((prev) => ({ ...prev, [dayKey]: false }));
           }
         }
       }
     };
 
     loadProgressively();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [baseTree.treeId]);
 
   // Helper to parse a single day DTO into suggestions
   const parseSingleDayDto = (dto) => {
     if (!dto) return [];
-    
+
     const dtoForDate = dto?.ForDate ?? dto?.forDate ?? null;
     const baseDate = toYmd(dtoForDate);
     const rawActions = dto?.ActionsJson ?? dto?.actionsJson ?? "[]";
@@ -4039,10 +4610,14 @@ useEffect(() => {
 
     if (!actions || actions.length === 0) return [];
 
-    return actions.map(a => {
+    return actions.map((a) => {
       const scheduled = a.scheduledDate ?? a.scheduled ?? baseDate ?? null;
       const due = toYmd(scheduled) ?? baseDate ?? toYmd(new Date());
-      const details = Array.isArray(a.details) ? a.details : (a.details ? [String(a.details)] : []);
+      const details = Array.isArray(a.details)
+        ? a.details
+        : a.details
+        ? [String(a.details)]
+        : [];
 
       return {
         type: mapTaskTypeFromApi(a.type ?? a.actionType ?? a.typeName),
@@ -4050,7 +4625,7 @@ useEffect(() => {
         due,
         details,
         _sourceForDate: baseDate,
-        _createdAt: dto?.CreatedAt ?? dto?.createdAt ?? null
+        _createdAt: dto?.CreatedAt ?? dto?.createdAt ?? null,
       };
     });
   };
@@ -4059,18 +4634,18 @@ useEffect(() => {
   // Assign the function to the ref so it can be called from persistTreePatch
   refreshAiRecommendationsRef.current = async () => {
     if (!treeId) return;
-    
+
     try {
       // Clear current suggestions and show loading
       setAiSuggestions([]);
       setAiLoading({ day0: true, day1: true, day2: true });
-      
+
       // Trigger backend refresh (this will delete old and regenerate)
       await TreeRepository.refreshAiRecommendations(treeId);
-      
+
       // Reload progressively
       const today = new Date();
-      const dates = [0, 1, 2].map(offset => {
+      const dates = [0, 1, 2].map((offset) => {
         const d = new Date(today);
         d.setDate(d.getDate() + offset);
         const yyyy = d.getFullYear();
@@ -4081,20 +4656,23 @@ useEffect(() => {
 
       for (let i = 0; i < dates.length; i++) {
         try {
-          const resp = await TreeRepository.getSingleDayRecommendation(treeId, dates[i]);
+          const resp = await TreeRepository.getSingleDayRecommendation(
+            treeId,
+            dates[i]
+          );
           const dto = resp?.data ?? resp;
           const suggestions = parseSingleDayDto(dto);
-          
-          setAiSuggestions(prev => {
-            const filtered = prev.filter(s => s._sourceForDate !== dates[i]);
-            return [...filtered, ...suggestions].sort((a, b) => 
+
+          setAiSuggestions((prev) => {
+            const filtered = prev.filter((s) => s._sourceForDate !== dates[i]);
+            return [...filtered, ...suggestions].sort((a, b) =>
               (a.due || "").localeCompare(b.due || "")
             );
           });
         } catch (err) {
           console.error(`Failed to reload AI for ${dates[i]}:`, err);
         } finally {
-          setAiLoading(prev => ({ ...prev, [`day${i}`]: false }));
+          setAiLoading((prev) => ({ ...prev, [`day${i}`]: false }));
         }
       }
     } catch (err) {
@@ -4102,8 +4680,6 @@ useEffect(() => {
       setAiLoading({ day0: false, day1: false, day2: false });
     }
   };
-
-
 
   // Loại đang xem
   const [activeType, setActiveType] = useState("water");
@@ -4951,7 +5527,8 @@ useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(total / AI_PAGE_SIZE));
 
     // Show loading if we don't have any suggestions yet and at least one day is still loading
-    const isLoading = total === 0 && (aiLoading.day0 || aiLoading.day1 || aiLoading.day2);
+    const isLoading =
+      total === 0 && (aiLoading.day0 || aiLoading.day1 || aiLoading.day2);
 
     return (
       <section className="mb-2">
@@ -4960,36 +5537,40 @@ useEffect(() => {
         {isLoading ? (
           <div className="rounded-2xl border bg-white p-6 flex flex-col items-center justify-center gap-3">
             <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-            <div className="text-sm text-neutral-600">Đang tải gợi ý từ AI...</div>
+            <div className="text-sm text-neutral-600">
+              Đang tải gợi ý từ AI...
+            </div>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {pageItems.map((sug, i) => {
-            const theme = TYPE_THEME[sug.type];
-            return (
-              <div
-                key={start + i}
-                className={
-                  "rounded-2xl border bg-white p-3 border-l-4 " +
-                  theme.edge +
-                  " hover:shadow-md transition-shadow"
-                }
-              >
-                <div className="flex items-center gap-2">
-                  <div className="text-sm font-semibold">{sug.title}</div>
-                  <Badge className={"border " + theme.pill}>{theme.name}</Badge>
+              const theme = TYPE_THEME[sug.type];
+              return (
+                <div
+                  key={start + i}
+                  className={
+                    "rounded-2xl border bg-white p-3 border-l-4 " +
+                    theme.edge +
+                    " hover:shadow-md transition-shadow"
+                  }
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="text-sm font-semibold">{sug.title}</div>
+                    <Badge className={"border " + theme.pill}>
+                      {theme.name}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-neutral-600 mt-0.5">
+                    Nên làm: {formatVN(sug.due)}
+                  </div>
+                  <ol className="mt-2 ml-5 list-decimal text-sm text-neutral-700 space-y-1">
+                    {sug.details.map((d, idx) => (
+                      <li key={idx}>{d}</li>
+                    ))}
+                  </ol>
                 </div>
-                <div className="text-xs text-neutral-600 mt-0.5">
-                  Nên làm: {formatVN(sug.due)}
-                </div>
-                <ol className="mt-2 ml-5 list-decimal text-sm text-neutral-700 space-y-1">
-                  {sug.details.map((d, idx) => (
-                    <li key={idx}>{d}</li>
-                  ))}
-                </ol>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         )}
 
@@ -5000,34 +5581,34 @@ useEffect(() => {
               (total > AI_PAGE_SIZE ? "justify-between" : "justify-start")
             }
           >
-          <div>
-            Hiển thị {total === 0 ? 0 : Math.min(total, start + 1)}–
-            {Math.min(total, start + pageItems.length)} / {total}
-          </div>
-
-          {total > AI_PAGE_SIZE && (
-            <div className="flex items-center gap-2">
-              <button
-                className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
-                onClick={() => setAiPage(Math.max(1, aiPage - 1))}
-                disabled={aiPage <= 1}
-              >
-                Trang trước
-              </button>
-
-              <span>
-                {aiPage}/{totalPages}
-              </span>
-
-              <button
-                className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
-                onClick={() => setAiPage(Math.min(totalPages, aiPage + 1))}
-                disabled={aiPage >= totalPages}
-              >
-                Trang sau
-              </button>
+            <div>
+              Hiển thị {total === 0 ? 0 : Math.min(total, start + 1)}–
+              {Math.min(total, start + pageItems.length)} / {total}
             </div>
-          )}
+
+            {total > AI_PAGE_SIZE && (
+              <div className="flex items-center gap-2">
+                <button
+                  className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
+                  onClick={() => setAiPage(Math.max(1, aiPage - 1))}
+                  disabled={aiPage <= 1}
+                >
+                  Trang trước
+                </button>
+
+                <span>
+                  {aiPage}/{totalPages}
+                </span>
+
+                <button
+                  className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
+                  onClick={() => setAiPage(Math.min(totalPages, aiPage + 1))}
+                  disabled={aiPage >= totalPages}
+                >
+                  Trang sau
+                </button>
+              </div>
+            )}
           </div>
         )}
       </section>
@@ -5245,6 +5826,36 @@ useEffect(() => {
                 </Button>
               </CardHeader>
 
+              {/* Thông báo về việc khóa sau 14 ngày */}
+              {daysRemaining > 0 && daysRemaining <= FIELD_EDIT_LOCK_DAYS && (
+                <div className="px-6 pt-0 pb-4">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <div className="font-semibold mb-1">
+                      ⏰ Còn {daysRemaining} ngày để chỉnh sửa
+                    </div>
+                    <div className="text-xs">
+                      Các thông tin cơ bản của cây sẽ lưu sau{" "}
+                      {FIELD_EDIT_LOCK_DAYS} ngày kể từ ngày tạo cây và không
+                      thể sửa đổi.
+                    </div>
+                  </div>
+                </div>
+              )}
+              {plantInfoLocked && (
+                <div className="px-6 pt-0 pb-4">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                    <div className="font-semibold mb-1">
+                      🔒 Đã khóa chỉnh sửa
+                    </div>
+                    <div className="text-xs">
+                      Các thông tin cơ bản của cây đã được lưu sau{" "}
+                      {FIELD_EDIT_LOCK_DAYS} ngày kể từ ngày tạo cây và không
+                      thể sửa đổi.
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <CardContent>
                 <div className="grid md:grid-cols-3 gap-6">
                   {/* LEFT: thông tin fields */}
@@ -5261,8 +5872,15 @@ useEffect(() => {
                       label="Mã cây"
                       value={`#${codeKey}`}
                       editable
-                      disabled={isStopped}
+                      disabled={isStopped || plantInfoLocked}
                       isEditing={editingField === "code"}
+                      inlineBadge={
+                        plantInfoLocked ? (
+                          <span className="ml-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
+                            Đã khóa
+                          </span>
+                        ) : null
+                      }
                       onEdit={() => startFieldEdit("code", codeKey)}
                       editor={
                         <div className="space-y-2">
@@ -5314,7 +5932,7 @@ useEffect(() => {
                       inlineBadge={
                         plantInfoLocked ? (
                           <span className="ml-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
-                            Khóa sau 30 ngày
+                            Đã khóa
                           </span>
                         ) : null
                       }
@@ -5373,7 +5991,7 @@ useEffect(() => {
                       inlineBadge={
                         plantInfoLocked ? (
                           <span className="ml-1 text-[11px] font-semibold uppercase tracking-wide text-amber-600">
-                            Khóa sau 30 ngày
+                            Đã khóa
                           </span>
                         ) : null
                       }
@@ -5432,6 +6050,9 @@ useEffect(() => {
                       editor={
                         <div className="space-y-2">
                           <ComboBox
+                            key={`soil-combobox-${
+                              DROPDOWN_OPTIONS.soils.length
+                            }-${editingField === "soil" ? "open" : "closed"}`}
                             value={fieldDraft}
                             onChange={(v) => {
                               setFieldDraft(v);
@@ -5467,7 +6088,45 @@ useEffect(() => {
                       }
                     />
 
-                    {/* 7. TỔNG TUỔI — CHỈ HIỂN THỊ, KHÔNG CÓ BÚT */}
+                    {/* 7. GIAI ĐOẠN HIỆN TẠI */}
+                    <Field
+                      label="Giai đoạn"
+                      value={(() => {
+                        const phaseId = currentPhaseId;
+                        const metaPhase = PHASE_META[phaseId] || null;
+
+                        // Lấy giai đoạn hiện tại từ lifecycle theme (đồng bộ với vòng tròn bên phải)
+                        const phaseIndex = PHASE_IDS.indexOf(phaseId);
+                        const stageFromTheme =
+                          phaseIndex >= 0 && Array.isArray(stageTheme)
+                            ? stageTheme[phaseIndex]
+                            : null;
+
+                        const stageLabel =
+                          stageFromTheme?.label ||
+                          meta?.stageName ||
+                          metaPhase?.name ||
+                          "—";
+
+                        const mainLabel = stageLabel;
+                        const description =
+                          stageFromTheme?.description || metaPhase?.description;
+
+                        return (
+                          <div className="flex flex-col gap-1">
+                            <span className="truncate">{mainLabel}</span>
+                            {description && (
+                              <span className="text-[13px] font-normal text-neutral-500 leading-snug">
+                                {description}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      editable={false}
+                    />
+
+                    {/* 8. TỔNG TUỔI — CHỈ HIỂN THỊ, KHÔNG CÓ BÚT */}
                     <Field
                       label="Tổng tuổi"
                       value={`${totalAge} tháng`}
@@ -5497,8 +6156,23 @@ useEffect(() => {
             </Card>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="flex items-center justify-between gap-3">
                 <CardTitle>Tình trạng hiện tại</CardTitle>
+                <div className="flex items-center gap-2 text-xs text-neutral-500">
+                  {baseTree?.updatedAt && (
+                    <span>
+                      Lần cuối cập nhật:{" "}
+                      {formatVN(String(baseTree.updatedAt).slice(0, 10))}
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 rounded-full border border-neutral-200 px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-50"
+                  >
+                    <span>📅</span>
+                    <span>Lịch sử</span>
+                  </button>
+                </div>
               </CardHeader>
 
               <CardContent>
@@ -5590,6 +6264,8 @@ useEffect(() => {
                         value={
                           canEditFlower && phen.flower && phen.flower.trim()
                             ? formatStatus(phen.flower.trim())
+                            : canEditFlower
+                            ? "Cập nhật thông tin"
                             : "Chưa đến giai đoạn"
                         }
                         editable={canEditFlower}
@@ -5605,6 +6281,8 @@ useEffect(() => {
                         value={
                           canEditFruit && phen.fruit && phen.fruit.trim()
                             ? formatStatus(phen.fruit.trim())
+                            : canEditFruit
+                            ? "Cập nhật thông tin"
                             : "Chưa đến giai đoạn"
                         }
                         editable={canEditFruit}
@@ -5618,6 +6296,102 @@ useEffect(() => {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Chu kỳ sinh trưởng - Show on tablets (md) but hide on desktop (xl) where it's in sidebar */}
+            <Card className="block md:block xl:hidden">
+              <CardHeader className="flex items-center justify-between gap-3">
+                <CardTitle>Chu kỳ sinh trưởng</CardTitle>
+                {/* Điểm gắn nút bằng portal - use unique ID for tablet version */}
+                <div id="lc-controls-tablet" className="shrink-0" />
+              </CardHeader>
+
+              <CardContent>
+                <LifecycleWidget
+                  tree={baseTree}
+                  meta={meta}
+                  portalId="lc-controls-tablet"
+                  value={currentPhaseId}
+                  onChange={(payload) => {
+                    // payload: { phaseId, cycleCount, phase1Completed, stageId? }
+                    // Lifecycle API already handles the update, so we just sync local state
+                    setCurrentPhaseId(payload.phaseId);
+                    setCycleCount(payload.cycleCount);
+                    setPhase1Completed(payload.phase1Completed);
+                    if (typeof payload.lifecycleAutoEnabled === "boolean") {
+                      setLifecycleAutoEnabled(payload.lifecycleAutoEnabled);
+                    }
+                    if ("lifecycleAutoDisabledAt" in payload) {
+                      setLifecycleAutoDisabledAt(
+                        payload.lifecycleAutoDisabledAt || null
+                      );
+                    }
+
+                    // Update lifecycleFromAPI state with the response from API
+                    if (payload.stageId != null) {
+                      setLifecycleFromAPI((prev) => ({
+                        ...(prev || {}),
+                        phaseId: payload.phaseId,
+                        cycleCount: payload.cycleCount,
+                        phase1Completed: payload.phase1Completed,
+                        stageId: payload.stageId,
+                        lifecycleAutoEnabled:
+                          typeof payload.lifecycleAutoEnabled === "boolean"
+                            ? payload.lifecycleAutoEnabled
+                            : prev?.lifecycleAutoEnabled ??
+                              lifecycleAutoEnabled,
+                        lifecycleAutoDisabledAt:
+                          payload.lifecycleAutoDisabledAt ??
+                          prev?.lifecycleAutoDisabledAt ??
+                          lifecycleAutoDisabledAt,
+                      }));
+
+                      // Update stageId in meta
+                      setMeta((prev) => ({
+                        ...prev,
+                        stageId: payload.stageId,
+                      }));
+                    } else {
+                      // Update lifecycleFromAPI even if stageId is not provided
+                      setLifecycleFromAPI((prev) => ({
+                        ...(prev || {}),
+                        phaseId: payload.phaseId,
+                        cycleCount: payload.cycleCount,
+                        phase1Completed: payload.phase1Completed,
+                        lifecycleAutoEnabled:
+                          typeof payload.lifecycleAutoEnabled === "boolean"
+                            ? payload.lifecycleAutoEnabled
+                            : prev?.lifecycleAutoEnabled ??
+                              lifecycleAutoEnabled,
+                        lifecycleAutoDisabledAt:
+                          payload.lifecycleAutoDisabledAt ??
+                          prev?.lifecycleAutoDisabledAt ??
+                          lifecycleAutoDisabledAt,
+                      }));
+                    }
+                  }}
+                  cycleCount={cycleCount}
+                  phase1Completed={phase1Completed}
+                  disabled={meta.status === "stopped"}
+                  treeId={resolvedTreeId}
+                  treeOwnerId={resolvedTreeOwnerId}
+                  treeType={loai}
+                  treeVariety={giong}
+                  autoLifecycleEnabled={lifecycleAutoEnabled}
+                  autoLifecycleDisabledAt={lifecycleAutoDisabledAt}
+                  phaseTheme={stageTheme}
+                  phaseThemeAllowPartial={Boolean(stageTheme?.length)}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Ghi chú - Show on tablets (md) but hide on desktop (xl) where it's in sidebar */}
+            <NoteCardTablet
+              note={note}
+              saveNote={saveNote}
+              readOnly={isStopped}
+              codeKey={codeKey}
+              meta={meta}
+            />
 
             {/* Các công việc đã lên kế hoạch */}
             <Card>
@@ -5898,6 +6672,8 @@ useEffect(() => {
                 resolvedTreeOwnerId={resolvedTreeOwnerId}
                 lifecycleAutoEnabled={lifecycleAutoEnabled}
                 lifecycleAutoDisabledAt={lifecycleAutoDisabledAt}
+                phaseTheme={stageTheme}
+                phaseThemeAllowPartial={Boolean(stageTheme?.length)}
                 onPhaseChange={(payload) => {
                   // payload: { phaseId, cycleCount, phase1Completed, stageId? }
                   // Lifecycle API already handles the update, so we just sync local state
@@ -5987,10 +6763,11 @@ useEffect(() => {
 
       {/* Daily Health Update Modal */}
       {(() => {
+        /*
         console.log("[DailyHealthModal] Render check", {
           modalOpen: dailyHealthModal.open,
           willRender: dailyHealthModal.open,
-        });
+        });*/
         return null;
       })()}
       {dailyHealthModal.open && (
@@ -6020,6 +6797,13 @@ useEffect(() => {
                   (field.key === "flower" && !canEditFlower) ||
                   (field.key === "fruit" && !canEditFruit);
 
+                // Determine placeholder: if field is enabled and it's flower/fruit, show "Cập nhật thông tin"
+                const placeholder = isDisabled
+                  ? field.defaultText
+                  : field.key === "flower" || field.key === "fruit"
+                  ? "Cập nhật thông tin"
+                  : field.defaultText;
+
                 return (
                   <div key={field.key} className="space-y-2">
                     <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
@@ -6037,7 +6821,7 @@ useEffect(() => {
                       onChange={(e) =>
                         handleDailyHealthChange(field.key, e.target.value)
                       }
-                      placeholder={field.defaultText}
+                      placeholder={placeholder}
                       disabled={isDisabled}
                       className={
                         isDisabled
@@ -6272,15 +7056,38 @@ useEffect(() => {
                       Huỷ
                     </Button>
                     <Button
-                      onClick={() => {
+                      onClick={async () => {
                         const nextStatus = statusModal.next || "active";
 
-                        // Cập nhật meta chính
-                        setMeta((s) => ({ ...s, status: nextStatus }));
+                        // Cập nhật meta chính với cả status và isActive
+                        const isActiveBool = nextStatus === "active";
+                        setMeta((s) => ({
+                          ...s,
+                          status: nextStatus,
+                          isActive: isActiveBool,
+                        }));
 
                         // Sync về demoTrees để màn khác thấy đúng trạng thái
                         syncTreePatch(codeKey, { status: nextStatus });
-                        persistTreePatch({ isActive: nextStatus });
+                        await persistTreePatch({ isActive: nextStatus });
+
+                        // Reload tree data from API to ensure consistency
+                        if (treeId) {
+                          try {
+                            const res = await TreeRepository.getTreeDetail(
+                              treeId
+                            );
+                            const dto = res?.data ?? res;
+                            if (dto) {
+                              setApiTree(mapDtoToTree(dto));
+                            }
+                          } catch (err) {
+                            console.error(
+                              "Failed to reload tree after status update",
+                              err
+                            );
+                          }
+                        }
 
                         setStatusModal({ open: false, next: nextStatus });
                       }}

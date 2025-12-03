@@ -100,19 +100,44 @@ public class TreeLifecycleAutomationService : ITreeLifecycleAutomationService
 
     private static TreeGrowthStage? ResolveStageForAge(IReadOnlyList<TreeGrowthStage> stages, int totalAgeMonths)
     {
-        TreeGrowthStage? fallback = null;
-        foreach (var stage in stages)
+        if (stages == null || stages.Count == 0)
         {
-            fallback = stage;
+            return null;
+        }
+
+        // Sort stages by StageOrder to ensure correct processing order
+        var sortedStages = stages.OrderBy(s => s.StageOrder).ToList();
+        
+        TreeGrowthStage? fallback = null;
+        
+        foreach (var stage in sortedStages)
+        {
             var min = stage.MinAgeInMonths ?? int.MinValue;
             var max = stage.MaxAgeInMonths ?? int.MaxValue;
-            if (totalAgeMonths >= min && totalAgeMonths < max)
+            
+            // If this is the last stage (no MaxAgeInMonths or highest order), use it as fallback
+            if (stage.MaxAgeInMonths == null)
+            {
+                fallback = stage;
+            }
+            
+            // Check if age falls within this stage's range
+            // For inclusive ranges: age >= min AND (age < max OR max is null)
+            if (totalAgeMonths >= min && (max == int.MaxValue || totalAgeMonths < max))
             {
                 return stage;
             }
+            
+            // Keep track of the last stage with a valid range as fallback
+            if (max != int.MaxValue)
+            {
+                fallback = stage;
+            }
         }
 
-        return fallback;
+        // If no stage matches, return the last stage (fallback)
+        // This handles cases where age exceeds all defined ranges
+        return fallback ?? sortedStages.LastOrDefault();
     }
 
     private static int CalculateAgeInMonths(DateOnly plantedAt, DateOnly today)

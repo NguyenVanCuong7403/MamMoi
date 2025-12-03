@@ -41,6 +41,12 @@ public interface IUserService
 
     /// <summary>Get ban information for user</summary>
     Task<BanInfoDto?> GetBanInfoAsync(int userId);
+
+    /// <summary>Send OTP for profile update (email/phone change)</summary>
+    Task<string> SendProfileOtpAsync(int userId, SendProfileOtpRequestDto dto);
+
+    /// <summary>Verify OTP for profile update</summary>
+    Task<bool> VerifyProfileOtpAsync(VerifyProfileOtpRequestDto dto);
 }
 
 /// <summary>

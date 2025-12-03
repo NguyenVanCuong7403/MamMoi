@@ -126,9 +126,141 @@
   .mm-fluid-grid {
     display: grid;
     gap: clamp(16px, 2vw, 32px);
-    grid-template-columns: repeat(
-      auto-fit,
-      minmax(min(320px, 100%), 1fr)
-    );
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
+  }
+
+  /* Responsive text scaling khi zoom - đảm bảo text không bị 1 hàng dọc */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    /* iPad và tablet */
+    html {
+      font-size: clamp(14px, 1.5vw, 16px);
+    }
+  }
+
+  /* Text responsive với clamp để tự động scale khi zoom */
+  .text-responsive-xs {
+    font-size: clamp(0.75rem, 1.5vw, 0.875rem);
+  }
+
+  .text-responsive-sm {
+    font-size: clamp(0.875rem, 1.8vw, 1rem);
+  }
+
+  .text-responsive-base {
+    font-size: clamp(1rem, 2vw, 1.125rem);
+  }
+
+  .text-responsive-lg {
+    font-size: clamp(1.125rem, 2.5vw, 1.25rem);
+  }
+
+  .text-responsive-xl {
+    font-size: clamp(1.25rem, 3vw, 1.5rem);
+  }
+
+  .text-responsive-2xl {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+  }
+
+  .text-responsive-3xl {
+    font-size: clamp(1.875rem, 5vw, 2.5rem);
+  }
+
+  .text-responsive-4xl {
+    font-size: clamp(2.25rem, 6vw, 3rem);
+  }
+
+  .text-responsive-5xl {
+    font-size: clamp(3rem, 8vw, 4rem);
+  }
+
+  /* Đảm bảo text không bị wrap thành 1 hàng dọc khi zoom */
+  .mm-text-wrap-safe {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    line-height: 1.5;
+    white-space: normal !important;
+  }
+
+  /* Responsive cho iPad Pro (1024px - 1366px) */
+  @media (min-width: 1024px) and (max-width: 1366px) {
+    /* iPad Pro landscape */
+    html {
+      font-size: clamp(14px, 1.4vw, 16px);
+    }
+
+    .mm-fluid-page {
+      font-size: clamp(15px, 1.6vw, 17px);
+    }
+
+    /* Đảm bảo text tự động scale khi zoom */
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+      font-size: clamp(1.5rem, 3.5vw, 2.5rem) !important;
+    }
+
+    p,
+    span,
+    div,
+    label {
+      font-size: clamp(0.875rem, 1.6vw, 1rem) !important;
+    }
+  }
+
+  /* Xử lý zoom - text tự động nhỏ đi để giữ bố cục */
+  @media (min-width: 1367px) {
+    /* Desktop lớn - khi zoom lên text sẽ scale */
+    html {
+      font-size: clamp(14px, 1.2vw, 18px);
+    }
+  }
+
+  /* Đảm bảo các element không bị overflow khi zoom */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Fix cho text trong table và card khi zoom */
+  table td,
+  table th,
+  .card p,
+  .card span,
+  .card div {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+  }
+
+  /* Responsive cho mobile và tablet nhỏ */
+  @media (max-width: 767px) {
+    html {
+      font-size: clamp(13px, 4vw, 16px);
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-size: clamp(1.25rem, 5vw, 2rem) !important;
+    }
+  }
+
+  /* Fix cho table responsive */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  @media (max-width: 1024px) {
+    .table-responsive table {
+      min-width: 600px;
+    }
   }
 }

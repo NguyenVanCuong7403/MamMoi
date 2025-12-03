@@ -219,7 +219,16 @@ public class NotificationsController : ControllerBase
                 groupId = b.GroupId,
                 sentAt = b.SentAt,
                 recipientCount = b.RecipientCount,
-                title = b.Title
+                title = b.Title,
+                message = b.Message,
+                notificationType = b.NotificationType,
+                priority = b.Priority,
+                category = b.Category,
+                actionUrl = b.ActionUrl,
+                actionLabel = b.ActionLabel,
+                imageUrl = b.ImageUrl,
+                iconName = b.IconName,
+                expiresAt = b.ExpiresAt
             }).ToList();
 
             return Ok(new

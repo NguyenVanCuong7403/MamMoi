@@ -17,6 +17,9 @@ public class AdminUserListDto
     public DateTime? LastLoginAt { get; set; }
     public int GardensCount { get; set; }
     public int TreesCount { get; set; }
+    public string? PlanType { get; set; } // "seedling", "orchard", "harvest", or null for free users
+    public DateTime? PlanStartDate { get; set; }
+    public DateTime? PlanEndDate { get; set; }
 }
 
 /// <summary>
@@ -70,5 +73,37 @@ public class AdminUserDetailDto
     public int TreesCount { get; set; }
     public int SubscriptionsCount { get; set; }
     public int PaymentsCount { get; set; }
+}
+
+/// <summary>
+/// DTO for updating user's subscription plan
+/// </summary>
+public class UpdateUserSubscriptionPlanDto
+{
+    /// <summary>
+    /// Plan type: "seedling", "orchard", "harvest", or null/"free" for free users
+    /// </summary>
+    [StringLength(50)]
+    public string? PlanType { get; set; }
+
+    /// <summary>
+    /// Optional start date (ISO 8601). Defaults to today when omitted.
+    /// </summary>
+    public DateTime? StartDate { get; set; }
+
+    /// <summary>
+    /// Optional end date (ISO 8601). When omitted we auto-calculate using plan duration.
+    /// </summary>
+    public DateTime? EndDate { get; set; }
+}
+
+/// <summary>
+/// DTO for admin to reset user password
+/// </summary>
+public class AdminResetPasswordDto
+{
+    [Required(ErrorMessage = "New password is required")]
+    [MinLength(10, ErrorMessage = "Password must be at least 10 characters")]
+    public string NewPassword { get; set; } = null!;
 }
 

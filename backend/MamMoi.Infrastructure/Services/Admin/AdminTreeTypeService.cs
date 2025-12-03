@@ -149,7 +149,7 @@ public class AdminTreeTypeService : IAdminTreeTypeService
         {
             SoilMasterId = dto.SoilMasterId,
             TreeTypeName = dto.TreeTypeName,
-            ScientificName = dto.ScientificName,
+            ScientificName = dto.ScientificName ?? string.Empty,
             Description = dto.Description,
             Category = dto.Category,
             AverageLifespanYears = dto.AverageLifespanYears,
@@ -162,7 +162,7 @@ public class AdminTreeTypeService : IAdminTreeTypeService
             FrostTolerance = dto.FrostTolerance,
             WindTolerance = dto.WindTolerance,
             ImageUrl = dto.ImageUrl,
-            IsActive = dto.IsActive,
+            IsActive = false, // Mặc định inactive, chỉ active khi có stage
             CareGuide = dto.CareGuide,
             LightRequirement = dto.LightRequirement,
             WaterRequirement = dto.WaterRequirement,
@@ -306,7 +306,7 @@ public class AdminTreeTypeService : IAdminTreeTypeService
             treeType.TreeTypeName = dto.TreeTypeName;
         }
 
-        if (!string.IsNullOrWhiteSpace(dto.ScientificName))
+        if (dto.ScientificName != null)
             treeType.ScientificName = dto.ScientificName;
 
         if (dto.Description != null)

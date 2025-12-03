@@ -159,8 +159,18 @@ public class TreesController : ControllerBase
     public async Task<IActionResult> Create([FromBody] CreateTreeRequest req, CancellationToken ct)
     {
         if (!TryResolveUserId(out var userId, out var error)) return error!;
-        var created = await _treeCmd.CreateAsync(userId, req, ct);
-        return CreatedAtAction(nameof(GetDetail), new { id = created.TreeId }, created);
+        try {
+            var created = await _treeCmd.CreateAsync(userId, req, ct);
+            return CreatedAtAction(nameof(GetDetail), new { id = created.TreeId }, created);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new
+            {
+                success = false,
+                message = ex.Message,
+            });
+        }
     }
 
     // ===================== 6) Update =====================

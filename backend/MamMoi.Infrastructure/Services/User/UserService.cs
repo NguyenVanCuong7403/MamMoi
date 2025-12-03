@@ -3,11 +3,13 @@ using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Hosting;
 using MamMoi.Application.DTOs;
 using MamMoi.Application.Interfaces;
+using MamMoi.Application.Interfaces.Auth;
 using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
 using MamMoi.Infrastructure.Security;
 using UserEntity = MamMoi.Infrastructure.Models.User;
 using Azure.Core;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MamMoi.Infrastructure.Services.Users;
 
@@ -19,6 +21,8 @@ public class UserService : IUserService
     private readonly IUserRepository _userRepository;
     private readonly TokenService _tokenService;
     private readonly IWebHostEnvironment _environment;
+    private readonly IEmailService _emailService;
+    private readonly IMemoryCache _cache;
 
     // Avatar upload configuration
     private const long MaxAvatarSize = 5242880; // 5MB
@@ -29,11 +33,15 @@ public class UserService : IUserService
     public UserService(
         IUserRepository userRepository,
         TokenService tokenService,
-        IWebHostEnvironment environment)
+        IWebHostEnvironment environment,
+        IEmailService emailService,
+        IMemoryCache cache)
     {
         _userRepository = userRepository;
         _tokenService = tokenService;
         _environment = environment;
+        _emailService = emailService;
+        _cache = cache;
     }
 
     #region Existing Methods
@@ -416,6 +424,163 @@ public class UserService : IUserService
             UserId = userId,
             IsBanned = !userEntity.IsActive
         };
+    }
+
+    /// <summary>
+    /// Send OTP for profile update (email/phone change)
+    /// </summary>
+    public async Task<string> SendProfileOtpAsync(int userId, SendProfileOtpRequestDto dto)
+    {
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user == null)
+            throw new InvalidOperationException("User not found");
+
+        var userEntity = (UserEntity)user;
+
+        // Validate update type and new value
+        if (dto.UpdateType == "email")
+        {
+            if (string.IsNullOrWhiteSpace(dto.NewEmail))
+                throw new ArgumentException("New email is required");
+            
+            // Check if new email already exists
+            var existingUser = await _userRepository.GetByEmailAsync(dto.NewEmail);
+            if (existingUser != null && ((UserEntity)existingUser).UserId != userId)
+                throw new InvalidOperationException("Email đã được sử dụng bởi tài khoản khác.");
+
+            // Generate OTP
+            var otpCode = GenerateOtp();
+
+            // Store OTP in cache with userId, updateType, and newEmail
+            var cacheKey = $"profile_otp_{userId}_email_{dto.NewEmail}";
+            var otpData = new
+            {
+                Code = otpCode,
+                UserId = userId,
+                UpdateType = "email",
+                NewEmail = dto.NewEmail,
+                CreatedAt = DateTime.UtcNow
+            };
+            _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(10));
+
+            // Send OTP via email
+            try
+            {
+                await _emailService.SendOtpEmailAsync(dto.NewEmail, userEntity.FullName, otpCode);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WARNING] Failed to send OTP email: {ex.Message}");
+                // Log OTP for development/testing
+                Console.WriteLine($"[OTP CODE for {dto.NewEmail}]: {otpCode}");
+            }
+
+            return otpCode; // Return for testing purposes, can be removed in production
+        }
+        else if (dto.UpdateType == "phone")
+        {
+            if (string.IsNullOrWhiteSpace(dto.NewPhone))
+                throw new ArgumentException("New phone is required");
+
+            if (!IsValidPhoneNumber(dto.NewPhone))
+                throw new ArgumentException("Phone number format is invalid");
+
+            // Generate OTP
+            var otpCode = GenerateOtp();
+
+            // Store OTP in cache
+            var cacheKey = $"profile_otp_{userId}_phone_{dto.NewPhone}";
+            var otpData = new
+            {
+                Code = otpCode,
+                UserId = userId,
+                UpdateType = "phone",
+                NewPhone = dto.NewPhone,
+                CreatedAt = DateTime.UtcNow
+            };
+            _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(10));
+
+            // TODO: Send OTP via SMS (implement SMS service)
+            // For now, log it (can be removed in production)
+            Console.WriteLine($"[OTP CODE for phone {dto.NewPhone}]: {otpCode}");
+
+            return otpCode;
+        }
+        else
+        {
+            throw new ArgumentException("Update type must be 'email' or 'phone'");
+        }
+    }
+
+    /// <summary>
+    /// Verify OTP for profile update
+    /// </summary>
+    public async Task<bool> VerifyProfileOtpAsync(VerifyProfileOtpRequestDto dto)
+    {
+        var user = await _userRepository.GetByIdAsync(dto.UserId);
+        if (user == null)
+            throw new InvalidOperationException("User not found");
+
+        var userEntity = (UserEntity)user;
+
+        // Get cache key based on update type
+        string cacheKey;
+        if (dto.UpdateType == "email")
+        {
+            if (string.IsNullOrWhiteSpace(dto.NewEmail))
+                throw new ArgumentException("New email is required");
+            cacheKey = $"profile_otp_{dto.UserId}_email_{dto.NewEmail}";
+        }
+        else if (dto.UpdateType == "phone")
+        {
+            if (string.IsNullOrWhiteSpace(dto.NewPhone))
+                throw new ArgumentException("New phone is required");
+            cacheKey = $"profile_otp_{dto.UserId}_phone_{dto.NewPhone}";
+        }
+        else
+        {
+            throw new ArgumentException("Update type must be 'email' or 'phone'");
+        }
+
+        // Get OTP from cache
+        if (!_cache.TryGetValue<dynamic>(cacheKey, out var otpData) || otpData == null)
+            throw new InvalidOperationException("Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại.");
+
+        // Verify OTP
+        if (otpData.Code != dto.OtpCode)
+            throw new InvalidOperationException("Mã OTP không đúng. Vui lòng thử lại.");
+
+        // Update profile based on type
+        if (dto.UpdateType == "email")
+        {
+            // Check if email already exists
+            var existingUser = await _userRepository.GetByEmailAsync(dto.NewEmail);
+            if (existingUser != null && ((UserEntity)existingUser).UserId != dto.UserId)
+                throw new InvalidOperationException("Email đã được sử dụng bởi tài khoản khác.");
+
+            userEntity.Email = dto.NewEmail;
+        }
+        else if (dto.UpdateType == "phone")
+        {
+            userEntity.Phone = dto.NewPhone;
+        }
+
+        userEntity.UpdatedAt = DateTime.UtcNow;
+        await _userRepository.UpdateAsync(userEntity);
+
+        // Remove OTP from cache after successful verification
+        _cache.Remove(cacheKey);
+
+        return true;
+    }
+
+    /// <summary>
+    /// Generate 6-digit OTP code
+    /// </summary>
+    private string GenerateOtp()
+    {
+        var random = new Random();
+        return random.Next(100000, 999999).ToString();
     }
     private UserDto MapToDto(User user)
     {

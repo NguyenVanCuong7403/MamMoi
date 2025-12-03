@@ -30,7 +30,12 @@ namespace MamMoi.Application.DTOs
         int StageId,
         string StageName,
         int StageOrder,
-        string? Description
+        string? Description,
+        string? Icon,
+        string? NodeColor,
+        string? LineColor,
+        int? MinAgeInMonths,
+        int? MaxAgeInMonths
     );
 
     // ===== Growth History =====

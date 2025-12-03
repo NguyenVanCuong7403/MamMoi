@@ -1315,6 +1315,7 @@ export default function AddTreeNewScreen() {
     setSelectedVarietyId("");
     setGardenSoilId("");   // reset loại đất khi đổi loại cây
     setStagesByType([]);   // reset stages khi đổi loại cây
+    setPhaseOverride("");  // reset phase khi đổi loại cây
 
     // Fetch stages for this tree type
     if (treeTypeId) {
@@ -1506,6 +1507,10 @@ export default function AddTreeNewScreen() {
     if (!plantDate) e.plantDate = REQUIRED_MSG.plantDate;
     if (!gardenSoilId) e.soil = REQUIRED_MSG.soil;
     if (!phaseOverride) e.phaseOverride = REQUIRED_MSG.phaseOverride;
+    // Kiểm tra xem loại cây có giai đoạn chưa
+    if (treeTypeId && stagesByType.length === 0) {
+      e.phaseOverride = "Loại cây này chưa có giai đoạn. Vui lòng liên hệ admin.";
+    }
     return e;
   }
 
@@ -1573,19 +1578,31 @@ export default function AddTreeNewScreen() {
       const payload = normalizePhaseBeforeSave(base);
       console.log("Create Tree Payload (debug)", payload);
 
-      // Map phase → StageId using minStageId from fetched stages
-      var tempSId = Math.max(1, PHASES5.indexOf(effectivePhase) + 1);
-      // Find minStageId from the stages for this tree type
-      const minStageId = stagesByType.length > 0
-        ? Math.min(...stagesByType.map(s => s.stageId))
-        : 1;
-      const stageIndex = minStageId + (tempSId - 1);
+      // Map phase → StageId từ stagesByType
+      // Tìm stage tương ứng với phase được chọn
+      let selectedStageId = null;
+      if (stagesByType.length > 0) {
+        // Sắp xếp stages theo stageOrder
+        const sortedStages = [...stagesByType].sort((a, b) => (a.stageOrder || 0) - (b.stageOrder || 0));
+        
+        // Nếu có phaseOverride, tìm stage theo index trong PHASES5
+        const phaseIndex = PHASES5.indexOf(effectivePhase);
+        if (phaseIndex >= 0 && phaseIndex < sortedStages.length) {
+          // Map trực tiếp theo index: phaseIndex 0 -> stage đầu tiên, phaseIndex 1 -> stage thứ 2, ...
+          selectedStageId = sortedStages[phaseIndex].stageId;
+        } else {
+          // Fallback: chọn stage đầu tiên nếu không tìm thấy
+          selectedStageId = sortedStages[0].stageId;
+        }
+      } else {
+        throw new Error("Loại cây này chưa có giai đoạn. Vui lòng liên hệ admin.");
+      }
 
       // Chuẩn CreateTreeRequest đúng backend
       const createReq = {
         GardenId: Number(currentGarden.id),
         TreeTypeId: treeTypeId ? Number(treeTypeId) : 0, // đã validate không rỗng từ trước
-        StageId: stageIndex,
+        StageId: selectedStageId,
 
         TreeVarietyId: selectedVarietyId,
         TreeCode: code.trim() || null,
@@ -2071,19 +2088,44 @@ export default function AddTreeNewScreen() {
                             }));
                             e.target.blur(); // chọn xong thì bỏ focus, tắt viền xanh
                           }}
+                          disabled={!treeTypeId || stagesByType.length === 0}
                           className={
                             "h-11 w-full min-w-0 rounded-xl border bg-white px-3 text-sm appearance-none truncate mm-field-surface " +
                             (errors.phaseOverride
                               ? "border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500"
-                              : "border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500")
+                              : "border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500") +
+                            (!treeTypeId || stagesByType.length === 0
+                              ? " opacity-60 cursor-not-allowed"
+                              : "")
                           }
                         >
-                          <option value="">— Hãy chọn giai đoạn —</option>
-                          {PHASES5.map((p) => (
-                            <option key={p} value={p}>
-                              {p}
-                            </option>
-                          ))}
+                          <option value="">
+                            {!treeTypeId
+                              ? "— Chọn loại cây trước —"
+                              : stagesByType.length === 0
+                              ? "— Loại cây này chưa có giai đoạn —"
+                              : "— Hãy chọn giai đoạn —"}
+                          </option>
+                          {stagesByType.length > 0
+                            ? stagesByType
+                                .sort((a, b) => (a.stageOrder || 0) - (b.stageOrder || 0))
+                                .map((stage, index) => {
+                                  // Map stage theo index trong PHASES5
+                                  const phaseName =
+                                    index < PHASES5.length
+                                      ? PHASES5[index]
+                                      : stage.stageName || `Giai đoạn ${stage.stageOrder}`;
+                                  return (
+                                    <option key={stage.stageId} value={phaseName}>
+                                      {phaseName}
+                                    </option>
+                                  );
+                                })
+                            : PHASES5.map((p) => (
+                                <option key={p} value={p}>
+                                  {p}
+                                </option>
+                              ))}
                         </select>
                       </div>
                       {errors.phaseOverride && (

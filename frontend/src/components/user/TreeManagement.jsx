@@ -27,6 +27,9 @@ import {
   ChevronRight,
   CheckCircle2,
   StickyNote,
+  X,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
 
@@ -1092,6 +1095,7 @@ export default function TreeManagement() {
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [taskPanelOpen, setTaskPanelOpen] = useState(false);
+  const [showGardenStats, setShowGardenStats] = useState(true);
 
   // Xác định gardenId & name hiệu lực + load cây từ API
   useEffect(() => {
@@ -1168,6 +1172,7 @@ export default function TreeManagement() {
     headerGardenName,
     incomingGarden,
     location.search,
+    location.key, // Force reload khi navigate (back/forward)
   ]);
 
   // Load thời tiết từ API (theo location hoặc gardenId)
@@ -1820,58 +1825,89 @@ export default function TreeManagement() {
           </section>
 
           {/* Mini stats (chỉ tính cây trong vườn hiện tại) */}
-          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {[
-              { label: "Tổng cây", value: stats.total },
-              { label: "Đang hoạt động", value: stats.active },
-              { label: "Dừng hoạt động", value: stats.stopped },
-              {
-                label: "Việc quá hạn",
-                value: stats.overdue,
-                icon: <AlertTriangle className="w-4 h-4" />,
-              },
-            ].map((s, i) => {
-              const isOver = s.label === "Việc quá hạn" && Number(s.value) > 0;
-              return (
-                <div
-                  key={i}
-                  aria-live={isOver ? "polite" : undefined}
-                  className={
-                    "relative rounded-xl px-4 py-3 flex items-center justify-between text-[13px] transition-all " +
-                    (isOver
-                      ? "border border-rose-300/50 bg-rose-400/5 animate-[mmOverduePulse_1.6s_ease-in-out_infinite]"
-                      : "")
-                  }
-                  style={{
-                    background: isOver ? undefined : "rgba(251,255,223,0.06)",
-                    border: isOver
-                      ? undefined
-                      : "1px solid rgba(255,255,165,0.15)",
-                    color: PALETTE.ivory,
-                  }}
-                >
-                  <span
-                    className={
-                      "inline-flex items-center gap-2 " +
-                      (isOver ? "text-rose-200" : "opacity-80")
-                    }
-                  >
-                    {s.icon}
-                    {s.label}
-                  </span>
-                  <span
-                    className={
-                      "font-semibold " + (isOver ? "text-rose-300" : "")
-                    }
-                  >
-                    {s.value}
-                  </span>
-                  {isOver && (
-                    <span className="absolute -top-1.5 -right-1.5 h-3 w-3 rounded-full bg-rose-500 shadow-[0_0_0_6px_rgba(244,63,94,.32)]" />
-                  )}
-                </div>
-              );
-            })}
+          <section className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="text-sm uppercase tracking-wide text-white/80">
+                Thông số vườn
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-2 text-white/80 hover:text-white hover:bg-white/10"
+                onClick={() => setShowGardenStats((prev) => !prev)}
+              >
+                {showGardenStats ? (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    Ẩn thông số
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    Hiển thị thông số
+                  </>
+                )}
+              </Button>
+            </div>
+
+            {showGardenStats && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {[
+                  { label: "Tổng cây", value: stats.total },
+                  { label: "Đang hoạt động", value: stats.active },
+                  { label: "Dừng hoạt động", value: stats.stopped },
+                  {
+                    label: "Việc quá hạn",
+                    value: stats.overdue,
+                    icon: <AlertTriangle className="w-4 h-4" />,
+                  },
+                ].map((s, i) => {
+                  const isOver =
+                    s.label === "Việc quá hạn" && Number(s.value) > 0;
+                  return (
+                    <div
+                      key={i}
+                      aria-live={isOver ? "polite" : undefined}
+                      className={
+                        "relative rounded-xl px-4 py-3 flex items-center justify-between text-[13px] transition-all " +
+                        (isOver
+                          ? "border border-rose-300/50 bg-rose-400/5 animate-[mmOverduePulse_1.6s_ease-in-out_infinite]"
+                          : "")
+                      }
+                      style={{
+                        background: isOver
+                          ? undefined
+                          : "rgba(251,255,223,0.06)",
+                        border: isOver
+                          ? undefined
+                          : "1px solid rgba(255,255,165,0.15)",
+                        color: PALETTE.ivory,
+                      }}
+                    >
+                      <span
+                        className={
+                          "inline-flex items-center gap-2 " +
+                          (isOver ? "text-rose-200" : "opacity-80")
+                        }
+                      >
+                        {s.icon}
+                        {s.label}
+                      </span>
+                      <span
+                        className={
+                          "font-semibold " + (isOver ? "text-rose-300" : "")
+                        }
+                      >
+                        {s.value}
+                      </span>
+                      {isOver && (
+                        <span className="absolute -top-1.5 -right-1.5 h-3 w-3 rounded-full bg-rose-500 shadow-[0_0_0_6px_rgba(244,63,94,.32)]" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </section>
 
           {/* Cards grid */}
@@ -2394,16 +2430,16 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     status: "all",
     type: "all",
   });
+  const [showCompleted, setShowCompleted] = useState(false); // Tab để hiển thị cây đã hoàn thành
   const [taskLoading, setTaskLoading] = useState(false);
   const [taskError, setTaskError] = useState(null);
   const [completingMap, setCompletingMap] = useState({});
-  const [noteDialog, setNoteDialog] = useState({
+  const [completeConfirmDialog, setCompleteConfirmDialog] = useState({
     open: false,
     task: null,
-    value: "",
+    note: "",
   });
-  const [noteSaving, setNoteSaving] = useState(false);
-  const [noteError, setNoteError] = useState(null);
+  const [showTaskStats, setShowTaskStats] = useState(true);
 
   const numericGardenId = useMemo(() => {
     if (!garden?.id) return null;
@@ -2426,11 +2462,12 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     const apiTaskType =
       filterType !== "all" && !filterOther ? filterType : undefined;
     try {
+      const searchKeyword = taskFilters.search?.trim() || undefined;
       const response = await CareScheduleRepository.searchTasks({
         gardenId: numericGardenId,
         status: taskFilters.status !== "all" ? taskFilters.status : undefined,
         taskType: apiTaskType,
-        searchKeyword: taskFilters.search || undefined,
+        searchKeyword: searchKeyword,
         pageNumber: taskPage,
         pageSize: TASK_PAGE_SIZE,
       });
@@ -2501,19 +2538,58 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
 
   const handleResetFilters = () => {
     setTaskFilters({ search: "", status: "all", type: "all" });
+    setShowCompleted(false);
   };
 
-  const handleCompleteTask = async (task) => {
+  const handleOpenCompleteDialog = (task) => {
+    if (!task || task.status === "Completed") return;
+    setCompleteConfirmDialog({
+      open: true,
+      task,
+      note: task.completedNote || "",
+    });
+  };
+
+  const handleCloseCompleteDialog = () => {
+    setCompleteConfirmDialog({ open: false, task: null, note: "" });
+  };
+
+  const handleConfirmComplete = async () => {
+    const task = completeConfirmDialog.task;
     if (!task) return;
+
     const id = task.scheduleId;
+    const note = (completeConfirmDialog.note || "").trim();
+
     setCompletingMap((prev) => ({ ...prev, [id]: true }));
     try {
-      await CareScheduleRepository.markTaskComplete(id, {});
+      // Format date as YYYY-MM-DD (consistent with TreeDetail)
+      const d = new Date();
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      const today = d.toISOString().slice(0, 10);
+
+      await CareScheduleRepository.markTaskComplete(id, {
+        completedNote: note || null,
+        completedDate: today,
+      });
       setTasks((prev) =>
         prev.map((item) =>
-          item.scheduleId === id ? { ...item, status: "Completed" } : item
+          item.scheduleId === id
+            ? {
+                ...item,
+                status: "Completed",
+                completedNote: note,
+              }
+            : item
         )
       );
+      handleCloseCompleteDialog();
+      setTaskError(null); // Clear any previous errors
+
+      // Tự động refresh để cập nhật thứ tự sắp xếp
+      setTimeout(() => {
+        fetchGardenTasks();
+      }, 500);
     } catch (err) {
       console.error("Failed to mark task complete", err);
       setTaskError(err?.message || "Không thể hoàn thành công việc.");
@@ -2526,66 +2602,184 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     }
   };
 
-  const handleOpenNoteDialog = (task) => {
-    if (!task) return;
-    setNoteError(null);
-    setNoteDialog({
-      open: true,
-      task,
-      value: task.completedNote || "",
-    });
-  };
-
-  const handleCloseNoteDialog = () => {
-    setNoteDialog({ open: false, task: null, value: "" });
-    setNoteError(null);
-  };
-
-  const handleSaveNote = async () => {
-    if (!noteDialog.task) return;
-    setNoteSaving(true);
-    setNoteError(null);
-    try {
-      await CareScheduleRepository.editCareTask(noteDialog.task.scheduleId, {
-        completedNote: noteDialog.value,
-      });
-      setTasks((prev) =>
-        prev.map((item) =>
-          item.scheduleId === noteDialog.task.scheduleId
-            ? { ...item, completedNote: noteDialog.value }
-            : item
-        )
-      );
-      handleCloseNoteDialog();
-    } catch (err) {
-      console.error("Failed to save note", err);
-      setNoteError(err?.message || "Không thể lưu ghi chú.");
-    } finally {
-      setNoteSaving(false);
-    }
-  };
-
   const handleManualRefresh = () => {
     if (!numericGardenId) return;
     fetchGardenTasks();
   };
 
+  // Group tasks by tree
+  const tasksByTree = useMemo(() => {
+    const grouped = {};
+    tasks.forEach((task) => {
+      const treeId = task.treeId || task.treeCode || "unknown";
+      const treeName = task.treeName || "Cây chưa xác định";
+      const key = `${treeId}_${treeName}`;
+
+      if (!grouped[key]) {
+        grouped[key] = {
+          treeId,
+          treeName,
+          tasks: [],
+        };
+      }
+      grouped[key].tasks.push(task);
+    });
+
+    // Sort tasks within each tree by scheduled date (gần hạn nhất lên đầu)
+    Object.keys(grouped).forEach((key) => {
+      grouped[key].tasks.sort((a, b) => {
+        // Completed tasks xuống cuối
+        const aCompleted = normalizeKey(a.status) === "completed";
+        const bCompleted = normalizeKey(b.status) === "completed";
+        if (aCompleted && !bCompleted) return 1;
+        if (!aCompleted && bCompleted) return -1;
+
+        // Overdue tasks lên đầu
+        const aOverdue = isTaskOverdue(a.scheduledDate, a.status);
+        const bOverdue = isTaskOverdue(b.scheduledDate, b.status);
+        if (aOverdue && !bOverdue) return -1;
+        if (!aOverdue && bOverdue) return 1;
+
+        // Còn lại sắp xếp theo ngày (gần hạn nhất lên đầu)
+        const dateA = a.scheduledDate
+          ? new Date(a.scheduledDate).getTime()
+          : Infinity;
+        const dateB = b.scheduledDate
+          ? new Date(b.scheduledDate).getTime()
+          : Infinity;
+        return dateA - dateB;
+      });
+    });
+
+    return grouped;
+  }, [tasks]);
+
+  const treeKeys = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const nowTime = now.getTime();
+
+    return Object.keys(tasksByTree)
+      .filter((key) => {
+        const treeGroup = tasksByTree[key];
+        // Kiểm tra xem cây có toàn bộ công việc hoàn thành không
+        const allCompleted = treeGroup.tasks.every(
+          (task) => normalizeKey(task.status) === "completed"
+        );
+
+        // Nếu showCompleted = false, ẩn cây đã hoàn thành
+        if (!showCompleted && allCompleted) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        const treeA = tasksByTree[a];
+        const treeB = tasksByTree[b];
+
+        // Kiểm tra cây có việc quá hạn
+        const aHasOverdue = treeA.tasks.some((task) =>
+          isTaskOverdue(task.scheduledDate, task.status)
+        );
+        const bHasOverdue = treeB.tasks.some((task) =>
+          isTaskOverdue(task.scheduledDate, task.status)
+        );
+
+        // Cây có việc quá hạn lên đầu
+        if (aHasOverdue && !bHasOverdue) return -1;
+        if (!aHasOverdue && bHasOverdue) return 1;
+
+        // Kiểm tra cây có toàn bộ công việc hoàn thành
+        const aAllCompleted = treeA.tasks.every(
+          (task) => normalizeKey(task.status) === "completed"
+        );
+        const bAllCompleted = treeB.tasks.every(
+          (task) => normalizeKey(task.status) === "completed"
+        );
+
+        // Cây đã hoàn thành xuống cuối
+        if (aAllCompleted && !bAllCompleted) return 1;
+        if (!aAllCompleted && bAllCompleted) return -1;
+
+        // Tìm việc gần hạn nhất của mỗi cây (chưa hoàn thành)
+        const getNearestDueTime = (tree) => {
+          const activeTasks = tree.tasks.filter(
+            (task) => normalizeKey(task.status) !== "completed"
+          );
+          if (activeTasks.length === 0) return Infinity;
+
+          const times = activeTasks
+            .map((task) => {
+              if (!task.scheduledDate) return Infinity;
+              try {
+                const date = new Date(task.scheduledDate);
+                date.setHours(0, 0, 0, 0);
+                return date.getTime();
+              } catch {
+                return Infinity;
+              }
+            })
+            .filter((t) => t !== Infinity);
+
+          return times.length > 0 ? Math.min(...times) : Infinity;
+        };
+
+        const aNearest = getNearestDueTime(treeA);
+        const bNearest = getNearestDueTime(treeB);
+
+        // Cây có việc gần hạn nhất lên đầu
+        if (aNearest < bNearest) return -1;
+        if (aNearest > bNearest) return 1;
+
+        // Nếu cùng hạn, sắp xếp theo tên
+        const nameA = treeA.treeName.toLowerCase();
+        const nameB = treeB.treeName.toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+  }, [tasksByTree, showCompleted]);
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
-        className="w-full sm:max-w-3xl lg:max-w-4xl overflow-y-auto bg-[#f7fbf4]"
+        className="w-full sm:max-w-3xl lg:max-w-4xl overflow-y-auto"
+        style={{
+          background: PALETTE.bg,
+          color: PALETTE.ivory,
+        }}
       >
         <SheetHeader>
-          <SheetTitle>Quản lý công việc vườn</SheetTitle>
-          <SheetDescription>
+          <SheetTitle className="text-white">Quản lý công việc vườn</SheetTitle>
+          <SheetDescription className="text-white/80">
             {garden?.name
               ? `Tổng hợp công việc của ${garden.name}`
               : "Theo dõi tiến độ chăm sóc cây trong vườn"}
             .<br />
-            <span className="text-foreground/80">{locationText}</span>
+            <span className="text-white/70">{locationText}</span>
           </SheetDescription>
         </SheetHeader>
+
+        {/* Tab để hiển thị/ẩn cây đã hoàn thành */}
+        <div className="mt-4 flex gap-2 border-b border-white/20">
+          <button
+            onClick={() => setShowCompleted(false)}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              !showCompleted
+                ? "text-white border-b-2 border-emerald-400"
+                : "text-white/60 hover:text-white/80"
+            }`}
+          >
+            Đang thực hiện
+          </button>
+          <button
+            onClick={() => setShowCompleted(true)}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              showCompleted
+                ? "text-white border-b-2 border-emerald-400"
+                : "text-white/60 hover:text-white/80"
+            }`}
+          >
+            Đã hoàn thành
+          </button>
+        </div>
 
         {!numericGardenId && (
           <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
@@ -2594,22 +2788,22 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
         )}
 
         {numericGardenId && (
-          <div className="mt-6 space-y-5">
+          <div className="mt-6 space-y-3.5 text-[9px] sm:text-[10px]">
             <div className="flex flex-wrap items-center gap-3">
               <div className="relative flex-1 min-w-[200px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
                 <Input
                   value={taskFilters.search}
                   onChange={(e) => handleFilterChange("search", e.target.value)}
                   placeholder="Tìm theo tên công việc, cây hoặc mô tả..."
-                  className="pl-9 bg-white"
+                  className="pl-9 bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:bg-white/20"
                 />
               </div>
               <Select
                 value={taskFilters.status}
                 onValueChange={(value) => handleFilterChange("status", value)}
               >
-                <SelectTrigger className="w-[180px] bg-white">
+                <SelectTrigger className="w-[180px] bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
@@ -2624,7 +2818,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                 value={taskFilters.type}
                 onValueChange={(value) => handleFilterChange("type", value)}
               >
-                <SelectTrigger className="w-[200px] bg-white">
+                <SelectTrigger className="w-[200px] bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Quy trình" />
                 </SelectTrigger>
                 <SelectContent>
@@ -2637,14 +2831,14 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
               </Select>
               <Button
                 variant="ghost"
-                className="text-sm text-neutral-600 hover:text-rose-600"
+                className="text-sm text-white/80 hover:text-white hover:bg-white/10"
                 onClick={handleResetFilters}
               >
                 Xóa lọc
               </Button>
               <Button
                 variant="outline"
-                className="gap-2"
+                className="gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20"
                 onClick={handleManualRefresh}
                 disabled={taskLoading}
               >
@@ -2657,27 +2851,55 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {[
-                { label: "Tổng việc", value: statusStats.total },
-                { label: "Chờ thực hiện", value: statusStats.pending },
-                { label: "Đang thực hiện", value: statusStats.inprogress },
-                { label: "Hoàn thành", value: statusStats.completed },
-                { label: "Hoãn lại", value: statusStats.postponed },
-                { label: "Đã hủy", value: statusStats.cancelled },
-              ].map((stat, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-2xl border border-emerald-100 bg-white px-3 py-3 text-sm text-neutral-600"
-                >
-                  <div className="text-xs uppercase tracking-wide text-neutral-400">
-                    {stat.label}
-                  </div>
-                  <div className="text-2xl font-semibold text-emerald-700">
-                    {stat.value}
-                  </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="text-xs uppercase tracking-wide text-white/70">
+                  Thông số công việc
                 </div>
-              ))}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-2 text-white/80 hover:text-white hover:bg-white/10"
+                  onClick={() => setShowTaskStats((prev) => !prev)}
+                >
+                  {showTaskStats ? (
+                    <>
+                      <EyeOff className="h-4 w-4" />
+                      Ẩn thông số
+                    </>
+                  ) : (
+                    <>
+                      <Eye className="h-4 w-4" />
+                      Hiển thị thông số
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {showTaskStats && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {[
+                    { label: "Tổng việc", value: statusStats.total },
+                    { label: "Chờ thực hiện", value: statusStats.pending },
+                    { label: "Đang thực hiện", value: statusStats.inprogress },
+                    { label: "Hoàn thành", value: statusStats.completed },
+                    { label: "Hoãn lại", value: statusStats.postponed },
+                    { label: "Đã hủy", value: statusStats.cancelled },
+                  ].map((stat, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-2xl border border-white/20 bg-white/10 px-3 py-3 text-sm text-white/90"
+                    >
+                      <div className="text-[10px] uppercase tracking-wide text-white/60">
+                        {stat.label}
+                      </div>
+                      <div className="text-lg font-semibold text-white">
+                        {stat.value}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {taskError && (
@@ -2686,192 +2908,277 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
               </div>
             )}
 
-            <div className="max-h-[65vh] overflow-y-auto pr-1 space-y-4">
+            <div className="max-h-[65vh] overflow-y-auto pr-1 space-y-2.5 text-[9px] sm:text-[10px]">
               {taskLoading && (
                 <div className="space-y-3">
                   {Array.from({ length: 3 }).map((_, idx) => (
                     <div
                       key={idx}
-                      className="h-[140px] rounded-2xl bg-neutral-200/40 animate-pulse"
+                      className="h-[140px] rounded-2xl bg-white/10 animate-pulse"
                     />
                   ))}
                 </div>
               )}
 
               {!taskLoading && tasks.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-neutral-200 bg-white px-6 py-10 text-center text-sm text-neutral-500">
+                <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 px-6 py-10 text-center text-sm text-white/70">
                   Không có công việc nào phù hợp với bộ lọc hiện tại.
                 </div>
               )}
 
               {!taskLoading &&
-                tasks.map((task) => {
-                  const overdue = isTaskOverdue(
-                    task.scheduledDate,
-                    task.status
-                  );
-                  const busyComplete = Boolean(completingMap[task.scheduleId]);
-                  const priorityMeta =
-                    TASK_PRIORITY_META[normalizeKey(task.priority)] ||
-                    TASK_PRIORITY_META.default;
+                treeKeys.map((treeKey, treeIdx) => {
+                  const treeGroup = tasksByTree[treeKey];
+                  if (!treeGroup || treeGroup.tasks.length === 0) return null;
+
                   return (
-                    <div
-                      key={task.scheduleId}
-                      className="rounded-2xl border border-emerald-100 bg-white px-4 py-4 shadow-sm space-y-3"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-base font-semibold text-slate-900">
-                            {task.taskName}
+                    <div key={treeKey} className="space-y-2.5">
+                      {/* Tree Header */}
+                      {(() => {
+                        const hasOverdue = treeGroup.tasks.some((task) =>
+                          isTaskOverdue(task.scheduledDate, task.status)
+                        );
+                        const allCompleted = treeGroup.tasks.every(
+                          (task) => normalizeKey(task.status) === "completed"
+                        );
+
+                        return (
+                          <div
+                            className={`bg-gradient-to-r ${
+                              hasOverdue
+                                ? "from-rose-500/20 to-rose-600/20 border-rose-400/40"
+                                : allCompleted
+                                ? "from-neutral-500/20 to-neutral-600/20 border-neutral-400/40"
+                                : "from-emerald-500/20 to-teal-500/20 border-emerald-400/40"
+                            } border rounded-xl px-3 py-2 shadow-sm`}
+                          >
+                            <div className="flex items-center gap-1.5 text-[10px]">
+                              <Sprout
+                                className={`h-5 w-5 ${
+                                  hasOverdue
+                                    ? "text-rose-400"
+                                    : allCompleted
+                                    ? "text-neutral-400"
+                                    : "text-emerald-400"
+                                }`}
+                              />
+                              <h3
+                                className={`text-[11px] font-semibold ${
+                                  hasOverdue
+                                    ? "text-rose-200"
+                                    : allCompleted
+                                    ? "text-neutral-300"
+                                    : "text-emerald-200"
+                                }`}
+                              >
+                                {treeGroup.treeName}
+                              </h3>
+                              <Badge
+                                variant="secondary"
+                                className={`ml-auto text-[10px] px-2 py-0 ${
+                                  hasOverdue
+                                    ? "bg-rose-500/30 text-rose-200 border-rose-400/40"
+                                    : allCompleted
+                                    ? "bg-neutral-500/30 text-neutral-200 border-neutral-400/40"
+                                    : "bg-emerald-500/30 text-emerald-200 border-emerald-400/40"
+                                } border`}
+                              >
+                                {treeGroup.tasks.length}{" "}
+                                {treeGroup.tasks.length === 1
+                                  ? "công việc"
+                                  : "công việc"}
+                              </Badge>
+                            </div>
                           </div>
-                          <div className="text-xs text-neutral-500">
-                            #{task.scheduleId} ·{" "}
-                            {task.treeName || "Cây chưa xác định"}
-                          </div>
-                        </div>
-                        <TaskStatusBadge status={task.status} />
+                        );
+                      })()}
+
+                      {/* Tasks for this tree */}
+                      <div className="space-y-1.5 pl-2.5 border-l border-white/20">
+                        {treeGroup.tasks.map((task) => {
+                          const overdue = isTaskOverdue(
+                            task.scheduledDate,
+                            task.status
+                          );
+                          const busyComplete = Boolean(
+                            completingMap[task.scheduleId]
+                          );
+                          const priorityMeta =
+                            TASK_PRIORITY_META[normalizeKey(task.priority)] ||
+                            TASK_PRIORITY_META.default;
+                          return (
+                            <div
+                              key={task.scheduleId}
+                              className={`rounded-2xl border px-2.5 py-2.5 shadow-sm space-y-2 ${
+                                overdue
+                                  ? "border-rose-400/40 bg-rose-500/10"
+                                  : normalizeKey(task.status) === "completed"
+                                  ? "border-neutral-400/40 bg-neutral-500/10"
+                                  : "border-white/20 bg-white/10"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-1.5">
+                                <div>
+                                  <div className="text-[11px] font-semibold text-white">
+                                    {task.taskName}
+                                  </div>
+                                  <div className="text-[9px] text-white/60">
+                                    #{task.scheduleId}
+                                  </div>
+                                </div>
+                                <TaskStatusBadge status={task.status} />
+                              </div>
+
+                              <div className="flex flex-wrap gap-1 text-[9px]">
+                                <Badge
+                                  variant="secondary"
+                                  className="gap-1 px-2 py-0.5 bg-emerald-500/30 text-emerald-200 border-emerald-400/40"
+                                >
+                                  {taskTypeLabel(task.taskType)}
+                                </Badge>
+                                <Badge
+                                  variant="outline"
+                                  className={`gap-1 px-2 py-0.5 border-white/20 text-white/80 ${priorityMeta.className}`}
+                                >
+                                  Ưu tiên: {priorityMeta.label}
+                                </Badge>
+                                <Badge
+                                  variant="outline"
+                                  className={`gap-1 px-2 py-0.5 ${
+                                    overdue
+                                      ? "border-rose-400/60 text-rose-200 bg-rose-500/20"
+                                      : "border-white/20 text-white/80"
+                                  }`}
+                                >
+                                  <Calendar className="h-3.5 w-3.5" />
+                                  {formatTaskDate(task.scheduledDate)}
+                                  {overdue && " · Quá hạn"}
+                                </Badge>
+                              </div>
+
+                              {task.description && (
+                                <p className="text-[10px] text-white/80 leading-snug">
+                                  {task.description}
+                                </p>
+                              )}
+
+                              <div className="flex flex-wrap items-center gap-1 border-t border-dashed border-white/20 pt-1.5">
+                                <Button
+                                  size="sm"
+                                  className="h-6 px-2.5 gap-1 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white"
+                                  onClick={() => handleOpenCompleteDialog(task)}
+                                  disabled={
+                                    busyComplete || task.status === "Completed"
+                                  }
+                                >
+                                  {busyComplete ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <CheckCircle2 className="h-4 w-4" />
+                                  )}
+                                  Hoàn thành
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
 
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        <Badge
-                          variant="outline"
-                          className="gap-1 border-emerald-100 text-emerald-700"
-                        >
-                          <Sprout className="h-3.5 w-3.5" />
-                          {task.treeName || "Chưa rõ cây"}
-                        </Badge>
-                        <Badge
-                          variant="secondary"
-                          className="gap-1 bg-emerald-50 text-emerald-700"
-                        >
-                          {taskTypeLabel(task.taskType)}
-                        </Badge>
-                        <Badge
-                          variant="outline"
-                          className={`gap-1 ${priorityMeta.className}`}
-                        >
-                          Ưu tiên: {priorityMeta.label}
-                        </Badge>
-                        <Badge
-                          variant="outline"
-                          className={`gap-1 border-neutral-200 text-neutral-600 ${
-                            overdue
-                              ? "border-rose-200 text-rose-600 bg-rose-50"
-                              : ""
-                          }`}
-                        >
-                          <Calendar className="h-3.5 w-3.5" />
-                          {formatTaskDate(task.scheduledDate)}
-                          {overdue && " · Quá hạn"}
-                        </Badge>
-                      </div>
-
-                      {task.description && (
-                        <p className="text-sm text-neutral-600">
-                          {task.description}
-                        </p>
+                      {/* Separator between trees */}
+                      {treeIdx < treeKeys.length - 1 && (
+                        <Separator className="my-2" />
                       )}
-
-                      {task.completedNote && (
-                        <div className="rounded-xl bg-neutral-50 border border-neutral-200 px-3 py-2 text-xs text-neutral-600">
-                          <span className="font-semibold text-neutral-800">
-                            Ghi chú:
-                          </span>{" "}
-                          {task.completedNote}
-                        </div>
-                      )}
-
-                      <div className="flex flex-wrap items-center gap-2 border-t border-dashed border-neutral-200 pt-3">
-                        <Button
-                          size="sm"
-                          className="gap-2"
-                          onClick={() => handleCompleteTask(task)}
-                          disabled={busyComplete || task.status === "Completed"}
-                        >
-                          {busyComplete ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <CheckCircle2 className="h-4 w-4" />
-                          )}
-                          Hoàn thành
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="gap-2"
-                          onClick={() => handleOpenNoteDialog(task)}
-                        >
-                          <StickyNote className="h-4 w-4" />
-                          Ghi chú
-                        </Button>
-                      </div>
                     </div>
                   );
                 })}
             </div>
 
-            <Dialog
-              open={noteDialog.open}
-              onOpenChange={(open) => {
-                if (!open) handleCloseNoteDialog();
-              }}
-            >
-              <DialogContent className="sm:max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Ghi chú công việc</DialogTitle>
-                  <DialogDescription>
-                    {noteDialog.task?.taskName
-                      ? `Cập nhật ghi chú cho "${noteDialog.task.taskName}".`
-                      : "Cập nhật ghi chú cho công việc đã chọn."}
-                  </DialogDescription>
-                </DialogHeader>
-                <Textarea
-                  rows={5}
-                  value={noteDialog.value}
-                  onChange={(e) =>
-                    setNoteDialog((prev) => ({
-                      ...prev,
-                      value: e.target.value,
-                    }))
-                  }
-                  placeholder="Nhập ghi chú cho công việc..."
-                  disabled={noteSaving}
-                />
-                {noteError && (
-                  <p className="text-sm text-rose-600">{noteError}</p>
-                )}
-                <DialogFooter className="gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleCloseNoteDialog}
-                    disabled={noteSaving}
-                  >
-                    Huỷ
-                  </Button>
-                  <Button
-                    type="button"
-                    onClick={handleSaveNote}
-                    disabled={noteSaving}
-                  >
-                    {noteSaving && (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {/* Completion Confirmation Dialog */}
+            {completeConfirmDialog.open && (
+              <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+                <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+                  <div className="px-6 py-4 border-b flex items-center justify-between">
+                    <div className="text-lg font-semibold text-black">
+                      Ghi chú thực tế & hoàn thành
+                    </div>
+                    <button
+                      className="h-8 w-8 grid place-items-center rounded-lg hover:bg-neutral-50"
+                      onClick={handleCloseCompleteDialog}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-3">
+                    <div className="rounded-xl border p-3 text-sm">
+                      <div className="font-medium text-black">
+                        Xác nhận hoàn thành công việc
+                      </div>
+                      {completeConfirmDialog.task && (
+                        <div className="text-xs text-neutral-500 mt-1">
+                          {completeConfirmDialog.task.taskName}
+                        </div>
+                      )}
+                    </div>
+
+                    <Textarea
+                      rows={5}
+                      value={completeConfirmDialog.note}
+                      onChange={(e) =>
+                        setCompleteConfirmDialog((prev) => ({
+                          ...prev,
+                          note: e.target.value,
+                        }))
+                      }
+                      placeholder="VD: kế hoạch tưới 2L, thực tế 1L do đất còn ẩm... (có thể để trống)"
+                    />
+
+                    {taskError && (
+                      <p className="text-sm text-rose-600">{taskError}</p>
                     )}
-                    Lưu ghi chú
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={handleCloseCompleteDialog}
+                        disabled={Boolean(
+                          completingMap[completeConfirmDialog.task?.scheduleId]
+                        )}
+                      >
+                        <span className="text-black">Hủy</span>
+                      </Button>
+                      <Button
+                        onClick={handleConfirmComplete}
+                        disabled={Boolean(
+                          completingMap[completeConfirmDialog.task?.scheduleId]
+                        )}
+                        className="gap-2"
+                      >
+                        {completingMap[
+                          completeConfirmDialog.task?.scheduleId
+                        ] ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4" />
+                        )}
+                        Hoàn thành
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {taskTotal > TASK_PAGE_SIZE && (
               <div className="flex flex-wrap items-center justify-between gap-3">
-                <div className="text-sm text-neutral-500">
+                <div className="text-sm text-white/70">
                   Trang {taskPage}/{totalPages} · {taskTotal} công việc
                 </div>
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                     disabled={taskPage === 1}
                     onClick={() => setTaskPage((p) => Math.max(1, p - 1))}
                   >
@@ -2881,6 +3188,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                   <Button
                     variant="outline"
                     size="sm"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                     disabled={taskPage === totalPages}
                     onClick={() =>
                       setTaskPage((p) => Math.min(totalPages, p + 1))

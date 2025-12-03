@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MamMoi.Infrastructure", "Ma
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MamMoi.Domain", "MamMoi.Domain\MamMoi.Domain.csproj", "{3A8CB951-1111-4071-9157-DE9B69C64544}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MamMoi.Test", "MamMoi.Test\MamMoi.Test.csproj", "{0AB13162-CD49-40E2-ACDA-B87BDD5DFDEB}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{3A8CB951-1111-4071-9157-DE9B69C64544}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3A8CB951-1111-4071-9157-DE9B69C64544}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3A8CB951-1111-4071-9157-DE9B69C64544}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0AB13162-CD49-40E2-ACDA-B87BDD5DFDEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0AB13162-CD49-40E2-ACDA-B87BDD5DFDEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0AB13162-CD49-40E2-ACDA-B87BDD5DFDEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0AB13162-CD49-40E2-ACDA-B87BDD5DFDEB}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

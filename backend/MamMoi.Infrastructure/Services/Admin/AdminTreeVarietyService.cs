@@ -106,23 +106,52 @@ public class AdminTreeVarietyService : IAdminTreeVarietyService
 
     public async Task<TreeVarietyDetailDto> CreateTreeVarietyAsync(CreateTreeVarietyDto dto)
     {
-        // Validate TreeTypeId
-        var treeTypeExists = await _dbContext.TreeTypes.AnyAsync(t => t.TreeTypeId == dto.TreeTypeId);
-        if (!treeTypeExists)
-            throw new InvalidOperationException("TreeType not found");
-
-        var variety = new TreeVariety
+        try
         {
-            TreeTypeId = dto.TreeTypeId,
-            VarietyName = dto.VarietyName,
-            VarietyDescription = dto.VarietyDescription,
-            ImageUrl = dto.ImageUrl
-        };
+            // Validate TreeTypeId
+            var treeType = await _dbContext.TreeTypes.FirstOrDefaultAsync(t => t.TreeTypeId == dto.TreeTypeId);
+            if (treeType == null)
+                throw new InvalidOperationException($"TreeType with ID {dto.TreeTypeId} not found");
 
-        _dbContext.TreeVarietys.Add(variety);
-        await _dbContext.SaveChangesAsync();
+            var variety = new TreeVariety
+            {
+                TreeTypeId = dto.TreeTypeId,
+                VarietyName = dto.VarietyName,
+                VarietyDescription = dto.VarietyDescription,
+                ImageUrl = dto.ImageUrl
+            };
 
-        return await GetTreeVarietyByIdAsync(variety.VarietyId) ?? throw new Exception("Failed to create tree variety");
+            _dbContext.TreeVarietys.Add(variety);
+            await _dbContext.SaveChangesAsync();
+
+            // Reload the entity with navigation properties using AsNoTracking to avoid tracking conflicts
+            var savedVariety = await _dbContext.TreeVarietys
+                .AsNoTracking()
+                .Include(v => v.TreeType)
+                .FirstOrDefaultAsync(v => v.VarietyId == variety.VarietyId);
+
+            if (savedVariety == null)
+                throw new Exception($"Failed to retrieve created tree variety with ID {variety.VarietyId}");
+
+            if (savedVariety.TreeType == null)
+                throw new Exception($"TreeType navigation property is null for variety ID {savedVariety.VarietyId}");
+
+            return new TreeVarietyDetailDto
+            {
+                VarietyId = savedVariety.VarietyId,
+                TreeTypeId = savedVariety.TreeTypeId,
+                TreeTypeName = savedVariety.TreeType.TreeTypeName,
+                VarietyName = savedVariety.VarietyName,
+                VarietyDescription = savedVariety.VarietyDescription,
+                ImageUrl = savedVariety.ImageUrl,
+                TreesCount = 0 // New variety has no trees yet
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in CreateTreeVarietyAsync: {Message}", ex.Message);
+            throw;
+        }
     }
 
     public async Task<TreeVarietyDetailDto?> UpdateTreeVarietyAsync(int varietyId, UpdateTreeVarietyDto dto)

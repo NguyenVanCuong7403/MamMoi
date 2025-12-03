@@ -399,4 +399,94 @@ public class UsersController : ControllerBase
     }
 
     #endregion
+
+    #region Profile OTP Endpoints
+
+    /// <summary>
+    /// Send OTP for profile update (email/phone change)
+    /// POST: api/users/{userId}/profile/otp/send
+    /// </summary>
+    [HttpPost("{userId}/profile/otp/send")]
+    public async Task<IActionResult> SendProfileOtp(int userId, [FromBody] SendProfileOtpRequestDto dto)
+    {
+        try
+        {
+            if (userId <= 0)
+                return BadRequest(new { success = false, message = "Invalid user ID" });
+
+            if (dto == null)
+                return BadRequest(new { success = false, message = "Request data is required" });
+
+            // For testing, return OTP code (remove in production for security)
+            var otpCode = await _userService.SendProfileOtpAsync(userId, dto);
+            
+            return Ok(new
+            {
+                success = true,
+                message = dto.UpdateType == "email" 
+                    ? "Đã gửi mã OTP tới email. Vui lòng kiểm tra hộp thư." 
+                    : "Đã gửi mã OTP tới số điện thoại. Vui lòng kiểm tra tin nhắn.",
+                // Remove this in production for security
+                otpCode = otpCode
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending profile OTP for user {UserId}", userId);
+            return StatusCode(500, new { success = false, message = "Internal server error" });
+        }
+    }
+
+    /// <summary>
+    /// Verify OTP for profile update
+    /// POST: api/users/profile/otp/verify
+    /// </summary>
+    [HttpPost("profile/otp/verify")]
+    public async Task<IActionResult> VerifyProfileOtp([FromBody] VerifyProfileOtpRequestDto dto)
+    {
+        try
+        {
+            if (dto == null)
+                return BadRequest(new { success = false, message = "Request data is required" });
+
+            if (dto.UserId <= 0)
+                return BadRequest(new { success = false, message = "Invalid user ID" });
+
+            var verified = await _userService.VerifyProfileOtpAsync(dto);
+            
+            if (!verified)
+                return BadRequest(new { success = false, message = "Xác thực OTP thất bại." });
+
+            return Ok(new
+            {
+                success = true,
+                message = dto.UpdateType == "email"
+                    ? "Đã xác thực OTP thành công. Email đã được cập nhật."
+                    : "Đã xác thực OTP thành công. Số điện thoại đã được cập nhật."
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error verifying profile OTP for user {UserId}", dto?.UserId);
+            return StatusCode(500, new { success = false, message = "Internal server error" });
+        }
+    }
+
+    #endregion
 }

@@ -114,3 +114,21 @@ packages/
 
 #docs
 .frontend/docs/
+
+#backend
+.backend/docs/
+
+#uploads
+.uploads/
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.bmp
+*.tiff
+*.ico
+*.svg
+*.webp
+*.gif
+*.bmp

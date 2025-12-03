@@ -206,6 +206,13 @@ public class NotificationService : INotificationService
 
     public async Task<int> BroadcastNotificationAsync(BroadcastNotificationDto dto)
     {
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(dto.Title))
+            throw new ArgumentException("Title is required", nameof(dto));
+        
+        if (string.IsNullOrWhiteSpace(dto.Message))
+            throw new ArgumentException("Message is required", nameof(dto));
+
         // Get all active users
         var users = await _dbContext.Users
             .Where(u => u.IsActive)
@@ -222,7 +229,7 @@ public class NotificationService : INotificationService
         {
             UserId = userId,
             Title = dto.Title.Trim(),
-            Message = dto.Message?.Trim(),
+            Message = dto.Message.Trim(),
             NotificationType = dto.NotificationType ?? "Broadcast",
             Priority = dto.Priority ?? "Normal",
             Category = dto.Category?.Trim(),
@@ -257,6 +264,12 @@ public class NotificationService : INotificationService
 
         if (!notifications.Any())
             return false;
+
+        // Prevent updating notifications that have already been sent
+        if (notifications.Any(n => n.SentAt != default(DateTime)))
+        {
+            throw new InvalidOperationException("Cannot update notifications that have already been sent");
+        }
 
         foreach (var notification in notifications)
         {
@@ -309,6 +322,12 @@ public class NotificationService : INotificationService
         if (!notifications.Any())
             return false;
 
+        // Check if notifications have been sent (SentAt is set)
+        if (notifications.Any(n => n.SentAt != default(DateTime)))
+        {
+            throw new InvalidOperationException("Cannot delete notifications that have already been sent");
+        }
+
         _dbContext.Notifications.RemoveRange(notifications);
         await _dbContext.SaveChangesAsync();
 
@@ -317,7 +336,7 @@ public class NotificationService : INotificationService
         return true;
     }
 
-    public async Task<List<(string GroupId, DateTime SentAt, int RecipientCount, string Title)>> GetBroadcastNotificationsAsync()
+    public async Task<List<(string GroupId, DateTime SentAt, int RecipientCount, string Title, string? Message, string? NotificationType, string Priority, string? Category, string? ActionUrl, string? ActionLabel, string? ImageUrl, string? IconName, DateTime? ExpiresAt)>> GetBroadcastNotificationsAsync()
     {
         // First, get all notifications with GroupId that starts with "Broadcast-"
         var allNotifications = await _dbContext.Notifications
@@ -337,14 +356,23 @@ public class NotificationService : INotificationService
                 GroupId = g.Key,
                 SentAt = g.Min(n => n.SentAt),
                 RecipientCount = g.Count(),
-                Title = g.First().Title ?? "No Title"
+                Title = g.First().Title ?? "No Title",
+                Message = g.First().Message,
+                NotificationType = g.First().NotificationType,
+                Priority = g.First().Priority,
+                Category = g.First().Category,
+                ActionUrl = g.First().ActionUrl,
+                ActionLabel = g.First().ActionLabel,
+                ImageUrl = g.First().ImageUrl,
+                IconName = g.First().IconName,
+                ExpiresAt = g.First().ExpiresAt
             })
             .OrderByDescending(x => x.SentAt)
             .ToList();
 
         _logger.LogInformation("Broadcast notification groups found: {Count}", broadcastGroups.Count);
 
-        return broadcastGroups.Select(b => (b.GroupId, b.SentAt, b.RecipientCount, b.Title)).ToList();
+        return broadcastGroups.Select(b => (b.GroupId, b.SentAt, b.RecipientCount, b.Title, b.Message, b.NotificationType, b.Priority, b.Category, b.ActionUrl, b.ActionLabel, b.ImageUrl, b.IconName, b.ExpiresAt)).ToList();
     }
 
     public async Task NotifyAdminOnSupportRequestAsync(int requestId, int userId, string subject)
@@ -362,16 +390,31 @@ public class NotificationService : INotificationService
             return;
         }
 
-        var notifications = adminUsers.Select(adminUserId => new Notification
+        // Get admin roles to set correct ActionUrl based on role
+        var adminUsersWithRoles = await _dbContext.Users
+            .Include(u => u.Role)
+            .Where(u => u.IsActive && (u.Role.RoleName == "SystemAdmin" || u.Role.RoleName == "BusinessAdmin"))
+            .Select(u => new { u.UserId, u.Role.RoleName })
+            .ToListAsync();
+
+        if (!adminUsersWithRoles.Any())
         {
-            UserId = adminUserId,
+            _logger.LogWarning("No admin users found to notify about support request {RequestId}", requestId);
+            return;
+        }
+
+        var notifications = adminUsersWithRoles.Select(admin => new Notification
+        {
+            UserId = admin.UserId,
             Title = "Yêu cầu hỗ trợ mới",
             Message = $"Người dùng đã gửi yêu cầu hỗ trợ: {subject}",
             NotificationType = "SupportRequest",
             Priority = "High",
             Category = "Support",
-            ActionUrl = $"/admin/support-requests/{requestId}",
-            ActionLabel = "Xem yêu cầu",
+            // Set ActionUrl to null to let frontend route based on RelatedEntityType and user role
+            // Frontend will route to /admin/reports for SystemAdmin or /admin/business/reports for BusinessAdmin
+            ActionUrl = null,
+            ActionLabel = "Xem báo cáo",
             RelatedEntityType = "SupportRequest",
             RelatedEntityId = requestId,
             Status = "Sent",

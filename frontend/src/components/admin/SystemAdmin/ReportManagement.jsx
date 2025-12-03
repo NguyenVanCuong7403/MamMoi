@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -70,7 +70,44 @@ import {
 } from "@/components/ui/alert-dialog";
 import { LivingBackground } from "@/components/background";
 import AdminLayout from "../layout/AdminLayout";
+import ActionToast from "../components/ActionToast";
 import AdminReportRepository from "@/API/repositories/AdminReportRepository";
+
+// Utility function to format date in Vietnam timezone
+// Handles dates from backend that may be in UTC or without timezone info
+const formatDateVietnam = (dateString) => {
+  if (!dateString) return "";
+  
+  let date;
+  if (typeof dateString === "string") {
+    // Check if date string has timezone info
+    const hasTimezone = dateString.endsWith("Z") || 
+                       /[+-]\d{2}:\d{2}$/.test(dateString) ||
+                       /[+-]\d{4}$/.test(dateString);
+    
+    // If no timezone info, assume it's UTC (backend typically stores in UTC)
+    if (!hasTimezone) {
+      // Append Z to treat as UTC
+      date = new Date(dateString + "Z");
+    } else {
+      date = new Date(dateString);
+    }
+  } else {
+    date = new Date(dateString);
+  }
+  
+  // Format in Vietnam timezone (UTC+7)
+  return date.toLocaleString("vi-VN", {
+    timeZone: "Asia/Ho_Chi_Minh",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
 
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
@@ -521,7 +558,7 @@ function exportReportsToCSV(reports) {
       escapeCsvValue(PRIORITY_META[report.priority]?.label ?? report.priority),
       escapeCsvValue(getStatusLabel(report.status)),
       escapeCsvValue(
-        new Date(report.createdAt).toLocaleString("vi-VN", { hour12: false })
+        formatDateVietnam(report.createdAt)
       ),
       escapeCsvValue(overdueMeta ? overdueMeta.label : ""),
     ].join(",");
@@ -910,6 +947,13 @@ export default function ReportManagement() {
   const [hasSubmitAttempt, setHasSubmitAttempt] = useState(false);
   const [statusConfirmOpen, setStatusConfirmOpen] = useState(false);
   const [filters, setFilters] = useState(defaultFilters);
+  const [actionToast, setActionToast] = useState({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+  const actionToastTimer = useRef(null);
 
   // Hàm cập nhật report
   const updateReport = async (reportId, updates) => {
@@ -1319,6 +1363,28 @@ export default function ReportManagement() {
     exportReportsToCSV(sortedReports);
   };
 
+  const showActionToast = (type, title, message) => {
+    if (actionToastTimer.current) {
+      clearTimeout(actionToastTimer.current);
+    }
+    setActionToast({
+      open: true,
+      type,
+      title,
+      message,
+    });
+    actionToastTimer.current = setTimeout(() => {
+      setActionToast((prev) => ({ ...prev, open: false }));
+    }, 4500);
+  };
+
+  const closeActionToast = () => {
+    if (actionToastTimer.current) {
+      clearTimeout(actionToastTimer.current);
+    }
+    setActionToast((prev) => ({ ...prev, open: false }));
+  };
+
   useEffect(() => {
     if (!selectedReport) return;
     setAdminNotes(selectedReport.internalNote || "");
@@ -1333,6 +1399,14 @@ export default function ReportManagement() {
       setHasSubmitAttempt(false);
     }
   }, [dialogOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (actionToastTimer.current) {
+        clearTimeout(actionToastTimer.current);
+      }
+    };
+  }, []);
 
   const isAdminNotesValid = adminNotes.trim().length > 0;
   const isEmailContentValid = emailContent.trim().length > 0;
@@ -1351,16 +1425,27 @@ export default function ReportManagement() {
     ) {
       try {
         // Cập nhật report status thông qua API
+        const currentReportId = selectedReport?.id;
+        const statusLabel = getStatusLabel(statusUpdate);
         await updateReport(selectedReport.id, {
           status: statusUpdate,
           internalNote: adminNotes.trim(),
           emailContent: emailContent.trim(),
         });
 
-        // Show success message (email sending would be handled by backend)
-        alert("Cập nhật báo cáo thành công!");
+        showActionToast(
+          "success",
+          "Đã gửi cập nhật",
+          `Báo cáo ${currentReportId} đã chuyển sang trạng thái ${
+            statusLabel || statusUpdate
+          }.`
+        );
       } catch (err) {
-        alert("Có lỗi xảy ra khi cập nhật báo cáo. Vui lòng thử lại.");
+        showActionToast(
+          "error",
+          "Không thể cập nhật báo cáo",
+          err?.message || "Vui lòng thử lại sau."
+        );
         return;
       }
     }
@@ -1493,17 +1578,17 @@ export default function ReportManagement() {
                             overdueAlert.priority
                           ]?.label?.toLowerCase()}{" "}
                           · Báo cáo lâu nhất từ{" "}
-                          {new Date(
+                          {formatDateVietnam(
                             overdueAlert.nextReport.createdAt
-                          ).toLocaleString("vi-VN", { hour12: false })}
+                          )}
                         </p>
                       )}
                       {overdueAlert.type === "general" && (
                         <p className="text-sm">
                           Báo cáo lâu nhất từ{" "}
-                          {new Date(
+                          {formatDateVietnam(
                             overdueAlert.nextReport.createdAt
-                          ).toLocaleString("vi-VN", { hour12: false })}
+                          )}
                         </p>
                       )}
                     </div>
@@ -1770,10 +1855,7 @@ export default function ReportManagement() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-slate-500">
-                                {new Date(report.createdAt).toLocaleString(
-                                  "vi-VN",
-                                  { hour12: false }
-                                )}
+                                {formatDateVietnam(report.createdAt)}
                               </TableCell>
                               <TableCell>
                                 <div className="flex flex-wrap items-center gap-2">
@@ -2359,6 +2441,13 @@ export default function ReportManagement() {
           </>
         </AdminLayout>
       </div>
+      <ActionToast
+        open={actionToast.open}
+        type={actionToast.type}
+        title={actionToast.title}
+        message={actionToast.message}
+        onClose={closeActionToast}
+      />
     </>
   );
 }
