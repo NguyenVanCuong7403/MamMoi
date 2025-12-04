@@ -54,13 +54,29 @@ const PHASE_ID_ALIASES = {
   post_harvest: ["sau thu hoạch", "sau thu hoach", "post harvest", "5"],
 };
 
+// Chuẩn hoá phaseId từ nhiều nguồn (DB / theme) về 5 giá trị chuẩn backend chấp nhận
+// Ví dụ: "post_harvest_4" -> "post_harvest"
 function normalizePhaseId(x) {
   if (!x) return "growth_development";
-  const s = String(x).trim().toLowerCase();
-  if (PHASE_ID_ALIASES[s]) return s; // đã là id
+  const raw = String(x).trim();
+  const s = raw.toLowerCase();
+
+  // 1) Nếu đã là key chuẩn trong bảng alias
+  if (PHASE_ID_ALIASES[s]) return s;
+
+  // 2) Nếu trùng alias tiếng Việt / số thứ tự
   for (const [id, aliases] of Object.entries(PHASE_ID_ALIASES)) {
     if (id === s || aliases.includes(s)) return id;
   }
+
+  // 3) Nếu là biến thể có hậu tố: "flowering_2", "post_harvest-4", ...
+  for (const id of Object.keys(PHASE_ID_ALIASES)) {
+    if (s === id) return id;
+    if (s.startsWith(id + "_") || s.startsWith(id + "-")) {
+      return id;
+    }
+  }
+
   return "growth_development";
 }
 
@@ -195,49 +211,64 @@ function LifecycleTimeline({
 }) {
   const defaultPhase1 = {
     id: "growth_development",
+    canonicalPhaseId: "growth_development",
     name: "Sinh trưởng & Phát triển",
     icon: "🌱",
     color: "emerald",
     colorHex: LIFECYCLE_COLOR_LOOKUP.emerald,
     lineColorHex: LIFECYCLE_COLOR_LOOKUP.emerald,
     iconImageUrl: null,
+    stageId: null,
+    stageOrder: 1,
   };
   const defaultCyclePhases = [
     {
       id: "flowering",
+      canonicalPhaseId: "flowering",
       name: "Ra Hoa",
       icon: "🌸",
       color: "pink",
       colorHex: LIFECYCLE_COLOR_LOOKUP.pink,
       lineColorHex: LIFECYCLE_COLOR_LOOKUP.pink,
       iconImageUrl: null,
+      stageId: null,
+      stageOrder: 2,
     },
     {
       id: "fruiting",
+      canonicalPhaseId: "fruiting",
       name: "Ra quả",
       icon: "🍎",
       color: "lime",
       colorHex: LIFECYCLE_COLOR_LOOKUP.lime,
       lineColorHex: LIFECYCLE_COLOR_LOOKUP.lime,
       iconImageUrl: null,
+      stageId: null,
+      stageOrder: 3,
     },
     {
       id: "pre_harvest",
+      canonicalPhaseId: "pre_harvest",
       name: "Trước thu hoạch",
       icon: "🔍",
       color: "amber",
       colorHex: LIFECYCLE_COLOR_LOOKUP.amber,
       lineColorHex: LIFECYCLE_COLOR_LOOKUP.amber,
       iconImageUrl: null,
+      stageId: null,
+      stageOrder: 4,
     },
     {
       id: "post_harvest",
+      canonicalPhaseId: "post_harvest",
       name: "Sau thu hoạch",
       icon: "🌿",
       color: "teal",
       colorHex: LIFECYCLE_COLOR_LOOKUP.teal,
       lineColorHex: LIFECYCLE_COLOR_LOOKUP.teal,
       iconImageUrl: null,
+      stageId: null,
+      stageOrder: 5,
     },
   ];
 
@@ -256,6 +287,13 @@ function LifecycleTimeline({
       defaultPhase1.lineColorHex;
     return {
       id: cfg.phaseId || defaultPhase1.id,
+      phaseId: cfg.phaseId || defaultPhase1.id,
+      canonicalPhaseId:
+        cfg.canonicalPhaseId ||
+        defaultPhase1.canonicalPhaseId ||
+        normalizePhaseId(cfg.phaseId || defaultPhase1.id),
+      stageId: cfg.stageId ?? defaultPhase1.stageId ?? null,
+      stageOrder: cfg.stageOrder ?? defaultPhase1.stageOrder ?? 1,
       name: cfg.label || defaultPhase1.name,
       icon: cfg.icon || defaultPhase1.icon,
       iconImageUrl: cfg.iconImageUrl || null,
@@ -266,10 +304,11 @@ function LifecycleTimeline({
   }, [phaseConfigs]);
 
   const cyclePhases = useMemo(() => {
-    const source =
-      Array.isArray(phaseConfigs?.cycles) && phaseConfigs.cycles.length
-        ? phaseConfigs.cycles
-        : defaultCyclePhases;
+    // Nếu phaseConfigs.cycles được cung cấp (kể cả mảng rỗng), sử dụng nó
+    // Chỉ fallback về defaultCyclePhases khi cycles không được định nghĩa
+    const hasExplicitCycles = Array.isArray(phaseConfigs?.cycles);
+    const source = hasExplicitCycles ? phaseConfigs.cycles : defaultCyclePhases;
+
     return source.map((phase) => {
       const phaseId = phase.phaseId || phase.id;
       const colorKey = (
@@ -288,6 +327,10 @@ function LifecycleTimeline({
         LIFECYCLE_COLOR_LOOKUP.emerald;
       return {
         id: phaseId,
+        phaseId,
+        canonicalPhaseId: phase.canonicalPhaseId || normalizePhaseId(phaseId),
+        stageId: phase.stageId ?? null,
+        stageOrder: phase.stageOrder ?? null,
         name: phase.label || phase.name || phaseId,
         icon: phase.icon || "🌿",
         iconImageUrl: phase.iconImageUrl || null,
@@ -297,6 +340,57 @@ function LifecycleTimeline({
       };
     });
   }, [phaseConfigs]);
+
+  const phaseList = useMemo(() => {
+    const list = [];
+    if (phase1) list.push(phase1);
+    if (Array.isArray(cyclePhases) && cyclePhases.length) {
+      list.push(...cyclePhases);
+    }
+    return list;
+  }, [phase1, cyclePhases]);
+
+  const findPhaseById = useCallback(
+    (phaseId) =>
+      phaseList.find(
+        (phase) =>
+          phase.id === phaseId ||
+          phase.phaseId === phaseId ||
+          phase.phaseId === normalizePhaseId(phaseId)
+      ) || null,
+    [phaseList]
+  );
+
+  const findPhaseByStageId = useCallback(
+    (stageId) =>
+      stageId == null
+        ? null
+        : phaseList.find((phase) => phase.stageId === stageId) || null,
+    [phaseList]
+  );
+
+  const findPhaseByCanonical = useCallback(
+    (canonicalId) =>
+      !canonicalId
+        ? null
+        : phaseList.find(
+            (phase) =>
+              phase.canonicalPhaseId === canonicalId ||
+              phase.phaseId === canonicalId
+          ) || null,
+    [phaseList]
+  );
+
+  // Lấy nhãn giai đoạn từ cấu hình phaseTheme/DB thay vì mock cứng
+  const labelOf = useCallback(
+    (id) => {
+      if (!id) return "";
+      const match =
+        findPhaseById(id) || findPhaseByCanonical(normalizePhaseId(id));
+      return match?.name || id;
+    },
+    [findPhaseByCanonical, findPhaseById]
+  );
 
   const palette = {
     emerald: {
@@ -429,7 +523,9 @@ function LifecycleTimeline({
   }
 
   const showP1Idle =
-    activePhase === "growth_development" && !isPhase1Completed && !p1Transition;
+    normalizePhaseId(activePhase) === "growth_development" &&
+    !isPhase1Completed &&
+    !p1Transition;
   const css = `
     @keyframes dashFlow { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -28; } }
     .flow-line { animation: dashFlow 2.2s linear infinite; }
@@ -503,11 +599,17 @@ function LifecycleTimeline({
   };
 
   const currentPhaseId = treeData?.currentPhase ?? activePhase ?? phase1.id;
-  const phaseName = (id) =>
-    id === phase1.id
-      ? phase1.name
-      : cyclePhases.find((p) => p.id === id)?.name || id;
+  const phaseName = (id) => {
+    const found = findPhaseById(id) || findPhaseByCanonical(id);
+    return found?.name || id;
+  };
   const currentLabel = phaseName(currentPhaseId);
+
+  const activePhaseCanonical = useMemo(() => {
+    const meta =
+      findPhaseById(activePhase) || findPhaseByCanonical(activePhase);
+    return meta?.canonicalPhaseId || normalizePhaseId(activePhase);
+  }, [activePhase, findPhaseByCanonical, findPhaseById]);
   const isBackwardStep = !!(
     transitionFlow &&
     transientConfig &&
@@ -518,26 +620,29 @@ function LifecycleTimeline({
   const canEditFlower = useMemo(
     () =>
       ["flowering", "fruiting", "pre_harvest", "post_harvest"].includes(
-        currentPhaseId
+        activePhaseCanonical
       ),
-    [currentPhaseId]
+    [activePhaseCanonical]
   );
 
   const canEditFruit = useMemo(
-    () => ["fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
-    [currentPhaseId]
+    () =>
+      ["fruiting", "pre_harvest", "post_harvest"].includes(
+        activePhaseCanonical
+      ),
+    [activePhaseCanonical]
   );
 
   // Mỗi lần phase hiện tại đổi → báo cho TreeDetail biết
   useEffect(() => {
     if (typeof onPhaseGateChange === "function") {
       onPhaseGateChange({
-        currentPhaseId,
+        currentPhaseId: activePhaseCanonical,
         canEditFlower,
         canEditFruit,
       });
     }
-  }, [onPhaseGateChange, currentPhaseId, canEditFlower, canEditFruit]);
+  }, [onPhaseGateChange, activePhaseCanonical, canEditFlower, canEditFruit]);
 
   const typeLabel = treeType || "—";
   const varietyLabel = treeVariety || "—";
@@ -765,326 +870,364 @@ function LifecycleTimeline({
           </div>
         </div>
 
-        {/* Connector P1 → Ra hoa */}
-        <svg
-          width={RING_SIZE}
-          height="56"
-          viewBox={`0 0 ${RING_SIZE} 56`}
-          className="overflow-visible my-0.5"
-        >
-          {activePhase === "growth_development" && showP1Idle && (
-            <>
-              <line
-                x1={centerX}
-                y1="6"
-                x2={centerX}
-                y2="48"
-                stroke={connectorColor}
-                strokeWidth="3"
-                strokeDasharray="10,8"
-                strokeLinecap="round"
-                opacity={0.9}
-                className="flow-line"
+        {/* Connector P1 → Ra hoa - chỉ hiển thị khi có cycle phases */}
+        {cyclePhases.length > 0 && (
+          <svg
+            width={RING_SIZE}
+            height="56"
+            viewBox={`0 0 ${RING_SIZE} 56`}
+            className="overflow-visible my-0.5"
+          >
+            {activePhaseCanonical === "growth_development" && showP1Idle && (
+              <>
+                <line
+                  x1={centerX}
+                  y1="6"
+                  x2={centerX}
+                  y2="48"
+                  stroke={connectorColor}
+                  strokeWidth="3"
+                  strokeDasharray="10,8"
+                  strokeLinecap="round"
+                  opacity={0.9}
+                  className="flow-line"
+                />
+                <polygon
+                  points={`${centerX},54 ${centerX - 8},46 ${centerX + 8},46`}
+                  fill={connectorColor}
+                  opacity={0.95}
+                />
+              </>
+            )}
+            {p1Transition && (
+              <LCTransientPath
+                key={`p1-${p1Key}`}
+                d={`M ${centerX} 6 L ${centerX} 48`}
+                color={connectorColor}
+                duration={950}
+                headSize={10}
+                headPad={6}
+                mode="grow"
+                headVisible
               />
-              <polygon
-                points={`${centerX},54 ${centerX - 8},46 ${centerX + 8},46`}
-                fill={connectorColor}
-                opacity={0.95}
-              />
-            </>
-          )}
-          {p1Transition && (
-            <LCTransientPath
-              key={`p1-${p1Key}`}
-              d={`M ${centerX} 6 L ${centerX} 48`}
-              color={connectorColor}
-              duration={950}
-              headSize={10}
-              headPad={6}
-              mode="grow"
-              headVisible
-            />
-          )}
-          {!showP1Idle && isPhase1Completed && !p1Transition && (
-            <>
-              <line
-                x1={centerX}
-                y1="6"
-                x2={centerX}
-                y2="48"
-                stroke="#cbd5e1"
-                strokeWidth="3"
-                strokeDasharray="10,8"
-                strokeLinecap="round"
-                opacity={0.6}
-              />
-              <polygon
-                points={`${centerX},54 ${centerX - 8},46 ${centerX + 8},46`}
-                fill="#cbd5e1"
-                opacity={0.7}
-              />
-            </>
-          )}
-        </svg>
+            )}
+            {!showP1Idle && isPhase1Completed && !p1Transition && (
+              <>
+                <line
+                  x1={centerX}
+                  y1="6"
+                  x2={centerX}
+                  y2="48"
+                  stroke="#cbd5e1"
+                  strokeWidth="3"
+                  strokeDasharray="10,8"
+                  strokeLinecap="round"
+                  opacity={0.6}
+                />
+                <polygon
+                  points={`${centerX},54 ${centerX - 8},46 ${centerX + 8},46`}
+                  fill="#cbd5e1"
+                  opacity={0.7}
+                />
+              </>
+            )}
+          </svg>
+        )}
 
-        {/* Vòng tròn */}
-        <div
-          className="relative"
-          style={{ width: RING_SIZE, height: RING_SIZE }}
-        >
-          {/* center info */}
-          <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+        {/* Hiển thị thông tin cây khi chỉ có 1 giai đoạn (không có cycle phases) */}
+        {cyclePhases.length === 0 && (
+          <div className="mt-4 flex justify-center">
             <div
-              className="bg-white/90 backdrop-blur rounded-full shadow-xl ring-1 ring-black/5
-                            w-24 h-24 flex flex-col items-center justify-center p-2 text-center"
+              className="bg-white/90 backdrop-blur rounded-2xl shadow-xl ring-1 ring-black/5
+                          px-6 py-4 text-center"
             >
-              <div className="text-[9px] text-gray-500 font-medium leading-tight">
+              <div className="text-[10px] text-gray-500 font-medium leading-tight">
                 Loại cây
               </div>
-
-              <div
-                className={getSizeForCenterText(
-                  typeLabel,
-                  "font-bold text-emerald-600 leading-tight max-w-[72px] break-words"
-                )}
-              >
+              <div className="font-bold text-emerald-600 text-sm leading-tight">
                 {typeLabel}
               </div>
-
-              <div className="text-[9px] text-gray-500 font-medium mt-0.5 leading-tight">
+              <div className="text-[10px] text-gray-500 font-medium mt-1 leading-tight">
                 Giống
               </div>
-
-              <div
-                className={getSizeForCenterText(
-                  varietyLabel,
-                  "text-gray-700 font-semibold leading-tight max-w-[72px] break-words"
-                )}
-              >
+              <div className="text-gray-700 font-semibold text-sm leading-tight">
                 {varietyLabel}
               </div>
-
-              <div className="text-[8px] text-gray-400 mt-0.5 leading-tight">
+              <div className="text-[9px] text-gray-400 mt-1 leading-tight">
                 ID: {treeId || treeData?.id || "—"}
+              </div>
+              <div className="mt-3 text-xs text-amber-600 font-medium">
+                Chỉ có 1 giai đoạn được cấu hình
               </div>
             </div>
           </div>
+        )}
 
+        {/* Vòng tròn - chỉ hiển thị khi có cycle phases */}
+        {cyclePhases.length > 0 && (
           <div
-            className={`absolute inset-0 ${
-              isSpinning ? "animate-spin-once" : ""
-            }`}
-            style={{ transformOrigin: "50% 50%" }}
+            className="relative"
+            style={{ width: RING_SIZE, height: RING_SIZE }}
           >
-            <svg
-              className="absolute inset-0 w-full h-full z-10"
-              viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
-              shapeRendering="geometricPrecision"
-            >
-              {renderRingMask()}
-              {renderGuideArrows()}
+            {/* center info */}
+            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+              <div
+                className="bg-white/90 backdrop-blur rounded-full shadow-xl ring-1 ring-black/5
+                            w-24 h-24 flex flex-col items-center justify-center p-2 text-center"
+              >
+                <div className="text-[9px] text-gray-500 font-medium leading-tight">
+                  Loại cây
+                </div>
 
-              {cyclePhases.map((phase, index) => {
-                const nIndex = (index + 1) % cyclePhases.length;
-                const { thetaStart, thetaEnd } = trimAngles(index, nIndex);
-                const isActive = activePhase === phase.id;
-                const isPreview = previewPhase === phase.id;
+                <div
+                  className={getSizeForCenterText(
+                    typeLabel,
+                    "font-bold text-emerald-600 leading-tight max-w-[72px] break-words"
+                  )}
+                >
+                  {typeLabel}
+                </div>
 
-                const persistedBase =
-                  isPhase1Completed &&
-                  trailIndex >= 1 &&
-                  index <= trailIndex - 1;
-                const persisted =
-                  isBackwardRun && index === removingArcIdx
-                    ? false
-                    : persistedBase;
+                <div className="text-[9px] text-gray-500 font-medium mt-0.5 leading-tight">
+                  Giống
+                </div>
 
-                const color = PHASE_COLORS[phase.id] || "#10b981";
-                const dArc = buildArcD(thetaStart, thetaEnd, radius, 1);
-                const endX = centerX + radius * Math.cos(thetaEnd);
-                const endY = centerY + radius * Math.sin(thetaEnd);
-                const tanDeg =
-                  (tangentAngleAtEnd(thetaEnd, radius) * 180) / Math.PI;
+                <div
+                  className={getSizeForCenterText(
+                    varietyLabel,
+                    "text-gray-700 font-semibold leading-tight max-w-[72px] break-words"
+                  )}
+                >
+                  {varietyLabel}
+                </div>
 
-                const hideStaticFrom =
-                  transitionFlow && index === transientConfig?.fromIdx;
-                const hideStaticTo =
-                  transitionFlow && index === transientConfig?.toIdx;
-                const hideStaticCurr =
-                  !transitionFlow && (isActive || isPreview);
-                const hideRemoving = isBackwardRun && index === removingArcIdx;
-                const hidePost = postHideIdx !== null && index === postHideIdx;
+                <div className="text-[8px] text-gray-400 mt-0.5 leading-tight">
+                  ID: {treeId || treeData?.id || "—"}
+                </div>
+              </div>
+            </div>
 
-                return (
-                  <g key={`arc-${phase.id}`} mask="url(#ringMask)">
-                    {isPhase1Completed && (
-                      <>
-                        <path
-                          d={dArc}
-                          fill="none"
-                          stroke={persisted ? color : "#d1d5db"}
-                          strokeWidth={STROKE}
-                          opacity={persisted ? "0.65" : "0.35"}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          style={{ vectorEffect: "non-scaling-stroke" }}
-                          strokeDasharray={persisted ? "16 12" : undefined}
-                          className={persisted ? "flow-arc-slow" : undefined}
-                        />
-                        <g
-                          transform={`translate(${endX}, ${endY}) rotate(${tanDeg})`}
-                          opacity={
-                            hideStaticFrom ||
-                            hideStaticTo ||
-                            hideStaticCurr ||
-                            hideRemoving ||
-                            hidePost
-                              ? 0
-                              : 1
-                          }
-                          className="fade-in-160"
-                        >
-                          <polygon
-                            points={`0,0 -${HEAD_SIZE},-${
-                              HEAD_SIZE / 2
-                            } -${HEAD_SIZE},${HEAD_SIZE / 2}`}
-                            fill={persisted ? color : "#d1d5db"}
-                            opacity={persisted ? "0.75" : "0.45"}
-                          />
-                        </g>
-                      </>
-                    )}
-                  </g>
-                );
-              })}
-
-              {transitionFlow && transientConfig && (
-                <g mask="url(#ringMask)">
-                  <LCTransientPath
-                    key={`transient-${transitionKey}-${transitionFlow.from}-${transitionFlow.to}`}
-                    d={transientConfig.d}
-                    color={transientConfig.color}
-                    duration={1150}
-                    headSize={HEAD_SIZE}
-                    headPad={HEAD_PAD}
-                    mode={transientConfig.retract ? "shrink" : "grow"}
-                    headVisible={!transientConfig.retract}
-                  />
-                </g>
-              )}
-            </svg>
-
-            {/* nodes */}
             <div
-              ref={nodeLayerRef}
-              className={`absolute inset-0 z-30 ${
-                nodeInteractionEnabled ? "" : "pointer-events-none"
+              className={`absolute inset-0 ${
+                isSpinning ? "animate-spin-once" : ""
               }`}
+              style={{ transformOrigin: "50% 50%" }}
             >
-              {cyclePhases.map((phase, idx) => {
-                const pos = getCirclePosition(idx, cyclePhases.length);
-                const isActive = activePhase === phase.id;
-                const isPreview = previewPhase === phase.id;
-                const allowActiveColor = !isBackwardRun;
-                const keepByTrail =
-                  isPhase1Completed && trailIndex >= 0 && idx <= trailIndex;
-                const nodeHasColor =
-                  isPhase1Completed &&
-                  ((keepByTrail && phase.id !== suppressId) ||
-                    (allowActiveColor && isActive && phase.id !== suppressId) ||
-                    isPreview);
-                const isDragging = dragState?.id === phase.id;
-                const layerRect = nodeLayerRef.current
-                  ? nodeLayerRef.current.getBoundingClientRect()
-                  : null;
-                let nodeStyle = {
-                  left: `${pos.x}px`,
-                  top: `${pos.y}px`,
-                  transform: "translate(-50%, -50%)",
-                };
-                if (
-                  isDragging &&
-                  dragState?.pointer &&
-                  dragState?.offset &&
-                  layerRect
-                ) {
-                  nodeStyle = {
-                    left: `${
-                      dragState.pointer.x - layerRect.left - dragState.offset.x
-                    }px`,
-                    top: `${
-                      dragState.pointer.y - layerRect.top - dragState.offset.y
-                    }px`,
+              <svg
+                className="absolute inset-0 w-full h-full z-10"
+                viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
+                shapeRendering="geometricPrecision"
+              >
+                {renderRingMask()}
+                {renderGuideArrows()}
+
+                {cyclePhases.map((phase, index) => {
+                  const nIndex = (index + 1) % cyclePhases.length;
+                  const { thetaStart, thetaEnd } = trimAngles(index, nIndex);
+                  const isActive = activePhase === phase.id;
+                  const isPreview = previewPhase === phase.id;
+
+                  const persistedBase =
+                    isPhase1Completed &&
+                    trailIndex >= 1 &&
+                    index <= trailIndex - 1;
+                  const persisted =
+                    isBackwardRun && index === removingArcIdx
+                      ? false
+                      : persistedBase;
+
+                  const color = PHASE_COLORS[phase.id] || "#10b981";
+                  const dArc = buildArcD(thetaStart, thetaEnd, radius, 1);
+                  const endX = centerX + radius * Math.cos(thetaEnd);
+                  const endY = centerY + radius * Math.sin(thetaEnd);
+                  const tanDeg =
+                    (tangentAngleAtEnd(thetaEnd, radius) * 180) / Math.PI;
+
+                  const hideStaticFrom =
+                    transitionFlow && index === transientConfig?.fromIdx;
+                  const hideStaticTo =
+                    transitionFlow && index === transientConfig?.toIdx;
+                  const hideStaticCurr =
+                    !transitionFlow && (isActive || isPreview);
+                  const hideRemoving =
+                    isBackwardRun && index === removingArcIdx;
+                  const hidePost =
+                    postHideIdx !== null && index === postHideIdx;
+
+                  return (
+                    <g key={`arc-${phase.id}`} mask="url(#ringMask)">
+                      {isPhase1Completed && (
+                        <>
+                          <path
+                            d={dArc}
+                            fill="none"
+                            stroke={persisted ? color : "#d1d5db"}
+                            strokeWidth={STROKE}
+                            opacity={persisted ? "0.65" : "0.35"}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            style={{ vectorEffect: "non-scaling-stroke" }}
+                            strokeDasharray={persisted ? "16 12" : undefined}
+                            className={persisted ? "flow-arc-slow" : undefined}
+                          />
+                          <g
+                            transform={`translate(${endX}, ${endY}) rotate(${tanDeg})`}
+                            opacity={
+                              hideStaticFrom ||
+                              hideStaticTo ||
+                              hideStaticCurr ||
+                              hideRemoving ||
+                              hidePost
+                                ? 0
+                                : 1
+                            }
+                            className="fade-in-160"
+                          >
+                            <polygon
+                              points={`0,0 -${HEAD_SIZE},-${
+                                HEAD_SIZE / 2
+                              } -${HEAD_SIZE},${HEAD_SIZE / 2}`}
+                              fill={persisted ? color : "#d1d5db"}
+                              opacity={persisted ? "0.75" : "0.45"}
+                            />
+                          </g>
+                        </>
+                      )}
+                    </g>
+                  );
+                })}
+
+                {transitionFlow && transientConfig && (
+                  <g mask="url(#ringMask)">
+                    <LCTransientPath
+                      key={`transient-${transitionKey}-${transitionFlow.from}-${transitionFlow.to}`}
+                      d={transientConfig.d}
+                      color={transientConfig.color}
+                      duration={1150}
+                      headSize={HEAD_SIZE}
+                      headPad={HEAD_PAD}
+                      mode={transientConfig.retract ? "shrink" : "grow"}
+                      headVisible={!transientConfig.retract}
+                    />
+                  </g>
+                )}
+              </svg>
+
+              {/* nodes */}
+              <div
+                ref={nodeLayerRef}
+                className={`absolute inset-0 z-30 ${
+                  nodeInteractionEnabled ? "" : "pointer-events-none"
+                }`}
+              >
+                {cyclePhases.map((phase, idx) => {
+                  const pos = getCirclePosition(idx, cyclePhases.length);
+                  const isActive = activePhase === phase.id;
+                  const isPreview = previewPhase === phase.id;
+                  const allowActiveColor = !isBackwardRun;
+                  const keepByTrail =
+                    isPhase1Completed && trailIndex >= 0 && idx <= trailIndex;
+                  const nodeHasColor =
+                    isPhase1Completed &&
+                    ((keepByTrail && phase.id !== suppressId) ||
+                      (allowActiveColor &&
+                        isActive &&
+                        phase.id !== suppressId) ||
+                      isPreview);
+                  const isDragging = dragState?.id === phase.id;
+                  const layerRect = nodeLayerRef.current
+                    ? nodeLayerRef.current.getBoundingClientRect()
+                    : null;
+                  let nodeStyle = {
+                    left: `${pos.x}px`,
+                    top: `${pos.y}px`,
                     transform: "translate(-50%, -50%)",
-                    zIndex: 50,
                   };
-                }
-                const nodeWrapperClass = [
-                  "absolute transition-all duration-300 select-none",
-                  nodeInteractionEnabled
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing"
-                    : "pointer-events-none",
-                  isDragging ? "scale-105 drop-shadow-xl" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ");
-                return (
-                  <div
-                    key={phase.id}
-                    className={nodeWrapperClass}
-                    style={nodeStyle}
-                    onPointerDown={
-                      editableNodes
-                        ? (event) => startDrag(phase.id, idx, event)
-                        : undefined
-                    }
-                    onClick={
-                      !editableNodes && typeof onNodeClick === "function"
-                        ? (event) => {
-                            event.stopPropagation();
-                            onNodeClick(phase.id);
-                          }
-                        : undefined
-                    }
-                  >
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg
+                  if (
+                    isDragging &&
+                    dragState?.pointer &&
+                    dragState?.offset &&
+                    layerRect
+                  ) {
+                    nodeStyle = {
+                      left: `${
+                        dragState.pointer.x -
+                        layerRect.left -
+                        dragState.offset.x
+                      }px`,
+                      top: `${
+                        dragState.pointer.y - layerRect.top - dragState.offset.y
+                      }px`,
+                      transform: "translate(-50%, -50%)",
+                      zIndex: 50,
+                    };
+                  }
+                  const nodeWrapperClass = [
+                    "absolute transition-all duration-300 select-none",
+                    nodeInteractionEnabled
+                      ? "pointer-events-auto cursor-grab active:cursor-grabbing"
+                      : "pointer-events-none",
+                    isDragging ? "scale-105 drop-shadow-xl" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
+                  return (
+                    <div
+                      key={phase.id}
+                      className={nodeWrapperClass}
+                      style={nodeStyle}
+                      onPointerDown={
+                        editableNodes
+                          ? (event) => startDrag(phase.id, idx, event)
+                          : undefined
+                      }
+                      onClick={
+                        !editableNodes && typeof onNodeClick === "function"
+                          ? (event) => {
+                              event.stopPropagation();
+                              onNodeClick(phase.id);
+                            }
+                          : undefined
+                      }
+                    >
+                      <div className="flex flex-col items-center">
+                        <div
+                          className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg
                                       ${getColorClasses(
                                         phase.color,
                                         nodeHasColor
                                       )}`}
-                      >
-                        {phase.iconImageUrl ? (
-                          <img
-                            src={phase.iconImageUrl}
-                            alt={phase.name}
-                            className={`h-7 w-7 object-contain ${
-                              nodeHasColor ? "" : "grayscale opacity-40"
-                            }`}
-                          />
-                        ) : (
-                          <span
-                            className={
-                              nodeHasColor ? "" : "grayscale opacity-40"
-                            }
-                          >
-                            {phase.icon}
-                          </span>
-                        )}
-                        {((allowActiveColor &&
-                          isActive &&
-                          phase.id !== suppressId) ||
-                          isPreview) && (
-                          <span
-                            className={`pointer-events-none absolute inset-0 rounded-full animate-ping opacity-60 ${getPingTone(
-                              phase.color
-                            )}`}
-                          />
-                        )}
-                      </div>
-                      <div
-                        className={`mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold ring-1 ring-black/5 shadow-sm whitespace-nowrap
+                        >
+                          {phase.iconImageUrl ? (
+                            <img
+                              src={phase.iconImageUrl}
+                              alt={phase.name}
+                              className={`h-7 w-7 object-contain ${
+                                nodeHasColor ? "" : "grayscale opacity-40"
+                              }`}
+                            />
+                          ) : (
+                            <span
+                              className={
+                                nodeHasColor ? "" : "grayscale opacity-40"
+                              }
+                            >
+                              {phase.icon}
+                            </span>
+                          )}
+                          {((allowActiveColor &&
+                            isActive &&
+                            phase.id !== suppressId) ||
+                            isPreview) && (
+                            <span
+                              className={`pointer-events-none absolute inset-0 rounded-full animate-ping opacity-60 ${getPingTone(
+                                phase.color
+                              )}`}
+                            />
+                          )}
+                        </div>
+                        <div
+                          className={`mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold ring-1 ring-black/5 shadow-sm whitespace-nowrap
                         ${
                           nodeHasColor
                             ? `${
@@ -1102,16 +1245,17 @@ function LifecycleTimeline({
                               } text-white`
                             : "bg-white text-gray-700 border border-gray-200"
                         }`}
-                      >
-                        {phase.name}
+                        >
+                          {phase.name}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {!isPhase1Completed && (
           <div className="text-center mt-1 text-[11px] text-gray-500"></div>
@@ -1179,10 +1323,10 @@ function LCPhaseDropdown({
 }) {
   const [open, setOpen] = useState(false);
   const fallbackItems = [
-    { id: "flowering", name: "Ra Hoa", icon: "🌸" },
-    { id: "fruiting", name: "Đậu quả", icon: "🍏" },
-    { id: "pre_harvest", name: "Trước thu hoạch", icon: "🔍" },
-    { id: "post_harvest", name: "Sau thu hoạch", icon: "🌿" },
+    { id: "flowering", name: "Ra Hoa", icon: "🌸", phase: null },
+    { id: "fruiting", name: "Đậu quả", icon: "🍏", phase: null },
+    { id: "pre_harvest", name: "Trước thu hoạch", icon: "🔍", phase: null },
+    { id: "post_harvest", name: "Sau thu hoạch", icon: "🌿", phase: null },
   ];
   const items = useMemo(() => {
     if (Array.isArray(phaseConfigs?.cycles) && phaseConfigs.cycles.length) {
@@ -1190,6 +1334,7 @@ function LCPhaseDropdown({
         id: phase.phaseId,
         name: phase.label,
         icon: phase.icon || "🌿",
+        phase,
       }));
     }
     return fallbackItems;
@@ -1214,7 +1359,7 @@ function LCPhaseDropdown({
                 <button
                   onClick={() => {
                     setOpen(false);
-                    onPickPhase(it.id);
+                    onPickPhase(it.phase || it.id);
                   }}
                   className={`w-full text-left px-2.5 py-2 rounded-xl border transition-all flex items-center gap-2.5
                     ${
@@ -1222,9 +1367,10 @@ function LCPhaseDropdown({
                         ? "bg-emerald-50 border-emerald-300 shadow-sm"
                         : "bg-white hover:bg-blue-50 border-gray-200 hover:shadow-md"
                     }`}
+                  title={it.name}
                 >
                   <span className="text-[18px] leading-none">{it.icon}</span>
-                  <span className="font-semibold text-[12px] text-gray-900 whitespace-nowrap">
+                  <span className="font-semibold text-[12px] text-gray-900 flex-1 min-w-0 truncate">
                     {it.name}
                   </span>
                 </button>
@@ -1275,15 +1421,6 @@ export default function LifecycleWidget({
   onPhaseNodeClick,
   onPhaseNodeReorder,
 }) {
-  const labelOf = (id) =>
-    ({
-      growth_development: "Sinh trưởng & Phát triển",
-      flowering: "Ra Hoa",
-      fruiting: "Đậu quả",
-      pre_harvest: "Trước thu hoạch",
-      post_harvest: "Sau thu hoạch",
-    }[id] || id);
-
   // Lấy giá trị đầu tiên có thật (string hoặc object {name/label/...})
   const first = (...xs) => xs.find(Boolean) || "";
 
@@ -1339,8 +1476,19 @@ export default function LifecycleWidget({
       )
         .toString()
         .toLowerCase();
+      const canonicalPhaseId =
+        override.canonicalPhaseId || base.canonicalPhaseId || phaseId;
+      const stageId =
+        override.stageId ?? base.stageId ?? override.rawStage?.stageId ?? null;
+      const stageOrder =
+        typeof override.stageOrder === "number"
+          ? override.stageOrder
+          : typeof base.stageOrder === "number"
+          ? base.stageOrder
+          : index;
       return {
         phaseId,
+        canonicalPhaseId,
         label: override.label || base.label || phaseId,
         subtitle: override.subtitle || "",
         description: override.description || "",
@@ -1350,6 +1498,8 @@ export default function LifecycleWidget({
         lineStyle: override.lineStyle || base.lineStyle || "solid",
         durationMs: override.durationMs || base.durationMs || 1150,
         order: typeof override.order === "number" ? override.order : index,
+        stageId,
+        stageOrder,
       };
     };
 
@@ -1418,14 +1568,69 @@ export default function LifecycleWidget({
   }, [allowPartialPhases, orderedPhaseConfigs]);
 
   const cyclePhaseConfigs = useMemo(() => {
-    if (allowPartialPhases && orderedPhaseConfigs.length > 0) {
-      return orderedPhaseConfigs.slice(1);
+    // Khi allowPartialPhases = true, chỉ sử dụng các phase từ config (không fallback)
+    if (allowPartialPhases) {
+      if (orderedPhaseConfigs.length > 0) {
+        return orderedPhaseConfigs.slice(1);
+      }
+      return []; // Không có cycle phases nếu chỉ có 1 giai đoạn
     }
+    // Chế độ mặc định: filter và fallback nếu cần
     const filtered = orderedPhaseConfigs.filter(
       (phase) => phase.phaseId !== "growth_development"
     );
     return filtered.length ? filtered : defaultCycleConfigs;
   }, [allowPartialPhases, orderedPhaseConfigs, defaultCycleConfigs]);
+
+  const phaseList = useMemo(() => {
+    const list = [];
+    if (phase1Config) list.push(phase1Config);
+    if (Array.isArray(cyclePhaseConfigs) && cyclePhaseConfigs.length) {
+      list.push(...cyclePhaseConfigs);
+    }
+    return list;
+  }, [phase1Config, cyclePhaseConfigs]);
+
+  const findPhaseById = useCallback(
+    (phaseId) =>
+      phaseList.find(
+        (phase) =>
+          phase.phaseId === phaseId ||
+          phase.id === phaseId ||
+          phase.phaseId === normalizePhaseId(phaseId)
+      ) || null,
+    [phaseList]
+  );
+
+  const findPhaseByStageId = useCallback(
+    (stageId) =>
+      stageId == null
+        ? null
+        : phaseList.find((phase) => phase.stageId === stageId) || null,
+    [phaseList]
+  );
+
+  const findPhaseByCanonical = useCallback(
+    (canonicalId) =>
+      !canonicalId
+        ? null
+        : phaseList.find(
+            (phase) =>
+              phase.canonicalPhaseId === canonicalId ||
+              phase.phaseId === canonicalId
+          ) || null,
+    [phaseList]
+  );
+
+  const labelOf = useCallback(
+    (id) => {
+      if (!id) return "";
+      const match =
+        findPhaseById(id) || findPhaseByCanonical(normalizePhaseId(id));
+      return match?.label || match?.name || id;
+    },
+    [findPhaseByCanonical, findPhaseById]
+  );
 
   const cyclePhaseIds = useMemo(
     () => cyclePhaseConfigs.map((phase) => phase.phaseId),
@@ -1472,11 +1677,72 @@ export default function LifecycleWidget({
     ? Math.max(0, cyclePhaseIds.indexOf(initPhase))
     : -1;
 
+  const externalStageId =
+    tree?.stageId ?? tree?.lifecycle?.stageId ?? meta?.stageId ?? null;
+
   // Phase controlled
   const [activePhase, setActivePhase] = useState(initPhase);
+  const [activeStageId, setActiveStageId] = useState(externalStageId);
+
+  // Sync activePhase khi value prop thay đổi (từ parent/API)
   useEffect(() => {
-    if (value != null) setActivePhase(normalizePhaseId(value));
-  }, [value]);
+    if (value == null) return;
+
+    const normalizedValue = normalizePhaseId(value);
+
+    // Kiểm tra phase1 trước
+    if (
+      phase1Config &&
+      (phase1Config.phaseId === normalizedValue ||
+        phase1Config.canonicalPhaseId === normalizedValue ||
+        normalizePhaseId(phase1Config.phaseId) === normalizedValue)
+    ) {
+      const targetPhaseId = phase1Config.phaseId;
+      setActivePhase((prev) => (prev !== targetPhaseId ? targetPhaseId : prev));
+      return;
+    }
+
+    // Tìm phase config matching với value trong cycle phases
+    const matchedPhase = cyclePhaseConfigs.find(
+      (phase) =>
+        phase.phaseId === normalizedValue ||
+        phase.canonicalPhaseId === normalizedValue ||
+        normalizePhaseId(phase.phaseId) === normalizedValue
+    );
+
+    // Nếu tìm thấy, dùng phaseId từ config; nếu không, dùng normalized value
+    const targetPhaseId = matchedPhase?.phaseId || normalizedValue;
+
+    setActivePhase((prev) => (prev !== targetPhaseId ? targetPhaseId : prev));
+  }, [value, phase1Config, cyclePhaseConfigs]);
+
+  useEffect(() => {
+    if (externalStageId != null && externalStageId !== activeStageId) {
+      setActiveStageId(externalStageId);
+    }
+  }, [externalStageId, activeStageId]);
+
+  useEffect(() => {
+    if (!phaseList.length) return;
+    if (activeStageId != null) {
+      const stageMatch = findPhaseByStageId(activeStageId);
+      if (stageMatch && stageMatch.phaseId !== activePhase) {
+        setActivePhase(stageMatch.phaseId);
+        return;
+      }
+    }
+    const canonicalMatch = findPhaseByCanonical(initPhase);
+    if (canonicalMatch && canonicalMatch.phaseId !== activePhase) {
+      setActivePhase(canonicalMatch.phaseId);
+    }
+  }, [
+    phaseList,
+    activeStageId,
+    activePhase,
+    findPhaseByStageId,
+    findPhaseByCanonical,
+    initPhase,
+  ]);
 
   // Phase1Completed & cycleCount controlled
   const [isPhase1Completed, setIsPhase1Completed] = useState(
@@ -1568,14 +1834,48 @@ export default function LifecycleWidget({
         ? phase1CompletedProp
         : externalPhase !== "growth_development";
 
+    // Cập nhật isPhase1Completed nếu thay đổi
+    setIsPhase1Completed((prev) =>
+      prev !== externalP1Done ? externalP1Done : prev
+    );
+
     if (!externalP1Done) {
       setTrailIndex(-1);
       return;
     }
 
-    const idx = cyclePhaseIds.indexOf(externalPhase);
-    if (idx >= 0) setTrailIndex(idx);
-  }, [value, phase1CompletedProp, cyclePhaseIds]);
+    // Tìm index bằng cách match canonical phase ID thay vì phaseId trực tiếp
+    let idx = cyclePhaseIds.indexOf(externalPhase);
+
+    // Nếu không tìm thấy trực tiếp, tìm theo canonicalPhaseId
+    if (idx < 0) {
+      idx = cyclePhaseConfigs.findIndex(
+        (phase) =>
+          phase.canonicalPhaseId === externalPhase ||
+          normalizePhaseId(phase.phaseId) === externalPhase
+      );
+    }
+
+    if (idx >= 0) {
+      setTrailIndex(idx);
+      // Cập nhật activePhase để sync với visual
+      const matchedPhase = cyclePhaseConfigs[idx];
+      if (matchedPhase) {
+        setActivePhase((prev) =>
+          prev !== matchedPhase.phaseId ? matchedPhase.phaseId : prev
+        );
+      }
+    }
+  }, [
+    value,
+    phase1CompletedProp,
+    cyclePhaseIds,
+    cyclePhaseConfigs,
+    tree?.lifecycle?.currentPhaseId,
+    tree?.phenology?.currentPhase,
+    tree?.phenology?.stage,
+    tree?.phase,
+  ]);
 
   // Modal xác nhận (nhỏ)
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -1699,28 +1999,63 @@ export default function LifecycleWidget({
     if (shouldSpin) runSpinReset();
   };
 
-  const requestChangePhase = (to, cause = "pick") => {
-    if (isRunning) return;
-    const from = activePhase;
-    let title = "Xác nhận đổi giai đoạn";
-    let message = `Bạn muốn chuyển từ "${labelOf(from)}" sang "${labelOf(
-      to
-    )}"?`;
-    let highlight = "";
-    if (from === "post_harvest" && to === "flowering")
-      highlight = "Chuyển Sau thu hoạch → Ra Hoa sẽ BẮT ĐẦU MỘT CHU KỲ MỚI.";
-    if (from === "growth_development" && isCyclePhase(to))
-      message = `Hoàn tất "${labelOf(from)}" và chuyển sang "${labelOf(to)}"?`;
-    if (cause === "start-new-cycle") {
-      title = "Bắt đầu giai đoạn mới";
-      message = "Chu kỳ mới sẽ khởi động và vòng xoay 1s.";
-      const startLabel = cyclePhaseConfigs[0]?.label || labelOf("flowering");
-      highlight = `Điểm bắt đầu: ${startLabel}.`;
-    }
-    setPendingPhase(to);
-    setConfirmText({ title, message, highlight });
-    setConfirmOpen(true);
-  };
+  const requestChangePhase = useCallback(
+    (targetPhaseInput, cause = "pick") => {
+      if (isRunning) return;
+      const targetPhase =
+        typeof targetPhaseInput === "string"
+          ? findPhaseById(targetPhaseInput) ||
+            findPhaseByCanonical(normalizePhaseId(targetPhaseInput))
+          : targetPhaseInput && typeof targetPhaseInput === "object"
+          ? findPhaseById(
+              targetPhaseInput.phaseId ||
+                targetPhaseInput.id ||
+                targetPhaseInput
+            ) || targetPhaseInput
+          : null;
+      if (!targetPhase) return;
+      const fromCanonical =
+        findPhaseById(activePhase)?.canonicalPhaseId ||
+        normalizePhaseId(activePhase);
+      const toCanonical =
+        targetPhase.canonicalPhaseId ||
+        normalizePhaseId(targetPhase.phaseId || targetPhase.id);
+
+      let title = "Xác nhận đổi giai đoạn";
+      let message = `Bạn muốn chuyển từ "${labelOf(fromCanonical)}" sang "${
+        targetPhase.name || labelOf(toCanonical)
+      }"?`;
+      let highlight = "";
+      if (fromCanonical === "post_harvest" && toCanonical === "flowering")
+        highlight = "Chuyển Sau thu hoạch → Ra Hoa sẽ BẮT ĐẦU MỘT CHU KỲ MỚI.";
+      if (fromCanonical === "growth_development" && isCyclePhase(toCanonical))
+        message = `Hoàn tất "${labelOf(
+          fromCanonical
+        )}" và chuyển sang "${labelOf(toCanonical)}"?`;
+      if (cause === "start-new-cycle") {
+        title = "Bắt đầu giai đoạn mới";
+        message = "Chu kỳ mới sẽ khởi động và vòng xoay 1s.";
+        const startLabel = cyclePhaseConfigs[0]?.label || labelOf("flowering");
+        highlight = `Điểm bắt đầu: ${startLabel}.`;
+      }
+      setPendingPhase({
+        phaseId: targetPhase.phaseId,
+        canonicalPhaseId: toCanonical,
+        stageId: targetPhase.stageId ?? null,
+        label: targetPhase.name,
+      });
+      setConfirmText({ title, message, highlight });
+      setConfirmOpen(true);
+    },
+    [
+      isRunning,
+      activePhase,
+      cyclePhaseConfigs,
+      findPhaseByCanonical,
+      findPhaseById,
+      labelOf,
+    ]
+  );
 
   /**
    * Update lifecycle using dedicated lifecycle API
@@ -1729,13 +2064,17 @@ export default function LifecycleWidget({
     phaseId,
     cycleCount,
     phase1Completed,
-    extra = {}
+    extra = {},
+    stageId = null
   ) {
     if (!treeId) return;
 
     try {
+      // Đảm bảo phaseId gửi lên API luôn là 1 trong 5 giá trị chuẩn
+      const normalizedPhaseId = normalizePhaseId(phaseId);
+
       const payload = {
-        phaseId: phaseId,
+        phaseId: normalizedPhaseId,
         ...(cycleCount != null && { cycleCount }),
         ...(phase1Completed != null && { phase1Completed }),
       };
@@ -1746,11 +2085,26 @@ export default function LifecycleWidget({
       if (extra?.overrideReason) {
         payload.overrideReason = extra.overrideReason;
       }
+      if (stageId != null) {
+        payload.stageId = stageId;
+      }
+
+      // Log ra UI (console browser) để debug
+      console.log("[LifecycleWidget] updateLifecyclePhase → sending payload", {
+        treeId,
+        payload,
+      });
 
       const response = await TreeRepository.updateLifecycle(treeId, payload);
-      return response?.data ?? response;
+      const data = response?.data ?? response;
+      console.log("[LifecycleWidget] updateLifecyclePhase ← response", {
+        treeId,
+        payload,
+        data,
+      });
+      return data;
     } catch (err) {
-      console.error("Update lifecycle failed", err);
+      console.error("[LifecycleWidget] Update lifecycle failed", err);
       throw err; // Re-throw to allow caller to handle
     }
   }
@@ -1768,14 +2122,15 @@ export default function LifecycleWidget({
     setTogglingAuto(true);
     try {
       const lifecycleResponse = await updateLifecyclePhase(
-        activePhase,
+        activePhaseCanonical,
         cycleCount,
         isPhase1Completed,
-        { autoSyncEnabled: nextState, overrideReason }
+        { autoSyncEnabled: nextState, overrideReason },
+        activeStageId ?? null
       );
 
       const resolvedPhaseId = normalizePhaseId(
-        lifecycleResponse?.phaseId ?? activePhase
+        lifecycleResponse?.phaseId ?? activePhaseCanonical
       );
       const resolvedCycleCount = lifecycleResponse?.cycleCount ?? cycleCount;
       const resolvedPhase1Completed =
@@ -1789,7 +2144,17 @@ export default function LifecycleWidget({
         lifecycleResponse?.lifecycleAutoDisabledAt ??
         (resolvedAutoEnabled ? null : new Date().toISOString());
 
-      setActivePhase(resolvedPhaseId);
+      const resolvedPhaseEntry =
+        (resolvedStageId != null
+          ? findPhaseByStageId(resolvedStageId)
+          : findPhaseByCanonical(resolvedPhaseId)) || null;
+      if (resolvedPhaseEntry) {
+        setActivePhase(resolvedPhaseEntry.phaseId);
+        setActiveStageId(resolvedPhaseEntry.stageId ?? resolvedStageId ?? null);
+      } else {
+        setActivePhase(resolvedPhaseId);
+        if (resolvedStageId != null) setActiveStageId(resolvedStageId);
+      }
       setCycleCount(resolvedCycleCount);
       setIsPhase1Completed(resolvedPhase1Completed);
       setAutoSyncEnabled(resolvedAutoEnabled);
@@ -1814,44 +2179,72 @@ export default function LifecycleWidget({
 
   const onConfirmModal = async () => {
     if (isRunning) return;
-    const to = pendingPhase;
-    if (!to) return;
+    const pending = pendingPhase;
+    if (!pending) return;
     setConfirmOpen(false);
     setPendingPhase(null);
     await flush();
     setIsRunning(true);
 
-    const from = activePhase;
+    const fromPhaseId = activePhase;
+    const fromCanonical =
+      findPhaseById(fromPhaseId)?.canonicalPhaseId ||
+      normalizePhaseId(fromPhaseId);
+    const toPhaseId = pending.phaseId;
+    const toCanonical = pending.canonicalPhaseId || normalizePhaseId(toPhaseId);
     const shouldSpin =
-      (from === "post_harvest" && to === "flowering") ||
+      (fromCanonical === "post_harvest" && toCanonical === "flowering") ||
       confirmText.title === "Bắt đầu giai đoạn mới";
-    const steps = buildSteps(from, to);
+    const steps = buildSteps(fromPhaseId, toPhaseId);
 
-    let nextPhaseId = to;
+    console.log("[LifecycleWidget] onConfirmModal", {
+      treeId,
+      from: fromPhaseId,
+      to: toPhaseId,
+      pendingPhase,
+      cycleCountBefore: cycleCount,
+      isPhase1CompletedBefore: isPhase1Completed,
+      steps,
+    });
 
     // TÍNH TRẠNG THÁI MỚI (trước khi gọi API)
-    const nextP1 = nextPhaseId !== "growth_development";
+    const nextP1 = toCanonical !== "growth_development";
 
     // Nếu là Sau thu hoạch -> Ra Hoa thì tăng chu kỳ
     const nextCount =
-      from === "post_harvest" && nextPhaseId === "flowering"
+      fromCanonical === "post_harvest" && toCanonical === "flowering"
         ? cycleCount + 1
         : cycleCount;
+
+    const resolvePhaseIdForStage = (stageId, canonicalId, fallbackPhaseId) => {
+      if (stageId != null) {
+        const match = findPhaseByStageId(stageId);
+        if (match) return match.phaseId;
+      }
+      if (canonicalId) {
+        const match = findPhaseByCanonical(canonicalId);
+        if (match) return match.phaseId;
+      }
+      return fallbackPhaseId || canonicalId || null;
+    };
 
     // Gọi API lifecycle để cập nhật
     try {
       const lifecycleResponse = await updateLifecyclePhase(
-        nextPhaseId,
+        toCanonical,
         nextCount,
-        nextP1
+        nextP1,
+        undefined,
+        pending.stageId ?? null
       );
 
       // Nếu API trả về dữ liệu, sử dụng dữ liệu từ API (single source of truth)
       if (lifecycleResponse) {
-        const apiPhaseId = lifecycleResponse.phaseId || nextPhaseId;
+        const apiPhaseId =
+          normalizePhaseId(lifecycleResponse.phaseId) || toCanonical;
         const apiCycleCount = lifecycleResponse.cycleCount ?? nextCount;
         const apiPhase1Completed = lifecycleResponse.phase1Completed ?? nextP1;
-        const apiStageId = lifecycleResponse.stageId;
+        const apiStageId = lifecycleResponse.stageId ?? pending.stageId ?? null;
         const apiAutoEnabled =
           typeof lifecycleResponse.lifecycleAutoEnabled === "boolean"
             ? lifecycleResponse.lifecycleAutoEnabled
@@ -1861,7 +2254,13 @@ export default function LifecycleWidget({
           (apiAutoEnabled ? null : autoDisabledAt);
 
         // Cập nhật state với dữ liệu từ API
-        setActivePhase(apiPhaseId);
+        const resolvedPhaseId = resolvePhaseIdForStage(
+          apiStageId,
+          apiPhaseId,
+          toPhaseId
+        );
+        if (resolvedPhaseId) setActivePhase(resolvedPhaseId);
+        if (apiStageId != null) setActiveStageId(apiStageId);
         setCycleCount(apiCycleCount);
         setIsPhase1Completed(apiPhase1Completed);
         setAutoSyncEnabled(apiAutoEnabled);
@@ -1869,16 +2268,11 @@ export default function LifecycleWidget({
 
         // Nếu không có bước animation, vẫn phải tự cập nhật trail hợp lý
         if (steps.length === 0) {
-          if (from === "growth_development" && to === "growth_development") {
-            // No change
-          } else if (from === "post_harvest" && to === "flowering") {
-            setTrailIndex(0);
-            runSpinReset();
-          } else {
-            setTrailIndex(cyclePhaseIds.indexOf(apiPhaseId));
-          }
+          const targetId = resolvedPhaseId || toPhaseId;
+          const resolvedIndex = cyclePhaseIds.indexOf(targetId);
+          setTrailIndex(resolvedIndex);
         } else {
-          await playSteps(steps, apiPhaseId, shouldSpin);
+          await playSteps(steps, resolvedPhaseId || toPhaseId, shouldSpin);
         }
 
         // BẮN SỰ KIỆN RA PARENT với dữ liệu từ API
@@ -1894,28 +2288,41 @@ export default function LifecycleWidget({
         }
       } else {
         // Fallback nếu API không trả về dữ liệu
-        setActivePhase(nextPhaseId);
+        const fallbackPhaseId = resolvePhaseIdForStage(
+          pending.stageId ?? null,
+          toCanonical,
+          toPhaseId
+        );
+        if (fallbackPhaseId) setActivePhase(fallbackPhaseId);
+        if (pending.stageId != null) setActiveStageId(pending.stageId);
         setCycleCount(nextCount);
         setIsPhase1Completed(nextP1);
 
         if (steps.length === 0) {
-          if (from === "growth_development" && to === "growth_development") {
+          if (
+            fromCanonical === "growth_development" &&
+            toCanonical === "growth_development"
+          ) {
             // No change
-          } else if (from === "post_harvest" && to === "flowering") {
+          } else if (
+            fromCanonical === "post_harvest" &&
+            toCanonical === "flowering"
+          ) {
             setTrailIndex(0);
             runSpinReset();
           } else {
-            setTrailIndex(cyclePhaseIds.indexOf(nextPhaseId));
+            setTrailIndex(cyclePhaseIds.indexOf(fallbackPhaseId || toPhaseId));
           }
         } else {
-          await playSteps(steps, nextPhaseId, shouldSpin);
+          await playSteps(steps, fallbackPhaseId || toPhaseId, shouldSpin);
         }
 
         if (typeof onChange === "function") {
           onChange({
-            phaseId: nextPhaseId,
+            phaseId: toCanonical,
             cycleCount: nextCount,
             phase1Completed: nextP1,
+            stageId: pending.stageId ?? null,
             lifecycleAutoEnabled: autoSyncEnabled,
             lifecycleAutoDisabledAt: autoDisabledAt,
           });
@@ -1939,6 +2346,12 @@ export default function LifecycleWidget({
     currentPhase: activePhase,
     cycleCount,
     isPhase1Completed,
+    stageId:
+      tree?.stageId ??
+      tree?.lifecycle?.stageId ??
+      meta?.stageId ??
+      externalStageId ??
+      null,
   };
 
   return (
@@ -1949,9 +2362,11 @@ export default function LifecycleWidget({
           createPortal(
             <LCPhaseDropdown
               activePhase={activePhase}
-              onPickPhase={(id) => requestChangePhase(id, "pick")}
+              onPickPhase={(phase) => requestChangePhase(phase, "pick")}
               onStartNewCycle={() =>
-                requestChangePhase("flowering", "start-new-cycle")
+                cyclePhaseConfigs.length
+                  ? requestChangePhase(cyclePhaseConfigs[0], "start-new-cycle")
+                  : requestChangePhase("flowering", "start-new-cycle")
               }
               phaseConfigs={phaseConfigs}
             />,
@@ -1961,9 +2376,11 @@ export default function LifecycleWidget({
           <div className="flex justify-center mb-4">
             <LCPhaseDropdown
               activePhase={activePhase}
-              onPickPhase={(id) => requestChangePhase(id, "pick")}
+              onPickPhase={(phase) => requestChangePhase(phase, "pick")}
               onStartNewCycle={() =>
-                requestChangePhase("flowering", "start-new-cycle")
+                cyclePhaseConfigs.length
+                  ? requestChangePhase(cyclePhaseConfigs[0], "start-new-cycle")
+                  : requestChangePhase("flowering", "start-new-cycle")
               }
               phaseConfigs={phaseConfigs}
             />

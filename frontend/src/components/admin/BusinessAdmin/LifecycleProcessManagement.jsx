@@ -227,55 +227,57 @@ export default function BusinessAdminLifecycleProcessManagement() {
     return Number.isFinite(fallbackMin) ? fallbackMin : 0;
   }, [stages]);
 
-  const handleSelectTreeType = useCallback(async (treeTypeId) => {
-    if (!treeTypeId) return;
-    setSelectedTreeTypeId(treeTypeId);
-    setStagesLoading(true);
-    setNotice(null);
-    try {
-      const detail = await AdminTreeRepository.getTreeTypeById(treeTypeId);
-      setSelectedTreeType(detail);
+  const handleSelectTreeType = useCallback(
+    async (treeTypeId) => {
+      if (!treeTypeId) return;
+      setSelectedTreeTypeId(treeTypeId);
+      setStagesLoading(true);
+      setNotice(null);
+      try {
+        const detail = await AdminTreeRepository.getTreeTypeById(treeTypeId);
+        setSelectedTreeType(detail);
 
-      const stagesData = await AdminGrowthStageRepository.getStagesByTreeTypeId(
-        treeTypeId
-      );
-      const sortedStages = Array.isArray(stagesData)
-        ? [...stagesData].sort((a, b) => a.stageOrder - b.stageOrder)
-        : [];
-      const normalizedStages = sortedStages.map((stage) => {
-        const nodeColorMeta = buildColorMeta(
-          stage.nodeColor || stage.colorKey || stage.colorHex || ""
-        );
-        const lineColorMeta = buildColorMeta(
-          stage.lineColor ||
-            stage.lineColorKey ||
-            stage.lineColorHex ||
-            nodeColorMeta.hex,
-          nodeColorMeta.key
-        );
+        const stagesData =
+          await AdminGrowthStageRepository.getStagesByTreeTypeId(treeTypeId);
+        const sortedStages = Array.isArray(stagesData)
+          ? [...stagesData].sort((a, b) => a.stageOrder - b.stageOrder)
+          : [];
+        const normalizedStages = sortedStages.map((stage) => {
+          const nodeColorMeta = buildColorMeta(
+            stage.nodeColor || stage.colorKey || stage.colorHex || ""
+          );
+          const lineColorMeta = buildColorMeta(
+            stage.lineColor ||
+              stage.lineColorKey ||
+              stage.lineColorHex ||
+              nodeColorMeta.hex,
+            nodeColorMeta.key
+          );
 
-        return {
-          ...stage,
-          icon: stage.icon || "",
-          nodeColor: nodeColorMeta.hex,
-          lineColor: lineColorMeta.hex,
-        };
-      });
-      setStages(normalizedStages);
-      const adjustedStages = await ensureSequentialMinAges(normalizedStages);
-      if (adjustedStages !== normalizedStages) {
-        setStages(adjustedStages);
+          return {
+            ...stage,
+            icon: stage.icon || "",
+            nodeColor: nodeColorMeta.hex,
+            lineColor: lineColorMeta.hex,
+          };
+        });
+        setStages(normalizedStages);
+        const adjustedStages = await ensureSequentialMinAges(normalizedStages);
+        if (adjustedStages !== normalizedStages) {
+          setStages(adjustedStages);
+        }
+        return adjustedStages;
+      } catch (err) {
+        setNotice({
+          type: "error",
+          message: err.message || "Không thể tải danh sách giai đoạn.",
+        });
+      } finally {
+        setStagesLoading(false);
       }
-      return adjustedStages;
-    } catch (err) {
-      setNotice({
-        type: "error",
-        message: err.message || "Không thể tải danh sách giai đoạn.",
-      });
-    } finally {
-      setStagesLoading(false);
-    }
-  }, [ensureSequentialMinAges]);
+    },
+    [ensureSequentialMinAges]
+  );
 
   useEffect(() => {
     const fetchTreeTypes = async () => {
@@ -502,7 +504,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
     }
   };
 
-  const validateStage = (stage) => {
+  const validateStage = (stage, allStages = []) => {
     const errors = {};
 
     if (!stage?.stageName || !stage.stageName.trim()) {
@@ -550,6 +552,45 @@ export default function BusinessAdminLifecycleProcessManagement() {
       }
     }
 
+    // Validate minAgeInMonths is not lower than the previous stage's maxAgeInMonths
+    if (
+      !errors.minAgeInMonths &&
+      stage?.minAgeInMonths != null &&
+      stage.minAgeInMonths !== "" &&
+      allStages.length > 0
+    ) {
+      const currentOrder = stage.stageOrder ?? allStages.length + 1;
+      let previousStage = null;
+
+      if (stage.stageId) {
+        // Editing existing stage - find the stage with order just before this one
+        const otherStages = allStages.filter(
+          (s) => s.stageId !== stage.stageId
+        );
+        previousStage = otherStages
+          .filter((s) => (s.stageOrder ?? 0) < currentOrder)
+          .sort((a, b) => (b.stageOrder ?? 0) - (a.stageOrder ?? 0))[0];
+      } else {
+        // Creating new stage - use the last stage in the current list
+        previousStage = [...allStages].sort(
+          (a, b) => (b.stageOrder ?? 0) - (a.stageOrder ?? 0)
+        )[0];
+      }
+
+      if (previousStage && previousStage.maxAgeInMonths != null) {
+        const prevMaxAge = Number(previousStage.maxAgeInMonths);
+        const currentMinAge = Number(stage.minAgeInMonths);
+
+        if (
+          !isNaN(prevMaxAge) &&
+          !isNaN(currentMinAge) &&
+          currentMinAge <= prevMaxAge
+        ) {
+          errors.minAgeInMonths = `Tuổi tối thiểu phải lớn hơn tuổi tối đa của giai đoạn trước (${prevMaxAge} tháng).`;
+        }
+      }
+    }
+
     return errors;
   };
 
@@ -557,7 +598,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
     if (!editingStage) return;
 
     // Validate before saving
-    const errors = validateStage(editingStage);
+    const errors = validateStage(editingStage, stages);
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;

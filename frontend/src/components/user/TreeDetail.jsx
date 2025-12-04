@@ -138,6 +138,11 @@ function buildPhaseThemeFromStages(stages = []) {
 
   // Hiển thị tất cả các giai đoạn, không giới hạn
   return sorted.map((stage, index) => {
+    const stageId =
+      stage.stageId ?? stage.stage_id ?? stage.StageId ?? index + 1;
+    const stageOrder =
+      stage.stageOrder ?? stage.stage_order ?? stage.order ?? index + 1;
+
     // Sử dụng PHASE_IDS nếu có, nếu không thì dùng custom_${index}
     const phaseId = PHASE_IDS[index] || `custom_${index}`;
     const baseTheme = DEFAULT_PHASE_THEME[phaseId] || {};
@@ -171,8 +176,11 @@ function buildPhaseThemeFromStages(stages = []) {
     const isImageIcon = isStageIconUrl(iconValue);
 
     return {
-      id: `${phaseId}-${stage.stageId ?? stage.stage_id ?? index}`,
+      id: `${phaseId}-${stageId}`,
       phaseId,
+      canonicalPhaseId: phaseId,
+      stageId,
+      stageOrder,
       label,
       subtitle,
       description:
@@ -7611,14 +7619,14 @@ export default function TreeDetail() {
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <div className="flex-1">
-                            <span className="text-neutral-500">Từ: </span>
+                            <span className="text-neutral-500">Trước: </span>
                             <span className="text-neutral-700">
                               {item.oldValue || "—"}
                             </span>
                           </div>
                           <span className="text-neutral-400">→</span>
                           <div className="flex-1">
-                            <span className="text-neutral-500">Đến: </span>
+                            <span className="text-neutral-500">Sau: </span>
                             <span className="text-neutral-700 font-medium">
                               {item.newValue || "—"}
                             </span>

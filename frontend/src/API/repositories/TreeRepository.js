@@ -264,6 +264,7 @@ export default class TreeRepository {
    * @param {boolean} [data.phase1Completed] - Optional phase 1 completed flag
    * @param {boolean} [data.autoSyncEnabled] - Enable/disable automatic lifecycle sync
    * @param {string} [data.overrideReason] - Optional note when disabling auto sync
+  * @param {number} [data.stageId] - Optional TreeGrowthStages.StageId to target a specific stage definition
    */
   static async updateLifecycle(id, data) {
     return ApiClient.patch(`/api/trees/${id}/lifecycle`, data);
