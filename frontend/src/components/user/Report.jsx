@@ -1,8 +1,23 @@
 import React, { useState, useRef } from "react";
-import { HelpCircle, Upload, X, Send, AlertCircle } from "lucide-react";
+import {
+  HelpCircle,
+  Upload,
+  X,
+  Send,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { LivingBackground } from "@/components/background";
 import SupportRequestRepository from "@/API/repositories/SupportRequestRepository";
 import ApiClient from "@/API/ApiClient";
@@ -65,6 +80,9 @@ export default function Report() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showLoginNotice, setShowLoginNotice] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const fileInputRef = useRef(null);
 
   // Validation
@@ -75,12 +93,15 @@ export default function Report() {
       newErrors.category = "Vui lòng chọn phân loại";
     }
 
-    if (form.category === "auth" && !form.email.trim()) {
-      newErrors.email = "Vui lòng nhập email";
-    } else if (form.category === "auth" && form.email.trim()) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(form.email.trim())) {
-        newErrors.email = "Email không hợp lệ";
+    // Email chỉ bắt buộc khi user chưa đăng nhập và chọn category "auth"
+    if (form.category === "auth" && !user) {
+      if (!form.email.trim()) {
+        newErrors.email = "Vui lòng nhập email";
+      } else {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(form.email.trim())) {
+          newErrors.email = "Email không hợp lệ";
+        }
       }
     }
 
@@ -104,11 +125,12 @@ export default function Report() {
   };
 
   // Check if guest selected a non-auth category (should disable form)
-  const isGuestRestrictedCategory = !user && form.category && form.category !== "auth";
+  const isGuestRestrictedCategory =
+    !user && form.category && form.category !== "auth";
 
   const handleCategoryChange = (e) => {
     const value = e.target.value;
-    
+
     // Check if guest is trying to select a non-auth category
     if (!user && value && value !== "auth") {
       setErrors({
@@ -191,8 +213,8 @@ export default function Report() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Check if user is logged in
-    if (!user) {
+    // Check if user is logged in (except for auth category which allows guests)
+    if (!user && form.category !== "auth") {
       setShowLoginNotice(true);
       // Auto-hide after 5 seconds
       setTimeout(() => {
@@ -204,7 +226,7 @@ export default function Report() {
     // Mark all fields as touched
     setTouched({
       category: true,
-      email: form.category === "auth",
+      email: form.category === "auth" && !user, // Only mark email as touched if auth category and guest
       title: true,
       content: true,
     });
@@ -216,10 +238,13 @@ export default function Report() {
     setIsSubmitting(true);
 
     try {
-      // Prepare description with email if provided
+      // Prepare description with email if provided (only for guests)
       let description = form.content;
-      if (form.category === "auth" && form.email) {
+      if (form.category === "auth" && !user && form.email) {
         description = `${form.content}\n\nEmail liên hệ: ${form.email}`;
+      } else if (form.category === "auth" && user && user.email) {
+        // If user is logged in, include their account email
+        description = `${form.content}\n\nEmail tài khoản: ${user.email}`;
       }
 
       // Prepare request data - API will auto-map category to priority
@@ -242,22 +267,46 @@ export default function Report() {
         );
       }
 
-      // Create support request
+      // Create support request - Backend expects PascalCase
+      // Priority will be auto-mapped by backend based on category
+      const requestPayload = {
+        Subject: requestData.subject,
+        Description: requestData.description,
+        Category: requestData.category,
+      };
+
       const response = await SupportRequestRepository.createRequest(
-        requestData
+        requestPayload
       );
 
-      alert(
-        "Gửi yêu cầu thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất có thể."
-      );
-
-      // Navigate to report management page
-      navigate("/reports");
+      if (response && response.success !== false) {
+        // Show success modal
+        setShowSuccessModal(true);
+      } else {
+        throw new Error(response?.message || "Không thể tạo yêu cầu hỗ trợ");
+      }
     } catch (error) {
       console.error("Error submitting report:", error);
-      const errorMessage =
-        error.message || "Có lỗi xảy ra. Vui lòng thử lại sau.";
-      alert(errorMessage);
+      console.error("Error details:", {
+        message: error.message,
+        status: error.status,
+        statusText: error.statusText,
+      });
+
+      let errorMsg = "Có lỗi xảy ra. Vui lòng thử lại sau.";
+
+      if (error.status === 401) {
+        errorMsg = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+      } else if (error.status === 400) {
+        errorMsg =
+          error.message ||
+          "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.";
+      } else if (error.message) {
+        errorMsg = error.message;
+      }
+
+      setErrorMessage(errorMsg);
+      setShowErrorModal(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -442,7 +491,7 @@ export default function Report() {
                   <label className="block text-white text-lg font-semibold mb-3">
                     Nội dung <span className="text-rose-400">*</span>
                   </label>
-                    <textarea
+                  <textarea
                     value={form.content}
                     onChange={(e) => {
                       // Prevent input when guest selects restricted category
@@ -461,7 +510,11 @@ export default function Report() {
                       (touched.content && errors.content)
                         ? TEXTAREA_ERR
                         : TEXTAREA_OK
-                    } ${isGuestRestrictedCategory ? "opacity-50 cursor-not-allowed" : ""}`}
+                    } ${
+                      isGuestRestrictedCategory
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
                     disabled={!form.category || isGuestRestrictedCategory}
                     readOnly={isGuestRestrictedCategory}
                   />
@@ -486,11 +539,13 @@ export default function Report() {
                   </label>
                   <div className="space-y-4">
                     {!form.imagePreview ? (
-                      <label className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-white/30 rounded-xl bg-white/5 transition-colors ${
-                        isGuestRestrictedCategory 
-                          ? "cursor-not-allowed" 
-                          : "hover:bg-white/10 cursor-pointer"
-                      }`}>
+                      <label
+                        className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-white/30 rounded-xl bg-white/5 transition-colors ${
+                          isGuestRestrictedCategory
+                            ? "cursor-not-allowed"
+                            : "hover:bg-white/10 cursor-pointer"
+                        }`}
+                      >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <Upload className="w-12 h-12 text-white/60 mb-3" />
                           <p className="mb-2 text-base text-white/80">
@@ -541,7 +596,11 @@ export default function Report() {
                 <div className="pt-4">
                   <Button
                     type="submit"
-                    disabled={isSubmitting || !form.category || isGuestRestrictedCategory}
+                    disabled={
+                      isSubmitting ||
+                      !form.category ||
+                      isGuestRestrictedCategory
+                    }
                     className="w-full h-14 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-lg font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? (
@@ -562,6 +621,64 @@ export default function Report() {
           </Card>
         </div>
       </div>
+
+      {/* Success Modal */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 mx-auto mb-4">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
+            </div>
+            <DialogTitle className="text-center text-2xl font-semibold">
+              Gửi yêu cầu thành công!
+            </DialogTitle>
+            <DialogDescription className="text-center text-base pt-2">
+              Chúng tôi sẽ liên hệ với bạn sớm nhất có thể.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              onClick={() => {
+                setShowSuccessModal(false);
+                navigate("/reports");
+              }}
+              className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              Xem danh sách báo cáo
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Modal */}
+      <Dialog open={showErrorModal} onOpenChange={setShowErrorModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center justify-center w-16 h-16 rounded-full bg-rose-100 mx-auto mb-4">
+              <AlertCircle className="w-10 h-10 text-rose-600" />
+            </div>
+            <DialogTitle className="text-center text-2xl font-semibold">
+              Có lỗi xảy ra
+            </DialogTitle>
+            <DialogDescription className="text-center text-base pt-2">
+              {errorMessage}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="sm:justify-center">
+            <Button
+              onClick={() => {
+                setShowErrorModal(false);
+                if (errorMessage.includes("đăng nhập")) {
+                  navigate("/auth");
+                }
+              }}
+              className="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white"
+            >
+              {errorMessage.includes("đăng nhập") ? "Đăng nhập" : "Đóng"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

@@ -3,6 +3,8 @@ using System.Security.Claims;
 using MamMoi.Application.Interfaces;
 using MamMoi.Application.DTOs;
 using System.Linq; // <- nhớ có namespace này để dùng FirstOrDefault
+using MamMoi.Infrastructure.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace MamMoi.Api.Controllers;
 
@@ -16,6 +18,7 @@ public class TreesController : ControllerBase
     private readonly ITreeCommandService _treeCmd;
     private readonly ITreeImageService _treeImg;
     private readonly IAiRecommendationService _aiRecommendationService;
+    private readonly MamMoiDbContext _db;
 
     public TreesController(
         ITreeQueryService treeQuery,
@@ -23,7 +26,8 @@ public class TreesController : ControllerBase
         ITreeVarietyService treeVariety,
         ITreeCommandService treeCmd,
         ITreeImageService treeImg,
-        IAiRecommendationService aiRecommendationService)
+        IAiRecommendationService aiRecommendationService,
+        MamMoiDbContext db)
     {
         _treeQuery = treeQuery;
         _treeType = treeType;
@@ -31,6 +35,7 @@ public class TreesController : ControllerBase
         _treeCmd = treeCmd;
         _treeImg = treeImg;
         _aiRecommendationService = aiRecommendationService;
+        _db = db;
     }
 
     private int? GetUserIdFromClaims()
@@ -427,4 +432,31 @@ public class TreesController : ControllerBase
     [HttpGet("types/{treeTypeId:int}/stages")]
     public async Task<IActionResult> GetStagesByTreeType([FromRoute] int treeTypeId, CancellationToken ct)
         => Ok(await _treeImg.GetStagesByTreeTypeIdAsync(treeTypeId, ct));
+
+    // ===================== 16) Status History =====================
+    /// <summary>
+    /// Get status change history for a tree
+    /// GET /api/trees/{id}/status-history
+    /// </summary>
+    [HttpGet("{id:int}/status-history")]
+    public async Task<IActionResult> GetStatusHistory([FromRoute] int id, CancellationToken ct)
+    {
+        var history = await _db.TreeStatusHistories
+            .AsNoTracking()
+            .Where(h => h.TreeId == id)
+            .OrderByDescending(h => h.ChangedAt)
+            .Select(h => new
+            {
+                h.HistoryId,
+                h.TreeId,
+                h.UserId,
+                h.StatusField,
+                h.OldValue,
+                h.NewValue,
+                h.ChangedAt
+            })
+            .ToListAsync(ct);
+
+        return Ok(history);
+    }
 }

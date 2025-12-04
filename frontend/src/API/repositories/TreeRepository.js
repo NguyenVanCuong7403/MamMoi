@@ -276,4 +276,13 @@ export default class TreeRepository {
   static async getStagesByTreeType(treeTypeId) {
     return ApiClient.get(`/api/trees/types/${treeTypeId}/stages`);
   }
+
+  /**
+   * Get status change history for a tree
+   * @param {number} id - Tree ID
+   */
+  static async getStatusHistory(id) {
+    if (!id) throw new Error("Missing tree id");
+    return ApiClient.get(`/api/trees/${id}/status-history`);
+  }
 }

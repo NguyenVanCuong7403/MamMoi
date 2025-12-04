@@ -177,11 +177,62 @@ namespace MamMoi.Infrastructure.Services
             if (req.preMonths.HasValue && req.preMonths != oldPreMonths)
                 ageChanged = true;
 
-            // cập nhật 4 trạng thái nếu FE gửi
-            tree.LeafStatus = req.LeafStatus ?? tree.LeafStatus;
-            tree.BranchStatus = req.BranchStatus ?? tree.BranchStatus;
-            tree.FlowerStatus = req.FlowerStatus ?? tree.FlowerStatus;
-            tree.FruitStatus = req.FruitStatus ?? tree.FruitStatus;
+            // cập nhật 4 trạng thái nếu FE gửi và lưu lịch sử thay đổi
+            if (req.LeafStatus != null && req.LeafStatus != tree.LeafStatus)
+            {
+                _db.TreeStatusHistories.Add(new TreeStatusHistory
+                {
+                    TreeId = tree.TreeId,
+                    UserId = userId,
+                    StatusField = "LeafStatus",
+                    OldValue = tree.LeafStatus,
+                    NewValue = req.LeafStatus,
+                    ChangedAt = DateTime.UtcNow
+                });
+                tree.LeafStatus = req.LeafStatus;
+            }
+
+            if (req.BranchStatus != null && req.BranchStatus != tree.BranchStatus)
+            {
+                _db.TreeStatusHistories.Add(new TreeStatusHistory
+                {
+                    TreeId = tree.TreeId,
+                    UserId = userId,
+                    StatusField = "BranchStatus",
+                    OldValue = tree.BranchStatus,
+                    NewValue = req.BranchStatus,
+                    ChangedAt = DateTime.UtcNow
+                });
+                tree.BranchStatus = req.BranchStatus;
+            }
+
+            if (req.FlowerStatus != null && req.FlowerStatus != tree.FlowerStatus)
+            {
+                _db.TreeStatusHistories.Add(new TreeStatusHistory
+                {
+                    TreeId = tree.TreeId,
+                    UserId = userId,
+                    StatusField = "FlowerStatus",
+                    OldValue = tree.FlowerStatus,
+                    NewValue = req.FlowerStatus,
+                    ChangedAt = DateTime.UtcNow
+                });
+                tree.FlowerStatus = req.FlowerStatus;
+            }
+
+            if (req.FruitStatus != null && req.FruitStatus != tree.FruitStatus)
+            {
+                _db.TreeStatusHistories.Add(new TreeStatusHistory
+                {
+                    TreeId = tree.TreeId,
+                    UserId = userId,
+                    StatusField = "FruitStatus",
+                    OldValue = tree.FruitStatus,
+                    NewValue = req.FruitStatus,
+                    ChangedAt = DateTime.UtcNow
+                });
+                tree.FruitStatus = req.FruitStatus;
+            }
 
             tree.UpdatedAt = DateTime.UtcNow;
 

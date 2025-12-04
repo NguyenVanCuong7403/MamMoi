@@ -708,7 +708,7 @@ function useHeaderOffset(selector = "[data-app-header],[data-header],header") {
   }, [selector]);
 }
 
-function DateInput({ value, onChange, error }) {
+function DateInput({ value, onChange, error, max }) {
   const [parts, setParts] = React.useState(() => parseIsoToParts(value));
   const [open, setOpen] = React.useState(false);
   const wrapRef = React.useRef(null);
@@ -718,6 +718,7 @@ function DateInput({ value, onChange, error }) {
 
   // Hôm nay (để đánh dấu trên lịch khi chưa chọn gì)
   const today = new Date();
+  const maxDate = max ? new Date(max + "T00:00:00") : null;
 
   // Đồng bộ khi value bên ngoài thay đổi
   React.useEffect(() => {
@@ -1043,13 +1044,14 @@ function DateInput({ value, onChange, error }) {
             </div>
             <button
               type="button"
-              className="px-2 py-1 text-xs rounded-lg border bg-neutral-50"
+              className="px-2 py-1 text-xs rounded-lg border bg-neutral-50 disabled:opacity-40 disabled:cursor-not-allowed"
               onClick={() => {
                 if (month === 11) {
                   setMonth(0);
                   setYear((y) => y + 1);
                 } else setMonth((m) => m + 1);
               }}
+              disabled={maxDate && new Date(year, month + 1, 1) > maxDate}
             >
               →
             </button>
@@ -1066,6 +1068,12 @@ function DateInput({ value, onChange, error }) {
               <div key={`b-${b}`} />
             ))}
             {days.map((d) => {
+              const dayDate = new Date(year, month, d);
+              dayDate.setHours(0, 0, 0, 0);
+
+              // Kiểm tra ngày có vượt quá max date không
+              const isDisabled = maxDate && dayDate > maxDate;
+
               const isSelected =
                 selected &&
                 d === selected.getDate() &&
@@ -1080,7 +1088,10 @@ function DateInput({ value, onChange, error }) {
                 year === today.getFullYear();
 
               let extraClass = "";
-              if (isSelected) {
+              if (isDisabled) {
+                extraClass =
+                  "opacity-40 cursor-not-allowed text-neutral-400 bg-neutral-100";
+              } else if (isSelected) {
                 extraClass = "bg-emerald-500 text-white";
               } else if (isToday) {
                 // Đánh dấu hôm nay bằng viền + chữ đậm
@@ -1094,7 +1105,10 @@ function DateInput({ value, onChange, error }) {
                 <button
                   type="button"
                   key={d}
-                  onClick={() => pickDay(d)}
+                  onClick={() => {
+                    if (!isDisabled) pickDay(d);
+                  }}
+                  disabled={isDisabled}
                   className={
                     "h-7 w-7 rounded-full flex items-center justify-center text-xs " +
                     extraClass
@@ -1137,11 +1151,11 @@ export default function AddTreeNewScreen() {
     let mounted = true;
     (async () => {
       try {
-          setGardens([
-            { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
-            { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
-            { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
-          ]);
+        setGardens([
+          { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
+          { id: "g_hn_01", name: "Vườn Hà Nội 01", region: "Miền Bắc" },
+          { id: "g_bd_02", name: "Vườn Bình Dương 02", region: "Miền Nam" },
+        ]);
       } catch {
         setGardens([
           { id: "g3", name: "Vườn số 3 – FPT", region: "Miền Bắc" },
@@ -1198,6 +1212,42 @@ export default function AddTreeNewScreen() {
     };
   }, [currentGarden?.id]);
 
+  // Load danh sách mã cây hiện có để kiểm tra trùng lặp
+  useEffect(() => {
+    if (!currentGarden?.id) {
+      setExistingTreeCodes(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        // Fetch tất cả cây trong vườn để lấy mã
+        const res = await TreeRepository.getMyTrees({
+          gardenId: currentGarden.id,
+          page: 1,
+          pageSize: 1000, // Lấy nhiều để có đầy đủ mã
+        });
+        const trees = res?.data?.items || res?.items || res?.data || [];
+        if (!cancelled) {
+          const codes = new Set();
+          trees.forEach((tree) => {
+            const treeCode = tree.treeCode || tree.TreeCode || tree.code;
+            if (treeCode && String(treeCode).trim()) {
+              codes.add(String(treeCode).trim().toUpperCase());
+            }
+          });
+          setExistingTreeCodes(codes);
+        }
+      } catch (err) {
+        console.error("Failed to load existing tree codes", err);
+        if (!cancelled) setExistingTreeCodes(new Set());
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentGarden?.id]);
+
   const regionTag = currentGarden?.region || "";
 
   // States
@@ -1232,6 +1282,7 @@ export default function AddTreeNewScreen() {
   const [lastCreatedSpecies, setLastCreatedSpecies] = useState("");
   const [lastCreatedVariety, setLastCreatedVariety] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [existingTreeCodes, setExistingTreeCodes] = useState(new Set()); // Lưu các mã cây đã tồn tại
   const imagePickerRef = useRef(null);
 
   const openImagePicker = () => {
@@ -1313,9 +1364,9 @@ export default function AddTreeNewScreen() {
   useEffect(() => {
     setVariety("");
     setSelectedVarietyId("");
-    setGardenSoilId("");   // reset loại đất khi đổi loại cây
-    setStagesByType([]);   // reset stages khi đổi loại cây
-    setPhaseOverride("");  // reset phase khi đổi loại cây
+    setGardenSoilId(""); // reset loại đất khi đổi loại cây
+    setStagesByType([]); // reset stages khi đổi loại cây
+    setPhaseOverride(""); // reset phase khi đổi loại cây
 
     // Fetch stages for this tree type
     if (treeTypeId) {
@@ -1395,7 +1446,7 @@ export default function AddTreeNewScreen() {
     return gateFruit !== -1 && idx >= gateFruit;
   }, [selectedPhase]);
 
-  // Auto mã cây
+  // Auto mã cây với kiểm tra trùng lặp
   useEffect(() => {
     if (!speciesKey || !variety) return;
     if (userEditedCode) return;
@@ -1407,22 +1458,46 @@ export default function AddTreeNewScreen() {
     const prefix = `${s1}${v1}-`;
     (async () => {
       let next = 1;
-      try {
-        const res = await fetch(
-          `/api/trees/count?prefix=${encodeURIComponent(prefix)}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          next = Number(data?.count || 0) + 1;
+      let suggested = "";
+      let maxAttempts = 100; // Giới hạn số lần thử để tránh vòng lặp vô hạn
+
+      // Tìm mã chưa tồn tại
+      while (maxAttempts > 0) {
+        suggested = `${prefix}${String(next).padStart(2, "0")}`;
+        const suggestedUpper = suggested.toUpperCase();
+
+        // Kiểm tra mã đã tồn tại chưa
+        if (!existingTreeCodes.has(suggestedUpper)) {
+          // Mã chưa tồn tại, dùng mã này
+          break;
         }
-      } catch {
-        next = 1;
+
+        // Mã đã tồn tại, tăng số lên
+        next++;
+        maxAttempts--;
       }
-      const suggested = `${prefix}${String(next).padStart(2, "0")}`;
+
+      // Nếu vượt quá giới hạn, dùng số lớn hơn
+      if (maxAttempts === 0) {
+        // Tìm số lớn nhất từ các mã hiện có
+        let maxNum = 0;
+        existingTreeCodes.forEach((code) => {
+          if (code.startsWith(prefix.toUpperCase())) {
+            const match = code.match(/\d+$/);
+            if (match) {
+              const num = parseInt(match[0], 10);
+              if (num > maxNum) maxNum = num;
+            }
+          }
+        });
+        next = maxNum + 1;
+        suggested = `${prefix}${String(next).padStart(2, "0")}`;
+      }
+
       setCode(suggested);
       setErrors((x) => ({ ...x, code: undefined }));
     })();
-  }, [speciesKey, variety, speciesLabel, userEditedCode]);
+  }, [speciesKey, variety, speciesLabel, userEditedCode, existingTreeCodes]);
 
   // Load TreeTypes từ API
   useEffect(() => {
@@ -1501,15 +1576,37 @@ export default function AddTreeNewScreen() {
   };
   function validateBasic() {
     const e = {};
-    if (!String(code).trim()) e.code = REQUIRED_MSG.code;
+    const codeTrimmed = String(code).trim();
+    if (!codeTrimmed) {
+      e.code = REQUIRED_MSG.code;
+    } else {
+      // Kiểm tra mã đã tồn tại chưa
+      const codeUpper = codeTrimmed.toUpperCase();
+      if (existingTreeCodes.has(codeUpper)) {
+        e.code = "Mã cây này đã tồn tại. Vui lòng chọn mã khác.";
+      }
+    }
     if (!treeTypeId) e.speciesKey = REQUIRED_MSG.speciesKey;
     if (!variety) e.variety = REQUIRED_MSG.variety;
-    if (!plantDate) e.plantDate = REQUIRED_MSG.plantDate;
+    if (!plantDate) {
+      e.plantDate = REQUIRED_MSG.plantDate;
+    } else {
+      // Kiểm tra ngày trồng không được trong tương lai
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // Reset giờ về 00:00:00 để so sánh chỉ ngày
+      const selectedDate = new Date(plantDate);
+      selectedDate.setHours(0, 0, 0, 0);
+
+      if (selectedDate > today) {
+        e.plantDate = "Ngày trồng không được chọn trong tương lai.";
+      }
+    }
     if (!gardenSoilId) e.soil = REQUIRED_MSG.soil;
     if (!phaseOverride) e.phaseOverride = REQUIRED_MSG.phaseOverride;
     // Kiểm tra xem loại cây có giai đoạn chưa
     if (treeTypeId && stagesByType.length === 0) {
-      e.phaseOverride = "Loại cây này chưa có giai đoạn. Vui lòng liên hệ admin.";
+      e.phaseOverride =
+        "Loại cây này chưa có giai đoạn. Vui lòng liên hệ admin.";
     }
     return e;
   }
@@ -1583,8 +1680,10 @@ export default function AddTreeNewScreen() {
       let selectedStageId = null;
       if (stagesByType.length > 0) {
         // Sắp xếp stages theo stageOrder
-        const sortedStages = [...stagesByType].sort((a, b) => (a.stageOrder || 0) - (b.stageOrder || 0));
-        
+        const sortedStages = [...stagesByType].sort(
+          (a, b) => (a.stageOrder || 0) - (b.stageOrder || 0)
+        );
+
         // Nếu có phaseOverride, tìm stage theo index trong PHASES5
         const phaseIndex = PHASES5.indexOf(effectivePhase);
         if (phaseIndex >= 0 && phaseIndex < sortedStages.length) {
@@ -1595,7 +1694,9 @@ export default function AddTreeNewScreen() {
           selectedStageId = sortedStages[0].stageId;
         }
       } else {
-        throw new Error("Loại cây này chưa có giai đoạn. Vui lòng liên hệ admin.");
+        throw new Error(
+          "Loại cây này chưa có giai đoạn. Vui lòng liên hệ admin."
+        );
       }
 
       // Chuẩn CreateTreeRequest đúng backend
@@ -1835,9 +1936,28 @@ export default function AddTreeNewScreen() {
                           placeholder="Mã cây duy nhất (VD: BD-03)."
                           maxLength={15} // ✅ GIỚI HẠN TỐI ĐA 15 KÝ TỰ
                           onChange={(e) => {
-                            setCode(e.target.value);
-                            setUserEditedCode(true);
-                            setErrors((x) => ({ ...x, code: undefined }));
+                            const newCode = e.target.value;
+                            setCode(newCode);
+                            // Reset userEditedCode flag nếu người dùng xóa hết
+                            if (!newCode.trim()) {
+                              setUserEditedCode(false);
+                              setErrors((x) => ({ ...x, code: undefined }));
+                            } else {
+                              setUserEditedCode(true);
+                              // Kiểm tra real-time xem mã có tồn tại không
+                              const codeTrimmed = newCode.trim();
+                              const codeUpper = codeTrimmed.toUpperCase();
+                              if (existingTreeCodes.has(codeUpper)) {
+                                // Mã đã tồn tại, hiển thị cảnh báo
+                                setErrors((x) => ({
+                                  ...x,
+                                  code: "Mã cây này đã tồn tại trong vườn. Vui lòng chọn mã khác.",
+                                }));
+                              } else {
+                                // Mã chưa tồn tại, clear error
+                                setErrors((x) => ({ ...x, code: undefined }));
+                              }
+                            }
                           }}
                           onKeyDown={handleTextInputKeyDown}
                           className={`rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400
@@ -1975,9 +2095,31 @@ export default function AddTreeNewScreen() {
                         value={plantDate}
                         onChange={(val) => {
                           setPlantDate(val);
-                          setErrors((x) => ({ ...x, plantDate: undefined }));
+                          // Validate ngay khi người dùng chọn
+                          if (val) {
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const selectedDate = new Date(val);
+                            selectedDate.setHours(0, 0, 0, 0);
+
+                            if (selectedDate > today) {
+                              setErrors((x) => ({
+                                ...x,
+                                plantDate:
+                                  "Ngày trồng không được chọn trong tương lai.",
+                              }));
+                            } else {
+                              setErrors((x) => ({
+                                ...x,
+                                plantDate: undefined,
+                              }));
+                            }
+                          } else {
+                            setErrors((x) => ({ ...x, plantDate: undefined }));
+                          }
                         }}
                         error={errors.plantDate}
+                        max={new Date().toISOString().split("T")[0]} // Giới hạn max là ngày hôm nay
                       />
                     </div>
 
@@ -2049,14 +2191,18 @@ export default function AddTreeNewScreen() {
                             // Set tree location using the label/customLabel
                             setTreeLocation(
                               selected
-                                ? selected.customLabel ? `${selected.customLabel} - ${selected.soilName}`: selected.soilName ||
+                                ? selected.customLabel
+                                  ? `${selected.customLabel} - ${selected.soilName}`
+                                  : selected.soilName ||
                                     `Đất #${selected.gardenSoilId}`
                                 : ""
                             );
                           }}
                           options={gardenSoils.map((s) => ({
                             value: String(s.gardenSoilId),
-                            label: s.customLabel ? `${s.customLabel} - ${s.soilName}` : s.soilName || `Đất #${s.gardenSoilId}`,
+                            label: s.customLabel
+                              ? `${s.customLabel} - ${s.soilName}`
+                              : s.soilName || `Đất #${s.gardenSoilId}`,
                           }))}
                           placeholder={
                             currentGarden?.id
@@ -2108,15 +2254,22 @@ export default function AddTreeNewScreen() {
                           </option>
                           {stagesByType.length > 0
                             ? stagesByType
-                                .sort((a, b) => (a.stageOrder || 0) - (b.stageOrder || 0))
+                                .sort(
+                                  (a, b) =>
+                                    (a.stageOrder || 0) - (b.stageOrder || 0)
+                                )
                                 .map((stage, index) => {
                                   // Map stage theo index trong PHASES5
                                   const phaseName =
                                     index < PHASES5.length
                                       ? PHASES5[index]
-                                      : stage.stageName || `Giai đoạn ${stage.stageOrder}`;
+                                      : stage.stageName ||
+                                        `Giai đoạn ${stage.stageOrder}`;
                                   return (
-                                    <option key={stage.stageId} value={phaseName}>
+                                    <option
+                                      key={stage.stageId}
+                                      value={phaseName}
+                                    >
                                       {phaseName}
                                     </option>
                                   );
@@ -2382,34 +2535,37 @@ export default function AddTreeNewScreen() {
                         <div className="text-xs text-neutral-600 break-words min-w-0">
                           #{code || "—"}
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm min-w-0 mm-preview-grid">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm min-w-0">
                           <Field label="Tuổi" value={`${totalAge} tháng`} />
                           <Field
                             label="Vườn"
                             value={currentGarden?.name || "—"}
                           />
                           <Field label="Giống" value={variety || "—"} />
-                          {branchInfo ? (
-                            <Field
-                              label="Cành"
-                              value={shortPreview(branchInfo)}
-                            />
-                          ) : null}
-                          {leafInfo ? (
-                            <Field label="Lá" value={shortPreview(leafInfo)} />
-                          ) : null}
-                          {canEditFlower && flowerInfo ? (
-                            <Field
-                              label="Hoa"
-                              value={shortPreview(flowerInfo)}
-                            />
-                          ) : null}
-                          {canEditFruit && fruitInfo ? (
-                            <Field
-                              label="Quả"
-                              value={shortPreview(fruitInfo)}
-                            />
-                          ) : null}
+                          <Field
+                            label="Cành"
+                            value={branchInfo ? shortPreview(branchInfo) : "—"}
+                          />
+                          <Field
+                            label="Lá"
+                            value={leafInfo ? shortPreview(leafInfo) : "—"}
+                          />
+                          <Field
+                            label="Hoa"
+                            value={
+                              canEditFlower && flowerInfo
+                                ? shortPreview(flowerInfo)
+                                : "—"
+                            }
+                          />
+                          <Field
+                            label="Quả"
+                            value={
+                              canEditFruit && fruitInfo
+                                ? shortPreview(fruitInfo)
+                                : "—"
+                            }
+                          />
                         </div>
                       </div>
                     </div>
@@ -2757,17 +2913,12 @@ function shortPreview(value, max = 40) {
 
 function Field({ label, value }) {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-start sm:gap-2 min-w-0">
-      <div className="text-neutral-500 text-xs sm:w-28 flex-shrink-0 break-words">
+    <div className="flex flex-col min-w-0 h-full">
+      <div className="text-neutral-500 text-xs mb-1 break-words font-medium">
         {label}
       </div>
-      <div className="text-neutral-900 text-sm font-medium sm:flex-1 min-w-0">
-        <span
-          className="block break-normal min-w-0"
-          style={{ wordBreak: "normal" }}
-        >
-          {value}
-        </span>
+      <div className="text-neutral-900 text-sm min-w-0 break-words leading-snug">
+        {value || "—"}
       </div>
     </div>
   );

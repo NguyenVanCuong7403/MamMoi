@@ -1431,7 +1431,7 @@ function Field({
       >
         {/* Icon bút */}
         <div className="w-5">
-          {editable && (
+          {editable && !disabled && (
             <div className={iconWrapperCls}>
               <Edit3 className="w-3.5 h-3.5" />
             </div>
@@ -2154,24 +2154,30 @@ function PlannedRow({
 
         {/* ACTIONS */}
         <div className="shrink-0 flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="h-8 px-2"
-            onClick={() => openEditMain(p)}
-            disabled={disabled}
-            title={disabled ? "Cây đang Dừng hoạt động — chỉ xem" : undefined}
-          >
-            Sửa
-          </Button>
           {!p.completed && (
-            <Button
-              className="h-8 px-2"
-              onClick={() => openComplete(p.id)}
-              disabled={disabled}
-              title={disabled ? "Cây đang Dừng hoạt động — chỉ xem" : undefined}
-            >
-              ✓ Hoàn thành
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                className="h-8 px-2"
+                onClick={() => openEditMain(p)}
+                disabled={disabled}
+                title={
+                  disabled ? "Cây đang Dừng hoạt động — chỉ xem" : undefined
+                }
+              >
+                Sửa
+              </Button>
+              <Button
+                className="h-8 px-2"
+                onClick={() => openComplete(p.id)}
+                disabled={disabled}
+                title={
+                  disabled ? "Cây đang Dừng hoạt động — chỉ xem" : undefined
+                }
+              >
+                ✓ Hoàn thành
+              </Button>
+            </>
           )}
         </div>
       </li>
@@ -3253,6 +3259,10 @@ function mapDtoToTree(dto) {
     branchStatus: dto.branchStatus,
     flowerStatus: dto.flowerStatus,
     fruitStatus: dto.fruitStatus,
+
+    // Tuổi cây (preMonths)
+    preMonths: dto.preMonths ?? dto.preNurseryAgeMonths ?? 0,
+    preNurseryAgeMonths: dto.preMonths ?? dto.preNurseryAgeMonths ?? 0,
 
     // lifecycle cho vòng tròn giai đoạn
     lifecycle: {
@@ -4767,6 +4777,9 @@ export default function TreeDetail() {
   // Field đang sửa trong "Tình trạng hiện tại": "leaf" | "branch" | "flower" | "fruit" | null
   const [editingPhenField, setEditingPhenField] = useState(null);
   const [phenFieldDraft, setPhenFieldDraft] = useState("");
+  const [statusHistoryOpen, setStatusHistoryOpen] = useState(false);
+  const [statusHistory, setStatusHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
   const statusDefs = [
     { key: "leaf", label: "Lá" },
     { key: "branch", label: "Cành" },
@@ -4847,11 +4860,20 @@ export default function TreeDetail() {
 
   // ==== Inline edit từng trường trong "Tình trạng hiện tại" ====
   function startPhenFieldEdit(fieldKey, initialValue) {
-    if (isStopped) return;
+    if (isStopped) {
+      console.log("Cannot edit: tree is stopped");
+      return;
+    }
 
     // Không cho sửa Hoa/Quả nếu chưa tới giai đoạn
-    if (fieldKey === "flower" && !canEditFlower) return;
-    if (fieldKey === "fruit" && !canEditFruit) return;
+    if (fieldKey === "flower" && !canEditFlower) {
+      console.log("Cannot edit flower: not in correct phase", currentPhaseId);
+      return;
+    }
+    if (fieldKey === "fruit" && !canEditFruit) {
+      console.log("Cannot edit fruit: not in correct phase", currentPhaseId);
+      return;
+    }
 
     // Bấm lại vào icon bút/tiêu đề -> đóng editor
     if (editingPhenField === fieldKey) {
@@ -4860,6 +4882,12 @@ export default function TreeDetail() {
       return;
     }
 
+    console.log(
+      "Starting edit for field:",
+      fieldKey,
+      "initialValue:",
+      initialValue
+    );
     setEditingPhenField(fieldKey);
     setPhenFieldDraft(initialValue ?? "");
   }
@@ -6167,6 +6195,34 @@ export default function TreeDetail() {
                   )}
                   <button
                     type="button"
+                    onClick={async () => {
+                      const currentTreeId =
+                        baseTree?.treeId ||
+                        baseTree?.id ||
+                        meta?.treeId ||
+                        treeId;
+                      if (!currentTreeId) {
+                        console.error("No treeId available for status history");
+                        return;
+                      }
+                      setStatusHistoryOpen(true);
+                      if (statusHistory.length === 0) {
+                        setLoadingHistory(true);
+                        try {
+                          const res = await TreeRepository.getStatusHistory(
+                            currentTreeId
+                          );
+                          setStatusHistory(
+                            Array.isArray(res) ? res : res?.data || []
+                          );
+                        } catch (err) {
+                          console.error("Failed to load status history", err);
+                          setStatusHistory([]);
+                        } finally {
+                          setLoadingHistory(false);
+                        }
+                      }
+                    }}
                     className="inline-flex items-center gap-1 rounded-full border border-neutral-200 px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-50"
                   >
                     <span>📅</span>
@@ -7487,6 +7543,92 @@ export default function TreeDetail() {
                   Xóa vĩnh viễn
                 </Button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Dialog Lịch sử thay đổi tình trạng */}
+      {statusHistoryOpen && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setStatusHistoryOpen(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <div className="text-lg font-semibold text-black">
+                Lịch sử thay đổi tình trạng
+              </div>
+              <button
+                type="button"
+                className="h-8 w-8 grid place-items-center rounded-lg hover:bg-neutral-50 text-neutral-700"
+                onClick={() => setStatusHistoryOpen(false)}
+              >
+                <span className="text-xl leading-none">×</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingHistory ? (
+                <div className="text-center py-8 text-neutral-500">
+                  Đang tải...
+                </div>
+              ) : statusHistory.length === 0 ? (
+                <div className="text-center py-8 text-neutral-500">
+                  Chưa có lịch sử thay đổi nào
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {statusHistory.map((item) => {
+                    const fieldLabels = {
+                      LeafStatus: "Lá",
+                      BranchStatus: "Cành",
+                      FlowerStatus: "Hoa",
+                      FruitStatus: "Quả",
+                    };
+                    const fieldLabel =
+                      fieldLabels[item.statusField] || item.statusField;
+                    const changedDate = item.changedAt
+                      ? formatVN(String(item.changedAt).slice(0, 10))
+                      : "";
+
+                    return (
+                      <div
+                        key={item.historyId}
+                        className="border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="font-medium text-neutral-900">
+                            {fieldLabel}
+                          </div>
+                          <div className="text-xs text-neutral-500">
+                            {changedDate}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <div className="flex-1">
+                            <span className="text-neutral-500">Từ: </span>
+                            <span className="text-neutral-700">
+                              {item.oldValue || "—"}
+                            </span>
+                          </div>
+                          <span className="text-neutral-400">→</span>
+                          <div className="flex-1">
+                            <span className="text-neutral-500">Đến: </span>
+                            <span className="text-neutral-700 font-medium">
+                              {item.newValue || "—"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
         </div>

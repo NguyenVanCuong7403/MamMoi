@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Plus,
   Search,
@@ -1027,6 +1028,7 @@ function TreeTable({
 }
 
 export default function TreeTypeManagement() {
+  const navigate = useNavigate();
   const [trees, setTrees] = useState([]);
   const [soils, setSoils] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1036,7 +1038,7 @@ export default function TreeTypeManagement() {
   const [filters, setFilters] = useState({
     search: "",
     soil: "all",
-    status: "active",
+    status: "all",
   });
   const [saving, setSaving] = useState(false);
   const [soilDialogOpen, setSoilDialogOpen] = useState(false);
@@ -1079,6 +1081,8 @@ export default function TreeTypeManagement() {
   const [varietyRevertConfirmOpen, setVarietyRevertConfirmOpen] =
     useState(false);
   const [imageFile, setImageFile] = useState(null);
+  const [newlyCreatedTreeTypeId, setNewlyCreatedTreeTypeId] = useState(null);
+  const [showCreateSuccessDialog, setShowCreateSuccessDialog] = useState(false);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -1445,6 +1449,9 @@ export default function TreeTypeManagement() {
             },
           })
         );
+        // Hiển thị dialog thông báo và lưu treeTypeId
+        setNewlyCreatedTreeTypeId(created.TreeTypeID);
+        setShowCreateSuccessDialog(true);
       }
       setImageFile(null);
       setSheetOpen(false);
@@ -3850,6 +3857,49 @@ export default function TreeTypeManagement() {
             {renderCreateSoilOverlay()}
             {renderVarietyDialog()}
             {renderCreateVarietyOverlay()}
+
+            <Dialog
+              open={showCreateSuccessDialog}
+              onOpenChange={(open) => {
+                if (!open) {
+                  setShowCreateSuccessDialog(false);
+                  setNewlyCreatedTreeTypeId(null);
+                }
+              }}
+            >
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Đã tạo loại cây thành công</DialogTitle>
+                  <DialogDescription>
+                    Loại cây đã được tạo nhưng đang ở trạng thái khóa. Bạn phải
+                    tạo Quy trình phát triển cây để có thể kích hoạt loại cây
+                    này.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowCreateSuccessDialog(false);
+                      setNewlyCreatedTreeTypeId(null);
+                    }}
+                  >
+                    Đóng
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowCreateSuccessDialog(false);
+                      navigate(
+                        `/admin/business/lifecycle?treeTypeId=${newlyCreatedTreeTypeId}`
+                      );
+                      setNewlyCreatedTreeTypeId(null);
+                    }}
+                  >
+                    Tạo quy trình phát triển
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <AlertDialog
               open={Boolean(deleteTarget)}
