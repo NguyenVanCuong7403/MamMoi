@@ -183,7 +183,8 @@ public class TreeQueryService : ITreeQueryService
                 StageOrder = t.Stage.StageOrder,
                 StageName = t.Stage.StageName,
                 t.LifecycleAutoEnabled,
-                t.LifecycleAutoDisabledAt
+                t.LifecycleAutoDisabledAt,
+                t.CycleCount
             })
             .FirstOrDefaultAsync(ct);
 
@@ -208,9 +209,8 @@ public class TreeQueryService : ITreeQueryService
         // Phase1Completed is true if not in growth_development (StageOrder > 1)
         bool phase1Completed = tree.StageOrder > 1;
 
-        // TODO: Get cycleCount from database if stored
-        // For now, return 0 as default
-        int cycleCount = 0;
+        // Lấy cycleCount đã lưu trong DB (mặc định 0 nếu chưa có)
+        int cycleCount = tree.CycleCount;
 
         return new TreeLifecycleDto(
             tree.TreeId,

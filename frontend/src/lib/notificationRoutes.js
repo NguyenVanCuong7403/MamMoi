@@ -2,7 +2,7 @@
  * Maps notification type and user role to the appropriate route
  * @param {Object} notification - The notification object
  * @param {string} notification.notificationType - Type of notification (e.g., 'SupportRequest', 'Report', 'TaskExpiration')
- * @param {string} notification.relatedEntityType - Type of related entity (e.g., 'Report', 'SupportRequest', 'Task', 'Tree')
+ * @param {string} notification.relatedEntityType - Type of related entity (e.g., 'Report', 'SupportRequest', 'Task', 'Tree', 'CareSchedule')
  * @param {number} notification.relatedEntityId - ID of the related entity
  * @param {number} notification.treeId - ID of the tree (if notification is related to a tree)
  * @param {string} notification.actionUrl - Optional action URL from notification
@@ -20,9 +20,23 @@ export function getNotificationRoute(notification, user) {
   } = notification || {};
   const userRole = user?.role?.toLowerCase() || "";
 
-  // Nếu có actionUrl từ notification, ưu tiên sử dụng nó
+  // Nếu có actionUrl từ notification, xử lý nó
   if (actionUrl) {
-    return actionUrl;
+    // Nếu actionUrl là relative path (bắt đầu với /), xử lý đặc biệt
+    if (actionUrl.startsWith("/")) {
+      // Nếu là /tasks/{id} và có treeId, redirect đến tree detail
+      if (actionUrl.startsWith("/tasks/") && treeId) {
+        return `/tree_detail/${treeId}`;
+      }
+      // Nếu là /support-requests/{id}, sử dụng trực tiếp
+      if (actionUrl.startsWith("/support-requests/")) {
+        return actionUrl;
+      }
+      // Các routes khác sử dụng trực tiếp
+      return actionUrl;
+    }
+    // Nếu là absolute URL, không xử lý (hoặc có thể redirect đến external URL)
+    // Tạm thời bỏ qua absolute URLs
   }
 
   // Map dựa trên notificationType hoặc relatedEntityType
@@ -31,42 +45,58 @@ export function getNotificationRoute(notification, user) {
     notificationType ||
     ""
   ).toLowerCase();
+  const notifType = (notificationType || "").toLowerCase();
 
   // ===== REPORT & SUPPORT REQUEST =====
   // Admin có thông báo về report → chuyển đến màn quản lý report của admin
-  if (entityType === "report" || entityType === "supportrequest") {
+  if (
+    entityType === "report" ||
+    entityType === "supportrequest" ||
+    notifType === "supportrequest"
+  ) {
     if (userRole === "systemadmin") {
       return "/admin/reports";
     }
     if (userRole === "businessadmin") {
       return "/admin/business/reports";
     }
-    // User route
+    // User route - luôn đi đến trang danh sách reports (/reports)
+    // User có thể xem chi tiết từ trang danh sách nếu cần
     return "/reports";
   }
 
-  // ===== TASK & TASK EXPIRATION =====
+  // ===== TASK & TASK EXPIRATION & CARE SCHEDULE =====
   // Thông báo về task/nhiệm vụ
   if (
     entityType === "task" ||
     entityType === "taskexpiration" ||
     entityType === "taskreminder" ||
-    notificationType?.toLowerCase() === "taskexpiration"
+    entityType === "careschedule" ||
+    notifType === "taskexpiration"
   ) {
     // BusinessAdmin có thông báo về task → chuyển đến màn quản lý task
     if (userRole === "businessadmin") {
       return "/admin/business/tasks";
     }
     // User có thông báo về task → chuyển đến chi tiết cây (nếu có treeId) hoặc danh sách cây
-    if (treeId || relatedEntityId) {
-      return `/tree_detail/${treeId || relatedEntityId}`;
+    // Ưu tiên treeId từ notification, sau đó relatedEntityId nếu là tree
+    if (treeId) {
+      return `/tree_detail/${treeId}`;
+    }
+    // Nếu có relatedEntityId và không phải tree, có thể là task ID - nhưng vì không có trang task detail,
+    // nên vẫn redirect về tree detail nếu có thể, hoặc tree list
+    if (relatedEntityId && entityType === "careschedule") {
+      // Với CareSchedule, cần lấy treeId từ task, nhưng vì không có API call ở đây,
+      // nên redirect về tree list hoặc cố gắng dùng treeId nếu có
+      // Tạm thời redirect về tree list
+      return "/tree";
     }
     return "/tree";
   }
 
   // ===== TREE =====
   // Thông báo về cây → chuyển đến chi tiết cây
-  if (entityType === "tree") {
+  if (entityType === "tree" || notifType === "tree") {
     if (relatedEntityId || treeId) {
       return `/tree_detail/${relatedEntityId || treeId}`;
     }
@@ -84,14 +114,33 @@ export function getNotificationRoute(notification, user) {
 
   // ===== PAYMENT & SUBSCRIPTION =====
   // Thông báo về thanh toán/đăng ký
-  if (entityType === "payment" || entityType === "subscription") {
+  if (
+    entityType === "payment" ||
+    entityType === "subscription" ||
+    notifType === "payment"
+  ) {
     return "/paymenthistory";
   }
 
   // ===== PROMOTION =====
   // Thông báo khuyến mãi
-  if (entityType === "promotion") {
+  if (entityType === "promotion" || notifType === "promotion") {
     return "/price";
+  }
+
+  // ===== BROADCAST & ANNOUNCEMENT & SYSTEM =====
+  // Thông báo chung, thông báo hệ thống
+  if (
+    notifType === "broadcast" ||
+    notifType === "announcement" ||
+    notifType === "system"
+  ) {
+    // Nếu có actionUrl trong notification, sử dụng nó
+    if (actionUrl && actionUrl.startsWith("/")) {
+      return actionUrl;
+    }
+    // Mặc định đi đến trang notifications
+    return "/notifications";
   }
 
   // ===== USER MANAGEMENT (for SystemAdmin) =====

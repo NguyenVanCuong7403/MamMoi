@@ -264,7 +264,7 @@ public class SubscriptionPlanService : ISubscriptionPlanService
             var freePlan = await _dbContext.SubscriptionPlans
                 .Where(p => p.PlanType.ToLower() == "free")
                 .OrderBy(p => p.PlanId)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync();           
 
             return freePlan == null ? null : MapToDto(freePlan);
         }

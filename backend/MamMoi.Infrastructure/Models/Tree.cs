@@ -31,6 +31,10 @@ public partial class Tree
 
     public DateTime? LifecycleAutoDisabledAt { get; set; }
 
+    // Số chu kỳ sinh trưởng đã hoàn thành (được FE quản lý & hiển thị)
+    // Mặc định = 0. Được cập nhật thông qua API /api/trees/{id}/lifecycle.
+    public int CycleCount { get; set; } = 0;
+
     public string? Notes { get; set; }
     public string? QrcodeUrl { get; set; }
 

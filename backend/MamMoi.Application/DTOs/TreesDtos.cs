@@ -54,11 +54,12 @@
 
     // Lifecycle management DTOs
     public record UpdateTreeLifecycleRequest(
-        string PhaseId, // "growth_development", "flowering", "fruiting", "pre_harvest", "post_harvest"
+        string? PhaseId = null, // "growth_development", "flowering", "fruiting", "pre_harvest", "post_harvest"
         int? CycleCount = null,
         bool? Phase1Completed = null,
         bool? AutoSyncEnabled = null,
-        string? OverrideReason = null
+        string? OverrideReason = null,
+        int? StageId = null // Optional TreeGrowthStages.StageId
     );
 
     public record TreeLifecycleDto(

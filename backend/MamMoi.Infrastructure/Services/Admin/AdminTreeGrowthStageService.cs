@@ -350,13 +350,17 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
             .OrderByDescending(s => s.StageOrder)
             .FirstOrDefault();
 
-        // Auto-set MinAge based on previous stage's MaxAge if not provided or too low
+        // Validate MinAge based on previous stage's MaxAge
         if (previousStage != null && previousStage.MaxAgeInMonths.HasValue)
         {
             var expectedMinAge = previousStage.MaxAgeInMonths.Value + 1;
-            if (!finalMinAge.HasValue || finalMinAge.Value < expectedMinAge)
+            if (!finalMinAge.HasValue)
             {
-                finalMinAge = expectedMinAge;
+                throw new InvalidOperationException($"Tuổi tối thiểu là bắt buộc. Phải lớn hơn hoặc bằng {expectedMinAge} tháng (tuổi tối đa của quy trình trước + 1).");
+            }
+            if (finalMinAge.Value < expectedMinAge)
+            {
+                throw new InvalidOperationException($"Tuổi tối thiểu ({finalMinAge.Value} tháng) phải lớn hơn hoặc bằng tuổi tối đa của quy trình trước ({previousStage.MaxAgeInMonths.Value} tháng). Giá trị tối thiểu cho phép: {expectedMinAge} tháng.");
             }
         }
         else if (!finalMinAge.HasValue && actualStageOrder == 1)
@@ -509,13 +513,17 @@ public class AdminTreeGrowthStageService : IAdminTreeGrowthStageService
                 .OrderByDescending(s => s.StageOrder)
                 .FirstOrDefault();
 
-            // Auto-adjust MinAge based on previous stage if needed
+            // Validate MinAge based on previous stage's MaxAge
             if (previousStage != null && previousStage.MaxAgeInMonths.HasValue)
             {
                 var expectedMinAge = previousStage.MaxAgeInMonths.Value + 1;
-                if (!newMinAge.HasValue || newMinAge.Value < expectedMinAge)
+                if (!newMinAge.HasValue)
                 {
-                    newMinAge = expectedMinAge;
+                    throw new InvalidOperationException($"Tuổi tối thiểu là bắt buộc. Phải lớn hơn hoặc bằng {expectedMinAge} tháng (tuổi tối đa của quy trình trước + 1).");
+                }
+                if (newMinAge.Value < expectedMinAge)
+                {
+                    throw new InvalidOperationException($"Tuổi tối thiểu ({newMinAge.Value} tháng) phải lớn hơn hoặc bằng tuổi tối đa của quy trình trước ({previousStage.MaxAgeInMonths.Value} tháng). Giá trị tối thiểu cho phép: {expectedMinAge} tháng.");
                 }
             }
             else if (!newMinAge.HasValue && stage.StageOrder == 1)

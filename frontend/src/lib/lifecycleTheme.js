@@ -224,6 +224,19 @@ export function normalizeLifecycleTheme(input) {
         // Normalize phaseId chuẩn
         phaseId = normalizePhaseId(rawPhaseId);
       }
+      const stageId =
+        raw.stageId ??
+        raw.stage_id ??
+        raw.StageId ??
+        (raw.rawStage?.stageId ?? raw.rawStage?.StageId) ??
+        null;
+      const stageOrder =
+        raw.stageOrder ??
+        raw.stage_order ??
+        raw.order ??
+        raw.StageOrder ??
+        index;
+      const canonicalPhaseId = raw.canonicalPhaseId || phaseId;
       const base = DEFAULT_PHASE_THEME[phaseId] || {};
       const colorKey =
         normalizeColorKey(
@@ -247,6 +260,7 @@ export function normalizeLifecycleTheme(input) {
       const mapKey = `${phaseId}_${index}`;
       map[mapKey] = {
         phaseId,
+        canonicalPhaseId,
         label: raw.label || raw.stage || base.label,
         subtitle: raw.subtitle || raw.timing || "",
         description: raw.description || raw.action || "",
@@ -260,6 +274,9 @@ export function normalizeLifecycleTheme(input) {
         durationMs: Number(raw.durationMs) > 0 ? Number(raw.durationMs) : null,
         order:
           typeof raw.order === "number" ? raw.order : (typeof raw.order === "number" ? raw.order : index),
+        stageId,
+        stageOrder,
+        rawStage: raw.rawStage || raw,
       };
       return map;
     }, {});
@@ -300,6 +317,7 @@ export function normalizeLifecycleTheme(input) {
     );
     map[phaseId] = {
       phaseId,
+      canonicalPhaseId: raw.canonicalPhaseId || phaseId,
       label: raw.label || raw.stage || base.label,
       subtitle: raw.subtitle || raw.timing || "",
       description: raw.description || raw.action || "",
@@ -313,6 +331,19 @@ export function normalizeLifecycleTheme(input) {
       durationMs: Number(raw.durationMs) > 0 ? Number(raw.durationMs) : null,
       order:
         typeof raw.order === "number" ? raw.order : PHASE_IDS.indexOf(phaseId),
+      stageId:
+        raw.stageId ??
+        raw.stage_id ??
+        raw.StageId ??
+        (raw.rawStage?.stageId ?? raw.rawStage?.StageId) ??
+        null,
+      stageOrder:
+        raw.stageOrder ??
+        raw.stage_order ??
+        raw.StageOrder ??
+        raw.order ??
+        PHASE_IDS.indexOf(phaseId),
+      rawStage: raw.rawStage || raw,
     };
     return map;
   }, {});
@@ -407,6 +438,12 @@ export function getOrderedPhases(themeMap, options = {}) {
         return {
           id: `${phaseId}-${index}`,
           phaseId,
+          canonicalPhaseId: override?.canonicalPhaseId || phaseId,
+          stageId: override?.stageId ?? override?.rawStage?.stageId ?? null,
+          stageOrder:
+            override?.stageOrder ??
+            override?.rawStage?.stageOrder ??
+            index + 1,
           label: override?.label || base.label || phaseId,
           subtitle: override?.subtitle || "",
           description: override?.description || "",
@@ -448,6 +485,9 @@ export function getOrderedPhases(themeMap, options = {}) {
     return {
       id: `${phaseId}-${index}`,
       phaseId,
+          canonicalPhaseId: phaseId,
+          stageId: override?.stageId ?? null,
+          stageOrder: override?.stageOrder ?? index + 1,
       label: override?.label || base.label,
       subtitle: override?.subtitle || "",
       description: override?.description || "",
