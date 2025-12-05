@@ -341,12 +341,12 @@ public class GardenService : IGardenService
 
             // Determine which GardenSoil records to keep and which to delete
             var gardenSoilsToKeep = existingGardenSoils
-                .Where(gs => validSoilMasterIds.Contains(gs.SoilMasterId) || 
+                .Where(gs => validSoilMasterIds.Contains(gs.SoilMasterId) ||
                              gardenSoilIdsInUse.Contains(gs.GardenSoilId))
                 .ToList();
 
             var gardenSoilsToDelete = existingGardenSoils
-                .Where(gs => !validSoilMasterIds.Contains(gs.SoilMasterId) && 
+                .Where(gs => !validSoilMasterIds.Contains(gs.SoilMasterId) &&
                              !gardenSoilIdsInUse.Contains(gs.GardenSoilId))
                 .ToList();
 
@@ -423,7 +423,6 @@ public class GardenService : IGardenService
             OwnerName = garden.User?.FullName ?? garden.User?.Email ?? "Unknown",
             Name = garden.Name,
             Location = garden.Location,
-            Status = garden.Status,
             CreatedAt = garden.CreatedAt,
             IsOwner = garden.UserId == currentUserId,
 
