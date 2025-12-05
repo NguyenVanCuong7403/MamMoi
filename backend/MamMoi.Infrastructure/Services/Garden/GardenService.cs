@@ -423,6 +423,7 @@ public class GardenService : IGardenService
             OwnerName = garden.User?.FullName ?? garden.User?.Email ?? "Unknown",
             Name = garden.Name,
             Location = garden.Location,
+            Status = garden.Status,
             CreatedAt = garden.CreatedAt,
             IsOwner = garden.UserId == currentUserId,
 

@@ -51,7 +51,7 @@ public class GardensController : ControllerBase
         try
         {
             // Example: save to wwwroot/uploads
-            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot","uploads");
+            var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
 
             if (!Directory.Exists(uploadsFolder))
                 Directory.CreateDirectory(uploadsFolder);
@@ -108,10 +108,10 @@ public class GardensController : ControllerBase
             }
 
             var result = await _gardenService.CreateGardenAsync(userId.Value, dto);
-            
+
             return CreatedAtAction(
-                nameof(GetGardenById), 
-                new { id = result.GardenId }, 
+                nameof(GetGardenById),
+                new { id = result.GardenId },
                 new
                 {
                     success = true,
@@ -199,7 +199,7 @@ public class GardensController : ControllerBase
             }
 
             var result = await _gardenService.GetGardenByIdAsync(id, userId.Value);
-            
+
             return Ok(new
             {
                 success = true,
@@ -312,7 +312,7 @@ public class GardensController : ControllerBase
             }
 
             var result = await _gardenService.UpdateGardenAsync(id, userId.Value, dto);
-            
+
             return Ok(new
             {
                 success = true,
