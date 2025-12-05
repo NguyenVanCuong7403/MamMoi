@@ -262,7 +262,7 @@ public class SubscriptionPlanService : ISubscriptionPlanService
         {
             // If no subscription, return the free plan (first plan with PlanName "Free")
             var freePlan = await _dbContext.SubscriptionPlans
-                .Where(p => p.PlanName.ToLower() == "free")
+                .Where(p => p.PlanType.ToLower() == "free")
                 .OrderBy(p => p.PlanId)
                 .FirstOrDefaultAsync();
 
