@@ -564,7 +564,9 @@ function exportReportsToCSV(reports) {
     ].join(",");
   });
 
-  const csvContent = [headers.join(","), ...rows].join("\n");
+  // Add UTF-8 BOM (Byte Order Mark) to ensure proper encoding for Vietnamese characters
+  // Excel and other programs need this to correctly read UTF-8 CSV files
+  const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
