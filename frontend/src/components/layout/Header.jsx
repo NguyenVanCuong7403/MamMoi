@@ -416,35 +416,16 @@ export default function MMHeader({
           {/* Logo */}
           <a
             href="#"
-            className="inline-flex items-center gap-2 sm:gap-3 focus:outline-none focus:ring-2 focus:ring-white/50 rounded flex-shrink-0"
+            className="inline-flex items-center gap-1 outline-none focus:outline-none active:outline-none flex-shrink-0"
             onClick={(e) => {
               navigate("/");
             }}
           >
-            <div
-              className="w-9 h-9 sm:w-11 sm:h-11 rounded-full grid place-items-center shadow flex-shrink-0"
-              style={{ background: palette.ivory, color: palette.bg }}
-            >
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 40 40"
-                fill="none"
-                aria-hidden
-                className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]"
-              >
-                <path
-                  d="M20 5C20 5 8 8 8 20C8 32 20 35 20 35C20 35 32 32 32 20C32 8 20 5 20 5Z"
-                  fill={palette.bg}
-                />
-                <path
-                  d="M20 8C20 8 20 15 20 25C20 28 20 32 20 32"
-                  stroke={palette.ivory}
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
+            <img
+              src="/logo/HeaderLogo.png"
+              alt="Mầm Mới Logo"
+              className="h-12 sm:h-14 md:h-15 lg:h-18 w-auto object-contain flex-shrink-0"
+            />
             <span
               className="font-semibold tracking-wide select-none text-sm sm:text-base md:text-lg whitespace-nowrap"
               style={{ color: isTop ? palette.ivory : palette.leaf }}

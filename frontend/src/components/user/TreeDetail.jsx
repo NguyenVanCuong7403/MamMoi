@@ -2624,7 +2624,7 @@ function AsideCards({
         </Card>
       )}
 
-      {/* Lịch sử công việc ĐÃ hoàn thành */}
+      {/* Lịch sử công việc  */}
       <Card>
         <CardHeader className="flex items-center justify-between">
           <CardTitle>
@@ -3875,6 +3875,36 @@ export default function TreeDetail() {
     }
   }, [treeId, baseTree, apiTree, currentDate, loading, dailyHealthModal.open]);
 
+  // Prevent body scroll when daily health modal is open
+  useEffect(() => {
+    if (dailyHealthModal.open) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      // Disable body scroll
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
+    } else {
+      // Restore body scroll
+      const scrollY = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || "0") * -1);
+      }
+    }
+    return () => {
+      // Cleanup: restore body scroll on unmount
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+    };
+  }, [dailyHealthModal.open]);
+
   // 1. Thiếu treeId trong URL / state
   if (!treeId) {
     return (
@@ -4536,7 +4566,7 @@ export default function TreeDetail() {
 
       // planned chính là source cho:
       // - Các công việc đã lên kế hoạch
-      // - Lịch sử công việc đã hoàn thành (lọc những cái completed === true)
+      // - Lịch sử công việc (lọc những cái completed === true)
       setPlanned(mapped);
     } catch (err) {
       console.error("Failed to load care tasks", err);
@@ -5239,6 +5269,8 @@ export default function TreeDetail() {
     if (isStopped) return;
 
     try {
+      console.log("[performAddTask] Starting with draft:", draft);
+      
       // ✅ map sang giá trị mà API chấp nhận
       const apiTaskType = mapTaskTypeForApi(draft.type);
       if (!apiTaskType) {
@@ -5246,11 +5278,25 @@ export default function TreeDetail() {
         showToast("Loại công việc này chưa được hỗ trợ để gửi lên server.");
         return;
       }
+      
       const numericTreeId =
         stateTree?.id ||
         stateTree?._id ||
         baseTree?.id ||
         (treeId ? Number(treeId) : null);
+
+      console.log("[performAddTask] numericTreeId:", numericTreeId, {
+        stateTreeId: stateTree?.id,
+        stateTree_id: stateTree?._id,
+        baseTreeId: baseTree?.id,
+        treeId: treeId,
+      });
+
+      if (!numericTreeId || Number.isNaN(numericTreeId)) {
+        console.error("[performAddTask] Invalid treeId:", numericTreeId);
+        showToast("Không tìm thấy ID cây. Vui lòng tải lại trang.");
+        return;
+      }
 
       const detailsStr = Array.isArray(draft.details)
         ? draft.details.filter(Boolean).join("\n") // ["a","b"] -> "a\nb"
@@ -5265,7 +5311,9 @@ export default function TreeDetail() {
         priority: "Medium", // tạm fix, sau nếu có UI priority thì map thêm
       };
 
+      console.log("[performAddTask] Sending payload:", payload);
       const res = await CareScheduleRepository.addCareTask(payload);
+      console.log("[performAddTask] Response received:", res);
       const saved = res?.data ?? res;
 
       // Tuỳ response của backend, thường sẽ có ScheduleId / TaskId
@@ -5277,6 +5325,7 @@ export default function TreeDetail() {
         details: draft.details,
       };
 
+      console.log("[performAddTask] Creating newPlannedItem:", newPlannedItem);
       setPlanned((prev) => [newPlannedItem, ...prev]);
       setConfirmAddTask({ open: false, snapshot: null });
 
@@ -5286,8 +5335,14 @@ export default function TreeDetail() {
       setPlannedPage((p) => ({ ...p, [draft.type]: 1 }));
       setNewTask({ title: "", type: draft.type, due: today(), details: "" });
       setErrorsTask({});
+      console.log("[performAddTask] Successfully added task");
     } catch (err) {
-      console.error("Lỗi khi thêm CareTask", err);
+      console.error("[performAddTask] Error details:", {
+        error: err,
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
+      });
       showToast("Không thêm được công việc. Vui lòng thử lại.");
     }
   }
@@ -5815,7 +5870,7 @@ export default function TreeDetail() {
             {/* Thông tin chung */}
             {/* Thông tin cây (gộp ảnh vào cùng card) */}
             {/* Thông tin cây (gộp ảnh vào cùng card, inline edit từng trường) */}
-            <Card>
+            <Card id="sec-info">
               <CardHeader className="flex items-center justify-between">
                 {/* BÊN TRÁI: Tiêu đề + pill trạng thái */}
                 <div className="flex items-center gap-3">
@@ -6191,7 +6246,7 @@ export default function TreeDetail() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card id="sec-status">
               <CardHeader className="flex items-center justify-between gap-3">
                 <CardTitle>Tình trạng hiện tại</CardTitle>
                 <div className="flex items-center gap-2 text-xs text-neutral-500">
@@ -6457,109 +6512,12 @@ export default function TreeDetail() {
               meta={meta}
             />
 
-            {/* Các công việc đã lên kế hoạch */}
-            <Card>
+            {/* Gợi ý từ AI */}
+            <Card id="sec-ai" className="relative">
               <CardHeader>
-                <CardTitle>Các công việc đã lên kế hoạch</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Filter bar */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <TypeSwitch
-                    type="water"
-                    overdue={overdueCounts.water}
-                    active={activeType === "water"}
-                    onClick={() => setActiveType("water")}
-                  />
-                  <TypeSwitch
-                    type="fert"
-                    overdue={overdueCounts.fert}
-                    active={activeType === "fert"}
-                    onClick={() => setActiveType("fert")}
-                  />
-                  <TypeSwitch
-                    type="pest"
-                    overdue={overdueCounts.pest}
-                    active={activeType === "pest"}
-                    onClick={() => setActiveType("pest")}
-                  />
-                  <TypeSwitch
-                    type="other"
-                    overdue={overdueCounts.other}
-                    active={activeType === "other"}
-                    onClick={() => setActiveType("other")}
-                  />
-
-                  <div className="flex items-center gap-1 ml-auto">
-                    <Input
-                      placeholder="Tìm kiếm..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="h-9 w-56"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <FilterChip
-                    active={statusFilter === "all"}
-                    onClick={() => setStatusFilter("all")}
-                  >
-                    Tất cả
-                  </FilterChip>
-                  <FilterChip
-                    active={statusFilter === "todo"}
-                    onClick={() => setStatusFilter("todo")}
-                  >
-                    Việc cần làm
-                  </FilterChip>
-                  <FilterChip
-                    active={statusFilter === "done"}
-                    onClick={() => setStatusFilter("done")}
-                  >
-                    Đã hoàn thành
-                  </FilterChip>
-
-                  <div className="mx-2 h-4 w-px bg-neutral-200" />
-
-                  <FilterChip
-                    active={dateFilter === "all"}
-                    onClick={() => setDateFilter("all")}
-                  >
-                    Tất cả
-                  </FilterChip>
-                  <FilterChip
-                    active={dateFilter === "today"}
-                    onClick={() => setDateFilter("today")}
-                  >
-                    Hôm nay
-                  </FilterChip>
-                  <FilterChip
-                    active={dateFilter === "week"}
-                    onClick={() => setDateFilter("week")}
-                  >
-                    Trong 7 ngày
-                  </FilterChip>
-                  <FilterChip
-                    active={dateFilter === "overdue"}
-                    onClick={() => setDateFilter("overdue")}
-                  >
-                    Quá hạn
-                  </FilterChip>
-                </div>
-
-                <PlannedSection type={activeType} disabled={isStopped} />
-              </CardContent>
-            </Card>
-
-            {/* Gợi ý AI & Thêm việc */}
-            <Card className="relative">
-              <CardHeader>
-                <CardTitle>Gợi ý từ AI & Thêm việc</CardTitle>
+                <CardTitle>Gợi ý từ AI</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 relative">
-                <InCardToast show={toast.show} message={toast.msg} />
-
                 {isStopped ? (
                   <div className="rounded-2xl border p-3 bg-white text-sm text-neutral-700">
                     <b>Đã dừng hoạt động:</b> Ngừng mọi gợi ý mới. Chỉ hiển thị
@@ -6568,8 +6526,18 @@ export default function TreeDetail() {
                 ) : (
                   <AISuggestionsList />
                 )}
+              </CardContent>
+            </Card>
 
-                {/* Thêm việc (gộp) */}
+            {/* Thêm việc & Các công việc đã lên kế hoạch */}
+            <Card id="sec-planned" className="relative">
+              <CardHeader>
+                <CardTitle>Thêm việc & Các công việc đã lên kế hoạch</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 relative">
+                <InCardToast show={toast.show} message={toast.msg} />
+
+                {/* Thêm việc */}
                 <section>
                   <div className="text-sm font-medium mb-2">Thêm việc</div>
 
@@ -6699,6 +6667,103 @@ export default function TreeDetail() {
                       </Button>
                     </div>
                   </div>
+                </section>
+
+                {/* Đường kẻ phân cách */}
+                <div className="border-t border-neutral-200 my-2" />
+
+                {/* Các công việc đã lên kế hoạch */}
+                <section>
+                  <div className="text-sm font-medium mb-2">
+                    Các công việc đã lên kế hoạch
+                  </div>
+
+                  {/* Filter bar */}
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <TypeSwitch
+                      type="water"
+                      overdue={overdueCounts.water}
+                      active={activeType === "water"}
+                      onClick={() => setActiveType("water")}
+                    />
+                    <TypeSwitch
+                      type="fert"
+                      overdue={overdueCounts.fert}
+                      active={activeType === "fert"}
+                      onClick={() => setActiveType("fert")}
+                    />
+                    <TypeSwitch
+                      type="pest"
+                      overdue={overdueCounts.pest}
+                      active={activeType === "pest"}
+                      onClick={() => setActiveType("pest")}
+                    />
+                    <TypeSwitch
+                      type="other"
+                      overdue={overdueCounts.other}
+                      active={activeType === "other"}
+                      onClick={() => setActiveType("other")}
+                    />
+
+                    <div className="flex items-center gap-1 ml-auto">
+                      <Input
+                        placeholder="Tìm kiếm..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="h-9 w-56"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <FilterChip
+                      active={statusFilter === "all"}
+                      onClick={() => setStatusFilter("all")}
+                    >
+                      Tất cả
+                    </FilterChip>
+                    <FilterChip
+                      active={statusFilter === "todo"}
+                      onClick={() => setStatusFilter("todo")}
+                    >
+                      Việc cần làm
+                    </FilterChip>
+                    <FilterChip
+                      active={statusFilter === "done"}
+                      onClick={() => setStatusFilter("done")}
+                    >
+                      Đã hoàn thành
+                    </FilterChip>
+
+                    <div className="mx-2 h-4 w-px bg-neutral-200" />
+
+                    <FilterChip
+                      active={dateFilter === "all"}
+                      onClick={() => setDateFilter("all")}
+                    >
+                      Tất cả
+                    </FilterChip>
+                    <FilterChip
+                      active={dateFilter === "today"}
+                      onClick={() => setDateFilter("today")}
+                    >
+                      Hôm nay
+                    </FilterChip>
+                    <FilterChip
+                      active={dateFilter === "week"}
+                      onClick={() => setDateFilter("week")}
+                    >
+                      Trong 7 ngày
+                    </FilterChip>
+                    <FilterChip
+                      active={dateFilter === "overdue"}
+                      onClick={() => setDateFilter("overdue")}
+                    >
+                      Quá hạn
+                    </FilterChip>
+                  </div>
+
+                  <PlannedSection type={activeType} disabled={isStopped} />
                 </section>
               </CardContent>
             </Card>
@@ -6836,81 +6901,88 @@ export default function TreeDetail() {
       })()}
       {dailyHealthModal.open && (
         <div
-          className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-2 sm:p-3 md:p-4 lg:p-6"
           // Prevent closing by clicking outside - modal can only be closed by buttons
           onClick={(e) => {
             e.stopPropagation();
           }}
+          onWheel={(e) => {
+            // Prevent background scroll when modal is open
+            e.stopPropagation();
+          }}
         >
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
-              <div className="text-xl font-semibold text-gray-900">
+          <div className="w-full max-w-2xl rounded-lg sm:rounded-xl md:rounded-2xl bg-white shadow-2xl h-[calc(100vh-1rem)] sm:h-[calc(100vh-1.5rem)] md:h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+            <div className="px-3 py-2 sm:px-4 sm:py-2.5 md:px-6 md:py-4 border-b flex items-center justify-between flex-shrink-0">
+              <div className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">
                 Cập nhật tình trạng hiện tại
               </div>
               {/* Remove close button - modal can only be closed by action buttons */}
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="text-sm text-gray-600 mb-4">
+            <div className="p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-2.5 md:space-y-3 flex-1 flex flex-col min-h-0">
+              <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-2.5 md:mb-3 flex-shrink-0">
                 Vui lòng cập nhật tình trạng hiện tại của cây. Bạn có thể giữ
                 nguyên nếu không có thay đổi.
               </div>
 
-              {HEALTH_FIELDS.map((field) => {
-                const isDisabled =
-                  (field.key === "flower" && !canEditFlower) ||
-                  (field.key === "fruit" && !canEditFruit);
+              <div className="flex-1 min-h-0 space-y-2 sm:space-y-2 md:space-y-2.5 overflow-hidden flex flex-col">
+                {HEALTH_FIELDS.map((field) => {
+                  const isDisabled =
+                    (field.key === "flower" && !canEditFlower) ||
+                    (field.key === "fruit" && !canEditFruit);
 
-                // Determine placeholder: if field is enabled and it's flower/fruit, show "Cập nhật thông tin"
-                const placeholder = isDisabled
-                  ? field.defaultText
-                  : field.key === "flower" || field.key === "fruit"
-                  ? "Cập nhật thông tin"
-                  : field.defaultText;
+                  // Determine placeholder: if field is enabled and it's flower/fruit, show "Cập nhật thông tin"
+                  const placeholder = isDisabled
+                    ? field.defaultText
+                    : field.key === "flower" || field.key === "fruit"
+                    ? "Cập nhật thông tin"
+                    : field.defaultText;
 
-                return (
-                  <div key={field.key} className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                      <span className="text-lg">{field.icon}</span>
-                      <span>{field.label}</span>
-                      {isDisabled && (
-                        <span className="text-xs text-gray-500">
-                          (Chưa đến giai đoạn)
-                        </span>
-                      )}
-                    </label>
-                    <Textarea
-                      rows={3}
-                      value={dailyHealthModal.values[field.key] || ""}
-                      onChange={(e) =>
-                        handleDailyHealthChange(field.key, e.target.value)
-                      }
-                      placeholder={placeholder}
-                      disabled={isDisabled}
-                      className={
-                        isDisabled
-                          ? "bg-gray-50 text-gray-400 cursor-not-allowed"
-                          : ""
-                      }
-                    />
-                  </div>
-                );
-              })}
+                  return (
+                    <div key={field.key} className="space-y-1 sm:space-y-1.5 flex-shrink-0">
+                      <label className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-gray-700">
+                        <span className="text-sm sm:text-base md:text-lg">{field.icon}</span>
+                        <span>{field.label}</span>
+                        {isDisabled && (
+                          <span className="text-[10px] sm:text-xs text-gray-500">
+                            (Chưa đến giai đoạn)
+                          </span>
+                        )}
+                      </label>
+                      <Textarea
+                        rows={1}
+                        className={
+                          "text-xs sm:text-sm md:text-base resize-none " +
+                          (isDisabled
+                            ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                            : "")
+                        }
+                        value={dailyHealthModal.values[field.key] || ""}
+                        onChange={(e) =>
+                          handleDailyHealthChange(field.key, e.target.value)
+                        }
+                        placeholder={placeholder}
+                        disabled={isDisabled}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-2.5 md:gap-3 pt-2 sm:pt-2.5 md:pt-3 border-t flex-shrink-0">
                 {hasDailyHealthChanges ? (
                   <>
                     <Button
                       variant="outline"
                       onClick={handleDailyHealthReset}
-                      className="px-6"
+                      className="px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10"
                       disabled={saving}
                     >
                       Cài lại dữ liệu cũ
                     </Button>
                     <Button
                       onClick={handleDailyHealthConfirm}
-                      className="px-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10"
                       disabled={saving}
                     >
                       Xác nhận thay đổi
@@ -6919,7 +6991,7 @@ export default function TreeDetail() {
                 ) : (
                   <Button
                     onClick={handleDailyHealthClose}
-                    className="px-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10"
                   >
                     Không có thay đổi
                   </Button>
@@ -7739,8 +7811,8 @@ function StickySectionNav() {
   const sections = [
     { id: "sec-info", name: "Thông tin cây", Icon: Sprout },
     { id: "sec-status", name: "Tình trạng hiện tại", Icon: Activity },
-    { id: "sec-planned", name: "Kế hoạch", Icon: ClipboardList },
-    { id: "sec-ai", name: "Gợi ý & Thêm việc", Icon: CheckCircle2 },
+    { id: "sec-ai", name: "Gợi ý AI", Icon: CheckCircle2 },
+    { id: "sec-planned", name: "Thêm việc & Kế hoạch", Icon: ClipboardList },
   ];
   const [active, setActive] = React.useState(sections[0].id);
 

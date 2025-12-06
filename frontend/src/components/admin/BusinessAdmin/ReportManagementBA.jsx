@@ -1495,7 +1495,7 @@ export default function ReportManagementBA() {
                     Business Admin
                   </p>
                   <h1 className="mt-2 text-3xl font-semibold text-white">
-                    Quản lý báo cáo sản xuất
+                    Quản lý báo cáo 
                   </h1>
                   <p className="text-emerald-100/80">
                     Giám sát báo cáo chất lượng cây trồng và những phản hồi kinh

@@ -65,40 +65,11 @@ export default function Footer() {
               className="flex items-center gap-3 mb-4 cursor-pointer group"
               aria-label="Mầm Mới"
             >
-              <svg
-                width="48"
-                height="48"
-                viewBox="0 0 48 48"
-                fill="none"
-                className="flex-shrink-0 group-hover:scale-110 transition-transform"
-                aria-hidden
-              >
-                <circle cx="24" cy="24" r="24" fill={TEXT} />
-                <path
-                  d="M24 10C24 10 15 12 15 22C15 32 24 34 24 34C24 34 33 32 33 22C33 12 24 10 24 10Z"
-                  fill={BG}
-                />
-                <path
-                  d="M24 12C24 12 24 18 24 26C24 28 24 32 24 32"
-                  stroke={TEXT}
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M24 15L20 17.5M24 19L19 22M24 23L20 26"
-                  stroke={TEXT}
-                  strokeWidth="1"
-                  strokeLinecap="round"
-                  opacity=".7"
-                />
-                <path
-                  d="M24 15L28 17.5M24 19L29 22M24 23L28 26"
-                  stroke={TEXT}
-                  strokeWidth="1"
-                  strokeLinecap="round"
-                  opacity=".7"
-                />
-              </svg>
+              <img
+                src="/logo/FooterLogo.png"
+                alt="Mầm Mới Logo"
+                className="w-16 h-16 md:w-20 md:h-20 rounded-full flex-shrink-0 group-hover:scale-110 transition-transform object-cover"
+              />
               <span
                 className="text-xl font-bold"
                 style={{ color: "rgba(251,255,223,.9)" }}
