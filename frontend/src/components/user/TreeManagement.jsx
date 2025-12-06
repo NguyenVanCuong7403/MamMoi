@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   Search,
   Filter as FilterIcon,
@@ -2892,14 +2893,12 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
               </div>
 
               {showTaskStats && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   {[
                     { label: "Tổng việc", value: statusStats.total },
                     { label: "Chờ thực hiện", value: statusStats.pending },
                     { label: "Đang thực hiện", value: statusStats.inprogress },
                     { label: "Hoàn thành", value: statusStats.completed },
-                    { label: "Hoãn lại", value: statusStats.postponed },
-                    { label: "Đã hủy", value: statusStats.cancelled },
                   ].map((stat, idx) => (
                     <div
                       key={idx}
@@ -3025,128 +3024,19 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                               normalizeKey(task.status) === "completed";
                             return showCompleted ? isCompleted : !isCompleted;
                           })
-                          .map((task) => {
-                            const overdue = isTaskOverdue(
-                              task.scheduledDate,
-                              task.status
-                            );
-                            const busyComplete = Boolean(
-                              completingMap[task.scheduleId]
-                            );
-                            const priorityMeta =
-                              TASK_PRIORITY_META[normalizeKey(task.priority)] ||
-                              TASK_PRIORITY_META.default;
-                            return (
-                              <div
-                                key={task.scheduleId}
-                                className={`rounded-2xl border px-2.5 py-2.5 shadow-sm space-y-2 ${
-                                  overdue
-                                    ? "border-rose-400/40 bg-rose-500/10"
-                                    : normalizeKey(task.status) === "completed"
-                                    ? "border-neutral-400/40 bg-neutral-500/10"
-                                    : "border-white/20 bg-white/10"
-                                }`}
-                              >
-                                <div className="flex items-start justify-between gap-1.5">
-                                  <div>
-                                    <div className="text-[11px] font-semibold text-white">
-                                      {task.taskName}
-                                    </div>
-                                    <div className="text-[9px] text-white/60">
-                                      #{task.scheduleId}
-                                    </div>
-                                  </div>
-                                  <TaskStatusBadge status={task.status} />
-                                </div>
-
-                                <div className="flex flex-wrap gap-1 text-[9px]">
-                                  <Badge
-                                    variant="secondary"
-                                    className="gap-1 px-2 py-0.5 bg-emerald-500/30 text-emerald-200 border-emerald-400/40"
-                                  >
-                                    {taskTypeLabel(task.taskType)}
-                                  </Badge>
-                                  <Badge
-                                    variant="outline"
-                                    className={`gap-1 px-2 py-0.5 border-white/20 text-white/80 ${priorityMeta.className}`}
-                                  >
-                                    Ưu tiên: {priorityMeta.label}
-                                  </Badge>
-                                  <Badge
-                                    variant="outline"
-                                    className={`gap-1 px-2 py-0.5 ${
-                                      overdue
-                                        ? "border-rose-400/60 text-rose-200 bg-rose-500/20"
-                                        : "border-white/20 text-white/80"
-                                    }`}
-                                  >
-                                    <Calendar className="h-3.5 w-3.5" />
-                                    {formatTaskDate(task.scheduledDate)}
-                                    {overdue && " · Quá hạn"}
-                                  </Badge>
-                                </div>
-
-                                {task.description && (
-                                  <p className="text-[10px] text-white/80 leading-snug">
-                                    {task.description}
-                                  </p>
-                                )}
-
-                                <div className="flex flex-wrap items-center gap-1 border-t border-dashed border-white/20 pt-1.5">
-                                  <Button
-                                    size="sm"
-                                    className="h-6 px-2.5 gap-1 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white"
-                                    onClick={() =>
-                                      handleOpenCompleteDialog(task)
-                                    }
-                                    disabled={
-                                      busyComplete ||
-                                      task.status === "Completed"
-                                    }
-                                  >
-                                    {busyComplete ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <CheckCircle2 className="h-4 w-4" />
-                                    )}
-                                    Hoàn thành
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2.5 gap-1 text-[10px] border-blue-400/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400"
-                                    onClick={() => handleOpenEditDialog(task)}
-                                    disabled={Boolean(
-                                      editingMap[task.scheduleId]
-                                    )}
-                                  >
-                                    {editingMap[task.scheduleId] ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Edit3 className="h-4 w-4" />
-                                    )}
-                                    Sửa
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-6 px-2.5 gap-1 text-[10px] border-rose-400/50 text-rose-200 hover:bg-rose-500/20 hover:border-rose-400"
-                                    onClick={() => handleOpenDeleteDialog(task)}
-                                    disabled={Boolean(
-                                      deletingMap[task.scheduleId]
-                                    )}
-                                  >
-                                    {deletingMap[task.scheduleId] ? (
-                                      <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                      <Trash2 className="h-4 w-4" />
-                                    )}
-                                    Xóa
-                                  </Button>
-                                </div>
-                              </div>
-                            );
-                          })}
+                          .map((task) => (
+                            <TaskItem
+                              key={task.scheduleId}
+                              task={task}
+                              overdue={isTaskOverdue(task.scheduledDate, task.status)}
+                              busyComplete={Boolean(completingMap[task.scheduleId])}
+                              onComplete={() => handleOpenCompleteDialog(task)}
+                              onEdit={() => handleOpenEditDialog(task)}
+                              onDelete={() => handleOpenDeleteDialog(task)}
+                              isEditing={Boolean(editingMap[task.scheduleId])}
+                              isDeleting={Boolean(deletingMap[task.scheduleId])}
+                            />
+                          ))}
                       </div>
 
                       {/* Separator between trees */}
@@ -3475,6 +3365,278 @@ function TaskStatusBadge({ status }) {
       {meta.label}
     </span>
   );
+}
+
+/* =========================================================================
+   TaskItem component - separate component to manage hooks properly
+   ========================================================================= */
+function TaskItem({
+  task,
+  overdue,
+  busyComplete,
+  onComplete,
+  onEdit,
+  onDelete,
+  isEditing,
+  isDeleting,
+}) {
+  const [hover, setHover] = useState(false);
+  const containerRef = useRef(null);
+
+  const priorityMeta =
+    TASK_PRIORITY_META[normalizeKey(task.priority)] ||
+    TASK_PRIORITY_META.default;
+
+  const titleTruncated = truncateText(task.taskName, 30);
+  
+  // Parse description thành các dòng
+  const descLines = parseDescriptionToLines(task.description);
+  const maxDisplayLines = 4; // Hiển thị tối đa 4 dòng trong khung công việc
+  const displayLines = descLines.slice(0, maxDisplayLines);
+  const hasMoreLines = descLines.length > maxDisplayLines;
+  
+  const showHover = hover;
+
+  return (
+    <>
+      <div
+        ref={containerRef}
+        className={`rounded-2xl border px-2.5 py-2.5 shadow-sm space-y-2 ${
+          overdue
+            ? "border-rose-400/40 bg-rose-500/10"
+            : normalizeKey(task.status) === "completed"
+            ? "border-neutral-400/40 bg-neutral-500/10"
+            : "border-white/20 bg-white/10"
+        }`}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+      >
+        <div className="flex items-start justify-between gap-1.5">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-base font-semibold text-white truncate max-w-full">
+                {titleTruncated}
+              </div>
+              <div className="h-4 w-px bg-white/30" />
+              <div className="flex flex-wrap items-center gap-1 text-xs">
+                <Badge
+                  variant="secondary"
+                  className="gap-1 px-2 py-0.5 bg-emerald-500/30 text-emerald-200 border-emerald-400/40 text-xs"
+                >
+                  {taskTypeLabel(task.taskType)}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={`gap-1 px-2 py-0.5 border-white/20 text-white/80 text-xs ${priorityMeta.className}`}
+                >
+                  Ưu tiên: {priorityMeta.label}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={`gap-1 px-2 py-0.5 text-xs ${
+                    overdue
+                      ? "border-rose-400/60 text-rose-200 bg-rose-500/20"
+                      : "border-white/20 text-white/80"
+                  }`}
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  {formatTaskDate(task.scheduledDate)}
+                  {overdue && " · Quá hạn"}
+                </Badge>
+              </div>
+            </div>
+            <div className="text-xs text-white/60 mt-1">#{task.scheduleId}</div>
+          </div>
+          <TaskStatusBadge status={task.status} />
+        </div>
+
+        {task.description && descLines.length > 0 && (
+          <div className="text-sm text-white/80 leading-relaxed">
+            <ol className="ml-4 list-decimal space-y-0.5">
+              {displayLines.map((line, idx) => {
+                // Loại bỏ số thứ tự ở đầu dòng (nếu có) vì <ol> sẽ tự động đánh số
+                const cleanLine = line.replace(/^\s*\d+\.\s*/, "").trim();
+                return (
+                  <li key={idx} className="break-words text-xs">
+                    {cleanLine}
+                  </li>
+                );
+              })}
+            </ol>
+            {hasMoreLines && (
+              <div className="text-xs text-white/60 mt-1 italic">
+                +{descLines.length - maxDisplayLines} mục nữa (xem popup để xem chi tiết)
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-1 border-t border-dashed border-white/20 pt-1.5">
+          <Button
+            size="sm"
+            className="h-6 px-2.5 gap-1 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={onComplete}
+            disabled={busyComplete || task.status === "Completed"}
+          >
+            {busyComplete ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            Hoàn thành
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2.5 gap-1 text-[10px] border-blue-400/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400"
+            onClick={onEdit}
+            disabled={isEditing}
+          >
+            {isEditing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Edit3 className="h-4 w-4" />
+            )}
+            Sửa
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2.5 gap-1 text-[10px] border-rose-400/50 text-rose-200 hover:bg-rose-500/20 hover:border-rose-400"
+            onClick={onDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            Xóa
+          </Button>
+        </div>
+      </div>
+
+      {/* HoverCard hiển thị khi hover vào khung công việc */}
+      {showHover && (
+        <HoverCard
+          anchorRef={containerRef}
+          open={hover}
+          side="left"
+          width={360}
+        >
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">
+                Tiêu đề công việc
+              </div>
+              <div className="text-sm font-semibold break-words text-gray-900">
+                {task.taskName}
+              </div>
+            </div>
+            {task.description && (
+              <div>
+                <div className="text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">
+                  Mô tả công việc
+                </div>
+                {(() => {
+                  const lines = parseDescriptionToLines(task.description);
+                  
+                  if (lines.length === 0) return null;
+                  
+                  // Luôn hiển thị dưới dạng danh sách có đánh số (giống TreeDetail.jsx)
+                  return (
+                    <ol className="ml-5 list-decimal space-y-1 text-sm text-gray-700">
+                      {lines.map((line, idx) => {
+                        // Loại bỏ số thứ tự ở đầu dòng (nếu có) vì <ol> sẽ tự động đánh số
+                        const cleanLine = line.replace(/^\s*\d+\.\s*/, "").trim();
+                        return (
+                          <li key={idx} className="break-words">
+                            {cleanLine}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        </HoverCard>
+      )}
+    </>
+  );
+}
+
+/* =========================================================================
+   HoverCard component for showing full content on hover
+   ========================================================================= */
+function HoverCard({
+  anchorRef,
+  open,
+  side = "right",
+  offset = 12,
+  width = 320,
+  children,
+}) {
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (!open || !anchorRef?.current) return;
+    const place = () => {
+      const r = anchorRef.current.getBoundingClientRect();
+      const vw = window.innerWidth;
+      let left = side === "right" ? r.right + offset : r.left - width - offset;
+      let top = r.top;
+
+      if (left + width > vw - 8) left = vw - width - 8;
+      if (left < 8) left = 8;
+
+      setPos({ top, left });
+    };
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [open, anchorRef, side, offset, width]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      className="fixed z-[1000] pointer-events-none"
+      style={{ top: pos.top, left: pos.left, width }}
+    >
+      <div className="rounded-2xl border bg-white shadow-xl p-3">
+        {children}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/* =========================================================================
+   Helper function to truncate text
+   ========================================================================= */
+function truncateText(str, maxChars = 60) {
+  if (!str) return "";
+  if (str.length <= maxChars) return str;
+  return str.slice(0, maxChars) + "…";
+}
+
+/* =========================================================================
+   Helper function to parse description into array of lines
+   ========================================================================= */
+function parseDescriptionToLines(description) {
+  if (!description) return [];
+  const desc = String(description).trim();
+  if (!desc) return [];
+  
+  // Tách thành các dòng và filter các dòng rỗng
+  const lines = desc.split(/\r?\n/).filter(line => line.trim());
+  return lines;
 }
 
 //Sau này nối với API thời tiết như thế nào?

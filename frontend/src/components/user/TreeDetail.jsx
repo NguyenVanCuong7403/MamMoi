@@ -1606,7 +1606,6 @@ function countNonEmptyLines(val) {
     .filter((l) => l.trim() !== "").length;
 }
 function handleNumberedKeyDown(e, setter) {
-  if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
   const el = e.target;
   const val = el.value;
   const pos = el.selectionStart ?? 0;
@@ -1616,21 +1615,54 @@ function handleNumberedKeyDown(e, setter) {
     val.slice(lineStart, lineEnd === -1 ? val.length : lineEnd) || "";
   const lineTrim = lineText.replace(/^\s*\d+\.\s*/, "").trim();
   const hasPrefix = /^\s*\d+\.\s/.test(lineText);
+  const MAX_CHARS_PER_LINE = 120;
 
-  if (!hasPrefix && lineTrim === "") {
+  // Xử lý phím Enter - tự động xuống dòng và đánh số
+  if (e.key === "Enter") {
+    e.preventDefault();
     const next = countNonEmptyLines(val) + 1;
     const prefix = `${next}. `;
-    const newVal = val.slice(0, lineStart) + prefix + val.slice(lineStart);
-    e.preventDefault();
-    const insertPos = pos + prefix.length;
-    const withChar =
-      newVal.slice(0, insertPos) + e.key + newVal.slice(pos + prefix.length);
-    setter(withChar);
+    const newVal = val.slice(0, pos) + "\n" + prefix + val.slice(pos);
+    setter(newVal);
     setTimeout(() => {
       try {
-        el.selectionStart = el.selectionEnd = insertPos + 1;
+        const newPos = pos + 1 + prefix.length;
+        el.selectionStart = el.selectionEnd = newPos;
       } catch {}
     }, 0);
+    return;
+  }
+
+  // Kiểm tra giới hạn 120 ký tự mỗi dòng (không tính phần số)
+  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== "Backspace" && e.key !== "Delete") {
+    // Tính độ dài nội dung thực tế của dòng (không tính số và dấu chấm)
+    const currentLineLength = lineTrim.length;
+    
+    // Nếu đã đạt giới hạn, ngăn không cho nhập thêm
+    if (currentLineLength >= MAX_CHARS_PER_LINE) {
+      e.preventDefault();
+      return;
+    }
+  }
+
+  // Tự động thêm số khi bắt đầu dòng mới
+  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== "Backspace" && e.key !== "Delete") {
+    if (!hasPrefix && lineTrim === "") {
+      const next = countNonEmptyLines(val) + 1;
+      const prefix = `${next}. `;
+      const newVal = val.slice(0, lineStart) + prefix + val.slice(lineStart);
+      e.preventDefault();
+      const insertPos = pos + prefix.length;
+      const withChar =
+        newVal.slice(0, insertPos) + e.key + newVal.slice(pos + prefix.length);
+      
+      setter(withChar);
+      setTimeout(() => {
+        try {
+          el.selectionStart = el.selectionEnd = insertPos + 1;
+        } catch {}
+      }, 0);
+    }
   }
 }
 function lowerFirst(s = "") {
@@ -3760,6 +3792,54 @@ export default function TreeDetail() {
     initialValues: { leaf: "", branch: "", flower: "", fruit: "" },
   });
 
+  // Modal scale factor for zoom/resize
+  const [modalScale, setModalScale] = useState(1);
+  
+  // Calculate modal scale based on viewport size
+  useEffect(() => {
+    if (!dailyHealthModal.open) return;
+    
+    const calculateScale = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      // Base modal size: max-w-lg = 32rem = 512px
+      const baseWidth = 512;
+      const baseHeight = 550; // Reduced estimated base height
+      
+      // Calculate available space (with padding)
+      const padding = 16; // Fixed 16px padding
+      const availableWidth = vw - (padding * 2);
+      const availableHeight = vh - (padding * 2);
+      
+      // Calculate scale factors
+      const widthScale = availableWidth / baseWidth;
+      const heightScale = availableHeight / baseHeight;
+      
+      // Use the smaller scale to ensure it fits both dimensions
+      let scale = Math.min(widthScale, heightScale, 1); // Never scale up, only down
+      
+      // For very small viewports, ensure minimum scale (increased from 0.5 to 0.7)
+      const minScale = Math.min(vw / 400, vh / 450, 0.7);
+      scale = Math.max(scale, minScale);
+      
+      // Ensure scale is not too small (at least 0.7 for normal viewports)
+      if (vw > 800 && vh > 600) {
+        scale = Math.max(scale, 0.75);
+      }
+      
+      return scale;
+    };
+    
+    setModalScale(calculateScale());
+    
+    const handleResize = () => {
+      setModalScale(calculateScale());
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [dailyHealthModal.open]);
+
   // Confirm modal for daily health changes
   const [confirmModal, setConfirmModal] = useState({
     open: false,
@@ -5247,7 +5327,9 @@ export default function TreeDetail() {
      --------------------------------------------------------------------- */
   function validateTaskDraft(d) {
     const e = {};
-    if (!String(d.title || "").trim()) e.title = "Vui lòng nhập tiêu đề";
+    const title = String(d.title || "").trim();
+    if (!title) e.title = "Vui lòng nhập tiêu đề";
+    else if (title.length > 30) e.title = "Tiêu đề không được vượt quá 30 ký tự";
     if (daysBetween(d.due, today()) > 0) e.due = "Hạn phải từ hôm nay trở đi";
     return e;
   }
@@ -6588,7 +6670,7 @@ export default function TreeDetail() {
                       </label>
                       <Textarea
                         rows={2}
-                        maxLength={100} // Giới hạn người dùng nhập tối đa 60 ký tự
+                        maxLength={30}
                         value={newTask.title}
                         onChange={(e) => {
                           setNewTask({ ...newTask, title: e.target.value });
@@ -6648,10 +6730,22 @@ export default function TreeDetail() {
                             setNewTask((s) => ({ ...s, details: v }))
                           )
                         }
-                        onChange={(e) =>
-                          setNewTask({ ...newTask, details: e.target.value })
-                        }
-                        placeholder="Mỗi dòng 1 ý: liều lượng, cách làm, ghi chú..."
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Giới hạn mỗi dòng 120 ký tự (không tính phần số)
+                          const lines = value.split("\n");
+                          const limitedLines = lines.map((line) => {
+                            const prefixMatch = line.match(/^(\s*\d+\.\s*)/);
+                            const prefix = prefixMatch ? prefixMatch[1] : "";
+                            const content = line.replace(/^\s*\d+\.\s*/, "");
+                            if (content.length > 120) {
+                              return prefix + content.slice(0, 120);
+                            }
+                            return line;
+                          });
+                          setNewTask({ ...newTask, details: limitedLines.join("\n") });
+                        }}
+                        placeholder="Mỗi dòng 1 ý (tối đa 120 ký tự): liều lượng, cách làm, ghi chú..."
                         disabled={isStopped}
                         className="border-2 border-neutral-300"
                       />
@@ -6901,7 +6995,8 @@ export default function TreeDetail() {
       })()}
       {dailyHealthModal.open && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center p-2 sm:p-3 md:p-4 lg:p-6"
+          className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center"
+          style={{ padding: '0.75rem' }}
           // Prevent closing by clicking outside - modal can only be closed by buttons
           onClick={(e) => {
             e.stopPropagation();
@@ -6911,21 +7006,34 @@ export default function TreeDetail() {
             e.stopPropagation();
           }}
         >
-          <div className="w-full max-w-2xl rounded-lg sm:rounded-xl md:rounded-2xl bg-white shadow-2xl h-[calc(100vh-1rem)] sm:h-[calc(100vh-1.5rem)] md:h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
-            <div className="px-3 py-2 sm:px-4 sm:py-2.5 md:px-6 md:py-4 border-b flex items-center justify-between flex-shrink-0">
-              <div className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">
+          <div 
+            className="rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden"
+            style={{ 
+              width: '32rem',
+              maxWidth: 'calc(100vw - 1.5rem)',
+              height: 'auto',
+              maxHeight: 'calc(100vh - 1.5rem)',
+              transform: `scale(${modalScale})`,
+              transformOrigin: 'center center',
+              margin: 'auto',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div className="px-4 py-3 border-b flex items-center justify-between flex-shrink-0 min-w-0">
+              <div className="text-base font-semibold text-gray-900 truncate pr-2">
                 Cập nhật tình trạng hiện tại
               </div>
               {/* Remove close button - modal can only be closed by action buttons */}
             </div>
 
-            <div className="p-3 sm:p-4 md:p-6 space-y-2 sm:space-y-2.5 md:space-y-3 flex-1 flex flex-col min-h-0">
-              <div className="text-xs sm:text-sm text-gray-600 mb-2 sm:mb-2.5 md:mb-3 flex-shrink-0">
+            <div className="p-4 flex-1 flex flex-col min-h-0 overflow-hidden" style={{ gap: '0.75rem' }}>
+              <div className="text-xs text-gray-600 flex-shrink-0">
                 Vui lòng cập nhật tình trạng hiện tại của cây. Bạn có thể giữ
                 nguyên nếu không có thay đổi.
               </div>
 
-              <div className="flex-1 min-h-0 space-y-2 sm:space-y-2 md:space-y-2.5 overflow-hidden flex flex-col">
+              <div className="flex-1 min-h-0 overflow-y-auto flex flex-col" style={{ gap: '0.625rem' }}>
                 {HEALTH_FIELDS.map((field) => {
                   const isDisabled =
                     (field.key === "flower" && !canEditFlower) ||
@@ -6939,12 +7047,12 @@ export default function TreeDetail() {
                     : field.defaultText;
 
                   return (
-                    <div key={field.key} className="space-y-1 sm:space-y-1.5 flex-shrink-0">
-                      <label className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-medium text-gray-700">
-                        <span className="text-sm sm:text-base md:text-lg">{field.icon}</span>
+                    <div key={field.key} className="flex-shrink-0 space-y-1">
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <span className="text-base">{field.icon}</span>
                         <span>{field.label}</span>
                         {isDisabled && (
-                          <span className="text-[10px] sm:text-xs text-gray-500">
+                          <span className="text-xs text-gray-500">
                             (Chưa đến giai đoạn)
                           </span>
                         )}
@@ -6952,7 +7060,7 @@ export default function TreeDetail() {
                       <Textarea
                         rows={1}
                         className={
-                          "text-xs sm:text-sm md:text-base resize-none " +
+                          "text-sm resize-none " +
                           (isDisabled
                             ? "bg-gray-50 text-gray-400 cursor-not-allowed"
                             : "")
@@ -6969,20 +7077,20 @@ export default function TreeDetail() {
                 })}
               </div>
 
-              <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-2.5 md:gap-3 pt-2 sm:pt-2.5 md:pt-3 border-t flex-shrink-0">
+              <div className="flex flex-row justify-end gap-2 pt-3 border-t flex-shrink-0 flex-wrap">
                 {hasDailyHealthChanges ? (
                   <>
                     <Button
                       variant="outline"
                       onClick={handleDailyHealthReset}
-                      className="px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10"
+                      className="px-4 py-2 text-sm h-9 flex-shrink-0"
                       disabled={saving}
                     >
                       Cài lại dữ liệu cũ
                     </Button>
                     <Button
                       onClick={handleDailyHealthConfirm}
-                      className="px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 flex-shrink-0"
                       disabled={saving}
                     >
                       Xác nhận thay đổi
@@ -6991,7 +7099,7 @@ export default function TreeDetail() {
                 ) : (
                   <Button
                     onClick={handleDailyHealthClose}
-                    className="px-3 py-1.5 sm:px-4 sm:py-2 md:px-6 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm md:text-base h-8 sm:h-9 md:h-10"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 flex-shrink-0"
                   >
                     Không có thay đổi
                   </Button>
@@ -7457,6 +7565,7 @@ export default function TreeDetail() {
                 <div className="grid gap-1">
                   <label className="text-xs text-neutral-600">Tiêu đề</label>
                   <Input
+                    maxLength={30}
                     value={editMain.title}
                     onChange={(e) =>
                       setEditMain((s) => ({ ...s, title: e.target.value }))
@@ -7488,10 +7597,23 @@ export default function TreeDetail() {
                         setEditMain((s) => ({ ...s, details: v }))
                       )
                     }
-                    onChange={(e) =>
-                      setEditMain((s) => ({ ...s, details: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Giới hạn mỗi dòng 120 ký tự (không tính phần số)
+                      const lines = value.split("\n");
+                      const limitedLines = lines.map((line) => {
+                        const prefixMatch = line.match(/^(\s*\d+\.\s*)/);
+                        const prefix = prefixMatch ? prefixMatch[1] : "";
+                        const content = line.replace(/^\s*\d+\.\s*/, "");
+                        if (content.length > 120) {
+                          return prefix + content.slice(0, 120);
+                        }
+                        return line;
+                      });
+                      setEditMain((s) => ({ ...s, details: limitedLines.join("\n") }));
+                    }}
                     disabled={isStopped}
+                    placeholder="Mỗi dòng 1 ý (tối đa 120 ký tự)"
                   />
                 </div>
               </div>
