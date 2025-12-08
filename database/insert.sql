@@ -1418,6 +1418,576 @@ BEGIN
 END
 GO
 
+-- ===== 14. DISEASE LIBRARY =====
+PRINT ''
+PRINT 'Inserting DiseaseLibrary...'
+GO
+
+-- Disease 1: Bệnh thán thư
+IF NOT EXISTS (SELECT 1 FROM [dbo].[DiseaseLibrary] WHERE [DiseaseName] = N'Bệnh thán thư')
+BEGIN
+    INSERT INTO [dbo].[DiseaseLibrary] ([DiseaseName], [ScientificName], [Category], [Symptoms], [Causes], [AffectedParts], [Severity], [SpreadRate], [Treatment], [Prevention], [OrganicTreatment], [ChemicalTreatment], [RecoveryTime], [IsContagious])
+    VALUES (N'Bệnh thán thư', N'Colletotrichum gloeosporioides', N'Nấm', 
+            N'Xuất hiện đốm đen hoặc nâu trên lá, quả. Đốm lan rộng, mô bệnh khô và chết. Quả bị biến dạng, rụng sớm.',
+            N'Do nấm Colletotrichum gloeosporioides gây ra, phát triển mạnh trong điều kiện ẩm ướt, nhiệt độ 25-30°C.',
+            N'Lá, quả, cành non', N'High', N'Fast',
+            N'Cắt bỏ phần bị bệnh, phun thuốc trừ nấm đồng hoặc mancozeb. Vệ sinh vườn thường xuyên.',
+            N'Vệ sinh vườn sạch sẽ, không để ẩm ướt quá mức, phun phòng định kỳ.',
+            N'Sử dụng dung dịch đồng sulfat loãng, tỏi nghiền ngâm nước phun lá.',
+            N'Mancozeb 80WP, Antracol 70WP, Score 250EC',
+            N'2-4 tuần', 1);
+    PRINT '  - Inserted: Bệnh thán thư'
+END
+GO
+
+-- Disease 2: Bệnh héo rũ Panama
+IF NOT EXISTS (SELECT 1 FROM [dbo].[DiseaseLibrary] WHERE [DiseaseName] = N'Bệnh héo rũ Panama')
+BEGIN
+    INSERT INTO [dbo].[DiseaseLibrary] ([DiseaseName], [ScientificName], [Category], [Symptoms], [Causes], [AffectedParts], [Severity], [SpreadRate], [Treatment], [Prevention], [OrganicTreatment], [ChemicalTreatment], [RecoveryTime], [IsContagious])
+    VALUES (N'Bệnh héo rũ Panama', N'Fusarium oxysporum f.sp. cubense', N'Nấm', 
+            N'Lá vàng từ ngoài rìa vào trong, cuống lá gãy, thân cây bị héo rũ. Khi cắt ngang thân thấy mạch dẫn bị nâu đen.',
+            N'Do nấm Fusarium oxysporum gây ra, lây lan qua đất bị nhiễm bệnh và nước tưới.',
+            N'Rễ, thân, lá', N'High', N'Medium',
+            N'Khó điều trị khi đã nhiễm nặng. Nhổ bỏ cây bệnh, khử trùng đất bằng vôi hoặc formaldehyde.',
+            N'Chọn giống kháng bệnh, luân canh cây trồng, không trồng lại ở vùng đất bị bệnh.',
+            N'Bón Trichoderma vào đất, bón vôi điều chỉnh pH đất.',
+            N'Carbendazim 500FL, Topsin-M 70WP',
+            N'Không thể phục hồi khi nhiễm nặng', 1);
+    PRINT '  - Inserted: Bệnh héo rũ Panama'
+END
+GO
+
+-- Disease 3: Bệnh đốm lá
+IF NOT EXISTS (SELECT 1 FROM [dbo].[DiseaseLibrary] WHERE [DiseaseName] = N'Bệnh đốm lá')
+BEGIN
+    INSERT INTO [dbo].[DiseaseLibrary] ([DiseaseName], [ScientificName], [Category], [Symptoms], [Causes], [AffectedParts], [Severity], [SpreadRate], [Treatment], [Prevention], [OrganicTreatment], [ChemicalTreatment], [RecoveryTime], [IsContagious])
+    VALUES (N'Bệnh đốm lá', N'Cercospora spp.', N'Nấm', 
+            N'Xuất hiện đốm nhỏ màu vàng hoặc nâu trên lá, đốm có viền đỏ hoặc tím. Lá bị nhiều đốm sẽ vàng và rụng sớm.',
+            N'Do nấm Cercospora gây ra, phát triển mạnh trong điều kiện ẩm ướt, thiếu ánh sáng.',
+            N'Lá', N'Medium', N'Medium',
+            N'Cắt bỏ lá bệnh, phun thuốc trừ nấm. Cải thiện thông thoáng cho vườn cây.',
+            N'Tỉa cành tạo độ thông thoáng, không tưới quá nhiều, bón phân cân đối.',
+            N'Phun dung dịch baking soda (5g/l), nước ép tỏi.',
+            N'Daconil 75WP, Ridomil Gold 68WG',
+            N'1-2 tuần', 1);
+    PRINT '  - Inserted: Bệnh đốm lá'
+END
+GO
+
+-- Disease 4: Rệp sáp
+IF NOT EXISTS (SELECT 1 FROM [dbo].[DiseaseLibrary] WHERE [DiseaseName] = N'Rệp sáp')
+BEGIN
+    INSERT INTO [dbo].[DiseaseLibrary] ([DiseaseName], [ScientificName], [Category], [Symptoms], [Causes], [AffectedParts], [Severity], [SpreadRate], [Treatment], [Prevention], [OrganicTreatment], [ChemicalTreatment], [RecoveryTime], [IsContagious])
+    VALUES (N'Rệp sáp', N'Pseudococcidae', N'Côn trùng', 
+            N'Xuất hiện lớp sáp trắng bông trên thân, lá, quả. Cây sinh trưởng kém, lá vàng, rụng. Mật ngọt tiết ra thu hút nấm bồ hóng.',
+            N'Do rệp sáp (Pseudococcidae) hút nhựa cây, thường xuất hiện ở môi trường khô nóng.',
+            N'Thân, lá, quả, rễ', N'Medium', N'Slow',
+            N'Phun thuốc trừ sâu dạng dầu khoáng hoặc thuốc lưu dẫn. Cắt bỏ cành nhiễm nặng.',
+            N'Kiểm tra thường xuyên, duy trì độ ẩm hợp lý, nuôi thiên địch như bọ rùa.',
+            N'Phun dầu neem, xà phòng rửa chén pha loãng.',
+            N'Confidor 100SL, Admire 200SC, Dầu khoáng SK',
+            N'2-3 tuần', 1);
+    PRINT '  - Inserted: Rệp sáp'
+END
+GO
+
+-- Disease 5: Sâu đục thân
+IF NOT EXISTS (SELECT 1 FROM [dbo].[DiseaseLibrary] WHERE [DiseaseName] = N'Sâu đục thân')
+BEGIN
+    INSERT INTO [dbo].[DiseaseLibrary] ([DiseaseName], [ScientificName], [Category], [Symptoms], [Causes], [AffectedParts], [Severity], [SpreadRate], [Treatment], [Prevention], [OrganicTreatment], [ChemicalTreatment], [RecoveryTime], [IsContagious])
+    VALUES (N'Sâu đục thân', N'Ostrinia spp.', N'Côn trùng', 
+            N'Thân cây có lỗ đục nhỏ, phân sâu tiết ra ngoài. Cây sinh trưởng kém, dễ gãy đổ khi gió. Nhánh bị đục héo chết.',
+            N'Do sâu non của bướm đục vào thân cây để ăn mô dẫn.',
+            N'Thân, cành', N'High', N'Slow',
+            N'Tiêm thuốc trừ sâu vào lỗ đục, cắt bỏ cành bị hại nặng. Bắt sâu thủ công.',
+            N'Quét vôi gốc cây, vệ sinh vườn, sử dụng bẫy pheromone.',
+            N'Bọc gốc bằng vải mỏng, sử dụng chế phẩm Bt (Bacillus thuringiensis).',
+            N'Regent 800WG, Vitako 40WG',
+            N'4-6 tuần', 0);
+    PRINT '  - Inserted: Sâu đục thân'
+END
+GO
+
+-- Disease 6: Ruồi đục quả
+IF NOT EXISTS (SELECT 1 FROM [dbo].[DiseaseLibrary] WHERE [DiseaseName] = N'Ruồi đục quả')
+BEGIN
+    INSERT INTO [dbo].[DiseaseLibrary] ([DiseaseName], [ScientificName], [Category], [Symptoms], [Causes], [AffectedParts], [Severity], [SpreadRate], [Treatment], [Prevention], [OrganicTreatment], [ChemicalTreatment], [RecoveryTime], [IsContagious])
+    VALUES (N'Ruồi đục quả', N'Bactrocera dorsalis', N'Côn trùng', 
+            N'Quả có vết châm nhỏ, bên trong có giòi. Quả thối nhũn, rụng sớm. Vỏ quả có đốm nâu mềm.',
+            N'Do ruồi cái đẻ trứng vào quả, ấu trùng phát triển bên trong ăn thịt quả.',
+            N'Quả', N'High', N'Fast',
+            N'Thu gom quả rụng tiêu hủy, sử dụng bẫy pheromone, bao quả.',
+            N'Bao quả từ khi còn non, sử dụng bẫy dẫn dụ, vệ sinh vườn.',
+            N'Sử dụng bẫy protein thủy phân, phun nước ép ớt + tỏi.',
+            N'Abamectin 1.8EC, Success 120SC',
+            N'Không phục hồi quả bị hại', 0);
+    PRINT '  - Inserted: Ruồi đục quả'
+END
+GO
+
+-- Disease 7: Bệnh thối rễ
+IF NOT EXISTS (SELECT 1 FROM [dbo].[DiseaseLibrary] WHERE [DiseaseName] = N'Bệnh thối rễ')
+BEGIN
+    INSERT INTO [dbo].[DiseaseLibrary] ([DiseaseName], [ScientificName], [Category], [Symptoms], [Causes], [AffectedParts], [Severity], [SpreadRate], [Treatment], [Prevention], [OrganicTreatment], [ChemicalTreatment], [RecoveryTime], [IsContagious])
+    VALUES (N'Bệnh thối rễ', N'Phytophthora spp.', N'Nấm', 
+            N'Cây sinh trưởng kém, lá vàng héo, rễ thối đen có mùi hôi. Cây dễ nhổ lên do rễ đã bị phá hủy.',
+            N'Do nấm Phytophthora gây ra, phát triển mạnh trong đất ẩm ướt, thoát nước kém.',
+            N'Rễ, gốc thân', N'High', N'Medium',
+            N'Cải thiện thoát nước, tưới thuốc trừ nấm vào gốc. Cây nhiễm nặng cần nhổ bỏ.',
+            N'Trồng trên đất thoát nước tốt, không tưới quá nhiều, bón Trichoderma.',
+            N'Bón vôi khử chua đất, sử dụng chế phẩm Trichoderma.',
+            N'Aliette 800WG, Ridomil Gold 68WG',
+            N'3-6 tuần (nếu phát hiện sớm)', 1);
+    PRINT '  - Inserted: Bệnh thối rễ'
+END
+GO
+
+-- Disease 8: Nhện đỏ
+IF NOT EXISTS (SELECT 1 FROM [dbo].[DiseaseLibrary] WHERE [DiseaseName] = N'Nhện đỏ')
+BEGIN
+    INSERT INTO [dbo].[DiseaseLibrary] ([DiseaseName], [ScientificName], [Category], [Symptoms], [Causes], [AffectedParts], [Severity], [SpreadRate], [Treatment], [Prevention], [OrganicTreatment], [ChemicalTreatment], [RecoveryTime], [IsContagious])
+    VALUES (N'Nhện đỏ', N'Tetranychus urticae', N'Côn trùng', 
+            N'Lá có đốm vàng nhỏ li ti, mặt dưới lá có nhện nhỏ và tơ. Lá bị nặng sẽ khô cháy, rụng.',
+            N'Do nhện đỏ (Tetranychus) hút nhựa lá, phát triển mạnh trong điều kiện nóng và khô.',
+            N'Lá, cành non', N'Medium', N'Fast',
+            N'Phun nước áp lực mạnh, sử dụng thuốc trừ nhện đặc hiệu.',
+            N'Duy trì độ ẩm, tránh để vườn quá khô nóng, nuôi thiên địch.',
+            N'Phun dầu neem, nước xà phòng loãng.',
+            N'Nissorun 5EC, Ortus 5SC, Comite 73EC',
+            N'1-2 tuần', 0);
+    PRINT '  - Inserted: Nhện đỏ'
+END
+GO
+
+-- ===== 15. TREE VARIETY =====
+PRINT ''
+PRINT 'Inserting TreeVariety...'
+GO
+
+-- Get TreeType IDs
+DECLARE @TreeTypeFruitID INT = (SELECT TOP 1 [TreeTypeID] FROM [dbo].[TreeTypes] WHERE [TreeTypeName] = N'Cây ăn quả');
+DECLARE @TreeTypeBananaID INT = (SELECT TOP 1 [TreeTypeID] FROM [dbo].[TreeTypes] WHERE [TreeTypeName] = N'Chuối');
+DECLARE @TreeTypeIndustrialID INT = (SELECT TOP 1 [TreeTypeID] FROM [dbo].[TreeTypes] WHERE [TreeTypeName] = N'Cây công nghiệp');
+
+-- Variety 1: Xoài Cát Hòa Lộc
+IF @TreeTypeFruitID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeVariety] WHERE [VarietyName] = N'Xoài Cát Hòa Lộc')
+    BEGIN
+        INSERT INTO [dbo].[TreeVariety] ([TreeTypeID], [VarietyName], [VarietyDescription], [ImageUrl])
+        VALUES (@TreeTypeFruitID, N'Xoài Cát Hòa Lộc', N'Xoài Cát Hòa Lộc là giống xoài đặc sản của Việt Nam, quả to, thịt vàng, ngọt thanh, ít xơ. Được trồng nhiều ở Tiền Giang, Đồng Tháp.', 
+                N'https://images.unsplash.com/photo-1605027990121-166a3b1b0c0b?w=400');
+        PRINT '  - Inserted: Xoài Cát Hòa Lộc'
+    END
+END
+
+-- Variety 2: Xoài Đài Loan
+IF @TreeTypeFruitID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeVariety] WHERE [VarietyName] = N'Xoài Đài Loan')
+    BEGIN
+        INSERT INTO [dbo].[TreeVariety] ([TreeTypeID], [VarietyName], [VarietyDescription], [ImageUrl])
+        VALUES (@TreeTypeFruitID, N'Xoài Đài Loan', N'Xoài Đài Loan có quả to, vỏ xanh khi chín, thịt ngọt mát. Năng suất cao, thích hợp trồng ở miền Nam.', 
+                N'https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?w=400');
+        PRINT '  - Inserted: Xoài Đài Loan'
+    END
+END
+
+-- Variety 3: Bơ Booth
+IF @TreeTypeFruitID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeVariety] WHERE [VarietyName] = N'Bơ Booth')
+    BEGIN
+        INSERT INTO [dbo].[TreeVariety] ([TreeTypeID], [VarietyName], [VarietyDescription], [ImageUrl])
+        VALUES (@TreeTypeFruitID, N'Bơ Booth', N'Bơ Booth là giống bơ phổ biến, quả tròn, vỏ xanh sáng, thịt béo ngậy. Thích hợp trồng ở Tây Nguyên.', 
+                N'https://images.unsplash.com/photo-1523049673857-eb18f1d7b578?w=400');
+        PRINT '  - Inserted: Bơ Booth'
+    END
+END
+
+-- Variety 4: Bơ 034
+IF @TreeTypeFruitID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeVariety] WHERE [VarietyName] = N'Bơ 034')
+    BEGIN
+        INSERT INTO [dbo].[TreeVariety] ([TreeTypeID], [VarietyName], [VarietyDescription], [ImageUrl])
+        VALUES (@TreeTypeFruitID, N'Bơ 034', N'Bơ 034 có quả to, thịt dày, hạt nhỏ, vị béo đậm đà. Là giống được ưa chuộng tại Đắk Lắk.', 
+                N'https://images.unsplash.com/photo-1519162808019-7de1683fa2ad?w=400');
+        PRINT '  - Inserted: Bơ 034'
+    END
+END
+
+-- Variety 5: Chuối Tiêu
+IF @TreeTypeBananaID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeVariety] WHERE [VarietyName] = N'Chuối Tiêu')
+    BEGIN
+        INSERT INTO [dbo].[TreeVariety] ([TreeTypeID], [VarietyName], [VarietyDescription], [ImageUrl])
+        VALUES (@TreeTypeBananaID, N'Chuối Tiêu', N'Chuối Tiêu là giống chuối phổ biến nhất, quả thon dài, vỏ vàng khi chín, thịt ngọt và thơm.', 
+                N'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?w=400');
+        PRINT '  - Inserted: Chuối Tiêu'
+    END
+END
+
+-- Variety 6: Chuối Già Hương
+IF @TreeTypeBananaID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeVariety] WHERE [VarietyName] = N'Chuối Già Hương')
+    BEGIN
+        INSERT INTO [dbo].[TreeVariety] ([TreeTypeID], [VarietyName], [VarietyDescription], [ImageUrl])
+        VALUES (@TreeTypeBananaID, N'Chuối Già Hương', N'Chuối Già Hương có mùi thơm đặc trưng, quả ngắn mập, thịt dẻo và ngọt. Được trồng nhiều ở miền Nam.', 
+                N'https://images.unsplash.com/photo-1603833665858-e61d17a86224?w=400');
+        PRINT '  - Inserted: Chuối Già Hương'
+    END
+END
+
+-- Variety 7: Cà phê Arabica
+IF @TreeTypeIndustrialID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeVariety] WHERE [VarietyName] = N'Cà phê Arabica')
+    BEGIN
+        INSERT INTO [dbo].[TreeVariety] ([TreeTypeID], [VarietyName], [VarietyDescription], [ImageUrl])
+        VALUES (@TreeTypeIndustrialID, N'Cà phê Arabica', N'Cà phê Arabica có hương vị tinh tế, độ chua nhẹ. Thích hợp trồng ở vùng cao nguyên có khí hậu mát mẻ.', 
+                N'https://images.unsplash.com/photo-1447933601403-0c6688de566e?w=400');
+        PRINT '  - Inserted: Cà phê Arabica'
+    END
+END
+
+-- Variety 8: Cà phê Robusta
+IF @TreeTypeIndustrialID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeVariety] WHERE [VarietyName] = N'Cà phê Robusta')
+    BEGIN
+        INSERT INTO [dbo].[TreeVariety] ([TreeTypeID], [VarietyName], [VarietyDescription], [ImageUrl])
+        VALUES (@TreeTypeIndustrialID, N'Cà phê Robusta', N'Cà phê Robusta có vị đắng đậm, hàm lượng caffeine cao. Được trồng phổ biến ở Tây Nguyên Việt Nam.', 
+                N'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400');
+        PRINT '  - Inserted: Cà phê Robusta'
+    END
+END
+
+-- Variety 9: Cam sành
+IF @TreeTypeFruitID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeVariety] WHERE [VarietyName] = N'Cam sành')
+    BEGIN
+        INSERT INTO [dbo].[TreeVariety] ([TreeTypeID], [VarietyName], [VarietyDescription], [ImageUrl])
+        VALUES (@TreeTypeFruitID, N'Cam sành', N'Cam sành có vỏ dày, nhiều nước, vị ngọt đậm. Là giống cam đặc sản của Hà Giang và Vinh.', 
+                N'https://images.unsplash.com/photo-1547514701-42fee7e0c24f?w=400');
+        PRINT '  - Inserted: Cam sành'
+    END
+END
+
+-- Variety 10: Ổi lê Đài Loan
+IF @TreeTypeFruitID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[TreeVariety] WHERE [VarietyName] = N'Ổi lê Đài Loan')
+    BEGIN
+        INSERT INTO [dbo].[TreeVariety] ([TreeTypeID], [VarietyName], [VarietyDescription], [ImageUrl])
+        VALUES (@TreeTypeFruitID, N'Ổi lê Đài Loan', N'Ổi lê Đài Loan có quả to tròn, thịt trắng giòn, vị ngọt thanh. Năng suất cao, dễ chăm sóc.', 
+                N'https://images.unsplash.com/photo-1536511132770-e5058c7e8c46?w=400');
+        PRINT '  - Inserted: Ổi lê Đài Loan'
+    END
+END
+GO
+
+-- ===== 16. NOTIFICATIONS =====
+PRINT ''
+PRINT 'Inserting Notifications...'
+GO
+
+DECLARE @Farmer1ID INT = (SELECT TOP 1 [UserID] FROM [dbo].[Users] WHERE [Email] = 'farmer1@mammoi.com');
+DECLARE @Farmer2ID INT = (SELECT TOP 1 [UserID] FROM [dbo].[Users] WHERE [Email] = 'farmer2@mammoi.com');
+DECLARE @Tree1ID INT = (SELECT TOP 1 [TreeID] FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Xoài 1');
+DECLARE @Tree2ID INT = (SELECT TOP 1 [TreeID] FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Cam 1');
+
+-- Notification 1: Nhắc tưới nước
+IF @Farmer1ID IS NOT NULL AND @Tree1ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[Notifications] WHERE [UserID] = @Farmer1ID AND [NotificationType] = N'Watering' AND [SentAt] > DATEADD(DAY, -1, GETDATE()))
+    BEGIN
+        INSERT INTO [dbo].[Notifications] ([UserID], [TreeID], [Title], [Message], [NotificationType], [Priority], [Category], [ActionUrl], [RequiresAction], [Status], [IsRead])
+        VALUES (@Farmer1ID, @Tree1ID, N'Nhắc tưới nước - Cây Xoài 1', N'Đã đến giờ tưới nước cho Cây Xoài 1. Lượng nước khuyến nghị: 2 lít.', 
+                N'Watering', N'Normal', N'CareReminder', N'/trees/' + CAST(@Tree1ID AS NVARCHAR(10)), 1, N'Sent', 0);
+        PRINT '  - Inserted: Notification - Nhắc tưới nước'
+    END
+END
+
+-- Notification 2: Cảnh báo thời tiết
+IF @Farmer1ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[Notifications] WHERE [UserID] = @Farmer1ID AND [NotificationType] = N'Weather' AND [SentAt] > DATEADD(DAY, -1, GETDATE()))
+    BEGIN
+        INSERT INTO [dbo].[Notifications] ([UserID], [Title], [Message], [NotificationType], [Priority], [Category], [RequiresAction], [Status], [IsRead])
+        VALUES (@Farmer1ID, N'Cảnh báo mưa lớn', N'Dự báo mưa lớn trong 2 ngày tới. Hãy kiểm tra hệ thống thoát nước và che chắn cây non.', 
+                N'Weather', N'High', N'WeatherAlert', 1, N'Sent', 0);
+        PRINT '  - Inserted: Notification - Cảnh báo thời tiết'
+    END
+END
+
+-- Notification 3: Nhắc bón phân
+IF @Farmer1ID IS NOT NULL AND @Tree2ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[Notifications] WHERE [UserID] = @Farmer1ID AND [NotificationType] = N'Fertilizing' AND [TreeID] = @Tree2ID)
+    BEGIN
+        INSERT INTO [dbo].[Notifications] ([UserID], [TreeID], [Title], [Message], [NotificationType], [Priority], [Category], [ActionUrl], [RequiresAction], [Status], [IsRead])
+        VALUES (@Farmer1ID, @Tree2ID, N'Lịch bón phân - Cây Cam 1', N'Cây Cam 1 cần được bón phân NPK 16-16-8. Lượng phân khuyến nghị: 100g.', 
+                N'Fertilizing', N'Normal', N'CareReminder', N'/trees/' + CAST(@Tree2ID AS NVARCHAR(10)), 1, N'Sent', 0);
+        PRINT '  - Inserted: Notification - Nhắc bón phân'
+    END
+END
+
+-- Notification 4: Thông báo hệ thống
+IF @Farmer1ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[Notifications] WHERE [UserID] = @Farmer1ID AND [NotificationType] = N'System' AND [Title] = N'Cập nhật tính năng mới')
+    BEGIN
+        INSERT INTO [dbo].[Notifications] ([UserID], [Title], [Message], [NotificationType], [Priority], [Category], [RequiresAction], [Status], [IsRead], [ReadAt])
+        VALUES (@Farmer1ID, N'Cập nhật tính năng mới', N'Ứng dụng đã được cập nhật với tính năng phân tích sức khỏe cây bằng AI. Hãy thử ngay!', 
+                N'System', N'Low', N'SystemUpdate', 0, N'Sent', 1, DATEADD(HOUR, -2, GETDATE()));
+        PRINT '  - Inserted: Notification - Thông báo hệ thống'
+    END
+END
+
+-- Notification 5: Nhắc kiểm tra sức khỏe
+IF @Farmer2ID IS NOT NULL
+BEGIN
+    DECLARE @Tree4ID INT = (SELECT TOP 1 [TreeID] FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Cao Su 1');
+    IF @Tree4ID IS NOT NULL
+    BEGIN
+        IF NOT EXISTS (SELECT 1 FROM [dbo].[Notifications] WHERE [UserID] = @Farmer2ID AND [NotificationType] = N'HealthCheck')
+        BEGIN
+            INSERT INTO [dbo].[Notifications] ([UserID], [TreeID], [Title], [Message], [NotificationType], [Priority], [Category], [ActionUrl], [RequiresAction], [Status], [IsRead])
+            VALUES (@Farmer2ID, @Tree4ID, N'Kiểm tra sức khỏe định kỳ', N'Đã 30 ngày kể từ lần kiểm tra sức khỏe cuối. Hãy chụp ảnh và cập nhật tình trạng cây.', 
+                    N'HealthCheck', N'Normal', N'CareReminder', N'/trees/' + CAST(@Tree4ID AS NVARCHAR(10)) + '/health', 1, N'Sent', 0);
+            PRINT '  - Inserted: Notification - Kiểm tra sức khỏe'
+        END
+    END
+END
+
+-- Notification 6: Thanh toán thành công
+IF @Farmer1ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[Notifications] WHERE [UserID] = @Farmer1ID AND [NotificationType] = N'Payment')
+    BEGIN
+        INSERT INTO [dbo].[Notifications] ([UserID], [Title], [Message], [NotificationType], [Priority], [Category], [RequiresAction], [Status], [IsRead], [ReadAt])
+        VALUES (@Farmer1ID, N'Thanh toán thành công', N'Bạn đã thanh toán thành công gói dịch vụ Gói Vườn Xanh. Cảm ơn bạn đã sử dụng dịch vụ!', 
+                N'Payment', N'Low', N'Billing', 0, N'Sent', 1, DATEADD(DAY, -30, GETDATE()));
+        PRINT '  - Inserted: Notification - Thanh toán thành công'
+    END
+END
+GO
+
+-- ===== 17. WEATHER HISTORIES =====
+PRINT ''
+PRINT 'Inserting WeatherHistories...'
+GO
+
+DECLARE @Tree1ID INT = (SELECT TOP 1 [TreeID] FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Xoài 1');
+DECLARE @Tree2ID INT = (SELECT TOP 1 [TreeID] FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Cam 1');
+
+-- Weather History 1: Dữ liệu thực tế hôm qua
+IF @Tree1ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[WeatherHistories] WHERE [TreeID] = @Tree1ID AND [ForecastDate] = DATEADD(DAY, -1, CAST(GETDATE() AS DATE)) AND [IsForecast] = 0)
+    BEGIN
+        INSERT INTO [dbo].[WeatherHistories] ([TreeID], [IsForecast], [ForecastDate], [DataSource], [APIRespondedAt], [DataQuality], [RawAPIResponse])
+        VALUES (@Tree1ID, 0, DATEADD(DAY, -1, CAST(GETDATE() AS DATE)), N'OpenWeatherMap', DATEADD(DAY, -1, GETDATE()), N'Good',
+                N'{"temp": 32, "humidity": 75, "windSpeed": 10, "condition": "Partly Cloudy", "rain": 0, "uv": 7}');
+        PRINT '  - Inserted: WeatherHistory - Yesterday (actual)'
+    END
+END
+
+-- Weather History 2: Dự báo hôm nay
+IF @Tree1ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[WeatherHistories] WHERE [TreeID] = @Tree1ID AND [ForecastDate] = CAST(GETDATE() AS DATE) AND [IsForecast] = 1)
+    BEGIN
+        INSERT INTO [dbo].[WeatherHistories] ([TreeID], [IsForecast], [ForecastDate], [ForecastHorizonDays], [DataSource], [APIRespondedAt], [DataQuality], [RawAPIResponse])
+        VALUES (@Tree1ID, 1, CAST(GETDATE() AS DATE), 0, N'OpenWeatherMap', GETDATE(), N'Good',
+                N'{"temp": 33, "humidity": 70, "windSpeed": 12, "condition": "Sunny", "rain": 0, "uv": 8}');
+        PRINT '  - Inserted: WeatherHistory - Today (forecast)'
+    END
+END
+
+-- Weather History 3: Dự báo ngày mai
+IF @Tree1ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[WeatherHistories] WHERE [TreeID] = @Tree1ID AND [ForecastDate] = DATEADD(DAY, 1, CAST(GETDATE() AS DATE)) AND [IsForecast] = 1)
+    BEGIN
+        INSERT INTO [dbo].[WeatherHistories] ([TreeID], [IsForecast], [ForecastDate], [ForecastHorizonDays], [DataSource], [APIRespondedAt], [DataQuality], [RawAPIResponse])
+        VALUES (@Tree1ID, 1, DATEADD(DAY, 1, CAST(GETDATE() AS DATE)), 1, N'OpenWeatherMap', GETDATE(), N'Good',
+                N'{"temp": 30, "humidity": 85, "windSpeed": 15, "condition": "Rainy", "rain": 25, "uv": 3}');
+        PRINT '  - Inserted: WeatherHistory - Tomorrow (forecast)'
+    END
+END
+
+-- Weather History 4: Dự báo 2 ngày tới
+IF @Tree2ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[WeatherHistories] WHERE [TreeID] = @Tree2ID AND [ForecastDate] = DATEADD(DAY, 2, CAST(GETDATE() AS DATE)) AND [IsForecast] = 1)
+    BEGIN
+        INSERT INTO [dbo].[WeatherHistories] ([TreeID], [IsForecast], [ForecastDate], [ForecastHorizonDays], [DataSource], [APIRespondedAt], [DataQuality], [RawAPIResponse])
+        VALUES (@Tree2ID, 1, DATEADD(DAY, 2, CAST(GETDATE() AS DATE)), 2, N'OpenWeatherMap', GETDATE(), N'Medium',
+                N'{"temp": 28, "humidity": 90, "windSpeed": 20, "condition": "Thunderstorm", "rain": 50, "uv": 2}');
+        PRINT '  - Inserted: WeatherHistory - 2 days ahead (forecast)'
+    END
+END
+GO
+
+-- ===== 18. WEATHER ALERTS =====
+PRINT ''
+PRINT 'Inserting WeatherAlerts...'
+GO
+
+DECLARE @Farmer1ID INT = (SELECT TOP 1 [UserID] FROM [dbo].[Users] WHERE [Email] = 'farmer1@mammoi.com');
+DECLARE @Tree1ID INT = (SELECT TOP 1 [TreeID] FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Xoài 1');
+
+-- Weather Alert 1: Cảnh báo mưa lớn
+IF @Farmer1ID IS NOT NULL AND @Tree1ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[WeatherAlerts] WHERE [UserID] = @Farmer1ID AND [AlertType] = N'HeavyRain' AND [CreatedAt] > DATEADD(DAY, -1, GETDATE()))
+    BEGIN
+        INSERT INTO [dbo].[WeatherAlerts] ([UserID], [TreeID], [AlertType], [Severity], [Title], [Message], [DetailedDescription], [ActionRequired], [ActionPriority], [EstimatedDamageLevel], [ImpactLevel], [AlertStartAt], [AlertEndAt], [Status], [IsAcknowledged], [WeatherAPISource], [ConfidenceLevel])
+        VALUES (@Farmer1ID, @Tree1ID, N'HeavyRain', N'High', N'Cảnh báo mưa lớn', 
+                N'Dự báo mưa lớn 50mm trong 2 ngày tới. Có thể ảnh hưởng đến cây trồng.',
+                N'Theo dự báo thời tiết, khu vực của bạn sẽ có mưa lớn với lượng mưa dự kiến 50mm. Điều này có thể gây úng nước cho cây nếu hệ thống thoát nước không tốt.',
+                N'Kiểm tra hệ thống thoát nước, che chắn cây non, tạm dừng tưới nước.',
+                1, N'Medium', N'Medium', 
+                DATEADD(DAY, 1, GETDATE()), DATEADD(DAY, 3, GETDATE()),
+                N'Active', 0, N'OpenWeatherMap', 0.85);
+        PRINT '  - Inserted: WeatherAlert - Mưa lớn'
+    END
+END
+
+-- Weather Alert 2: Cảnh báo nắng nóng (đã xác nhận)
+IF @Farmer1ID IS NOT NULL AND @Tree1ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[WeatherAlerts] WHERE [UserID] = @Farmer1ID AND [AlertType] = N'HeatWave' AND [IsAcknowledged] = 1)
+    BEGIN
+        INSERT INTO [dbo].[WeatherAlerts] ([UserID], [TreeID], [AlertType], [Severity], [Title], [Message], [DetailedDescription], [ActionRequired], [ActionPriority], [EstimatedDamageLevel], [ImpactLevel], [AlertStartAt], [AlertEndAt], [Status], [IsAcknowledged], [AcknowledgedAt], [UserAction], [WeatherAPISource], [ConfidenceLevel])
+        VALUES (@Farmer1ID, @Tree1ID, N'HeatWave', N'Medium', N'Cảnh báo nắng nóng', 
+                N'Nhiệt độ cao trên 35°C trong 3 ngày tới.',
+                N'Nhiệt độ dự kiến lên đến 37°C vào buổi trưa. Cây có thể bị stress nhiệt nếu không được chăm sóc đúng cách.',
+                N'Tưới nước vào sáng sớm hoặc chiều tối, che bóng cho cây non.',
+                2, N'Low', N'Low', 
+                DATEADD(DAY, -2, GETDATE()), DATEADD(DAY, 1, GETDATE()),
+                N'Acknowledged', 1, DATEADD(DAY, -1, GETDATE()), N'Đã tăng cường tưới nước buổi sáng',
+                N'OpenWeatherMap', 0.90);
+        PRINT '  - Inserted: WeatherAlert - Nắng nóng (acknowledged)'
+    END
+END
+GO
+
+-- ===== 19. SYSTEM SETTINGS =====
+PRINT ''
+PRINT 'Inserting SystemSettings...'
+GO
+
+DECLARE @SystemAdminID INT = (SELECT TOP 1 [UserID] FROM [dbo].[Users] WHERE [Email] = 'systemadmin@mammoi.com');
+DECLARE @Farmer1ID INT = (SELECT TOP 1 [UserID] FROM [dbo].[Users] WHERE [Email] = 'farmer1@mammoi.com');
+
+-- System Setting 1: Weather API Key
+IF @SystemAdminID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[SystemSettings] WHERE [SettingKey] = N'weather_api_key')
+    BEGIN
+        INSERT INTO [dbo].[SystemSettings] ([UserID], [SettingKey], [SettingValue], [DataType], [Category], [Description], [IsPublic])
+        VALUES (@SystemAdminID, N'weather_api_key', N'sk-weather-demo-key-xxxxx', N'string', N'Integration', N'API key cho dịch vụ thời tiết OpenWeatherMap', 0);
+        PRINT '  - Inserted: SystemSetting - weather_api_key'
+    END
+END
+
+-- System Setting 2: Default Language
+IF @SystemAdminID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[SystemSettings] WHERE [SettingKey] = N'default_language')
+    BEGIN
+        INSERT INTO [dbo].[SystemSettings] ([UserID], [SettingKey], [SettingValue], [DataType], [Category], [Description], [IsPublic])
+        VALUES (@SystemAdminID, N'default_language', N'vi', N'string', N'General', N'Ngôn ngữ mặc định của ứng dụng', 1);
+        PRINT '  - Inserted: SystemSetting - default_language'
+    END
+END
+
+-- System Setting 3: Email Notifications Enabled
+IF @SystemAdminID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[SystemSettings] WHERE [SettingKey] = N'email_notifications_enabled')
+    BEGIN
+        INSERT INTO [dbo].[SystemSettings] ([UserID], [SettingKey], [SettingValue], [DataType], [Category], [Description], [IsPublic])
+        VALUES (@SystemAdminID, N'email_notifications_enabled', N'true', N'boolean', N'Notification', N'Bật/tắt gửi email thông báo', 1);
+        PRINT '  - Inserted: SystemSetting - email_notifications_enabled'
+    END
+END
+
+-- System Setting 4: Auto Schedule Generation
+IF @SystemAdminID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[SystemSettings] WHERE [SettingKey] = N'auto_schedule_generation')
+    BEGIN
+        INSERT INTO [dbo].[SystemSettings] ([UserID], [SettingKey], [SettingValue], [DataType], [Category], [Description], [IsPublic])
+        VALUES (@SystemAdminID, N'auto_schedule_generation', N'true', N'boolean', N'CareSchedule', N'Tự động tạo lịch chăm sóc dựa trên giai đoạn sinh trưởng', 1);
+        PRINT '  - Inserted: SystemSetting - auto_schedule_generation'
+    END
+END
+
+-- System Setting 5: Weather Forecast Days
+IF @SystemAdminID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[SystemSettings] WHERE [SettingKey] = N'weather_forecast_days')
+    BEGIN
+        INSERT INTO [dbo].[SystemSettings] ([UserID], [SettingKey], [SettingValue], [DataType], [Category], [Description], [IsPublic])
+        VALUES (@SystemAdminID, N'weather_forecast_days', N'7', N'integer', N'Weather', N'Số ngày dự báo thời tiết hiển thị', 1);
+        PRINT '  - Inserted: SystemSetting - weather_forecast_days'
+    END
+END
+
+-- System Setting 6: AI Model Version
+IF @SystemAdminID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[SystemSettings] WHERE [SettingKey] = N'ai_model_version')
+    BEGIN
+        INSERT INTO [dbo].[SystemSettings] ([UserID], [SettingKey], [SettingValue], [DataType], [Category], [Description], [IsPublic])
+        VALUES (@SystemAdminID, N'ai_model_version', N'gpt-4o-mini', N'string', N'AI', N'Phiên bản model AI đang sử dụng', 0);
+        PRINT '  - Inserted: SystemSetting - ai_model_version'
+    END
+END
+
+-- User Setting 1: Farmer1 Notification Preferences
+IF @Farmer1ID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[SystemSettings] WHERE [SettingKey] = N'notification_preferences_' + CAST(@Farmer1ID AS NVARCHAR(10)))
+    BEGIN
+        INSERT INTO [dbo].[SystemSettings] ([UserID], [SettingKey], [SettingValue], [DataType], [Category], [Description], [IsPublic])
+        VALUES (@Farmer1ID, N'notification_preferences_' + CAST(@Farmer1ID AS NVARCHAR(10)), 
+                N'{"email": true, "push": true, "sms": false, "watering": true, "fertilizing": true, "weather": true}', 
+                N'json', N'Notification', N'Cài đặt thông báo của người dùng', 0);
+        PRINT '  - Inserted: SystemSetting - User notification preferences'
+    END
+END
+
+-- System Setting 7: Maintenance Mode
+IF @SystemAdminID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[SystemSettings] WHERE [SettingKey] = N'maintenance_mode')
+    BEGIN
+        INSERT INTO [dbo].[SystemSettings] ([UserID], [SettingKey], [SettingValue], [DataType], [Category], [Description], [IsPublic])
+        VALUES (@SystemAdminID, N'maintenance_mode', N'false', N'boolean', N'System', N'Bật/tắt chế độ bảo trì hệ thống', 1);
+        PRINT '  - Inserted: SystemSetting - maintenance_mode'
+    END
+END
+
+-- System Setting 8: Max Trees Per Garden (Free Plan)
+IF @SystemAdminID IS NOT NULL
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM [dbo].[SystemSettings] WHERE [SettingKey] = N'max_trees_free_plan')
+    BEGIN
+        INSERT INTO [dbo].[SystemSettings] ([UserID], [SettingKey], [SettingValue], [DataType], [Category], [Description], [IsPublic])
+        VALUES (@SystemAdminID, N'max_trees_free_plan', N'1', N'integer', N'Subscription', N'Số cây tối đa cho gói miễn phí', 1);
+        PRINT '  - Inserted: SystemSetting - max_trees_free_plan'
+    END
+END
+GO
+
 PRINT ''
 PRINT '========================================'
 PRINT 'Seed data insertion completed!'
@@ -1435,8 +2005,14 @@ PRINT '  - Trees: 5 records'
 PRINT '  - SubscriptionPlans: 4 fixed plans (Gói Miễn Phí, Gói 1, Gói 2, Gói 3)'
 PRINT '  - Subscriptions: 5+ records'
 PRINT '  - Payments: 15+ records'
-PRINT '  - CareSchedules: 8+ records (various task types: Tưới nước, Bón phân, Cắt tỉa, Kiểm tra sức khỏe)'
+PRINT '  - CareSchedules: 8+ records (various task types)'
 PRINT '  - ActivityLogs: 15+ records (Login, Create, Update, Complete, View, Upload, Search, etc.)'
+PRINT '  - DiseaseLibrary: 8 records (diseases and pests)'
+PRINT '  - TreeVariety: 10 records (fruit varieties)'
+PRINT '  - Notifications: 6+ records (reminders, alerts)'
+PRINT '  - WeatherHistories: 4 records (actual and forecast)'
+PRINT '  - WeatherAlerts: 2 records (rain, heat wave)'
+PRINT '  - SystemSettings: 9+ records (API keys, preferences)'
 PRINT ''
 PRINT 'Test Accounts:'
 PRINT '  - SystemAdmin: systemadmin@mammoi.com / SystemAdmin@123'
