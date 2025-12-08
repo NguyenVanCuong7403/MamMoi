@@ -393,6 +393,7 @@ const normalizeTaskRecord = (task) => {
     priority: task.priority ?? task.Priority ?? "",
     status: task.status ?? task.Status ?? "Pending",
     createdAt: task.createdAt ?? task.CreatedAt ?? null,
+    completedAt: task.completedAt ?? task.CompletedAt ?? null,
     completedNote: task.completedNote ?? task.CompletedNote ?? "",
     raw: task,
   };
@@ -447,6 +448,33 @@ const isTaskOverdue = (scheduledDate, status) => {
     today.setHours(0, 0, 0, 0);
     due.setHours(0, 0, 0, 0);
     return due.getTime() < today.getTime();
+  } catch {
+    return false;
+  }
+};
+
+const isTaskCompletedLate = (scheduledDate, completedAt, status) => {
+  // Chỉ kiểm tra cho các task đã hoàn thành
+  const s = normalizeKey(status);
+  if (s !== "completed") return false;
+
+  // Cần có cả scheduledDate và completedAt
+  if (!scheduledDate || !completedAt) return false;
+
+  try {
+    const due = new Date(scheduledDate);
+    const completed = new Date(completedAt);
+
+    if (Number.isNaN(due.getTime()) || Number.isNaN(completed.getTime())) {
+      return false;
+    }
+
+    // So sánh chỉ phần ngày (bỏ qua giờ)
+    due.setHours(0, 0, 0, 0);
+    completed.setHours(0, 0, 0, 0);
+
+    // Nếu ngày hoàn thành > ngày hạn thì là hoàn thành muộn
+    return completed.getTime() > due.getTime();
   } catch {
     return false;
   }
@@ -2407,8 +2435,6 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
         pending: 0,
         inprogress: 0,
         completed: 0,
-        postponed: 0,
-        cancelled: 0,
       }
     );
   }, [tasks]);
@@ -3028,8 +3054,18 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                             <TaskItem
                               key={task.scheduleId}
                               task={task}
-                              overdue={isTaskOverdue(task.scheduledDate, task.status)}
-                              busyComplete={Boolean(completingMap[task.scheduleId])}
+                              overdue={isTaskOverdue(
+                                task.scheduledDate,
+                                task.status
+                              )}
+                              completedLate={isTaskCompletedLate(
+                                task.scheduledDate,
+                                task.completedAt,
+                                task.status
+                              )}
+                              busyComplete={Boolean(
+                                completingMap[task.scheduleId]
+                              )}
                               onComplete={() => handleOpenCompleteDialog(task)}
                               onEdit={() => handleOpenEditDialog(task)}
                               onDelete={() => handleOpenDeleteDialog(task)}
@@ -3373,6 +3409,7 @@ function TaskStatusBadge({ status }) {
 function TaskItem({
   task,
   overdue,
+  completedLate,
   busyComplete,
   onComplete,
   onEdit,
@@ -3388,13 +3425,13 @@ function TaskItem({
     TASK_PRIORITY_META.default;
 
   const titleTruncated = truncateText(task.taskName, 30);
-  
+
   // Parse description thành các dòng
   const descLines = parseDescriptionToLines(task.description);
   const maxDisplayLines = 4; // Hiển thị tối đa 4 dòng trong khung công việc
   const displayLines = descLines.slice(0, maxDisplayLines);
   const hasMoreLines = descLines.length > maxDisplayLines;
-  
+
   const showHover = hover;
 
   return (
@@ -3443,6 +3480,14 @@ function TaskItem({
                   {formatTaskDate(task.scheduledDate)}
                   {overdue && " · Quá hạn"}
                 </Badge>
+                {completedLate && (
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 px-2 py-0.5 bg-orange-500/30 text-orange-200 border-orange-400/40 text-xs"
+                  >
+                    Hoàn thành muộn
+                  </Badge>
+                )}
               </div>
             </div>
             <div className="text-xs text-white/60 mt-1">#{task.scheduleId}</div>
@@ -3465,7 +3510,8 @@ function TaskItem({
             </ol>
             {hasMoreLines && (
               <div className="text-xs text-white/60 mt-1 italic">
-                +{descLines.length - maxDisplayLines} mục nữa (xem popup để xem chi tiết)
+                +{descLines.length - maxDisplayLines} mục nữa (xem popup để xem
+                chi tiết)
               </div>
             )}
           </div>
@@ -3540,15 +3586,17 @@ function TaskItem({
                 </div>
                 {(() => {
                   const lines = parseDescriptionToLines(task.description);
-                  
+
                   if (lines.length === 0) return null;
-                  
+
                   // Luôn hiển thị dưới dạng danh sách có đánh số (giống TreeDetail.jsx)
                   return (
                     <ol className="ml-5 list-decimal space-y-1 text-sm text-gray-700">
                       {lines.map((line, idx) => {
                         // Loại bỏ số thứ tự ở đầu dòng (nếu có) vì <ol> sẽ tự động đánh số
-                        const cleanLine = line.replace(/^\s*\d+\.\s*/, "").trim();
+                        const cleanLine = line
+                          .replace(/^\s*\d+\.\s*/, "")
+                          .trim();
                         return (
                           <li key={idx} className="break-words">
                             {cleanLine}
@@ -3633,9 +3681,9 @@ function parseDescriptionToLines(description) {
   if (!description) return [];
   const desc = String(description).trim();
   if (!desc) return [];
-  
+
   // Tách thành các dòng và filter các dòng rỗng
-  const lines = desc.split(/\r?\n/).filter(line => line.trim());
+  const lines = desc.split(/\r?\n/).filter((line) => line.trim());
   return lines;
 }
 

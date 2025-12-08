@@ -45,8 +45,7 @@ export default function Footer() {
         color: TEXT,
         borderTop: `1px solid ${LINE}`,
         position: "relative",
-        zIndex: 10,
-        isolation: "isolate",
+        zIndex: 1,
       }}
     >
       <style>{`

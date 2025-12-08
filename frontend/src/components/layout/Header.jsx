@@ -184,20 +184,16 @@ export default function MMHeader({
           const parsed = JSON.parse(profile);
           setProfileAvatar(parsed?.avatarUrl || "");
         } else {
-          setProfileAvatar("");
-        }
-
-        // Cũng cập nhật user từ localStorage để sync ProfileImageUrl
-        // (vì AuthContext có thể chưa cập nhật state)
-        const userStr = localStorage.getItem("user");
-        if (userStr) {
-          try {
-            const userFromStorage = JSON.parse(userStr);
-            if (userFromStorage?.ProfileImageUrl) {
-              // Trigger re-render bằng cách dispatch event để Header re-read
-              // Hoặc có thể dùng một state khác, nhưng hiện tại profileAvatar đã đủ
-            }
-          } catch {}
+          // Nếu không có trong profile localStorage, thử đọc từ user localStorage
+          const userStr = localStorage.getItem("user");
+          if (userStr) {
+            try {
+              const userFromStorage = JSON.parse(userStr);
+              if (userFromStorage?.ProfileImageUrl) {
+                setProfileAvatar(userFromStorage.ProfileImageUrl);
+              }
+            } catch {}
+          }
         }
       } catch {}
     }
@@ -213,7 +209,7 @@ export default function MMHeader({
       window.removeEventListener("storage", handleStorageChange);
       window.removeEventListener("userProfileUpdated", handleStorageChange);
     };
-  }, [user?.userId]);
+  }, [user?.userId, user?.ProfileImageUrl]);
 
   const [activeMenu, setActiveMenu] = useState(menuItems?.[0]?.id || "");
   const [isTop, setIsTop] = useState(true);

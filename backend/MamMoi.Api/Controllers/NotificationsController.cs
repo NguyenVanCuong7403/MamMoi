@@ -312,6 +312,53 @@ public class NotificationsController : ControllerBase
     }
 
     /// <summary>
+    /// Get recipients of a broadcast notification by group ID (SystemAdmin only)
+    /// GET /api/notifications/broadcasts/{groupId}/recipients
+    /// </summary>
+    [HttpGet("broadcasts/{groupId}/recipients")]
+    [Authorize(Roles = "SystemAdmin")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetBroadcastRecipients(string groupId)
+    {
+        try
+        {
+            var recipients = await _notificationService.GetBroadcastRecipientsAsync(groupId);
+
+            if (!recipients.Any())
+                return NotFound(new { success = false, message = "Broadcast notification not found or has no recipients" });
+
+            var result = recipients.Select(r => new
+            {
+                userId = r.UserId,
+                fullName = r.FullName,
+                email = r.Email,
+                phone = r.Phone,
+                isRead = r.IsRead,
+                readAt = r.ReadAt
+            }).ToList();
+
+            return Ok(new
+            {
+                success = true,
+                data = result,
+                totalCount = result.Count
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting broadcast recipients: {GroupId}", groupId);
+            return StatusCode(500, new { success = false, message = "Internal server error" });
+        }
+    }
+
+    /// <summary>
     /// Get notifications by user ID (Admin only)
     /// GET /api/notifications/user/{userId}
     /// </summary>

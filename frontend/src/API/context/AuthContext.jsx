@@ -197,8 +197,6 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("refreshToken", data.refreshToken);
       localStorage.setItem("user", JSON.stringify(userData));
 
-
-
       // Lưu email để ghi nhớ đăng nhập (KHÔNG lưu password vì lý do bảo mật)
       // Hỗ trợ nhiều email: lưu vào danh sách thay vì ghi đè
       if (remember) {
@@ -219,6 +217,31 @@ export const AuthProvider = ({ children }) => {
         "roleId:",
         data.roleId
       );
+
+      // Sau đăng nhập, gọi refreshUser để lấy thông tin mới nhất bao gồm avatar
+      // Sử dụng setTimeout để đảm bảo state đã được cập nhật
+      setTimeout(async () => {
+        try {
+          const res = await AuthRepository.me();
+          if (res?.success && res.data) {
+            const apiUser = res.data;
+            const refreshedUser = {
+              ...userData,
+              ProfileImageUrl:
+                apiUser.profileImageUrl ??
+                apiUser.ProfileImageUrl ??
+                userData.ProfileImageUrl,
+            };
+            setUser(refreshedUser);
+            localStorage.setItem("user", JSON.stringify(refreshedUser));
+            // Dispatch event để Header biết cập nhật avatar
+            window.dispatchEvent(new CustomEvent("userProfileUpdated"));
+          }
+        } catch (err) {
+          console.warn("Failed to refresh user after login:", err);
+        }
+      }, 100);
+
       return {
         success: true,
         role: primaryRole,
@@ -284,6 +307,30 @@ export const AuthProvider = ({ children }) => {
         "roleId:",
         data.roleId
       );
+
+      // Sau đăng nhập Google, gọi refreshUser để lấy thông tin mới nhất bao gồm avatar
+      setTimeout(async () => {
+        try {
+          const res = await AuthRepository.me();
+          if (res?.success && res.data) {
+            const apiUser = res.data;
+            const refreshedUser = {
+              ...userData,
+              ProfileImageUrl:
+                apiUser.profileImageUrl ??
+                apiUser.ProfileImageUrl ??
+                userData.ProfileImageUrl,
+            };
+            setUser(refreshedUser);
+            localStorage.setItem("user", JSON.stringify(refreshedUser));
+            // Dispatch event để Header biết cập nhật avatar
+            window.dispatchEvent(new CustomEvent("userProfileUpdated"));
+          }
+        } catch (err) {
+          console.warn("Failed to refresh user after Google login:", err);
+        }
+      }, 100);
+
       return {
         success: true,
         role: primaryRole,
@@ -462,7 +509,7 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await AuthRepository.logout();
-    } catch { }
+    } catch {}
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");

@@ -19,8 +19,32 @@ import {
 // Utility function to parse date from time string
 const parseDateFromTime = (timeStr) => {
   if (!timeStr) return null;
-  const datePart = timeStr.split(" ")[0]; // "2025-10-11"
-  return datePart ? new Date(datePart + "T00:00:00") : null;
+
+  // Handle ISO format: "2025-11-27T22:34:29" or "2025-11-27T22:34:29.123Z"
+  // Handle space-separated format: "2025-11-27 22:34:29"
+  // Handle date-only format: "2025-11-27"
+  let datePart = timeStr.trim();
+
+  // If it contains 'T', split by 'T' and take the date part
+  if (datePart.includes("T")) {
+    datePart = datePart.split("T")[0];
+  }
+  // If it contains a space, split by space and take the date part
+  else if (datePart.includes(" ")) {
+    datePart = datePart.split(" ")[0];
+  }
+
+  // Validate date format (YYYY-MM-DD)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(datePart)) return null;
+
+  // Create date object at midnight
+  const date = new Date(datePart + "T00:00:00");
+
+  // Validate the date is valid
+  if (isNaN(date.getTime())) return null;
+
+  return date;
 };
 
 function PaymentHistory({
@@ -68,14 +92,31 @@ function PaymentHistory({
         const transactionDate = parseDateFromTime(t.time);
         if (!transactionDate) return false;
 
+        // Normalize dates to midnight for accurate comparison
+        const transactionDateOnly = new Date(
+          transactionDate.getFullYear(),
+          transactionDate.getMonth(),
+          transactionDate.getDate()
+        );
+
         if (dateFrom) {
           const fromDate = new Date(dateFrom + "T00:00:00");
-          if (transactionDate < fromDate) return false;
+          const fromDateOnly = new Date(
+            fromDate.getFullYear(),
+            fromDate.getMonth(),
+            fromDate.getDate()
+          );
+          if (transactionDateOnly < fromDateOnly) return false;
         }
 
         if (dateTo) {
           const toDate = new Date(dateTo + "T23:59:59");
-          if (transactionDate > toDate) return false;
+          const toDateOnly = new Date(
+            toDate.getFullYear(),
+            toDate.getMonth(),
+            toDate.getDate()
+          );
+          if (transactionDateOnly > toDateOnly) return false;
         }
       }
 
@@ -333,7 +374,9 @@ function PaymentHistory({
             {selectedTransaction && (
               <>
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">Mã đơn</span>
+                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                    Mã đơn
+                  </span>
                   <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
                     {selectedTransaction.id}
                   </span>
@@ -349,35 +392,45 @@ function PaymentHistory({
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">Gói</span>
+                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                    Gói
+                  </span>
                   <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
                     {selectedTransaction.package}
                   </span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">Thời gian</span>
+                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                    Thời gian
+                  </span>
                   <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
                     {selectedTransaction.time}
                   </span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">Phương thức</span>
+                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                    Phương thức
+                  </span>
                   <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
                     {selectedTransaction.method}
                   </span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">Số tiền</span>
+                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                    Số tiền
+                  </span>
                   <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
                     {selectedTransaction.amount}
                   </span>
                 </div>
 
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">Trạng thái</span>
+                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                    Trạng thái
+                  </span>
                   <span
                     className={`
                       inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-[clamp(12px,1.6vw,16px)] font-medium border
@@ -385,7 +438,9 @@ function PaymentHistory({
                     `}
                   >
                     <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-current flex-shrink-0"></span>
-                    <span className="break-words">{selectedTransaction.status}</span>
+                    <span className="break-words">
+                      {selectedTransaction.status}
+                    </span>
                   </span>
                 </div>
               </>

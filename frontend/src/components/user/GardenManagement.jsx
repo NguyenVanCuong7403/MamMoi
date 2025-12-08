@@ -159,8 +159,26 @@ function GardenTreeCount({ g }) {
 function normalizeImageUrl(raw = "") {
   if (!raw) return "";
   let u = String(raw).trim();
-  if (u.startsWith("http://")) u = "https://" + u.slice(7);
 
+  // Xử lý relative URLs (bắt đầu với /)
+  if (u.startsWith("/") && !u.startsWith("//")) {
+    const API_BASE = import.meta.env.VITE_API_BASE || "https://localhost:7237";
+    // Loại bỏ trailing slash từ API_BASE nếu có
+    const baseUrl = API_BASE.replace(/\/$/, "");
+    u = `${baseUrl}${u}`;
+  }
+
+  // Xử lý protocol-relative URLs (bắt đầu với //)
+  if (u.startsWith("//")) {
+    u = `https:${u}`;
+  }
+
+  // Chỉ chuyển http sang https nếu không phải localhost (để tránh SSL issues trong development)
+  if (u.startsWith("http://") && !u.includes("localhost")) {
+    u = "https://" + u.slice(7);
+  }
+
+  // Xử lý Google Drive URLs
   let m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
   m = u.match(/drive\.google\.com\/open\?id=([^&]+)/);
@@ -168,6 +186,7 @@ function normalizeImageUrl(raw = "") {
   m = u.match(/drive\.google\.com\/uc\?(?:export=[^&]+&)?id=([^&]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
 
+  // Xử lý Dropbox URLs
   if (/dropbox\.com/.test(u)) {
     u = u
       .replace("www.dropbox.com", "dl.dropboxusercontent.com")
@@ -197,11 +216,29 @@ function SafeImage({ src, alt = "", className = "", hideOnError = false }) {
   }, [src]);
 
   function onError() {
-    if (tried) return setFailed(true);
+    if (tried) {
+      setFailed(true);
+      return;
+    }
     setTried(true);
+
+    // Thử fallback cho Google Drive
     if (/drive\.google\.com\/uc\?/.test(url)) {
       setUrl(url.replace("export=view", "export=download"));
-    } else setFailed(true);
+      return;
+    }
+
+    // Thử fallback từ HTTPS sang HTTP cho localhost (development)
+    if (
+      url.includes("https://localhost") &&
+      !url.includes("http://localhost")
+    ) {
+      const httpUrl = url.replace("https://", "http://");
+      setUrl(httpUrl);
+      return;
+    }
+
+    setFailed(true);
   }
 
   if (!url || (failed && hideOnError)) return null;
@@ -579,10 +616,10 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
   return (
     <>
       <style>{CLICKABLE_FORM_STYLES}</style>
-      <div className="fixed inset-0 z-[1200] grid place-items-center mm-clickable-form">
+      <div className="fixed inset-0 z-[9999] grid place-items-center p-4 mm-clickable-form overflow-y-auto">
         <div className="absolute inset-0 bg-black/60" onClick={onClose} />
         <div
-          className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
+          className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl my-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="mb-3 flex items-center justify-between">

@@ -339,12 +339,26 @@ function mapCareTaskFromApi(apiTask) {
     apiTask.date ||
     null;
 
+  // Convert details string thành array để hiển thị đúng
+  // API trả về string, nhưng UI render cần array
+  const rawDetails = apiTask.description || apiTask.details || "";
+  let details = [];
+  if (Array.isArray(rawDetails)) {
+    details = rawDetails.filter(Boolean);
+  } else if (typeof rawDetails === "string" && rawDetails.trim()) {
+    // Tách theo dòng, loại bỏ số thứ tự đầu dòng (nếu có)
+    details = rawDetails
+      .split("\n")
+      .map((line) => line.replace(/^\s*\d+\.\s*/, "").trim())
+      .filter(Boolean);
+  }
+
   return {
     id: apiTask.scheduleId ?? apiTask.id,
     type, // "water" | "fert" | "pest" | "other"
     title: apiTask.taskName || apiTask.title || "Công việc chăm sóc",
     due, // string "YYYY-MM-DD" hoặc null
-    details: apiTask.description || apiTask.details || "",
+    details, // array of strings
     priority: apiTask.priority || null,
 
     completed,
@@ -1634,10 +1648,17 @@ function handleNumberedKeyDown(e, setter) {
   }
 
   // Kiểm tra giới hạn 120 ký tự mỗi dòng (không tính phần số)
-  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== "Backspace" && e.key !== "Delete") {
+  if (
+    e.key.length === 1 &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    !e.altKey &&
+    e.key !== "Backspace" &&
+    e.key !== "Delete"
+  ) {
     // Tính độ dài nội dung thực tế của dòng (không tính số và dấu chấm)
     const currentLineLength = lineTrim.length;
-    
+
     // Nếu đã đạt giới hạn, ngăn không cho nhập thêm
     if (currentLineLength >= MAX_CHARS_PER_LINE) {
       e.preventDefault();
@@ -1646,7 +1667,14 @@ function handleNumberedKeyDown(e, setter) {
   }
 
   // Tự động thêm số khi bắt đầu dòng mới
-  if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey && e.key !== "Backspace" && e.key !== "Delete") {
+  if (
+    e.key.length === 1 &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    !e.altKey &&
+    e.key !== "Backspace" &&
+    e.key !== "Delete"
+  ) {
     if (!hasPrefix && lineTrim === "") {
       const next = countNonEmptyLines(val) + 1;
       const prefix = `${next}. `;
@@ -1655,7 +1683,7 @@ function handleNumberedKeyDown(e, setter) {
       const insertPos = pos + prefix.length;
       const withChar =
         newVal.slice(0, insertPos) + e.key + newVal.slice(pos + prefix.length);
-      
+
       setter(withChar);
       setTimeout(() => {
         try {
@@ -3794,50 +3822,50 @@ export default function TreeDetail() {
 
   // Modal scale factor for zoom/resize
   const [modalScale, setModalScale] = useState(1);
-  
+
   // Calculate modal scale based on viewport size
   useEffect(() => {
     if (!dailyHealthModal.open) return;
-    
+
     const calculateScale = () => {
       const vw = window.innerWidth;
       const vh = window.innerHeight;
       // Base modal size: max-w-lg = 32rem = 512px
       const baseWidth = 512;
       const baseHeight = 550; // Reduced estimated base height
-      
+
       // Calculate available space (with padding)
       const padding = 16; // Fixed 16px padding
-      const availableWidth = vw - (padding * 2);
-      const availableHeight = vh - (padding * 2);
-      
+      const availableWidth = vw - padding * 2;
+      const availableHeight = vh - padding * 2;
+
       // Calculate scale factors
       const widthScale = availableWidth / baseWidth;
       const heightScale = availableHeight / baseHeight;
-      
+
       // Use the smaller scale to ensure it fits both dimensions
       let scale = Math.min(widthScale, heightScale, 1); // Never scale up, only down
-      
+
       // For very small viewports, ensure minimum scale (increased from 0.5 to 0.7)
       const minScale = Math.min(vw / 400, vh / 450, 0.7);
       scale = Math.max(scale, minScale);
-      
+
       // Ensure scale is not too small (at least 0.7 for normal viewports)
       if (vw > 800 && vh > 600) {
         scale = Math.max(scale, 0.75);
       }
-      
+
       return scale;
     };
-    
+
     setModalScale(calculateScale());
-    
+
     const handleResize = () => {
       setModalScale(calculateScale());
     };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [dailyHealthModal.open]);
 
   // Confirm modal for daily health changes
@@ -4898,6 +4926,24 @@ export default function TreeDetail() {
   const [statusHistoryOpen, setStatusHistoryOpen] = useState(false);
   const [statusHistory, setStatusHistory] = useState([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Hàm refresh lại lịch sử thay đổi
+  const refreshStatusHistory = React.useCallback(async () => {
+    if (!treeId) return;
+    try {
+      const res = await TreeRepository.getStatusHistory(treeId);
+      const historyList = Array.isArray(res) ? res : res?.data || [];
+      // Sắp xếp theo thời gian mới nhất trước
+      const sortedHistory = [...historyList].sort((a, b) => {
+        const dateA = new Date(a.changedAt || 0);
+        const dateB = new Date(b.changedAt || 0);
+        return dateB - dateA;
+      });
+      setStatusHistory(sortedHistory);
+    } catch (err) {
+      console.error("Failed to refresh status history", err);
+    }
+  }, [treeId]);
   const statusDefs = [
     { key: "leaf", label: "Lá" },
     { key: "branch", label: "Cành" },
@@ -5063,6 +5109,9 @@ export default function TreeDetail() {
       branchStatus: nextPhen.branch,
       flowerStatus: nextPhen.flower,
       fruitStatus: nextPhen.fruit,
+    }).then(() => {
+      // Refresh lại lịch sử thay đổi sau khi lưu thành công
+      refreshStatusHistory();
     });
   }
 
@@ -5218,6 +5267,9 @@ export default function TreeDetail() {
       fruitStatus: nextPhen.fruit,
     });
 
+    // Refresh lại lịch sử thay đổi sau khi lưu thành công
+    await refreshStatusHistory();
+
     setConfirmModal({ open: false, oldValues: {}, newValues: {} });
     setDailyHealthModal({
       open: false,
@@ -5257,7 +5309,7 @@ export default function TreeDetail() {
   // Quy tắc “không nhập = Bình thường” sẽ áp dụng khi hiển thị (UI), không ép vào dữ liệu.
 
   // Phân trang
-  const PAGE_SIZE = 5;
+  const PAGE_SIZE = 10;
   const AI_PAGE_SIZE = 6;
   const [plannedPage, setPlannedPage] = useState({
     water: 1,
@@ -5329,7 +5381,8 @@ export default function TreeDetail() {
     const e = {};
     const title = String(d.title || "").trim();
     if (!title) e.title = "Vui lòng nhập tiêu đề";
-    else if (title.length > 30) e.title = "Tiêu đề không được vượt quá 30 ký tự";
+    else if (title.length > 30)
+      e.title = "Tiêu đề không được vượt quá 30 ký tự";
     if (daysBetween(d.due, today()) > 0) e.due = "Hạn phải từ hôm nay trở đi";
     return e;
   }
@@ -5352,7 +5405,7 @@ export default function TreeDetail() {
 
     try {
       console.log("[performAddTask] Starting with draft:", draft);
-      
+
       // ✅ map sang giá trị mà API chấp nhận
       const apiTaskType = mapTaskTypeForApi(draft.type);
       if (!apiTaskType) {
@@ -5360,7 +5413,7 @@ export default function TreeDetail() {
         showToast("Loại công việc này chưa được hỗ trợ để gửi lên server.");
         return;
       }
-      
+
       const numericTreeId =
         stateTree?.id ||
         stateTree?._id ||
@@ -5452,13 +5505,23 @@ export default function TreeDetail() {
       return true;
     });
 
-    const todo = filtered
-      .filter((p) => !p.completed)
-      .sort((a, b) => (a.due || "").localeCompare(b.due || ""));
-    const done = filtered
-      .filter((p) => p.completed)
-      .sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || ""));
-    return [...todo, ...done];
+    // Sắp xếp: Quá hạn lên đầu, sau đó theo ngày hạn (sớm trước), cuối cùng là đã hoàn thành
+    const todo = filtered.filter((p) => !p.completed);
+    const done = filtered.filter((p) => p.completed);
+
+    // Tách việc quá hạn ra riêng
+    const overdue = todo.filter((p) => isOverdue(p.due));
+    const notOverdue = todo.filter((p) => !isOverdue(p.due));
+
+    // Sort: quá hạn theo ngày (cũ nhất trước), không quá hạn theo ngày (sớm nhất trước)
+    overdue.sort((a, b) => (a.due || "").localeCompare(b.due || ""));
+    notOverdue.sort((a, b) => (a.due || "").localeCompare(b.due || ""));
+    done.sort((a, b) =>
+      (b.completedAt || "").localeCompare(a.completedAt || "")
+    );
+
+    // Quá hạn lên đầu, sau đó là chưa quá hạn, cuối cùng là đã hoàn thành
+    return [...overdue, ...notOverdue, ...done];
   }
 
   function openComplete(id) {
@@ -5616,11 +5679,31 @@ export default function TreeDetail() {
     const start = (safePage - 1) * PAGE_SIZE;
     const pageItems = list.slice(start, start + PAGE_SIZE);
 
+    // Đếm số việc quá hạn trong danh sách hiện tại
+    const overdueInPage = pageItems.filter(
+      (p) => !p.completed && isOverdue(p.due)
+    ).length;
+    const treeName = meta.name || baseTree.treeName || baseTree.name || "Cây";
+
     return (
       <section className="mb-2">
-        <div className="text-sm font-medium mb-2">
-          <ClipboardList className="inline h-4 w-4 mr-1" />
-          Các công việc đã lên kế hoạch — {theme.name}
+        {/* Hiển thị tên cây ở đầu khi phân trang (từ trang 2 trở đi) */}
+        {safePage > 1 && (
+          <div className="mb-3 p-2 rounded-lg bg-emerald-50 border border-emerald-200">
+            <div className="text-sm font-medium text-emerald-800">
+              🌳 {treeName} — Trang {safePage}/{totalPages}
+            </div>
+          </div>
+        )}
+
+        <div className="text-sm font-medium mb-2 flex items-center gap-2">
+          <ClipboardList className="inline h-4 w-4" />
+          <span>Các công việc đã lên kế hoạch — {theme.name}</span>
+          {overdueInPage > 0 && (
+            <span className="px-2 py-0.5 text-xs rounded-full bg-rose-100 text-rose-700 font-semibold">
+              {overdueInPage} quá hạn
+            </span>
+          )}
         </div>
 
         <ul className="space-y-3">
@@ -6351,21 +6434,15 @@ export default function TreeDetail() {
                         return;
                       }
                       setStatusHistoryOpen(true);
-                      if (statusHistory.length === 0) {
-                        setLoadingHistory(true);
-                        try {
-                          const res = await TreeRepository.getStatusHistory(
-                            currentTreeId
-                          );
-                          setStatusHistory(
-                            Array.isArray(res) ? res : res?.data || []
-                          );
-                        } catch (err) {
-                          console.error("Failed to load status history", err);
-                          setStatusHistory([]);
-                        } finally {
-                          setLoadingHistory(false);
-                        }
+                      // Luôn refresh lại history khi mở modal để đảm bảo hiển thị đúng
+                      setLoadingHistory(true);
+                      try {
+                        await refreshStatusHistory();
+                      } catch (err) {
+                        console.error("Failed to load status history", err);
+                        setStatusHistory([]);
+                      } finally {
+                        setLoadingHistory(false);
                       }
                     }}
                     className="inline-flex items-center gap-1 rounded-full border border-neutral-200 px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-50"
@@ -6743,7 +6820,10 @@ export default function TreeDetail() {
                             }
                             return line;
                           });
-                          setNewTask({ ...newTask, details: limitedLines.join("\n") });
+                          setNewTask({
+                            ...newTask,
+                            details: limitedLines.join("\n"),
+                          });
                         }}
                         placeholder="Mỗi dòng 1 ý (tối đa 120 ký tự): liều lượng, cách làm, ghi chú..."
                         disabled={isStopped}
@@ -6996,7 +7076,7 @@ export default function TreeDetail() {
       {dailyHealthModal.open && (
         <div
           className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center"
-          style={{ padding: '0.75rem' }}
+          style={{ padding: "0.75rem" }}
           // Prevent closing by clicking outside - modal can only be closed by buttons
           onClick={(e) => {
             e.stopPropagation();
@@ -7006,18 +7086,18 @@ export default function TreeDetail() {
             e.stopPropagation();
           }}
         >
-          <div 
+          <div
             className="rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden"
-            style={{ 
-              width: '32rem',
-              maxWidth: 'calc(100vw - 1.5rem)',
-              height: 'auto',
-              maxHeight: 'calc(100vh - 1.5rem)',
+            style={{
+              width: "32rem",
+              maxWidth: "calc(100vw - 1.5rem)",
+              height: "auto",
+              maxHeight: "calc(100vh - 1.5rem)",
               transform: `scale(${modalScale})`,
-              transformOrigin: 'center center',
-              margin: 'auto',
-              display: 'flex',
-              flexDirection: 'column'
+              transformOrigin: "center center",
+              margin: "auto",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
             <div className="px-4 py-3 border-b flex items-center justify-between flex-shrink-0 min-w-0">
@@ -7027,13 +7107,19 @@ export default function TreeDetail() {
               {/* Remove close button - modal can only be closed by action buttons */}
             </div>
 
-            <div className="p-4 flex-1 flex flex-col min-h-0 overflow-hidden" style={{ gap: '0.75rem' }}>
+            <div
+              className="p-4 flex-1 flex flex-col min-h-0 overflow-hidden"
+              style={{ gap: "0.75rem" }}
+            >
               <div className="text-xs text-gray-600 flex-shrink-0">
                 Vui lòng cập nhật tình trạng hiện tại của cây. Bạn có thể giữ
                 nguyên nếu không có thay đổi.
               </div>
 
-              <div className="flex-1 min-h-0 overflow-y-auto flex flex-col" style={{ gap: '0.625rem' }}>
+              <div
+                className="flex-1 min-h-0 overflow-y-auto flex flex-col"
+                style={{ gap: "0.625rem" }}
+              >
                 {HEALTH_FIELDS.map((field) => {
                   const isDisabled =
                     (field.key === "flower" && !canEditFlower) ||
@@ -7610,7 +7696,10 @@ export default function TreeDetail() {
                         }
                         return line;
                       });
-                      setEditMain((s) => ({ ...s, details: limitedLines.join("\n") }));
+                      setEditMain((s) => ({
+                        ...s,
+                        details: limitedLines.join("\n"),
+                      }));
                     }}
                     disabled={isStopped}
                     placeholder="Mỗi dòng 1 ý (tối đa 120 ký tự)"
@@ -7785,7 +7874,11 @@ export default function TreeDetail() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {statusHistory.map((item) => {
+                  {(() => {
+                    // Chỉ hiển thị lịch sử gần nhất (item đầu tiên sau khi đã sắp xếp)
+                    const latestItem = statusHistory[0];
+                    if (!latestItem) return null;
+
                     const fieldLabels = {
                       LeafStatus: "Lá",
                       BranchStatus: "Cành",
@@ -7793,16 +7886,14 @@ export default function TreeDetail() {
                       FruitStatus: "Quả",
                     };
                     const fieldLabel =
-                      fieldLabels[item.statusField] || item.statusField;
-                    const changedDate = item.changedAt
-                      ? formatVN(String(item.changedAt).slice(0, 10))
+                      fieldLabels[latestItem.statusField] ||
+                      latestItem.statusField;
+                    const changedDate = latestItem.changedAt
+                      ? formatVN(String(latestItem.changedAt).slice(0, 10))
                       : "";
 
                     return (
-                      <div
-                        key={item.historyId}
-                        className="border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50"
-                      >
+                      <div className="border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50">
                         <div className="flex items-start justify-between mb-2">
                           <div className="font-medium text-neutral-900">
                             {fieldLabel}
@@ -7811,24 +7902,9 @@ export default function TreeDetail() {
                             {changedDate}
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <div className="flex-1">
-                            <span className="text-neutral-500">Trước: </span>
-                            <span className="text-neutral-700">
-                              {item.oldValue || "—"}
-                            </span>
-                          </div>
-                          <span className="text-neutral-400">→</span>
-                          <div className="flex-1">
-                            <span className="text-neutral-500">Sau: </span>
-                            <span className="text-neutral-700 font-medium">
-                              {item.newValue || "—"}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                     );
-                  })}
+                  })()}
                 </div>
               )}
             </div>
