@@ -18,12 +18,12 @@ function isTokenExpired(token) {
 
 
 export default function LoginGuard({ children }) {
-  const { token, logout } = useAuth();
-  if (token && isTokenExpired(token)) {
-    logout(); // clear user/token from context and localStorage
-    return <Navigate to="/auth" replace />;
-  }
-
-  if (!token) return <Navigate to="/auth" replace />;
+  // DISABLED: Authentication temporarily disabled for development
+  // const { token, logout } = useAuth();
+  // if (token && isTokenExpired(token)) {
+  //   logout(); // clear user/token from context and localStorage
+  //   return <Navigate to="/auth" replace />;
+  // }
+  // if (!token) return <Navigate to="/auth" replace />;
   return children;
 }
