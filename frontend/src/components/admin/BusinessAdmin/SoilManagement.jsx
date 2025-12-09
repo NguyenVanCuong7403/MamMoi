@@ -638,17 +638,17 @@ export default function SoilManagement() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-lg">
+                  <div className="rounded-2xl border-2 border-slate-300 bg-white p-6 shadow-xl">
                     {selectedSoil ? (
                       <>
-                        <div className="mb-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <div className="mb-6 rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
                             {selectedSoil.SoilMasterID}
                           </p>
-                          <h3 className="text-xl font-semibold text-slate-900">
+                          <h3 className="mt-2 text-2xl font-bold text-slate-900">
                             {selectedSoil.SoilName}
                           </h3>
-                          <p className="text-sm text-slate-500">
+                          <p className="mt-1 text-sm font-medium text-slate-600">
                             Cập nhật thông tin chi tiết cho loại đất này.
                           </p>
                         </div>
@@ -671,6 +671,7 @@ export default function SoilManagement() {
                                       disabled={
                                         !soilDetailEditMode || soilDetailSaving
                                       }
+                                      className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                                       {...field}
                                     />
                                   </FormControl>
@@ -691,6 +692,7 @@ export default function SoilManagement() {
                                         disabled={
                                           !soilDetailEditMode || soilDetailSaving
                                         }
+                                        className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                                         {...field}
                                       />
                                     </FormControl>
@@ -710,6 +712,7 @@ export default function SoilManagement() {
                                         disabled={
                                           !soilDetailEditMode || soilDetailSaving
                                         }
+                                        className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                                         {...field}
                                       />
                                     </FormControl>
@@ -737,6 +740,7 @@ export default function SoilManagement() {
                                           field.onChange(e.target.value)
                                         }
                                         placeholder="Ví dụ: 2.5"
+                                        className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                                       />
                                     </FormControl>
                                     <FormMessage />
@@ -761,6 +765,7 @@ export default function SoilManagement() {
                                           field.onChange(e.target.value)
                                         }
                                         placeholder="Ví dụ: 1.2"
+                                        className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                                       />
                                     </FormControl>
                                     <FormMessage />
@@ -780,6 +785,7 @@ export default function SoilManagement() {
                                       disabled={
                                         !soilDetailEditMode || soilDetailSaving
                                       }
+                                      className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                                       {...field}
                                     />
                                   </FormControl>
@@ -794,6 +800,7 @@ export default function SoilManagement() {
                                   variant="outline"
                                   disabled={soilDetailSaving}
                                   onClick={() => setSoilRevertConfirmOpen(true)}
+                                  className="transition-all hover:bg-slate-100 hover:border-slate-400 hover:shadow-md"
                                 >
                                   Hoàn tác
                                 </Button>
@@ -802,10 +809,15 @@ export default function SoilManagement() {
                                   variant="destructive"
                                   disabled={soilDetailSaving}
                                   onClick={() => setSoilCancelConfirmOpen(true)}
+                                  className="transition-all hover:bg-rose-600 hover:shadow-md"
                                 >
                                   Huỷ
                                 </Button>
-                                <Button type="submit" disabled={soilDetailSaving}>
+                                <Button 
+                                  type="submit" 
+                                  disabled={soilDetailSaving}
+                                  className="transition-all hover:bg-emerald-600 hover:shadow-md"
+                                >
                                   {soilDetailSaving ? "Đang lưu..." : "Lưu thay đổi"}
                                 </Button>
                               </div>
@@ -815,6 +827,7 @@ export default function SoilManagement() {
                                   type="button"
                                   onClick={handleStartEditSoil}
                                   disabled={!selectedSoil}
+                                  className="transition-all hover:bg-emerald-600 hover:shadow-md"
                                 >
                                   Chỉnh sửa
                                 </Button>
@@ -826,7 +839,7 @@ export default function SoilManagement() {
                         <Button
                           type="button"
                           variant="outline"
-                          className="w-full border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                          className="w-full border-2 border-rose-300 text-rose-600 transition-all hover:bg-rose-50 hover:border-rose-400 hover:text-rose-700 hover:shadow-md"
                           onClick={() => setSoilDeleteConfirmOpen(true)}
                           disabled={soilDeleting}
                         >
@@ -875,7 +888,11 @@ export default function SoilManagement() {
                         <FormItem>
                           <FormLabel>Tên đất</FormLabel>
                           <FormControl>
-                            <Input placeholder="Ví dụ: Đất phù sa ngọt" {...field} />
+                            <Input 
+                              placeholder="Ví dụ: Đất phù sa ngọt" 
+                              className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -889,7 +906,11 @@ export default function SoilManagement() {
                           <FormItem>
                             <FormLabel>Thành phần</FormLabel>
                             <FormControl>
-                              <Input placeholder="Thịt nhẹ, cát pha..." {...field} />
+                              <Input 
+                                placeholder="Thịt nhẹ, cát pha..." 
+                                className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -902,7 +923,11 @@ export default function SoilManagement() {
                           <FormItem>
                             <FormLabel>Khả năng thoát nước</FormLabel>
                             <FormControl>
-                              <Input placeholder="Tốt/Trung bình/Kém" {...field} />
+                              <Input 
+                                placeholder="Tốt/Trung bình/Kém" 
+                                className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                                {...field} 
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -923,6 +948,7 @@ export default function SoilManagement() {
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value)}
                                 placeholder="Ví dụ: 2.5"
+                                className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                               />
                             </FormControl>
                             <FormMessage />
@@ -942,6 +968,7 @@ export default function SoilManagement() {
                                 value={field.value ?? ""}
                                 onChange={(e) => field.onChange(e.target.value)}
                                 placeholder="Ví dụ: 1.2"
+                                className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                               />
                             </FormControl>
                             <FormMessage />
@@ -956,7 +983,11 @@ export default function SoilManagement() {
                         <FormItem>
                           <FormLabel>Ghi chú</FormLabel>
                           <FormControl>
-                            <Textarea placeholder="Ghi chú thêm..." {...field} />
+                            <Textarea 
+                              placeholder="Ghi chú thêm..." 
+                              className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -967,11 +998,16 @@ export default function SoilManagement() {
                         type="button"
                         variant="outline"
                         onClick={() => setCreateSoilOverlayOpen(false)}
+                        className="transition-all hover:bg-slate-100 hover:border-slate-400 hover:shadow-md"
                       >
                         Đóng
                       </Button>
-                      <Button type="submit" disabled={soilSaving}>
-                        {soilSaving ? "Đang xử lý..." : "Tiếp tục"}
+                      <Button 
+                        type="submit" 
+                        disabled={soilSaving}
+                        className="transition-all hover:bg-emerald-600 hover:shadow-md"
+                      >
+                        {soilSaving ? "Đang xử lý..." : "Lưu"}
                       </Button>
                     </div>
                   </form>

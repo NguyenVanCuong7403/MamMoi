@@ -201,9 +201,61 @@ export default function AuthScreen({ defaultTab = "login" }) {
     // TODO: gọi API gửi OTP thực tế ở đây (đã move xuống handleRegisterCredentials / handleForgotSubmit)
   };
 
+  // Helper function to handle successful login navigation
+  const handleLoginSuccess = (res) => {
+    // Đăng nhập thành công -> hiện overlay 0.8s rồi vào hệ thống
+    setLoginSuccessOverlay(true);
+
+    const role = res?.role || res?.user?.role;
+    const roleId = res?.user?.roleId || res?.roleId || res?.data?.roleId;
+    const redirectPath = getPostLoginPath(role, roleId);
+    console.log(
+      "✅ Login successful - Role:",
+      role,
+      "RoleId:",
+      roleId,
+      "Redirect to:",
+      redirectPath
+    );
+    console.log("✅ Full login response:", res);
+    console.log("✅ User from response:", res?.user);
+
+    // Đảm bảo localStorage đã được cập nhật trước khi navigate
+    // Wait a bit for state to update, then navigate
+    setTimeout(() => {
+      try {
+        setLoginSuccessOverlay(false);
+        console.log("🚀 Navigating to:", redirectPath);
+        console.log(
+          "🚀 Current token in localStorage:",
+          localStorage.getItem("token") ? "exists" : "missing"
+        );
+        console.log(
+          "🚀 Current user in localStorage:",
+          localStorage.getItem("user")
+        );
+
+        // Use window.location.href to force full page reload and ensure state is loaded
+        // This ensures AuthContext reads from localStorage on mount
+        window.location.href = redirectPath;
+      } catch (navError) {
+        console.error("❌ Navigation error:", navError);
+        // Fallback: try window.location if navigate fails
+        window.location.href = redirectPath;
+      }
+    }, 1000);
+  };
+
   // ====== LOGIN: dùng tài khoản + mật khẩu ======
   const handleLoginCredentials = async (data) => {
     try {
+      // Check if this is a Google login - skip the login API call
+      if (data.isGoogleLogin && data.googleResponse) {
+        // Google login already succeeded, just show success overlay and navigate
+        handleLoginSuccess(data.googleResponse);
+        return;
+      }
+
       const res = await login(data.acct?.trim(), data.password, data.remember);
 
       if (!res || res.success === false) {
@@ -217,47 +269,8 @@ export default function AuthScreen({ defaultTab = "login" }) {
         return;
       }
 
-      // Đăng nhập thành công -> hiện overlay 0.8s rồi vào hệ thống
-      setLoginSuccessOverlay(true);
-
-      const role = res?.role || res?.user?.role;
-      const roleId = res?.user?.roleId || res?.roleId || res?.data?.roleId;
-      const redirectPath = getPostLoginPath(role, roleId);
-      console.log(
-        "✅ Login successful - Role:",
-        role,
-        "RoleId:",
-        roleId,
-        "Redirect to:",
-        redirectPath
-      );
-      console.log("✅ Full login response:", res);
-      console.log("✅ User from response:", res?.user);
-
-      // Đảm bảo localStorage đã được cập nhật trước khi navigate
-      // Wait a bit for state to update, then navigate
-      setTimeout(() => {
-        try {
-          setLoginSuccessOverlay(false);
-          console.log("🚀 Navigating to:", redirectPath);
-          console.log(
-            "🚀 Current token in localStorage:",
-            localStorage.getItem("token") ? "exists" : "missing"
-          );
-          console.log(
-            "🚀 Current user in localStorage:",
-            localStorage.getItem("user")
-          );
-
-          // Use window.location.href to force full page reload and ensure state is loaded
-          // This ensures AuthContext reads from localStorage on mount
-          window.location.href = redirectPath;
-        } catch (navError) {
-          console.error("❌ Navigation error:", navError);
-          // Fallback: try window.location if navigate fails
-          window.location.href = redirectPath;
-        }
-      }, 1000);
+      // Regular login success
+      handleLoginSuccess(res);
     } catch (err) {
       setAuthDialog({
         title: "Đăng nhập không thành công",
@@ -961,17 +974,14 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
       }
 
       // Success - trigger the same success flow as regular login
-      const role = res?.role || res?.user?.role;
-      const roleId = res?.user?.roleId || res?.roleId;
-      const redirectPath = getPostLoginPath(role, roleId);
-
-      // Call onSubmitLogin to trigger success overlay and navigation
+      // Pass the Google login response so handleLoginCredentials can use it
       await onSubmitLogin({
         acct: res.user?.email || "",
         password: "",
         remember: true,
         mode: "email",
         isGoogleLogin: true,
+        googleResponse: res, // Pass the successful Google login response
       });
     } catch (err) {
       console.error("Google login error:", err);

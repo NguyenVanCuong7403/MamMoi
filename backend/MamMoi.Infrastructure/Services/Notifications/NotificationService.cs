@@ -375,6 +375,31 @@ public class NotificationService : INotificationService
         return broadcastGroups.Select(b => (b.GroupId, b.SentAt, b.RecipientCount, b.Title, b.Message, b.NotificationType, b.Priority, b.Category, b.ActionUrl, b.ActionLabel, b.ImageUrl, b.IconName, b.ExpiresAt)).ToList();
     }
 
+    public async Task<List<(int UserId, string FullName, string Email, string? Phone, bool IsRead, DateTime? ReadAt)>> GetBroadcastRecipientsAsync(string groupId)
+    {
+        if (string.IsNullOrWhiteSpace(groupId))
+            throw new ArgumentException("GroupId is required", nameof(groupId));
+
+        var recipients = await _dbContext.Notifications
+            .Include(n => n.User)
+            .Where(n => n.GroupId == groupId)
+            .Select(n => new
+            {
+                n.UserId,
+                n.User.FullName,
+                n.User.Email,
+                n.User.Phone,
+                IsRead = n.IsRead ?? false,
+                n.ReadAt
+            })
+            .OrderBy(r => r.FullName)
+            .ToListAsync();
+
+        _logger.LogInformation("Found {Count} recipients for broadcast notification group {GroupId}", recipients.Count, groupId);
+
+        return recipients.Select(r => (r.UserId, r.FullName, r.Email, r.Phone, r.IsRead, r.ReadAt)).ToList();
+    }
+
     public async Task NotifyAdminOnSupportRequestAsync(int requestId, int userId, string subject)
     {
         // Get all admin users (SystemAdmin and BusinessAdmin)

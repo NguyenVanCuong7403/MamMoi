@@ -30,6 +30,7 @@ public partial class MamMoiDbContext : DbContext
     public virtual DbSet<Tree> Trees { get; set; }
     public virtual DbSet<TreeGrowthStage> TreeGrowthStages { get; set; }
     public virtual DbSet<TreeImage> TreeImages { get; set; }
+    public virtual DbSet<TreeStatusHistory> TreeStatusHistories { get; set; }
     public virtual DbSet<TreeType> TreeTypes { get; set; }
     public virtual DbSet<TreeVariety> TreeVarietys { get; set; }
     public virtual DbSet<User> Users { get; set; }
@@ -534,6 +535,35 @@ public partial class MamMoiDbContext : DbContext
                         j.IndexerProperty<int>("TreeId").HasColumnName("TreeID");
                         j.IndexerProperty<int>("DiseaseId").HasColumnName("DiseaseID");
                     });
+        });
+
+        // ===== TreeStatusHistory =====
+        modelBuilder.Entity<TreeStatusHistory>(entity =>
+        {
+            entity.HasKey(e => e.HistoryId).HasName("PK_TreeStatusHistory");
+
+            entity.ToTable("TreeStatusHistory", "dbo");
+
+            entity.Property(e => e.HistoryId).HasColumnName("HistoryId");
+            entity.Property(e => e.TreeId).HasColumnName("TreeId");
+            entity.Property(e => e.UserId).HasColumnName("UserId");
+            entity.Property(e => e.StatusField).HasMaxLength(50);
+            entity.Property(e => e.OldValue).HasMaxLength(100);
+            entity.Property(e => e.NewValue).HasMaxLength(100);
+            entity.Property(e => e.ChangedAt).HasPrecision(0).HasDefaultValueSql("(sysdatetime())");
+
+            entity.HasOne(d => d.Tree).WithMany()
+                  .HasForeignKey(d => d.TreeId)
+                  .OnDelete(DeleteBehavior.Cascade)
+                  .HasConstraintName("FK_TreeStatusHistory_Trees");
+
+            entity.HasOne(d => d.User).WithMany()
+                  .HasForeignKey(d => d.UserId)
+                  .OnDelete(DeleteBehavior.NoAction)
+                  .HasConstraintName("FK_TreeStatusHistory_Users");
+
+            entity.HasIndex(e => e.TreeId, "IX_TreeStatusHistory_TreeId");
+            entity.HasIndex(e => new { e.TreeId, e.ChangedAt }, "IX_TreeStatusHistory_TreeId_ChangedAt");
         });
 
         // ===== TreeVariety =====

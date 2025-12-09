@@ -46,6 +46,8 @@ import AuthRepository from "@/API/repositories/AuthRepository";
 import UserRepository from "@/API/repositories/UserRepository";
 import PaymentRepository from "@/API/repositories/PaymentRepository";
 import SubscriptionPlanRepository from "@/API/repositories/SubscriptionPlanRepository";
+import GardenRepository from "@/API/repositories/GardenRepository";
+import TreeRepository from "@/API/repositories/TreeRepository";
 import { useAuth } from "@/API/context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -2411,12 +2413,17 @@ export default function UserProfile() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [paymentsLoading, setPaymentsLoading] = useState(true);
   const [plansLoading, setPlansLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   // Payment history data from API
   const [paymentTransactions, setPaymentTransactions] = useState([]);
 
   // Subscription plans from API
   const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+
+  // Real stats from API
+  const [apiGardenCount, setApiGardenCount] = useState(0);
+  const [apiTreeCount, setApiTreeCount] = useState(0);
 
   // demo password
   const loadDemoPw = () => {
@@ -2571,6 +2578,73 @@ export default function UserProfile() {
     };
     fetchCurrentSubscription();
   }, []);
+
+  // Fetch real garden and tree counts from API
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!user?.userId || isAdmin) {
+        setStatsLoading(false);
+        return;
+      }
+
+      try {
+        setStatsLoading(true);
+
+        // Fetch gardens count
+        try {
+          const gardensResponse = await GardenRepository.getGardens(1, 1, "");
+          // Handle different response formats
+          if (gardensResponse?.data?.totalCount !== undefined) {
+            setApiGardenCount(gardensResponse.data.totalCount);
+          } else if (gardensResponse?.totalCount !== undefined) {
+            setApiGardenCount(gardensResponse.totalCount);
+          } else if (gardensResponse?.success && gardensResponse?.data?.gardens) {
+            // If response has gardens array but no totalCount, use array length as fallback
+            // Note: This is not accurate for pagination, but better than 0
+            setApiGardenCount(gardensResponse.data.gardens.length);
+          }
+        } catch (error) {
+          console.error("Error fetching gardens count:", error);
+          // Keep default value (0) on error
+        }
+
+        // Fetch trees count
+        try {
+          const treesResponse = await TreeRepository.getMyTrees({
+            page: 1,
+            pageSize: 1, // Only need count, so pageSize=1 is fine
+          });
+          
+          // Handle different response formats
+          const payload = treesResponse?.data ?? treesResponse;
+          
+          if (payload?.total !== undefined) {
+            setApiTreeCount(payload.total);
+          } else if (treesResponse?.total !== undefined) {
+            setApiTreeCount(treesResponse.total);
+          } else if (Array.isArray(payload)) {
+            // If API returns array directly, count it
+            setApiTreeCount(payload.length);
+          } else if (payload?.items && Array.isArray(payload.items)) {
+            // If API returns paginated response with items array
+            setApiTreeCount(payload.total || payload.items.length);
+          } else if (payload?.results && Array.isArray(payload.results)) {
+            // Alternative format with results array
+            setApiTreeCount(payload.total || payload.results.length);
+          }
+        } catch (error) {
+          console.error("Error fetching trees count:", error);
+          // Keep default value (0) on error
+        }
+      } catch (error) {
+        console.error("Error fetching stats:", error);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [user?.userId, isAdmin]);
 
   // Handle upgrade plan click
   const handleUpgradePlan = (plan) => {
@@ -3176,12 +3250,12 @@ export default function UserProfile() {
               },
               {
                 label: "Số vườn đang quản lý",
-                value: gardens.length,
+                value: statsLoading ? "..." : apiGardenCount,
                 icon: <MapPin className="h-5 w-5" />,
               },
               {
                 label: "Tổng số cây đang chăm",
-                value: stats.totalTrees,
+                value: statsLoading ? "..." : apiTreeCount,
                 icon: <TreePine className="h-5 w-5" />,
               },
             ].map((s, i) => (

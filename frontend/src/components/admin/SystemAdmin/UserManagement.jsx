@@ -1477,6 +1477,103 @@ export default function SystemAdminUserManagement() {
     applyPasswordChange(generatedPassword);
   };
 
+  // CSV Export function
+  const handleExportCSV = () => {
+    if (!filteredUsers.length) {
+      showNotice("Không có dữ liệu để xuất", "warning");
+      return;
+    }
+
+    // Define CSV headers
+    const headers = [
+      "Mã người dùng",
+      "Tên",
+      "Email",
+      "Số điện thoại",
+      "Vai trò",
+      "Trạng thái",
+      "Gói dịch vụ",
+      "Ngày bắt đầu gói",
+      "Ngày kết thúc gói",
+      "Số vườn",
+      "Số cây",
+      "Ngày tạo tài khoản",
+      "Đăng nhập gần nhất",
+    ];
+
+    // Convert users to CSV rows
+    const csvRows = filteredUsers.map((user) => {
+      return [
+        user.id || "",
+        user.name || "",
+        user.email || "",
+        user.phone || "",
+        ROLE_META[user.role]?.label || user.role || "",
+        STATUS_META[user.status]?.label || user.status || "",
+        getPlanLabel(user.plan),
+        formatDateDisplay(user.planStartDate, ""),
+        formatDateDisplay(user.planEndDate, ""),
+        user.gardensCount || 0,
+        user.treesCount || 0,
+        user.createdAt
+          ? new Date(user.createdAt).toLocaleString("vi-VN", {
+              hour12: false,
+            })
+          : "",
+        user.lastLogin
+          ? new Date(user.lastLogin).toLocaleString("vi-VN", {
+              hour12: false,
+            })
+          : "Chưa đăng nhập",
+      ];
+    });
+
+    // Escape CSV values (handle commas, quotes, newlines)
+    const escapeCSV = (value) => {
+      if (value === null || value === undefined) return "";
+      const stringValue = String(value);
+      if (
+        stringValue.includes(",") ||
+        stringValue.includes('"') ||
+        stringValue.includes("\n")
+      ) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    // Combine headers and rows
+    const csvContent = [
+      headers.map(escapeCSV).join(","),
+      ...csvRows.map((row) => row.map(escapeCSV).join(",")),
+    ].join("\n");
+
+    // Add BOM for UTF-8 to support Vietnamese characters in Excel
+    const BOM = "\uFEFF";
+    const blob = new Blob([BOM + csvContent], {
+      type: "text/csv;charset=utf-8;",
+    });
+
+    // Create download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const timestamp = new Date()
+      .toISOString()
+      .replace(/[:.]/g, "-")
+      .slice(0, -5);
+    link.href = url;
+    link.download = `danh-sach-nguoi-dung-${timestamp}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    showNotice(
+      `Đã xuất ${filteredUsers.length} người dùng ra file CSV`,
+      "success"
+    );
+  };
+
   return (
     <>
       <LivingBackground
@@ -1744,6 +1841,7 @@ export default function SystemAdminUserManagement() {
                       <Button
                         className="border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700 disabled:border-emerald-200 disabled:bg-emerald-200 disabled:text-white/80"
                         disabled={!filteredUsers.length}
+                        onClick={handleExportCSV}
                       >
                         Xuất CSV
                       </Button>

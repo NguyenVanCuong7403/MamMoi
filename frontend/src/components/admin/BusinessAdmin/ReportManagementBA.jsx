@@ -557,7 +557,9 @@ function exportReportsToCSV(reports) {
     ].join(",");
   });
 
-  const csvContent = [headers.join(","), ...rows].join("\n");
+  // Add UTF-8 BOM (Byte Order Mark) to ensure proper encoding for Vietnamese characters
+  // Excel and other programs need this to correctly read UTF-8 CSV files
+  const csvContent = "\uFEFF" + [headers.join(","), ...rows].join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -1493,7 +1495,7 @@ export default function ReportManagementBA() {
                     Business Admin
                   </p>
                   <h1 className="mt-2 text-3xl font-semibold text-white">
-                    Quản lý báo cáo sản xuất
+                    Quản lý báo cáo 
                   </h1>
                   <p className="text-emerald-100/80">
                     Giám sát báo cáo chất lượng cây trồng và những phản hồi kinh

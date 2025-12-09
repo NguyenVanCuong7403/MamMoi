@@ -129,4 +129,13 @@ export default class NotificationRepository {
     formData.append("file", file);
     return ApiClient.post("/api/notifications/upload", formData, true);
   }
+
+  /**
+   * Get recipients of a broadcast notification by group ID (SystemAdmin only)
+   * @param {string} groupId - The group ID of the broadcast notification
+   * @returns {Promise<{success: boolean, data: Array, totalCount: number}>}
+   */
+  static async getBroadcastRecipients(groupId) {
+    return ApiClient.get(`/api/notifications/broadcasts/${encodeURIComponent(groupId)}/recipients`);
+  }
 }

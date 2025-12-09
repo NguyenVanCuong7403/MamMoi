@@ -23,7 +23,6 @@ import {
   Tooltip as RechartsTooltip,
   Cell,
 } from "recharts";
-import { TrendingUp, TrendingDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -134,12 +133,10 @@ function formatCurrency(value) {
 function StatCard({
   label,
   value,
-  change,
   icon: Icon,
   isCurrency,
   variant = "default",
 }) {
-  const isPositive = change >= 0;
   const isDanger = variant === "danger";
   return (
     <div
@@ -166,26 +163,6 @@ function StatCard({
           <Icon className="h-5 w-5" />
         </div>
       </div>
-      <div className="mt-4 flex items-center gap-2 text-sm">
-        <Badge
-          className={cn(
-            "border-0 px-2.5 py-0.5",
-            isDanger
-              ? "bg-rose-100 text-rose-700"
-              : isPositive
-              ? "bg-emerald-100 text-emerald-700"
-              : "bg-rose-50 text-rose-600"
-          )}
-        >
-          {isPositive ? (
-            <TrendingUp className="mr-1 h-3 w-3" />
-          ) : (
-            <TrendingDown className="mr-1 h-3 w-3" />
-          )}
-          {`${isPositive ? "+" : ""}${Math.round(change * 100)}%`}
-        </Badge>
-        <span className="text-slate-500">so với kỳ trước</span>
-      </div>
       <div
         className={cn(
           "absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r opacity-0 transition-opacity duration-200 group-hover:opacity-100",
@@ -198,10 +175,7 @@ function StatCard({
   );
 }
 
-function RevenueGrowthChart({ data, change, timeframeLabel, valueFormatter }) {
-  const isPositive = change >= 0;
-  const changeLabel = `${isPositive ? "+" : ""}${Math.round(change * 100)}%`;
-
+function RevenueGrowthChart({ data, timeframeLabel, valueFormatter }) {
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
     const value = payload[0].value;
@@ -227,20 +201,6 @@ function RevenueGrowthChart({ data, change, timeframeLabel, valueFormatter }) {
           </h3>
           <p className="mt-1 text-xs text-emerald-100/80">
             Quan sát xu hướng doanh thu để tối ưu chiến lược kinh doanh.
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs text-emerald-100/80">Biến động</p>
-          <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald-950/60 px-3 py-1 text-xs font-semibold">
-            {isPositive ? (
-              <TrendingUp className="h-3 w-3 text-emerald-300" />
-            ) : (
-              <TrendingDown className="h-3 w-3 text-rose-300" />
-            )}
-            <span>{changeLabel}</span>
-          </div>
-          <p className="mt-1 text-[11px] text-emerald-100/70">
-            so với kỳ trước
           </p>
         </div>
       </div>
@@ -326,12 +286,7 @@ function RevenueGrowthChart({ data, change, timeframeLabel, valueFormatter }) {
   );
 }
 
-function StatusDistributionChart({
-  data,
-  change,
-  allTransactions = [],
-  timeframe = "month",
-}) {
+function StatusDistributionChart({ data }) {
   // Remove dependency on allTransactions for revenue calculation
   const chartData = data.map((item) => ({
     ...item,
@@ -344,66 +299,6 @@ function StatusDistributionChart({
         : "#ef4444",
   }));
 
-  // Tính change cho từng status item
-  const calculateChange = (current, previous) => {
-    if (previous === 0) return current > 0 ? current * 100 : 0;
-    return ((current - previous) / previous) * 100;
-  };
-
-  const getPeriodLabel = () => {
-    if (timeframe === "day") return "ngày";
-    if (timeframe === "week") return "tuần";
-    if (timeframe === "month") return "tháng";
-    return "năm";
-  };
-
-  const periodLabel = getPeriodLabel();
-
-  // Tính toán comparison data từ dữ liệu thực tế
-  const getComparisonData = () => {
-    const now = new Date();
-    let currentPeriodStart, previousPeriodStart, previousPeriodEnd;
-
-    if (timeframe === "day") {
-      currentPeriodStart = new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000);
-      previousPeriodStart = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
-      previousPeriodEnd = currentPeriodStart;
-    } else if (timeframe === "week") {
-      currentPeriodStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-      previousPeriodStart = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-      previousPeriodEnd = currentPeriodStart;
-    } else if (timeframe === "month") {
-      currentPeriodStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      previousPeriodStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
-      previousPeriodEnd = currentPeriodStart;
-    } else {
-      currentPeriodStart = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-      previousPeriodStart = new Date(now.getTime() - 730 * 24 * 60 * 60 * 1000);
-      previousPeriodEnd = currentPeriodStart;
-    }
-
-    const previousCounts = { success: 0, pending: 0, failed: 0 };
-
-    allTransactions.forEach((tx) => {
-      const txDate = new Date(tx.time);
-      if (txDate >= previousPeriodStart && txDate < previousPeriodEnd) {
-        previousCounts[tx.status] = (previousCounts[tx.status] || 0) + 1;
-      }
-    });
-
-    return previousCounts;
-  };
-
-  const previousData = getComparisonData();
-
-  // Tính change cho từng loại status
-  const chartDataWithChange = chartData.map((item) => {
-    const previousValue = previousData[item.key] || 0;
-    const changeValue = calculateChange(item.value, previousValue);
-    return { ...item, change: changeValue };
-  });
-
-  const total = chartData.reduce((sum, item) => sum + item.value, 0);
   const peakValue = chartData.reduce(
     (max, item) => Math.max(max, item.value),
     0
@@ -413,9 +308,6 @@ function StatusDistributionChart({
   const totalRevenue = data
     .filter((item) => item.key === "success")
     .reduce((sum, item) => sum + (item.revenue || 0), 0);
-
-  const isPositive = change >= 0;
-  const changeLabel = `${isPositive ? "+" : ""}${Math.round(change * 100)}%`;
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
@@ -442,21 +334,6 @@ function StatusDistributionChart({
           </h3>
         </div>
         <div className="flex flex-col items-end gap-1">
-          <Badge
-            className={cn(
-              "border-0 px-2.5 py-1 text-xs font-semibold",
-              isPositive
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-rose-50 text-rose-600"
-            )}
-          >
-            {isPositive ? (
-              <TrendingUp className="mr-1 h-3 w-3" />
-            ) : (
-              <TrendingDown className="mr-1 h-3 w-3" />
-            )}
-            {changeLabel}
-          </Badge>
           <span className="text-[11px] text-slate-500">
             Tổng doanh thu:{" "}
             <span className="font-semibold">
@@ -502,7 +379,7 @@ function StatusDistributionChart({
 
         <div className="space-y-3 md:w-52">
           <div className="space-y-2">
-            {chartDataWithChange.map((item) => (
+            {chartData.map((item) => (
               <div
                 key={item.key}
                 className="flex items-center justify-between gap-3 rounded-xl bg-white/80 px-3 py-2 text-sm shadow-sm"
@@ -512,24 +389,9 @@ function StatusDistributionChart({
                     className="h-2.5 w-2.5 rounded-full"
                     style={{ backgroundColor: item.color }}
                   />
-                  <div className="flex flex-col">
-                    <span className="font-medium text-slate-800">
-                      {item.label}
-                    </span>
-                    {item.change > -100 && Math.abs(item.change) > 0.5 && (
-                      <Badge
-                        className={cn(
-                          "mt-0.5 w-fit border-0 px-1.5 py-0 text-[10px]",
-                          item.change >= 0
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-rose-100 text-rose-700"
-                        )}
-                      >
-                        {item.change >= 0 ? "+" : ""}
-                        {Math.round(item.change)}% so với {periodLabel} trước
-                      </Badge>
-                    )}
-                  </div>
+                  <span className="font-medium text-slate-800">
+                    {item.label}
+                  </span>
                 </div>
                 <span className="font-semibold text-slate-900">
                   {item.value.toLocaleString("vi-VN")}
@@ -662,58 +524,34 @@ function SubscriptionManagement() {
     if (!revenueStatistics) return null;
 
     const totalRevenue = revenueStatistics.totalRevenue || 0;
-    const totalRefunded = revenueStatistics.totalRefunded || 0;
     const netRevenue = revenueStatistics.netRevenue || 0;
     const totalTransactions = revenueStatistics.totalTransactions || 0;
     const successfulTransactions =
       revenueStatistics.successfulTransactions || 0;
 
-    // Calculate change percentage - placeholder for now, would need historical data
-    const revenueChange = 0.15;
-    const transactionsChange = 0.1;
-    const successRateChange = 0.05;
-
     return {
       revenue: {
         value: totalRevenue,
-        change: revenueChange,
         icon: DollarSign,
         isCurrency: true,
       },
       transactions: {
         value: totalTransactions,
-        change: transactionsChange,
         icon: CreditCard,
         isCurrency: false,
       },
       success: {
         value: successfulTransactions,
-        change: successRateChange,
         icon: LineChart,
         isCurrency: false,
       },
       net: {
         value: netRevenue,
-        change: revenueChange,
         icon: DollarSign,
         isCurrency: true,
       },
     };
   }, [revenueStatistics]);
-
-  // Calculate revenue growth change from API data
-  const revenueGrowthChange = useMemo(() => {
-    if (!revenueByPeriod || revenueByPeriod.length < 2) return 0;
-
-    const currentPeriod = revenueByPeriod[revenueByPeriod.length - 1];
-    const previousPeriod = revenueByPeriod[revenueByPeriod.length - 2];
-
-    const currentRevenue = currentPeriod.revenue || 0;
-    const previousRevenue = previousPeriod.revenue || 0;
-
-    if (previousRevenue === 0) return currentRevenue > 0 ? 1 : 0;
-    return (currentRevenue - previousRevenue) / previousRevenue;
-  }, [revenueByPeriod]);
 
   // Calculate status distribution from API payments
   const statusDistributionData = useMemo(() => {
@@ -743,12 +581,6 @@ function SubscriptionManagement() {
       { key: "failed", label: "Thất bại", value: counts.failed || 0 },
     ];
   }, [revenuePayments]);
-
-  // Calculate status distribution change
-  const statusDistributionChange = useMemo(() => {
-    // Placeholder - would need to fetch previous period data for accurate calculation
-    return 0;
-  }, []);
 
   // Prepare revenue chart data for growth chart
   const revenueGrowthData = useMemo(() => {
@@ -857,7 +689,6 @@ function SubscriptionManagement() {
                           }[key] ?? key
                         }
                         value={config.value}
-                        change={config.change}
                         icon={config.icon}
                         isCurrency={config.isCurrency}
                       />
@@ -909,7 +740,6 @@ function SubscriptionManagement() {
                 <div className="xl:col-span-1 h-full">
                   <RevenueGrowthChart
                     data={revenueGrowthData}
-                    change={revenueGrowthChange}
                     timeframeLabel={
                       TIME_WINDOWS.find((t) => t.value === timeframe)?.label ??
                       "Kỳ"
@@ -918,12 +748,7 @@ function SubscriptionManagement() {
                   />
                 </div>
                 <div className="xl:col-span-1 h-full">
-                  <StatusDistributionChart
-                    data={statusDistributionData}
-                    change={statusDistributionChange}
-                    allTransactions={[]}
-                    timeframe={timeframe}
-                  />
+                  <StatusDistributionChart data={statusDistributionData} />
                 </div>
               </CardContent>
             </Card>

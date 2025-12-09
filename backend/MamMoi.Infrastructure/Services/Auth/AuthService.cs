@@ -178,7 +178,7 @@ public class AuthService : IAuthService
             IsEmailVerified = true,
             AccessToken = accessToken,
             RefreshToken = refreshToken,
-            TokenExpiresAt = DateTime.Now.AddMinutes(60),
+            TokenExpiresAt = DateTime.Now.AddDays(7),
             Message = "Xác thực thành công! Chào mừng bạn đến với MamMoi.",
             RoleId = userEntity.RoleId
         };
@@ -345,7 +345,7 @@ public class AuthService : IAuthService
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             ProfileImageUrl = userEntity.ProfileImageUrl,
-            TokenExpiresAt = DateTime.Now.AddMinutes(60),
+            TokenExpiresAt = DateTime.Now.AddDays(7),
             Message = "Đăng nhập thành công!",
             RoleId = userEntity.RoleId
         };
@@ -398,7 +398,7 @@ public class AuthService : IAuthService
             roles: roles
         );
 
-        var tokenExpiry = DateTime.Now.AddMinutes(60); // Access Token hết hạn sau 60 phút
+        var tokenExpiry = DateTime.Now.AddDays(7); // Access Token hết hạn sau 1 tuần
 
         // 6. Trả về token mới (Refresh Token giữ nguyên)
         return new AuthResponseDto
@@ -710,7 +710,7 @@ public class AuthService : IAuthService
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             ProfileImageUrl = userEntity.ProfileImageUrl,
-            TokenExpiresAt = DateTime.Now.AddMinutes(60),
+            TokenExpiresAt = DateTime.Now.AddDays(7),
             Message = existingUser != null ? "Đăng nhập thành công!" : "Đăng ký và đăng nhập thành công!",
             RoleId = userEntity.RoleId
         };

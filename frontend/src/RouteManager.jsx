@@ -13,6 +13,7 @@ import Notifications from "./components/user/Notifications";
 import Demo from "./components/user/Demo";
 import Report from "./components/user/Report";
 import ReportManagement from "./components/user/ReportManagement";
+import SupportRequestDetail from "./components/user/SupportRequestDetail";
 import PaymentHistory from "./components/user/PaymentHistory";
 import LoginGuard from "./guards/LoginGuard";
 import RoleGuard from "./guards/RoleGuard";
@@ -258,6 +259,14 @@ export default function RouteManager({ authTab }) {
           element={
             <LoginGuard>
               <ReportManagement />
+            </LoginGuard>
+          }
+        />
+        <Route
+          path="/support-requests/:id"
+          element={
+            <LoginGuard>
+              <SupportRequestDetail />
             </LoginGuard>
           }
         />

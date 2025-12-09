@@ -177,11 +177,62 @@ namespace MamMoi.Infrastructure.Services
             if (req.preMonths.HasValue && req.preMonths != oldPreMonths)
                 ageChanged = true;
 
-            // cập nhật 4 trạng thái nếu FE gửi
-            tree.LeafStatus = req.LeafStatus ?? tree.LeafStatus;
-            tree.BranchStatus = req.BranchStatus ?? tree.BranchStatus;
-            tree.FlowerStatus = req.FlowerStatus ?? tree.FlowerStatus;
-            tree.FruitStatus = req.FruitStatus ?? tree.FruitStatus;
+            // cập nhật 4 trạng thái nếu FE gửi và lưu lịch sử thay đổi
+            if (req.LeafStatus != null && req.LeafStatus != tree.LeafStatus)
+            {
+                _db.TreeStatusHistories.Add(new TreeStatusHistory
+                {
+                    TreeId = tree.TreeId,
+                    UserId = userId,
+                    StatusField = "LeafStatus",
+                    OldValue = tree.LeafStatus,
+                    NewValue = req.LeafStatus,
+                    ChangedAt = DateTime.UtcNow
+                });
+                tree.LeafStatus = req.LeafStatus;
+            }
+
+            if (req.BranchStatus != null && req.BranchStatus != tree.BranchStatus)
+            {
+                _db.TreeStatusHistories.Add(new TreeStatusHistory
+                {
+                    TreeId = tree.TreeId,
+                    UserId = userId,
+                    StatusField = "BranchStatus",
+                    OldValue = tree.BranchStatus,
+                    NewValue = req.BranchStatus,
+                    ChangedAt = DateTime.UtcNow
+                });
+                tree.BranchStatus = req.BranchStatus;
+            }
+
+            if (req.FlowerStatus != null && req.FlowerStatus != tree.FlowerStatus)
+            {
+                _db.TreeStatusHistories.Add(new TreeStatusHistory
+                {
+                    TreeId = tree.TreeId,
+                    UserId = userId,
+                    StatusField = "FlowerStatus",
+                    OldValue = tree.FlowerStatus,
+                    NewValue = req.FlowerStatus,
+                    ChangedAt = DateTime.UtcNow
+                });
+                tree.FlowerStatus = req.FlowerStatus;
+            }
+
+            if (req.FruitStatus != null && req.FruitStatus != tree.FruitStatus)
+            {
+                _db.TreeStatusHistories.Add(new TreeStatusHistory
+                {
+                    TreeId = tree.TreeId,
+                    UserId = userId,
+                    StatusField = "FruitStatus",
+                    OldValue = tree.FruitStatus,
+                    NewValue = req.FruitStatus,
+                    ChangedAt = DateTime.UtcNow
+                });
+                tree.FruitStatus = req.FruitStatus;
+            }
 
             tree.UpdatedAt = DateTime.UtcNow;
 
@@ -318,26 +369,49 @@ namespace MamMoi.Infrastructure.Services
             var tree = await _db.Trees
                 .Include(t => t.Stage)
                 .FirstOrDefaultAsync(t => t.TreeId == treeId, ct);
-            
+
             if (tree == null) return null;
             if (!await IsGardenOwner(userId, tree.GardenId, ct)) 
                 throw new UnauthorizedAccessException("User is not garden owner.");
 
-            // Map phaseId to stageOrder (1-5)
-            // growth_development -> 1, flowering -> 2, fruiting -> 3, pre_harvest -> 4, post_harvest -> 5
-            int targetStageOrder = req.PhaseId.ToLower() switch
-            {
-                "growth_development" => 1,
-                "flowering" => 2,
-                "fruiting" => 3,
-                "pre_harvest" => 4,
-                "post_harvest" => 5,
-                _ => throw new ArgumentException($"Invalid phaseId: {req.PhaseId}. Must be one of: growth_development, flowering, fruiting, pre_harvest, post_harvest")
-            };
+            // Logging chi tiết để debug việc cập nhật lifecycle
+            Console.WriteLine(
+                $"[UpdateLifecycleAsync] START userId={userId}, treeId={treeId}, " +
+                $"req.PhaseId={req.PhaseId}, req.StageId={req.StageId}, req.CycleCount={req.CycleCount}, " +
+                $"req.Phase1Completed={req.Phase1Completed}, req.AutoSyncEnabled={req.AutoSyncEnabled}, " +
+                $"current StageId={tree.StageId}, current CycleCount={tree.CycleCount}, " +
+                $"LifecycleAutoEnabled={tree.LifecycleAutoEnabled}, LifecycleAutoDisabledAt={tree.LifecycleAutoDisabledAt}"
+            );
 
-            // Find the actual StageId for this TreeType with the target StageOrder
-            var targetStage = await _db.TreeGrowthStages
-                .FirstOrDefaultAsync(s => s.TreeTypeId == tree.TreeTypeId && s.StageOrder == targetStageOrder, ct);
+            string normalizedPhaseId = NormalizePhaseKey(req.PhaseId);
+            TreeGrowthStage? targetStage;
+            int targetStageOrder;
+
+            if (req.StageId.HasValue)
+            {
+                targetStage = await _db.TreeGrowthStages
+                    .FirstOrDefaultAsync(s => s.StageId == req.StageId.Value, ct);
+
+                if (targetStage == null)
+                    throw new InvalidOperationException($"Stage {req.StageId.Value} not found.");
+                if (targetStage.TreeTypeId != tree.TreeTypeId)
+                    throw new InvalidOperationException("Stage does not belong to TreeType.");
+
+                targetStageOrder = targetStage.StageOrder;
+                if (string.IsNullOrWhiteSpace(normalizedPhaseId))
+                {
+                    normalizedPhaseId = StageOrderToPhaseId(targetStageOrder);
+                }
+            }
+            else
+            {
+                if (string.IsNullOrWhiteSpace(normalizedPhaseId))
+                    throw new ArgumentException("Either PhaseId or StageId must be provided.");
+
+                targetStageOrder = PhaseIdToStageOrder(normalizedPhaseId);
+                targetStage = await _db.TreeGrowthStages
+                    .FirstOrDefaultAsync(s => s.TreeTypeId == tree.TreeTypeId && s.StageOrder == targetStageOrder, ct);
+            }
 
             if (targetStage == null)
                 throw new InvalidOperationException($"TreeType {tree.TreeTypeId} does not have a stage with StageOrder {targetStageOrder}.");
@@ -369,19 +443,60 @@ namespace MamMoi.Infrastructure.Services
             // Determine phase1Completed: true if not in growth_development
             bool phase1Completed = req.Phase1Completed ?? (targetStageOrder > 1);
 
+            // Ghi nhận số chu kỳ nếu backend được cung cấp, ngược lại giữ nguyên giá trị hiện tại
+            if (req.CycleCount.HasValue)
+            {
+                tree.CycleCount = req.CycleCount.Value;
+            }
+
+            var finalCycleCount = tree.CycleCount;
+
+            Console.WriteLine(
+                $"[UpdateLifecycleAsync] AFTER APPLY treeId={treeId}, " +
+                $"new StageId={tree.StageId}, targetStageOrder={targetStageOrder}, " +
+                $"phaseId={normalizedPhaseId}, phase1Completed={phase1Completed}, " +
+                $"finalCycleCount={finalCycleCount}, " +
+                $"LifecycleAutoEnabled={tree.LifecycleAutoEnabled}, LifecycleAutoDisabledAt={tree.LifecycleAutoDisabledAt}"
+            );
+
             // Return DTO with lifecycle information
             return new TreeLifecycleDto(
                 tree.TreeId,
                 targetStage.StageId,
                 targetStage.StageOrder,
                 targetStage.StageName,
-                req.PhaseId,
+                normalizedPhaseId,
                 phase1Completed,
-                req.CycleCount ?? 0, // TODO: Store cycleCount in database if needed
+                finalCycleCount,
                 tree.LifecycleAutoEnabled,
                 tree.LifecycleAutoDisabledAt
             );
         }
+
+        private static string NormalizePhaseKey(string? phaseId)
+            => string.IsNullOrWhiteSpace(phaseId)
+                ? string.Empty
+                : phaseId.Trim().ToLowerInvariant();
+
+        private static int PhaseIdToStageOrder(string phaseId) => phaseId switch
+        {
+            "growth_development" => 1,
+            "flowering" => 2,
+            "fruiting" => 3,
+            "pre_harvest" => 4,
+            "post_harvest" => 5,
+            _ => throw new ArgumentException($"Invalid phaseId: {phaseId}. Must be one of: growth_development, flowering, fruiting, pre_harvest, post_harvest")
+        };
+
+        private static string StageOrderToPhaseId(int stageOrder) => stageOrder switch
+        {
+            1 => "growth_development",
+            2 => "flowering",
+            3 => "fruiting",
+            4 => "pre_harvest",
+            5 => "post_harvest",
+            _ => "growth_development"
+        };
 
         private static string BuildLifecycleActivityDescription(UpdateTreeLifecycleRequest req, string stageName)
         {

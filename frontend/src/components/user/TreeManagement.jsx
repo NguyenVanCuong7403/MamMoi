@@ -6,6 +6,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import {
   Search,
   Filter as FilterIcon,
@@ -30,6 +31,8 @@ import {
   X,
   Eye,
   EyeOff,
+  Edit3,
+  Trash2,
 } from "lucide-react";
 import { useNavigate, useParams, useLocation, Link } from "react-router-dom";
 
@@ -390,6 +393,7 @@ const normalizeTaskRecord = (task) => {
     priority: task.priority ?? task.Priority ?? "",
     status: task.status ?? task.Status ?? "Pending",
     createdAt: task.createdAt ?? task.CreatedAt ?? null,
+    completedAt: task.completedAt ?? task.CompletedAt ?? null,
     completedNote: task.completedNote ?? task.CompletedNote ?? "",
     raw: task,
   };
@@ -444,6 +448,33 @@ const isTaskOverdue = (scheduledDate, status) => {
     today.setHours(0, 0, 0, 0);
     due.setHours(0, 0, 0, 0);
     return due.getTime() < today.getTime();
+  } catch {
+    return false;
+  }
+};
+
+const isTaskCompletedLate = (scheduledDate, completedAt, status) => {
+  // Chỉ kiểm tra cho các task đã hoàn thành
+  const s = normalizeKey(status);
+  if (s !== "completed") return false;
+
+  // Cần có cả scheduledDate và completedAt
+  if (!scheduledDate || !completedAt) return false;
+
+  try {
+    const due = new Date(scheduledDate);
+    const completed = new Date(completedAt);
+
+    if (Number.isNaN(due.getTime()) || Number.isNaN(completed.getTime())) {
+      return false;
+    }
+
+    // So sánh chỉ phần ngày (bỏ qua giờ)
+    due.setHours(0, 0, 0, 0);
+    completed.setHours(0, 0, 0, 0);
+
+    // Nếu ngày hoàn thành > ngày hạn thì là hoàn thành muộn
+    return completed.getTime() > due.getTime();
   } catch {
     return false;
   }
@@ -1228,29 +1259,15 @@ export default function TreeManagement() {
   /* ================== Search + Filters ================== */
   const [q, setQ] = useState("");
   const [status, setStatus] = useState("all"); // all | active | stopped
-  const [gardenFilter, setGardenFilter] = useState(new Set());
   const [varieties, setVarieties] = useState(new Set());
   const [caretakers, setCaretakers] = useState(new Set());
-  const [phases, setPhases] = useState(new Set());
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [dateOrder, setDateOrder] = useState("desc");
-  const [onlyOverdue, setOnlyOverdue] = useState(false);
 
   const PAGE_COUNT_MIN = 1;
   const [page, setPage] = useState(1);
 
-  const gardenOpts = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          trees
-            .map((t) => t.locationLabel || t.location?.label || t.location)
-            .filter(Boolean)
-        )
-      ).sort(),
-    [trees]
-  );
   const varietyOpts = useMemo(
     () =>
       Array.from(
@@ -1266,16 +1283,6 @@ export default function TreeManagement() {
     () => Array.from(new Set(trees.map((t) => t.caretaker))).sort(),
     [trees]
   );
-  const phaseOpts = useMemo(() => {
-    const ids = Array.from(
-      new Set(
-        trees
-          .map((t) => normalizePhaseId(t.phase || t.lifecyclePhase || t.stage))
-          .filter(Boolean)
-      )
-    );
-    return ids.map((id) => ({ id, ...PHASE_META[id] }));
-  }, [trees]);
 
   const stats = useMemo(() => {
     const list = trees.filter((t) => isTreeInGarden(t, garden));
@@ -1284,13 +1291,7 @@ export default function TreeManagement() {
     const active = list.filter((t) => t.status === "active").length;
     const stopped = list.filter((t) => t.status === "stopped").length;
 
-    const today = _startOfDay().getTime();
-    const overdue = list.reduce((n, t) => {
-      if (t.status !== "active") return n;
-      return n + (t.todos || []).filter((x) => dueToTime(x.due) < today).length;
-    }, 0);
-
-    return { total, active, stopped, overdue };
+    return { total, active, stopped };
   }, [trees, garden]);
 
   const toggleSet = (set, setter, value) => {
@@ -1300,14 +1301,11 @@ export default function TreeManagement() {
   };
   const clearAllFilters = () => {
     setStatus("all");
-    setGardenFilter(new Set());
     setVarieties(new Set());
     setCaretakers(new Set());
-    setPhases(new Set());
     setDateFrom("");
     setDateTo("");
     setDateOrder("desc");
-    setOnlyOverdue(false);
   };
 
   const filtered = useMemo(() => {
@@ -1331,27 +1329,13 @@ export default function TreeManagement() {
 
       const inSet = (set, v) => set.size === 0 || set.has(v);
 
-      // 4) filter theo khu vườn con / vị trí
-      if (!inSet(gardenFilter, locationKey)) return false;
-
-      // 5) Theo giống
+      // 4) Theo giống
       if (!inSet(varieties, t.variety)) return false;
 
-      // 6) Theo nhân viên
+      // 5) Theo nhân viên
       if (!inSet(caretakers, t.caretaker)) return false;
 
-      // 7) Theo giai đoạn
-      const pId = normalizePhaseId(t.phase || t.lifecyclePhase || t.stage);
-      if (phases.size > 0 && (!pId || !phases.has(pId))) {
-        return false;
-      }
-
-      // 8) Chỉ cây có việc quá hạn
-      if (onlyOverdue && !(t.status === "active" && hasOverdue(t))) {
-        return false;
-      }
-
-      // 9) Lọc theo ngày trồng
+      // 6) Lọc theo ngày trồng
       const d = new Date(t.plantedAt + "T00:00:00");
       if (dateFrom) {
         const from = new Date(dateFrom + "T00:00:00");
@@ -1380,31 +1364,16 @@ export default function TreeManagement() {
     garden,
     q,
     status,
-    gardenFilter,
     varieties,
     caretakers,
-    phases,
     dateFrom,
     dateTo,
     dateOrder,
-    onlyOverdue,
   ]);
 
   useEffect(() => {
     setPage(1);
-  }, [
-    q,
-    status,
-    gardenFilter,
-    varieties,
-    caretakers,
-    phases,
-    dateFrom,
-    dateTo,
-    dateOrder,
-    onlyOverdue,
-    garden,
-  ]);
+  }, [q, status, varieties, caretakers, dateFrom, dateTo, dateOrder, garden]);
 
   const PAGE_COUNT = Math.max(
     PAGE_COUNT_MIN,
@@ -1599,34 +1568,6 @@ export default function TreeManagement() {
 
                     <DropdownMenuSeparator className="my-2" />
 
-                    {/* Theo khu vườn / vị trí */}
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="gap-2 transition-all duration-200 hover:bg-emerald-50/50">
-                        <MapPin className="h-4 w-4" /> Theo khu / vị trí
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="min-w-[240px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
-                        {gardenOpts.map((g) => (
-                          <DropdownMenuCheckboxItem
-                            key={g}
-                            checked={gardenFilter.has(g)}
-                            onCheckedChange={() =>
-                              toggleSet(gardenFilter, setGardenFilter, g)
-                            }
-                            className="cursor-pointer transition-all duration-200 hover:bg-emerald-50/50 hover:scale-[1.01]"
-                          >
-                            {g}
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setGardenFilter(new Set())}
-                          className="text-neutral-600 transition-all duration-200 hover:bg-rose-50/50 hover:scale-[1.01]"
-                        >
-                          Xóa lựa chọn
-                        </DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
-
                     {/* Theo giống */}
                     <DropdownMenuSub>
                       <DropdownMenuSubTrigger className="gap-2 transition-all duration-200 hover:bg-emerald-50/50">
@@ -1690,39 +1631,6 @@ export default function TreeManagement() {
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
                     */}
-
-                    {/* Theo giai đoạn */}
-                    <DropdownMenuSub>
-                      <DropdownMenuSubTrigger className="gap-2 transition-all duration-200 hover:bg-emerald-50/50">
-                        <Sprout className="h-4 w-4" /> Theo giai đoạn
-                      </DropdownMenuSubTrigger>
-                      <DropdownMenuSubContent className="min-w-[240px] rounded-xl border border-neutral-200 bg-white shadow-2xl">
-                        {phaseOpts.map((opt) => (
-                          <DropdownMenuCheckboxItem
-                            key={opt.id}
-                            checked={phases.has(opt.id)}
-                            onCheckedChange={() =>
-                              toggleSet(phases, setPhases, opt.id)
-                            }
-                            className="cursor-pointer transition-all duration-200 hover:bg-emerald-50/50 hover:scale-[1.01]"
-                          >
-                            <span className="inline-flex items-center gap-2">
-                              <span className="text-sm leading-none">
-                                {opt.icon}
-                              </span>
-                              {opt.name}
-                            </span>
-                          </DropdownMenuCheckboxItem>
-                        ))}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setPhases(new Set())}
-                          className="text-neutral-600 transition-all duration-200 hover:bg-rose-50/50 hover:scale-[1.01]"
-                        >
-                          Xóa lựa chọn
-                        </DropdownMenuItem>
-                      </DropdownMenuSubContent>
-                    </DropdownMenuSub>
 
                     {/* Theo ngày thêm */}
                     <DropdownMenuSub>
@@ -1798,17 +1706,6 @@ export default function TreeManagement() {
                       </DropdownMenuSubContent>
                     </DropdownMenuSub>
 
-                    <DropdownMenuSeparator className="my-2" />
-
-                    {/* Chỉ hiển thị cây có việc quá hạn */}
-                    <DropdownMenuCheckboxItem
-                      checked={onlyOverdue}
-                      onCheckedChange={() => setOnlyOverdue((v) => !v)}
-                      className="cursor-pointer transition-all duration-200 hover:bg-amber-50/50 hover:scale-[1.01]"
-                    >
-                      Chỉ hiển thị cây có việc quá hạn
-                    </DropdownMenuCheckboxItem>
-
                     <div className="px-3 py-3">
                       <Button
                         variant="outline"
@@ -1856,53 +1753,22 @@ export default function TreeManagement() {
                   { label: "Tổng cây", value: stats.total },
                   { label: "Đang hoạt động", value: stats.active },
                   { label: "Dừng hoạt động", value: stats.stopped },
-                  {
-                    label: "Việc quá hạn",
-                    value: stats.overdue,
-                    icon: <AlertTriangle className="w-4 h-4" />,
-                  },
                 ].map((s, i) => {
-                  const isOver =
-                    s.label === "Việc quá hạn" && Number(s.value) > 0;
                   return (
                     <div
                       key={i}
-                      aria-live={isOver ? "polite" : undefined}
-                      className={
-                        "relative rounded-xl px-4 py-3 flex items-center justify-between text-[13px] transition-all " +
-                        (isOver
-                          ? "border border-rose-300/50 bg-rose-400/5 animate-[mmOverduePulse_1.6s_ease-in-out_infinite]"
-                          : "")
-                      }
+                      className="relative rounded-xl px-4 py-3 flex items-center justify-between text-[13px] transition-all"
                       style={{
-                        background: isOver
-                          ? undefined
-                          : "rgba(251,255,223,0.06)",
-                        border: isOver
-                          ? undefined
-                          : "1px solid rgba(255,255,165,0.15)",
+                        background: "rgba(251,255,223,0.06)",
+                        border: "1px solid rgba(255,255,165,0.15)",
                         color: PALETTE.ivory,
                       }}
                     >
-                      <span
-                        className={
-                          "inline-flex items-center gap-2 " +
-                          (isOver ? "text-rose-200" : "opacity-80")
-                        }
-                      >
+                      <span className="inline-flex items-center gap-2 opacity-80">
                         {s.icon}
                         {s.label}
                       </span>
-                      <span
-                        className={
-                          "font-semibold " + (isOver ? "text-rose-300" : "")
-                        }
-                      >
-                        {s.value}
-                      </span>
-                      {isOver && (
-                        <span className="absolute -top-1.5 -right-1.5 h-3 w-3 rounded-full bg-rose-500 shadow-[0_0_0_6px_rgba(244,63,94,.32)]" />
-                      )}
+                      <span className="font-semibold">{s.value}</span>
                     </div>
                   );
                 })}
@@ -2039,18 +1905,6 @@ export default function TreeManagement() {
                           <div className="text-neutral-500 text-sm">
                             Việc cần làm
                           </div>
-                          {!stopped &&
-                            (() => {
-                              const today = _startOfDay().getTime();
-                              const n = (t.todos || []).filter(
-                                (x) => dueToTime(x.due) < today
-                              ).length;
-                              return n > 0 ? (
-                                <span className="px-2 py-0.5 rounded-full text-xs border bg-rose-50 text-rose-700 border-rose-200">
-                                  {n} Quá hạn
-                                </span>
-                              ) : null;
-                            })()}
                         </div>
 
                         {stopped ? (
@@ -2439,7 +2293,23 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     task: null,
     note: "",
   });
+  const [editTaskDialog, setEditTaskDialog] = useState({
+    open: false,
+    task: null,
+    taskName: "",
+    description: "",
+    scheduledDate: "",
+    priority: "Normal",
+    taskType: "",
+  });
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState({
+    open: false,
+    task: null,
+  });
+  const [editingMap, setEditingMap] = useState({});
+  const [deletingMap, setDeletingMap] = useState({});
   const [showTaskStats, setShowTaskStats] = useState(true);
+  const [allStatuses, setAllStatuses] = useState(new Set()); // Lưu tất cả status có thể có
 
   const numericGardenId = useMemo(() => {
     if (!garden?.id) return null;
@@ -2452,6 +2322,34 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     (gardenInfo && formatGardenLocation(gardenInfo)) ||
     garden?.name ||
     "Vườn đang chọn";
+
+  // Fetch tất cả status có thể có (một lần khi mở panel)
+  useEffect(() => {
+    if (!open || !numericGardenId) return;
+
+    async function fetchAllStatuses() {
+      try {
+        // Fetch một số lượng lớn tasks để lấy đầy đủ status
+        const response = await CareScheduleRepository.searchTasks({
+          gardenId: numericGardenId,
+          pageNumber: 1,
+          pageSize: 1000, // Lấy nhiều để có đầy đủ status
+        });
+        const { items } = parseTaskSearchResult(response);
+        const statusSet = new Set();
+        items.forEach((task) => {
+          if (task.status) {
+            statusSet.add(task.status);
+          }
+        });
+        setAllStatuses(statusSet);
+      } catch (err) {
+        console.error("Failed to fetch all statuses", err);
+      }
+    }
+
+    fetchAllStatuses();
+  }, [open, numericGardenId]);
 
   const fetchGardenTasks = useCallback(async () => {
     if (!numericGardenId) return;
@@ -2477,6 +2375,17 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
         : items;
       setTasks(filteredItems);
       setTaskTotal(filterOther ? filteredItems.length : total);
+
+      // Cập nhật allStatuses với status từ tasks mới
+      setAllStatuses((prev) => {
+        const statusSet = new Set(prev);
+        items.forEach((task) => {
+          if (task.status) {
+            statusSet.add(task.status);
+          }
+        });
+        return statusSet;
+      });
     } catch (err) {
       console.error("Failed to load garden tasks", err);
       setTaskError(err?.message || "Không thể tải danh sách công việc.");
@@ -2526,11 +2435,37 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
         pending: 0,
         inprogress: 0,
         completed: 0,
-        postponed: 0,
-        cancelled: 0,
       }
     );
   }, [tasks]);
+
+  // Tạo filter options động dựa trên các status thực tế có trong dữ liệu
+  const availableStatusFilters = useMemo(() => {
+    // Tạo filter options với "Tất cả" + các status có trong allStatuses
+    const filters = [{ value: "all", label: "Tất cả trạng thái" }];
+
+    // Map các status với TASK_STATUS_META để có label phù hợp
+    Array.from(allStatuses)
+      .sort()
+      .forEach((status) => {
+        const normalizedKey = normalizeKey(status);
+        const meta = TASK_STATUS_META[normalizedKey];
+        if (meta) {
+          filters.push({
+            value: status,
+            label: meta.label,
+          });
+        } else {
+          // Nếu không có trong meta, dùng status gốc
+          filters.push({
+            value: status,
+            label: status,
+          });
+        }
+      });
+
+    return filters;
+  }, [allStatuses]);
 
   const handleFilterChange = (key, value) => {
     setTaskFilters((prev) => ({ ...prev, [key]: value }));
@@ -2607,6 +2542,102 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     fetchGardenTasks();
   };
 
+  const handleOpenEditDialog = (task) => {
+    if (!task) return;
+    setEditTaskDialog({
+      open: true,
+      task,
+      taskName: task.taskName || "",
+      description: task.description || "",
+      scheduledDate: task.scheduledDate || "",
+      priority: task.priority || "Normal",
+      taskType: task.taskType || "",
+    });
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditTaskDialog({
+      open: false,
+      task: null,
+      taskName: "",
+      description: "",
+      scheduledDate: "",
+      priority: "Normal",
+      taskType: "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    const task = editTaskDialog.task;
+    if (!task) return;
+
+    const id = task.scheduleId;
+    setEditingMap((prev) => ({ ...prev, [id]: true }));
+
+    try {
+      await CareScheduleRepository.editCareTask(id, {
+        taskName: editTaskDialog.taskName.trim(),
+        description: editTaskDialog.description.trim() || null,
+        scheduledDate: editTaskDialog.scheduledDate || null,
+        priority: editTaskDialog.priority,
+        taskType: editTaskDialog.taskType,
+      });
+
+      // Refresh tasks
+      await fetchGardenTasks();
+      handleCloseEditDialog();
+    } catch (err) {
+      console.error("Failed to edit task", err);
+      setTaskError(err?.message || "Không thể sửa công việc.");
+    } finally {
+      setEditingMap((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
+  };
+
+  const handleOpenDeleteDialog = (task) => {
+    if (!task) return;
+    setDeleteConfirmDialog({
+      open: true,
+      task,
+    });
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setDeleteConfirmDialog({
+      open: false,
+      task: null,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    const task = deleteConfirmDialog.task;
+    if (!task) return;
+
+    const id = task.scheduleId;
+    setDeletingMap((prev) => ({ ...prev, [id]: true }));
+
+    try {
+      await CareScheduleRepository.deleteCareTask(id);
+
+      // Refresh tasks
+      await fetchGardenTasks();
+      handleCloseDeleteDialog();
+    } catch (err) {
+      console.error("Failed to delete task", err);
+      setTaskError(err?.message || "Không thể xóa công việc.");
+    } finally {
+      setDeletingMap((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+    }
+  };
+
   // Group tasks by tree
   const tasksByTree = useMemo(() => {
     const grouped = {};
@@ -2662,6 +2693,16 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     return Object.keys(tasksByTree)
       .filter((key) => {
         const treeGroup = tasksByTree[key];
+
+        // Lọc tasks theo showCompleted state
+        const filteredTasks = treeGroup.tasks.filter((task) => {
+          const isCompleted = normalizeKey(task.status) === "completed";
+          return showCompleted ? isCompleted : !isCompleted;
+        });
+
+        // Ẩn cây không có task nào sau khi lọc
+        if (filteredTasks.length === 0) return false;
+
         // Kiểm tra xem cây có toàn bộ công việc hoàn thành không
         const allCompleted = treeGroup.tasks.every(
           (task) => normalizeKey(task.status) === "completed"
@@ -2669,6 +2710,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
 
         // Nếu showCompleted = false, ẩn cây đã hoàn thành
         if (!showCompleted && allCompleted) return false;
+
         return true;
       })
       .sort((a, b) => {
@@ -2807,7 +2849,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                   <SelectValue placeholder="Trạng thái" />
                 </SelectTrigger>
                 <SelectContent>
-                  {TASK_STATUS_FILTERS.map((opt) => (
+                  {availableStatusFilters.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>
                       {opt.label}
                     </SelectItem>
@@ -2877,14 +2919,12 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
               </div>
 
               {showTaskStats && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-4 gap-3">
                   {[
                     { label: "Tổng việc", value: statusStats.total },
                     { label: "Chờ thực hiện", value: statusStats.pending },
                     { label: "Đang thực hiện", value: statusStats.inprogress },
                     { label: "Hoàn thành", value: statusStats.completed },
-                    { label: "Hoãn lại", value: statusStats.postponed },
-                    { label: "Đã hủy", value: statusStats.cancelled },
                   ].map((stat, idx) => (
                     <div
                       key={idx}
@@ -2935,6 +2975,13 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                     <div key={treeKey} className="space-y-2.5">
                       {/* Tree Header */}
                       {(() => {
+                        // Lọc tasks theo showCompleted state
+                        const filteredTasks = treeGroup.tasks.filter((task) => {
+                          const isCompleted =
+                            normalizeKey(task.status) === "completed";
+                          return showCompleted ? isCompleted : !isCompleted;
+                        });
+
                         const hasOverdue = treeGroup.tasks.some((task) =>
                           isTaskOverdue(task.scheduledDate, task.status)
                         );
@@ -2983,8 +3030,8 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                                     : "bg-emerald-500/30 text-emerald-200 border-emerald-400/40"
                                 } border`}
                               >
-                                {treeGroup.tasks.length}{" "}
-                                {treeGroup.tasks.length === 1
+                                {filteredTasks.length}{" "}
+                                {filteredTasks.length === 1
                                   ? "công việc"
                                   : "công việc"}
                               </Badge>
@@ -2995,93 +3042,37 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
 
                       {/* Tasks for this tree */}
                       <div className="space-y-1.5 pl-2.5 border-l border-white/20">
-                        {treeGroup.tasks.map((task) => {
-                          const overdue = isTaskOverdue(
-                            task.scheduledDate,
-                            task.status
-                          );
-                          const busyComplete = Boolean(
-                            completingMap[task.scheduleId]
-                          );
-                          const priorityMeta =
-                            TASK_PRIORITY_META[normalizeKey(task.priority)] ||
-                            TASK_PRIORITY_META.default;
-                          return (
-                            <div
+                        {treeGroup.tasks
+                          .filter((task) => {
+                            // Khi showCompleted = true (tab "Đã hoàn thành"), chỉ hiển thị tasks đã hoàn thành
+                            // Khi showCompleted = false (tab "Đang thực hiện"), chỉ hiển thị tasks chưa hoàn thành
+                            const isCompleted =
+                              normalizeKey(task.status) === "completed";
+                            return showCompleted ? isCompleted : !isCompleted;
+                          })
+                          .map((task) => (
+                            <TaskItem
                               key={task.scheduleId}
-                              className={`rounded-2xl border px-2.5 py-2.5 shadow-sm space-y-2 ${
-                                overdue
-                                  ? "border-rose-400/40 bg-rose-500/10"
-                                  : normalizeKey(task.status) === "completed"
-                                  ? "border-neutral-400/40 bg-neutral-500/10"
-                                  : "border-white/20 bg-white/10"
-                              }`}
-                            >
-                              <div className="flex items-start justify-between gap-1.5">
-                                <div>
-                                  <div className="text-[11px] font-semibold text-white">
-                                    {task.taskName}
-                                  </div>
-                                  <div className="text-[9px] text-white/60">
-                                    #{task.scheduleId}
-                                  </div>
-                                </div>
-                                <TaskStatusBadge status={task.status} />
-                              </div>
-
-                              <div className="flex flex-wrap gap-1 text-[9px]">
-                                <Badge
-                                  variant="secondary"
-                                  className="gap-1 px-2 py-0.5 bg-emerald-500/30 text-emerald-200 border-emerald-400/40"
-                                >
-                                  {taskTypeLabel(task.taskType)}
-                                </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className={`gap-1 px-2 py-0.5 border-white/20 text-white/80 ${priorityMeta.className}`}
-                                >
-                                  Ưu tiên: {priorityMeta.label}
-                                </Badge>
-                                <Badge
-                                  variant="outline"
-                                  className={`gap-1 px-2 py-0.5 ${
-                                    overdue
-                                      ? "border-rose-400/60 text-rose-200 bg-rose-500/20"
-                                      : "border-white/20 text-white/80"
-                                  }`}
-                                >
-                                  <Calendar className="h-3.5 w-3.5" />
-                                  {formatTaskDate(task.scheduledDate)}
-                                  {overdue && " · Quá hạn"}
-                                </Badge>
-                              </div>
-
-                              {task.description && (
-                                <p className="text-[10px] text-white/80 leading-snug">
-                                  {task.description}
-                                </p>
+                              task={task}
+                              overdue={isTaskOverdue(
+                                task.scheduledDate,
+                                task.status
                               )}
-
-                              <div className="flex flex-wrap items-center gap-1 border-t border-dashed border-white/20 pt-1.5">
-                                <Button
-                                  size="sm"
-                                  className="h-6 px-2.5 gap-1 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white"
-                                  onClick={() => handleOpenCompleteDialog(task)}
-                                  disabled={
-                                    busyComplete || task.status === "Completed"
-                                  }
-                                >
-                                  {busyComplete ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                  ) : (
-                                    <CheckCircle2 className="h-4 w-4" />
-                                  )}
-                                  Hoàn thành
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        })}
+                              completedLate={isTaskCompletedLate(
+                                task.scheduledDate,
+                                task.completedAt,
+                                task.status
+                              )}
+                              busyComplete={Boolean(
+                                completingMap[task.scheduleId]
+                              )}
+                              onComplete={() => handleOpenCompleteDialog(task)}
+                              onEdit={() => handleOpenEditDialog(task)}
+                              onDelete={() => handleOpenDeleteDialog(task)}
+                              isEditing={Boolean(editingMap[task.scheduleId])}
+                              isDeleting={Boolean(deletingMap[task.scheduleId])}
+                            />
+                          ))}
                       </div>
 
                       {/* Separator between trees */}
@@ -3092,6 +3083,199 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                   );
                 })}
             </div>
+
+            {/* Edit Task Dialog */}
+            {editTaskDialog.open && (
+              <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+                <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+                  <div className="px-6 py-4 border-b flex items-center justify-between">
+                    <div className="text-lg font-semibold text-black">
+                      Sửa công việc
+                    </div>
+                    <button
+                      className="h-8 w-8 grid place-items-center rounded-lg hover:bg-neutral-50"
+                      onClick={handleCloseEditDialog}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Tên công việc *
+                      </label>
+                      <Input
+                        value={editTaskDialog.taskName}
+                        onChange={(e) =>
+                          setEditTaskDialog((prev) => ({
+                            ...prev,
+                            taskName: e.target.value,
+                          }))
+                        }
+                        placeholder="Nhập tên công việc"
+                        className="w-full text-black"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Mô tả
+                      </label>
+                      <Textarea
+                        value={editTaskDialog.description}
+                        onChange={(e) =>
+                          setEditTaskDialog((prev) => ({
+                            ...prev,
+                            description: e.target.value,
+                          }))
+                        }
+                        placeholder="Nhập mô tả công việc"
+                        rows={3}
+                        className="w-full text-black"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">
+                          Ngày thực hiện
+                        </label>
+                        <Input
+                          type="date"
+                          value={editTaskDialog.scheduledDate}
+                          onChange={(e) =>
+                            setEditTaskDialog((prev) => ({
+                              ...prev,
+                              scheduledDate: e.target.value,
+                            }))
+                          }
+                          className="w-full text-black"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-neutral-700 mb-1">
+                          Ưu tiên
+                        </label>
+                        <select
+                          value={editTaskDialog.priority}
+                          onChange={(e) =>
+                            setEditTaskDialog((prev) => ({
+                              ...prev,
+                              priority: e.target.value,
+                            }))
+                          }
+                          className="w-full h-10 rounded-md border border-neutral-300 px-3 text-black bg-white"
+                        >
+                          <option value="Low">Thấp</option>
+                          <option value="Normal">Bình thường</option>
+                          <option value="High">Cao</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {taskError && (
+                      <p className="text-sm text-rose-600">{taskError}</p>
+                    )}
+
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={handleCloseEditDialog}
+                        disabled={Boolean(
+                          editingMap[editTaskDialog.task?.scheduleId]
+                        )}
+                        className="border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+                      >
+                        Hủy
+                      </Button>
+                      <Button
+                        onClick={handleSaveEdit}
+                        disabled={
+                          !editTaskDialog.taskName.trim() ||
+                          Boolean(editingMap[editTaskDialog.task?.scheduleId])
+                        }
+                        className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      >
+                        {editingMap[editTaskDialog.task?.scheduleId] ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Edit3 className="h-4 w-4" />
+                        )}
+                        Lưu
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Delete Confirmation Dialog */}
+            {deleteConfirmDialog.open && (
+              <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+                <div className="w-full max-w-md rounded-2xl bg-white shadow-xl">
+                  <div className="px-6 py-4 border-b flex items-center justify-between">
+                    <div className="text-lg font-semibold text-black">
+                      Xác nhận xóa
+                    </div>
+                    <button
+                      className="h-8 w-8 grid place-items-center rounded-lg hover:bg-neutral-50"
+                      onClick={handleCloseDeleteDialog}
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <div className="p-6 space-y-4">
+                    <p className="text-sm text-neutral-700">
+                      Bạn có chắc chắn muốn xóa công việc này không?
+                    </p>
+                    {deleteConfirmDialog.task && (
+                      <div className="rounded-xl border p-3 bg-neutral-50">
+                        <div className="font-medium text-black">
+                          {deleteConfirmDialog.task.taskName}
+                        </div>
+                        <div className="text-xs text-neutral-500 mt-1">
+                          #{deleteConfirmDialog.task.scheduleId}
+                        </div>
+                      </div>
+                    )}
+
+                    {taskError && (
+                      <p className="text-sm text-rose-600">{taskError}</p>
+                    )}
+
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={handleCloseDeleteDialog}
+                        disabled={Boolean(
+                          deletingMap[deleteConfirmDialog.task?.scheduleId]
+                        )}
+                        className="border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+                      >
+                        Hủy
+                      </Button>
+                      <Button
+                        onClick={handleConfirmDelete}
+                        disabled={Boolean(
+                          deletingMap[deleteConfirmDialog.task?.scheduleId]
+                        )}
+                        className="gap-2 bg-rose-600 hover:bg-rose-700 text-white"
+                      >
+                        {deletingMap[deleteConfirmDialog.task?.scheduleId] ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-4 w-4" />
+                        )}
+                        Xóa
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Completion Confirmation Dialog */}
             {completeConfirmDialog.open && (
@@ -3217,6 +3401,290 @@ function TaskStatusBadge({ status }) {
       {meta.label}
     </span>
   );
+}
+
+/* =========================================================================
+   TaskItem component - separate component to manage hooks properly
+   ========================================================================= */
+function TaskItem({
+  task,
+  overdue,
+  completedLate,
+  busyComplete,
+  onComplete,
+  onEdit,
+  onDelete,
+  isEditing,
+  isDeleting,
+}) {
+  const [hover, setHover] = useState(false);
+  const containerRef = useRef(null);
+
+  const priorityMeta =
+    TASK_PRIORITY_META[normalizeKey(task.priority)] ||
+    TASK_PRIORITY_META.default;
+
+  const titleTruncated = truncateText(task.taskName, 30);
+
+  // Parse description thành các dòng
+  const descLines = parseDescriptionToLines(task.description);
+  const maxDisplayLines = 4; // Hiển thị tối đa 4 dòng trong khung công việc
+  const displayLines = descLines.slice(0, maxDisplayLines);
+  const hasMoreLines = descLines.length > maxDisplayLines;
+
+  const showHover = hover;
+
+  return (
+    <>
+      <div
+        ref={containerRef}
+        className={`rounded-2xl border px-2.5 py-2.5 shadow-sm space-y-2 ${
+          overdue
+            ? "border-rose-400/40 bg-rose-500/10"
+            : normalizeKey(task.status) === "completed"
+            ? "border-neutral-400/40 bg-neutral-500/10"
+            : "border-white/20 bg-white/10"
+        }`}
+        onMouseEnter={() => setHover(true)}
+        onMouseLeave={() => setHover(false)}
+      >
+        <div className="flex items-start justify-between gap-1.5">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-base font-semibold text-white truncate max-w-full">
+                {titleTruncated}
+              </div>
+              <div className="h-4 w-px bg-white/30" />
+              <div className="flex flex-wrap items-center gap-1 text-xs">
+                <Badge
+                  variant="secondary"
+                  className="gap-1 px-2 py-0.5 bg-emerald-500/30 text-emerald-200 border-emerald-400/40 text-xs"
+                >
+                  {taskTypeLabel(task.taskType)}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={`gap-1 px-2 py-0.5 border-white/20 text-white/80 text-xs ${priorityMeta.className}`}
+                >
+                  Ưu tiên: {priorityMeta.label}
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className={`gap-1 px-2 py-0.5 text-xs ${
+                    overdue
+                      ? "border-rose-400/60 text-rose-200 bg-rose-500/20"
+                      : "border-white/20 text-white/80"
+                  }`}
+                >
+                  <Calendar className="h-3.5 w-3.5" />
+                  {formatTaskDate(task.scheduledDate)}
+                  {overdue && " · Quá hạn"}
+                </Badge>
+                {completedLate && (
+                  <Badge
+                    variant="secondary"
+                    className="gap-1 px-2 py-0.5 bg-orange-500/30 text-orange-200 border-orange-400/40 text-xs"
+                  >
+                    Hoàn thành muộn
+                  </Badge>
+                )}
+              </div>
+            </div>
+            <div className="text-xs text-white/60 mt-1">#{task.scheduleId}</div>
+          </div>
+          <TaskStatusBadge status={task.status} />
+        </div>
+
+        {task.description && descLines.length > 0 && (
+          <div className="text-sm text-white/80 leading-relaxed">
+            <ol className="ml-4 list-decimal space-y-0.5">
+              {displayLines.map((line, idx) => {
+                // Loại bỏ số thứ tự ở đầu dòng (nếu có) vì <ol> sẽ tự động đánh số
+                const cleanLine = line.replace(/^\s*\d+\.\s*/, "").trim();
+                return (
+                  <li key={idx} className="break-words text-xs">
+                    {cleanLine}
+                  </li>
+                );
+              })}
+            </ol>
+            {hasMoreLines && (
+              <div className="text-xs text-white/60 mt-1 italic">
+                +{descLines.length - maxDisplayLines} mục nữa (xem popup để xem
+                chi tiết)
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="flex flex-wrap items-center gap-1 border-t border-dashed border-white/20 pt-1.5">
+          <Button
+            size="sm"
+            className="h-6 px-2.5 gap-1 text-[10px] bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={onComplete}
+            disabled={busyComplete || task.status === "Completed"}
+          >
+            {busyComplete ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircle2 className="h-4 w-4" />
+            )}
+            Hoàn thành
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2.5 gap-1 text-[10px] border-blue-400/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400"
+            onClick={onEdit}
+            disabled={isEditing}
+          >
+            {isEditing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Edit3 className="h-4 w-4" />
+            )}
+            Sửa
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2.5 gap-1 text-[10px] border-rose-400/50 text-rose-200 hover:bg-rose-500/20 hover:border-rose-400"
+            onClick={onDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2 className="h-4 w-4" />
+            )}
+            Xóa
+          </Button>
+        </div>
+      </div>
+
+      {/* HoverCard hiển thị khi hover vào khung công việc */}
+      {showHover && (
+        <HoverCard
+          anchorRef={containerRef}
+          open={hover}
+          side="left"
+          width={360}
+        >
+          <div className="space-y-3">
+            <div>
+              <div className="text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">
+                Tiêu đề công việc
+              </div>
+              <div className="text-sm font-semibold break-words text-gray-900">
+                {task.taskName}
+              </div>
+            </div>
+            {task.description && (
+              <div>
+                <div className="text-xs font-semibold mb-1 text-gray-500 uppercase tracking-wide">
+                  Mô tả công việc
+                </div>
+                {(() => {
+                  const lines = parseDescriptionToLines(task.description);
+
+                  if (lines.length === 0) return null;
+
+                  // Luôn hiển thị dưới dạng danh sách có đánh số (giống TreeDetail.jsx)
+                  return (
+                    <ol className="ml-5 list-decimal space-y-1 text-sm text-gray-700">
+                      {lines.map((line, idx) => {
+                        // Loại bỏ số thứ tự ở đầu dòng (nếu có) vì <ol> sẽ tự động đánh số
+                        const cleanLine = line
+                          .replace(/^\s*\d+\.\s*/, "")
+                          .trim();
+                        return (
+                          <li key={idx} className="break-words">
+                            {cleanLine}
+                          </li>
+                        );
+                      })}
+                    </ol>
+                  );
+                })()}
+              </div>
+            )}
+          </div>
+        </HoverCard>
+      )}
+    </>
+  );
+}
+
+/* =========================================================================
+   HoverCard component for showing full content on hover
+   ========================================================================= */
+function HoverCard({
+  anchorRef,
+  open,
+  side = "right",
+  offset = 12,
+  width = 320,
+  children,
+}) {
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+
+  useEffect(() => {
+    if (!open || !anchorRef?.current) return;
+    const place = () => {
+      const r = anchorRef.current.getBoundingClientRect();
+      const vw = window.innerWidth;
+      let left = side === "right" ? r.right + offset : r.left - width - offset;
+      let top = r.top;
+
+      if (left + width > vw - 8) left = vw - width - 8;
+      if (left < 8) left = 8;
+
+      setPos({ top, left });
+    };
+    place();
+    window.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      window.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [open, anchorRef, side, offset, width]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <div
+      className="fixed z-[1000] pointer-events-none"
+      style={{ top: pos.top, left: pos.left, width }}
+    >
+      <div className="rounded-2xl border bg-white shadow-xl p-3">
+        {children}
+      </div>
+    </div>,
+    document.body
+  );
+}
+
+/* =========================================================================
+   Helper function to truncate text
+   ========================================================================= */
+function truncateText(str, maxChars = 60) {
+  if (!str) return "";
+  if (str.length <= maxChars) return str;
+  return str.slice(0, maxChars) + "…";
+}
+
+/* =========================================================================
+   Helper function to parse description into array of lines
+   ========================================================================= */
+function parseDescriptionToLines(description) {
+  if (!description) return [];
+  const desc = String(description).trim();
+  if (!desc) return [];
+
+  // Tách thành các dòng và filter các dòng rỗng
+  const lines = desc.split(/\r?\n/).filter((line) => line.trim());
+  return lines;
 }
 
 //Sau này nối với API thời tiết như thế nào?

@@ -102,6 +102,11 @@ export default function NotificationManagement() {
   const [isUserSelectDialogOpen, setIsUserSelectDialogOpen] = useState(false);
   const [selectedBroadcast, setSelectedBroadcast] = useState(null);
 
+  // Recipients state
+  const [recipients, setRecipients] = useState([]);
+  const [recipientsLoading, setRecipientsLoading] = useState(false);
+  const [showRecipients, setShowRecipients] = useState(false);
+
   // Recipient mode: "all" or "selected"
   const [recipientMode, setRecipientMode] = useState("all");
   const [selectedUserIds, setSelectedUserIds] = useState([]);
@@ -358,10 +363,40 @@ export default function NotificationManagement() {
     setIsCreateDialogOpen(true);
   };
 
+  // Fetch recipients for a broadcast notification
+  const fetchRecipients = async (groupId) => {
+    try {
+      setRecipientsLoading(true);
+      const response = await NotificationRepository.getBroadcastRecipients(
+        groupId
+      );
+      if (response.success) {
+        setRecipients(response.data || []);
+      } else {
+        setRecipients([]);
+      }
+    } catch (err) {
+      console.error("Error fetching recipients:", err);
+      setRecipients([]);
+    } finally {
+      setRecipientsLoading(false);
+    }
+  };
+
   // Open view dialog
   const openViewDialog = (broadcast) => {
     setSelectedBroadcast(broadcast);
+    setRecipients([]);
+    setShowRecipients(false);
     setIsViewDialogOpen(true);
+  };
+
+  // Toggle recipients list visibility and fetch if needed
+  const toggleRecipients = async () => {
+    if (!showRecipients && recipients.length === 0 && selectedBroadcast) {
+      await fetchRecipients(selectedBroadcast.groupId);
+    }
+    setShowRecipients(!showRecipients);
   };
 
   // Handle create
@@ -529,445 +564,462 @@ export default function NotificationManagement() {
       />
       <div className="relative z-10 min-h-screen">
         <AdminLayout>
-          <div className="space-y-8">
-            {/* Header */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
-                  <ShieldCheck className="h-4 w-4" />
-                  Quản trị hệ thống
-                </p>
-                <h1 className="mt-2 text-3xl font-semibold text-white">
-                  Quản lý thông báo
-                </h1>
-                <p className="text-emerald-100/80">
-                  Tạo và quản lý thông báo gửi đến tất cả người dùng trong hệ
-                  thống.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  variant="outline"
-                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                  onClick={fetchBroadcasts}
-                  disabled={loading}
-                >
-                  <RefreshCcw
-                    className={cn("mr-2 h-4 w-4", loading && "animate-spin")}
-                  />
-                  {loading ? "Đang tải..." : "Làm mới"}
-                </Button>
-                <Button
-                  className="bg-emerald-600 text-white hover:bg-emerald-700"
-                  onClick={openCreateDialog}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Tạo thông báo
-                </Button>
-              </div>
-            </div>
-
-            {error && (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800 shadow-sm">
-                {error}
-              </div>
-            )}
-
-            {actionNotice && (
-              <div
-                className={cn(
-                  "rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm",
-                  actionNotice.tone === "error"
-                    ? "border-rose-200 bg-rose-50 text-rose-800"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-800"
-                )}
-              >
-                {actionNotice.message}
-              </div>
-            )}
-
-            {/* Filters Section */}
-            <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl text-slate-900 flex items-center gap-2">
-                    <Filter className="h-5 w-5 text-emerald-600" />
-                    Bộ lọc
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    {hasActiveFilters && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={resetFilters}
-                        className="text-slate-600 hover:text-red-600"
-                      >
-                        <X className="h-4 w-4 mr-1" />
-                        Xóa bộ lọc
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowFilters(!showFilters)}
-                      className="text-slate-600"
-                    >
-                      {showFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
-                    </Button>
-                  </div>
+          <>
+            <div className="space-y-8">
+              {/* Header */}
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div>
+                  <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
+                    <ShieldCheck className="h-4 w-4" />
+                    Quản trị hệ thống
+                  </p>
+                  <h1 className="mt-2 text-3xl font-semibold text-white">
+                    Quản lý thông báo
+                  </h1>
+                  <p className="text-emerald-100/80">
+                    Tạo và quản lý thông báo gửi đến tất cả người dùng trong hệ
+                    thống.
+                  </p>
                 </div>
-              </CardHeader>
-              {showFilters && (
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Search */}
-                    <div className="lg:col-span-3">
-                      <label className="text-sm font-medium mb-2 block">
-                        Tìm kiếm
-                      </label>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <Input
-                          placeholder="Tìm kiếm theo tiêu đề hoặc nội dung..."
-                          value={filters.search}
-                          onChange={(e) =>
-                            setFilters({ ...filters, search: e.target.value })
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button
+                    variant="outline"
+                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    onClick={fetchBroadcasts}
+                    disabled={loading}
+                  >
+                    <RefreshCcw
+                      className={cn("mr-2 h-4 w-4", loading && "animate-spin")}
+                    />
+                    {loading ? "Đang tải..." : "Làm mới"}
+                  </Button>
+                  <Button
+                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    onClick={openCreateDialog}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Tạo thông báo
+                  </Button>
+                </div>
+              </div>
+
+              {error && (
+                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-800 shadow-sm">
+                  {error}
+                </div>
+              )}
+
+              {actionNotice && (
+                <div
+                  className={cn(
+                    "rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm",
+                    actionNotice.tone === "error"
+                      ? "border-rose-200 bg-rose-50 text-rose-800"
+                      : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                  )}
+                >
+                  {actionNotice.message}
+                </div>
+              )}
+
+              {/* Filters Section */}
+              <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-xl text-slate-900 flex items-center gap-2">
+                      <Filter className="h-5 w-5 text-emerald-600" />
+                      Bộ lọc
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      {hasActiveFilters && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={resetFilters}
+                          className="text-slate-600 hover:text-red-600"
+                        >
+                          <X className="h-4 w-4 mr-1" />
+                          Xóa bộ lọc
+                        </Button>
+                      )}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="text-slate-600"
+                      >
+                        {showFilters ? "Ẩn bộ lọc" : "Hiện bộ lọc"}
+                      </Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                {showFilters && (
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Search */}
+                      <div className="lg:col-span-3">
+                        <label className="text-sm font-medium mb-2 block">
+                          Tìm kiếm
+                        </label>
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                          <Input
+                            placeholder="Tìm kiếm theo tiêu đề hoặc nội dung..."
+                            value={filters.search}
+                            onChange={(e) =>
+                              setFilters({ ...filters, search: e.target.value })
+                            }
+                            className="pl-10"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Notification Type */}
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">
+                          Loại thông báo
+                        </label>
+                        <Select
+                          value={filters.notificationType || "all"}
+                          onValueChange={(value) =>
+                            setFilters({
+                              ...filters,
+                              notificationType: value === "all" ? "" : value,
+                            })
                           }
-                          className="pl-10"
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Tất cả loại" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tất cả loại</SelectItem>
+                            {NOTIFICATION_TYPE_OPTIONS.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Priority */}
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">
+                          Độ ưu tiên
+                        </label>
+                        <Select
+                          value={filters.priority || "all"}
+                          onValueChange={(value) =>
+                            setFilters({
+                              ...filters,
+                              priority: value === "all" ? "" : value,
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Tất cả độ ưu tiên" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">
+                              Tất cả độ ưu tiên
+                            </SelectItem>
+                            {PRIORITY_OPTIONS.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Category */}
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">
+                          Danh mục
+                        </label>
+                        <Select
+                          value={filters.category || "all"}
+                          onValueChange={(value) =>
+                            setFilters({
+                              ...filters,
+                              category: value === "all" ? "" : value,
+                            })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Tất cả danh mục" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">Tất cả danh mục</SelectItem>
+                            {CATEGORY_OPTIONS.map((option) => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Date From */}
+                      <div>
+                        <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Từ ngày
+                        </label>
+                        <Input
+                          type="date"
+                          value={filters.dateFrom}
+                          onChange={(e) =>
+                            setFilters({ ...filters, dateFrom: e.target.value })
+                          }
+                        />
+                      </div>
+
+                      {/* Date To */}
+                      <div>
+                        <label className="text-sm font-medium mb-2 block flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          Đến ngày
+                        </label>
+                        <Input
+                          type="date"
+                          value={filters.dateTo}
+                          onChange={(e) =>
+                            setFilters({ ...filters, dateTo: e.target.value })
+                          }
+                          min={filters.dateFrom || undefined}
                         />
                       </div>
                     </div>
 
-                    {/* Notification Type */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Loại thông báo
-                      </label>
-                      <Select
-                        value={filters.notificationType || "all"}
-                        onValueChange={(value) =>
-                          setFilters({
-                            ...filters,
-                            notificationType: value === "all" ? "" : value,
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Tất cả loại" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Tất cả loại</SelectItem>
-                          {NOTIFICATION_TYPE_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Priority */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Độ ưu tiên
-                      </label>
-                      <Select
-                        value={filters.priority || "all"}
-                        onValueChange={(value) =>
-                          setFilters({
-                            ...filters,
-                            priority: value === "all" ? "" : value,
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Tất cả độ ưu tiên" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Tất cả độ ưu tiên</SelectItem>
-                          {PRIORITY_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Category */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">
-                        Danh mục
-                      </label>
-                      <Select
-                        value={filters.category || "all"}
-                        onValueChange={(value) =>
-                          setFilters({
-                            ...filters,
-                            category: value === "all" ? "" : value,
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Tất cả danh mục" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Tất cả danh mục</SelectItem>
-                          {CATEGORY_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Date From */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Từ ngày
-                      </label>
-                      <Input
-                        type="date"
-                        value={filters.dateFrom}
-                        onChange={(e) =>
-                          setFilters({ ...filters, dateFrom: e.target.value })
-                        }
-                      />
-                    </div>
-
-                    {/* Date To */}
-                    <div>
-                      <label className="text-sm font-medium mb-2 block flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        Đến ngày
-                      </label>
-                      <Input
-                        type="date"
-                        value={filters.dateTo}
-                        onChange={(e) =>
-                          setFilters({ ...filters, dateTo: e.target.value })
-                        }
-                        min={filters.dateFrom || undefined}
-                      />
-                    </div>
-                  </div>
-
-                  {hasActiveFilters && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="text-sm text-slate-600 font-medium">
-                        Đang lọc:
-                      </span>
-                      {filters.search && (
-                        <Badge variant="secondary" className="gap-1">
-                          Tìm kiếm: "{filters.search}"
-                          <button
-                            onClick={() =>
-                              setFilters({ ...filters, search: "" })
+                    {hasActiveFilters && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <span className="text-sm text-slate-600 font-medium">
+                          Đang lọc:
+                        </span>
+                        {filters.search && (
+                          <Badge variant="secondary" className="gap-1">
+                            Tìm kiếm: "{filters.search}"
+                            <button
+                              onClick={() =>
+                                setFilters({ ...filters, search: "" })
+                              }
+                              className="ml-1 hover:text-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        )}
+                        {filters.notificationType && (
+                          <Badge variant="secondary" className="gap-1">
+                            Loại:{" "}
+                            {getAdminNotificationTypeLabel(
+                              filters.notificationType
+                            )}
+                            <button
+                              onClick={() =>
+                                setFilters({ ...filters, notificationType: "" })
+                              }
+                              className="ml-1 hover:text-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        )}
+                        {filters.priority && (
+                          <Badge variant="secondary" className="gap-1">
+                            Ưu tiên:{" "}
+                            {
+                              PRIORITY_OPTIONS.find(
+                                (opt) => opt.value === filters.priority
+                              )?.label
                             }
-                            className="ml-1 hover:text-red-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      )}
-                      {filters.notificationType && (
-                        <Badge variant="secondary" className="gap-1">
-                          Loại:{" "}
-                          {getAdminNotificationTypeLabel(
-                            filters.notificationType
-                          )}
-                          <button
-                            onClick={() =>
-                              setFilters({ ...filters, notificationType: "" })
+                            <button
+                              onClick={() =>
+                                setFilters({ ...filters, priority: "" })
+                              }
+                              className="ml-1 hover:text-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        )}
+                        {filters.category && (
+                          <Badge variant="secondary" className="gap-1">
+                            Danh mục:{" "}
+                            {
+                              CATEGORY_OPTIONS.find(
+                                (opt) => opt.value === filters.category
+                              )?.label
                             }
-                            className="ml-1 hover:text-red-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      )}
-                      {filters.priority && (
-                        <Badge variant="secondary" className="gap-1">
-                          Ưu tiên:{" "}
-                          {
-                            PRIORITY_OPTIONS.find(
-                              (opt) => opt.value === filters.priority
-                            )?.label
-                          }
-                          <button
-                            onClick={() =>
-                              setFilters({ ...filters, priority: "" })
-                            }
-                            className="ml-1 hover:text-red-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      )}
-                      {filters.category && (
-                        <Badge variant="secondary" className="gap-1">
-                          Danh mục:{" "}
-                          {
-                            CATEGORY_OPTIONS.find(
-                              (opt) => opt.value === filters.category
-                            )?.label
-                          }
-                          <button
-                            onClick={() =>
-                              setFilters({ ...filters, category: "" })
-                            }
-                            className="ml-1 hover:text-red-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      )}
-                      {filters.dateFrom && (
-                        <Badge variant="secondary" className="gap-1">
-                          Từ:{" "}
-                          {new Date(filters.dateFrom).toLocaleDateString(
-                            "vi-VN"
-                          )}
-                          <button
-                            onClick={() =>
-                              setFilters({ ...filters, dateFrom: "" })
-                            }
-                            className="ml-1 hover:text-red-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      )}
-                      {filters.dateTo && (
-                        <Badge variant="secondary" className="gap-1">
-                          Đến:{" "}
-                          {new Date(filters.dateTo).toLocaleDateString("vi-VN")}
-                          <button
-                            onClick={() =>
-                              setFilters({ ...filters, dateTo: "" })
-                            }
-                            className="ml-1 hover:text-red-600"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </Badge>
-                      )}
-                    </div>
-                  )}
-                </CardContent>
-              )}
-            </Card>
-
-            {/* Broadcasts Table */}
-            <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-              <CardHeader>
-                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                  <CardTitle className="text-2xl text-slate-900">
-                    Danh sách thông báo đã gửi
-                  </CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Bell className="h-4 w-4 text-emerald-600" />
-                    {hasActiveFilters ? (
-                      <>
-                        {filteredBroadcasts.length} / {broadcasts.length} thông
-                        báo
-                      </>
-                    ) : (
-                      <>{broadcasts.length} thông báo</>
+                            <button
+                              onClick={() =>
+                                setFilters({ ...filters, category: "" })
+                              }
+                              className="ml-1 hover:text-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        )}
+                        {filters.dateFrom && (
+                          <Badge variant="secondary" className="gap-1">
+                            Từ:{" "}
+                            {new Date(filters.dateFrom).toLocaleDateString(
+                              "vi-VN"
+                            )}
+                            <button
+                              onClick={() =>
+                                setFilters({ ...filters, dateFrom: "" })
+                              }
+                              className="ml-1 hover:text-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        )}
+                        {filters.dateTo && (
+                          <Badge variant="secondary" className="gap-1">
+                            Đến:{" "}
+                            {new Date(filters.dateTo).toLocaleDateString(
+                              "vi-VN"
+                            )}
+                            <button
+                              onClick={() =>
+                                setFilters({ ...filters, dateTo: "" })
+                              }
+                              className="ml-1 hover:text-red-600"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        )}
+                      </div>
                     )}
+                  </CardContent>
+                )}
+              </Card>
+
+              {/* Broadcasts Table */}
+              <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
+                <CardHeader>
+                  <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+                    <CardTitle className="text-2xl text-slate-900">
+                      Danh sách thông báo đã gửi
+                    </CardTitle>
+                    <div className="flex items-center gap-2 text-sm text-slate-500">
+                      <Bell className="h-4 w-4 text-emerald-600" />
+                      {hasActiveFilters ? (
+                        <>
+                          {filteredBroadcasts.length} / {broadcasts.length}{" "}
+                          thông báo
+                        </>
+                      ) : (
+                        <>{broadcasts.length} thông báo</>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {loading && broadcasts.length === 0 ? (
-                  <div className="flex items-center justify-center p-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-                    <span className="ml-3 text-slate-600">
-                      Đang tải dữ liệu...
-                    </span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
-                      <Table>
-                        <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
-                          <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
-                            <TableHead>Tiêu đề</TableHead>
-                            <TableHead>Ngày gửi</TableHead>
-                            <TableHead>Số người nhận</TableHead>
-                            <TableHead className="text-right">
-                              Thao tác
-                            </TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {filteredBroadcasts.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={4}
-                                className="py-8 text-center text-slate-500"
-                              >
-                                {hasActiveFilters ? (
-                                  <>
-                                    Không tìm thấy thông báo nào phù hợp với bộ
-                                    lọc.
-                                    <br />
-                                    <Button
-                                      variant="link"
-                                      onClick={resetFilters}
-                                      className="mt-2"
-                                    >
-                                      Xóa bộ lọc
-                                    </Button>
-                                  </>
-                                ) : (
-                                  "Chưa có thông báo nào được gửi. Tạo thông báo mới để bắt đầu."
-                                )}
-                              </TableCell>
+                </CardHeader>
+                <CardContent>
+                  {loading && broadcasts.length === 0 ? (
+                    <div className="flex items-center justify-center p-12">
+                      <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
+                      <span className="ml-3 text-slate-600">
+                        Đang tải dữ liệu...
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                        <Table>
+                          <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
+                            <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
+                              <TableHead>Tiêu đề</TableHead>
+                              <TableHead>Ngày gửi</TableHead>
+                              <TableHead>Số người nhận</TableHead>
+                              <TableHead className="text-right">
+                                Thao tác
+                              </TableHead>
                             </TableRow>
-                          ) : (
-                            filteredBroadcasts.map((broadcast) => (
-                              <TableRow
-                                key={broadcast.groupId}
-                                className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
-                              >
-                                <TableCell className="font-medium text-slate-800">
-                                  {broadcast.title}
-                                </TableCell>
-                                <TableCell className="text-slate-600">
-                                  {formatDate(broadcast.sentAt)}
-                                </TableCell>
-                                <TableCell>
-                                  <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                    {broadcast.recipientCount} người
-                                  </Badge>
-                                </TableCell>
-                                <TableCell className="text-right">
-                                  <div className="flex justify-end gap-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => openViewDialog(broadcast)}
-                                      className="text-slate-600 hover:text-emerald-600"
-                                      title="Xem chi tiết"
-                                    >
-                                      <Eye className="h-4 w-4" />
-                                    </Button>
-                                  </div>
+                          </TableHeader>
+                          <TableBody>
+                            {filteredBroadcasts.length === 0 ? (
+                              <TableRow>
+                                <TableCell
+                                  colSpan={4}
+                                  className="py-8 text-center text-slate-500"
+                                >
+                                  {hasActiveFilters ? (
+                                    <>
+                                      Không tìm thấy thông báo nào phù hợp với
+                                      bộ lọc.
+                                      <br />
+                                      <Button
+                                        variant="link"
+                                        onClick={resetFilters}
+                                        className="mt-2"
+                                      >
+                                        Xóa bộ lọc
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    "Chưa có thông báo nào được gửi. Tạo thông báo mới để bắt đầu."
+                                  )}
                                 </TableCell>
                               </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                            ) : (
+                              filteredBroadcasts.map((broadcast) => (
+                                <TableRow
+                                  key={broadcast.groupId}
+                                  className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
+                                >
+                                  <TableCell className="font-medium text-slate-800">
+                                    {broadcast.title}
+                                  </TableCell>
+                                  <TableCell className="text-slate-600">
+                                    {formatDate(broadcast.sentAt)}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                      {broadcast.recipientCount} người
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex justify-end gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          openViewDialog(broadcast)
+                                        }
+                                        className="text-slate-600 hover:text-emerald-600"
+                                        title="Xem chi tiết"
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </>
         </AdminLayout>
       </div>
 
@@ -1468,11 +1520,82 @@ export default function NotificationManagement() {
                 <label className="text-sm font-medium text-slate-500">
                   Số người nhận
                 </label>
-                <p className="mt-1">
+                <div className="mt-1 flex items-center gap-2">
                   <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-100">
                     {selectedBroadcast.recipientCount} người
                   </Badge>
-                </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleRecipients}
+                    className="text-xs"
+                  >
+                    {showRecipients ? "Ẩn danh sách" : "Xem danh sách"}
+                    <Users className="ml-1 h-3 w-3" />
+                  </Button>
+                </div>
+
+                {/* Recipients List */}
+                {showRecipients && (
+                  <div className="mt-3 border rounded-lg overflow-hidden">
+                    {recipientsLoading ? (
+                      <div className="flex items-center justify-center p-4">
+                        <Loader2 className="h-5 w-5 animate-spin text-emerald-600" />
+                        <span className="ml-2 text-sm text-slate-600">
+                          Đang tải...
+                        </span>
+                      </div>
+                    ) : recipients.length === 0 ? (
+                      <div className="p-4 text-center text-sm text-slate-500">
+                        Không tìm thấy người nhận
+                      </div>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto">
+                        <Table>
+                          <TableHeader className="sticky top-0 bg-slate-50">
+                            <TableRow className="text-xs">
+                              <TableHead className="py-2">Họ tên</TableHead>
+                              <TableHead className="py-2">Email</TableHead>
+                              <TableHead className="py-2">Trạng thái</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {recipients.map((recipient) => (
+                              <TableRow
+                                key={recipient.userId}
+                                className="text-sm"
+                              >
+                                <TableCell className="py-2 font-medium">
+                                  {recipient.fullName}
+                                </TableCell>
+                                <TableCell className="py-2 text-slate-600">
+                                  {recipient.email}
+                                </TableCell>
+                                <TableCell className="py-2">
+                                  {recipient.isRead ? (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-xs bg-emerald-50 text-emerald-700"
+                                    >
+                                      Đã đọc
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
+                                      Chưa đọc
+                                    </Badge>
+                                  )}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}

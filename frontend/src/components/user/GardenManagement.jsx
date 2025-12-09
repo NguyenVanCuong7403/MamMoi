@@ -15,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Slider } from "@/components/ui/slider";
 import { useNavigate } from "react-router-dom";
 import GardenRepository from "../../API/repositories/GardenRepository";
 import GardenSoilRepository from "../../API/repositories/GardenSoilRepository";
@@ -158,8 +159,26 @@ function GardenTreeCount({ g }) {
 function normalizeImageUrl(raw = "") {
   if (!raw) return "";
   let u = String(raw).trim();
-  if (u.startsWith("http://")) u = "https://" + u.slice(7);
 
+  // Xử lý relative URLs (bắt đầu với /)
+  if (u.startsWith("/") && !u.startsWith("//")) {
+    const API_BASE = import.meta.env.VITE_API_BASE || "https://localhost:7237";
+    // Loại bỏ trailing slash từ API_BASE nếu có
+    const baseUrl = API_BASE.replace(/\/$/, "");
+    u = `${baseUrl}${u}`;
+  }
+
+  // Xử lý protocol-relative URLs (bắt đầu với //)
+  if (u.startsWith("//")) {
+    u = `https:${u}`;
+  }
+
+  // Chỉ chuyển http sang https nếu không phải localhost (để tránh SSL issues trong development)
+  if (u.startsWith("http://") && !u.includes("localhost")) {
+    u = "https://" + u.slice(7);
+  }
+
+  // Xử lý Google Drive URLs
   let m = u.match(/drive\.google\.com\/file\/d\/([^/]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
   m = u.match(/drive\.google\.com\/open\?id=([^&]+)/);
@@ -167,6 +186,7 @@ function normalizeImageUrl(raw = "") {
   m = u.match(/drive\.google\.com\/uc\?(?:export=[^&]+&)?id=([^&]+)/);
   if (m && m[1]) u = `https://drive.google.com/uc?export=view&id=${m[1]}`;
 
+  // Xử lý Dropbox URLs
   if (/dropbox\.com/.test(u)) {
     u = u
       .replace("www.dropbox.com", "dl.dropboxusercontent.com")
@@ -196,11 +216,29 @@ function SafeImage({ src, alt = "", className = "", hideOnError = false }) {
   }, [src]);
 
   function onError() {
-    if (tried) return setFailed(true);
+    if (tried) {
+      setFailed(true);
+      return;
+    }
     setTried(true);
+
+    // Thử fallback cho Google Drive
     if (/drive\.google\.com\/uc\?/.test(url)) {
       setUrl(url.replace("export=view", "export=download"));
-    } else setFailed(true);
+      return;
+    }
+
+    // Thử fallback từ HTTPS sang HTTP cho localhost (development)
+    if (
+      url.includes("https://localhost") &&
+      !url.includes("http://localhost")
+    ) {
+      const httpUrl = url.replace("https://", "http://");
+      setUrl(httpUrl);
+      return;
+    }
+
+    setFailed(true);
   }
 
   if (!url || (failed && hideOnError)) return null;
@@ -578,10 +616,10 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
   return (
     <>
       <style>{CLICKABLE_FORM_STYLES}</style>
-      <div className="fixed inset-0 z-[1200] grid place-items-center mm-clickable-form">
+      <div className="fixed inset-0 z-[9999] grid place-items-center p-4 mm-clickable-form overflow-y-auto">
         <div className="absolute inset-0 bg-black/60" onClick={onClose} />
         <div
-          className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
+          className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl my-auto max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="mb-3 flex items-center justify-between">
@@ -1030,16 +1068,41 @@ export default function GardenManagement() {
 
   // ===== search + filter =====
   const [q, setQ] = useState("");
-  const [status, setStatus] = useState("all"); // all | active | stopped
-  const [provinceFilter, setProvinceFilter] = useState("");
+  const [provinceFilter, setProvinceFilter] = useState(""); // Filter theo tỉnh/thành
+  const [treeCountRange, setTreeCountRange] = useState([0, 100]); // [min, max] range cho số lượng cây
 
   // ===== phân trang =====
   const [page, setPage] = useState(1);
 
+  // ===== tree counts cho mỗi garden =====
+  const [gardenTreeCounts, setGardenTreeCounts] = useState({});
+
+  // Load tree counts cho tất cả gardens
+  useEffect(() => {
+    async function fetchTreeCounts() {
+      const counts = {};
+      for (const g of gardens) {
+        try {
+          const res = await GardenRepository.getGardenById(g.id);
+          if (res?.success && res?.data) {
+            counts[g.id] = res.data.statistics?.totalTrees || 0;
+          }
+        } catch (err) {
+          console.error(`Failed to fetch tree count for garden ${g.id}`, err);
+          counts[g.id] = 0;
+        }
+      }
+      setGardenTreeCounts(counts);
+    }
+    if (gardens.length > 0) {
+      fetchTreeCounts();
+    }
+  }, [gardens]);
+
   // mỗi khi thay đổi bộ lọc / search → quay lại trang 1
   useEffect(() => {
     setPage(1);
-  }, [q, status, provinceFilter]);
+  }, [q, treeCountRange, provinceFilter]);
 
   // ===== modal thêm / sửa =====
   const [openForm, setOpenForm] = useState(false);
@@ -1063,32 +1126,32 @@ export default function GardenManagement() {
           .includes(QQ);
         if (!hit) return false;
       }
-      
+
       // 2) Filter theo tỉnh/thành
       if (provinceFilter && g.province !== provinceFilter) return false;
-      
-      // 3) Filter theo trạng thái
-      if (status !== "all") {
-        const gardenStatus = g.status?.toLowerCase() || "active";
-        const isActive = gardenStatus === "active" || gardenStatus === "đang hoạt động";
-        if (status === "active" && !isActive) return false;
-        if (status === "stopped" && isActive) return false;
+
+      // 3) Filter theo số lượng cây (range)
+      const treeCount = gardenTreeCounts[g.id] || 0;
+      if (treeCount < treeCountRange[0] || treeCount > treeCountRange[1]) {
+        return false;
       }
-      
+
       return true;
     });
-  }, [gardens, q, status, provinceFilter]);
+  }, [gardens, q, treeCountRange, provinceFilter, gardenTreeCounts]);
 
   // ===== stats mini =====
   const stats = useMemo(() => {
     const total = gardens.length;
-    const active = gardens.filter((g) => {
-      const status = g.status?.toLowerCase() || "active";
-      return status === "active" || status === "đang hoạt động";
-    }).length;
-    const stopped = total - active;
-    return { total, active, stopped };
-  }, [gardens]);
+    const totalTrees = Object.values(gardenTreeCounts).reduce(
+      (sum, count) => sum + (count || 0),
+      0
+    );
+    const gardensWithTrees = Object.values(gardenTreeCounts).filter(
+      (count) => (count || 0) > 0
+    ).length;
+    return { total, totalTrees, gardensWithTrees };
+  }, [gardens, gardenTreeCounts]);
 
   // ===== phân trang từ filtered =====
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
@@ -1099,6 +1162,24 @@ export default function GardenManagement() {
   // ===== provinces cho filter combobox =====
   const { provinces = [] } =
     (typeof useVnAdmin === "function" ? useVnAdmin() : {}) || {};
+
+  // ===== Tính max tree count cho slider =====
+  const maxTreeCount = useMemo(() => {
+    const counts = Object.values(gardenTreeCounts).map((c) => c || 0);
+    if (counts.length === 0) return 100;
+    const max = Math.max(...counts);
+    return Math.max(100, Math.ceil(max / 10) * 10); // Làm tròn lên đến hàng chục gần nhất, tối thiểu 100
+  }, [gardenTreeCounts]);
+
+  // Cập nhật range khi maxTreeCount thay đổi (chỉ khi cần thiết)
+  useEffect(() => {
+    if (treeCountRange[1] > maxTreeCount) {
+      setTreeCountRange([treeCountRange[0], maxTreeCount]);
+    } else if (treeCountRange[1] === 100 && maxTreeCount > 100) {
+      // Khởi tạo lần đầu khi có dữ liệu
+      setTreeCountRange([0, maxTreeCount]);
+    }
+  }, [maxTreeCount, treeCountRange]);
 
   function openAdd() {
     setEditingIdx(-1);
@@ -1350,22 +1431,12 @@ export default function GardenManagement() {
                 />
               </div>
 
-              <div className="flex items-center gap-2 flex-wrap">
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="h-12 rounded-full border bg-white px-3 text-[clamp(13px,1.6vw,15px)] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer mm-text-wrap-safe"
-                  title="Lọc trạng thái"
-                >
-                  <option value="all">Tất cả trạng thái</option>
-                  <option value="active">Đang hoạt động</option>
-                  <option value="stopped">Dừng hoạt động</option>
-                </select>
-
+              <div className="flex flex-col xl:flex-row items-stretch xl:items-center gap-3 flex-wrap">
+                {/* Filter theo vị trí */}
                 <select
                   value={provinceFilter}
                   onChange={(e) => setProvinceFilter(e.target.value)}
-                  className="h-12 rounded-full border bg-white px-3 text-[clamp(13px,1.6vw,15px)] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer mm-text-wrap-safe"
+                  className="h-12 rounded-full border bg-white px-3 text-[clamp(13px,1.6vw,15px)] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer mm-text-wrap-safe min-w-[180px]"
                   title="Lọc theo tỉnh/thành"
                 >
                   <option value="">Tất cả tỉnh/thành</option>
@@ -1376,14 +1447,42 @@ export default function GardenManagement() {
                   ))}
                 </select>
 
-                {(q || status !== "all" || provinceFilter) ? (
+                {/* Filter theo số lượng cây - Slider */}
+                <div className="flex-1 min-w-[200px] xl:min-w-[300px] bg-white/95 rounded-full px-4 py-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-[clamp(12px,1.5vw,14px)] text-neutral-700 font-medium">
+                      Số lượng cây: {treeCountRange[0]} - {treeCountRange[1]}
+                    </label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[11px] text-neutral-500 hover:text-neutral-700"
+                      onClick={() => setTreeCountRange([0, maxTreeCount])}
+                    >
+                      Đặt lại
+                    </Button>
+                  </div>
+                  <Slider
+                    value={treeCountRange}
+                    onValueChange={setTreeCountRange}
+                    min={0}
+                    max={maxTreeCount}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+
+                {q ||
+                provinceFilter ||
+                treeCountRange[0] > 0 ||
+                treeCountRange[1] < maxTreeCount ? (
                   <Button
                     variant="outline"
                     className="h-12 rounded-full text-[clamp(12px,1.5vw,14px)] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700 mm-text-wrap-safe break-words"
                     onClick={() => {
                       setQ("");
-                      setStatus("all");
                       setProvinceFilter("");
+                      setTreeCountRange([0, maxTreeCount]);
                     }}
                   >
                     Xoá bộ lọc
@@ -1397,8 +1496,8 @@ export default function GardenManagement() {
           <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
             {[
               { label: "Tổng vườn", value: stats.total },
-              { label: "Đang hoạt động", value: stats.active },
-              { label: "Dừng hoạt động", value: stats.stopped },
+              { label: "Tổng cây", value: stats.totalTrees },
+              { label: "Vườn có cây", value: stats.gardensWithTrees },
             ].map((s, i) => (
               <div
                 key={i}
@@ -1422,7 +1521,8 @@ export default function GardenManagement() {
             {paged.map((g) => {
               const idx = gardens.findIndex((x) => x.id === g.id);
               const status = g.status?.toLowerCase() || "active";
-              const isActive = status === "active" || status === "đang hoạt động";
+              const isActive =
+                status === "active" || status === "đang hoạt động";
 
               return (
                 <Card

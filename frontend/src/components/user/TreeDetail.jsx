@@ -138,6 +138,11 @@ function buildPhaseThemeFromStages(stages = []) {
 
   // Hiển thị tất cả các giai đoạn, không giới hạn
   return sorted.map((stage, index) => {
+    const stageId =
+      stage.stageId ?? stage.stage_id ?? stage.StageId ?? index + 1;
+    const stageOrder =
+      stage.stageOrder ?? stage.stage_order ?? stage.order ?? index + 1;
+
     // Sử dụng PHASE_IDS nếu có, nếu không thì dùng custom_${index}
     const phaseId = PHASE_IDS[index] || `custom_${index}`;
     const baseTheme = DEFAULT_PHASE_THEME[phaseId] || {};
@@ -171,8 +176,11 @@ function buildPhaseThemeFromStages(stages = []) {
     const isImageIcon = isStageIconUrl(iconValue);
 
     return {
-      id: `${phaseId}-${stage.stageId ?? stage.stage_id ?? index}`,
+      id: `${phaseId}-${stageId}`,
       phaseId,
+      canonicalPhaseId: phaseId,
+      stageId,
+      stageOrder,
       label,
       subtitle,
       description:
@@ -331,12 +339,26 @@ function mapCareTaskFromApi(apiTask) {
     apiTask.date ||
     null;
 
+  // Convert details string thành array để hiển thị đúng
+  // API trả về string, nhưng UI render cần array
+  const rawDetails = apiTask.description || apiTask.details || "";
+  let details = [];
+  if (Array.isArray(rawDetails)) {
+    details = rawDetails.filter(Boolean);
+  } else if (typeof rawDetails === "string" && rawDetails.trim()) {
+    // Tách theo dòng, loại bỏ số thứ tự đầu dòng (nếu có)
+    details = rawDetails
+      .split("\n")
+      .map((line) => line.replace(/^\s*\d+\.\s*/, "").trim())
+      .filter(Boolean);
+  }
+
   return {
     id: apiTask.scheduleId ?? apiTask.id,
     type, // "water" | "fert" | "pest" | "other"
     title: apiTask.taskName || apiTask.title || "Công việc chăm sóc",
     due, // string "YYYY-MM-DD" hoặc null
-    details: apiTask.description || apiTask.details || "",
+    details, // array of strings
     priority: apiTask.priority || null,
 
     completed,
@@ -1431,7 +1453,7 @@ function Field({
       >
         {/* Icon bút */}
         <div className="w-5">
-          {editable && (
+          {editable && !disabled && (
             <div className={iconWrapperCls}>
               <Edit3 className="w-3.5 h-3.5" />
             </div>
@@ -1598,7 +1620,6 @@ function countNonEmptyLines(val) {
     .filter((l) => l.trim() !== "").length;
 }
 function handleNumberedKeyDown(e, setter) {
-  if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) return;
   const el = e.target;
   const val = el.value;
   const pos = el.selectionStart ?? 0;
@@ -1608,21 +1629,68 @@ function handleNumberedKeyDown(e, setter) {
     val.slice(lineStart, lineEnd === -1 ? val.length : lineEnd) || "";
   const lineTrim = lineText.replace(/^\s*\d+\.\s*/, "").trim();
   const hasPrefix = /^\s*\d+\.\s/.test(lineText);
+  const MAX_CHARS_PER_LINE = 120;
 
-  if (!hasPrefix && lineTrim === "") {
+  // Xử lý phím Enter - tự động xuống dòng và đánh số
+  if (e.key === "Enter") {
+    e.preventDefault();
     const next = countNonEmptyLines(val) + 1;
     const prefix = `${next}. `;
-    const newVal = val.slice(0, lineStart) + prefix + val.slice(lineStart);
-    e.preventDefault();
-    const insertPos = pos + prefix.length;
-    const withChar =
-      newVal.slice(0, insertPos) + e.key + newVal.slice(pos + prefix.length);
-    setter(withChar);
+    const newVal = val.slice(0, pos) + "\n" + prefix + val.slice(pos);
+    setter(newVal);
     setTimeout(() => {
       try {
-        el.selectionStart = el.selectionEnd = insertPos + 1;
+        const newPos = pos + 1 + prefix.length;
+        el.selectionStart = el.selectionEnd = newPos;
       } catch {}
     }, 0);
+    return;
+  }
+
+  // Kiểm tra giới hạn 120 ký tự mỗi dòng (không tính phần số)
+  if (
+    e.key.length === 1 &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    !e.altKey &&
+    e.key !== "Backspace" &&
+    e.key !== "Delete"
+  ) {
+    // Tính độ dài nội dung thực tế của dòng (không tính số và dấu chấm)
+    const currentLineLength = lineTrim.length;
+
+    // Nếu đã đạt giới hạn, ngăn không cho nhập thêm
+    if (currentLineLength >= MAX_CHARS_PER_LINE) {
+      e.preventDefault();
+      return;
+    }
+  }
+
+  // Tự động thêm số khi bắt đầu dòng mới
+  if (
+    e.key.length === 1 &&
+    !e.ctrlKey &&
+    !e.metaKey &&
+    !e.altKey &&
+    e.key !== "Backspace" &&
+    e.key !== "Delete"
+  ) {
+    if (!hasPrefix && lineTrim === "") {
+      const next = countNonEmptyLines(val) + 1;
+      const prefix = `${next}. `;
+      const newVal = val.slice(0, lineStart) + prefix + val.slice(lineStart);
+      e.preventDefault();
+      const insertPos = pos + prefix.length;
+      const withChar =
+        newVal.slice(0, insertPos) + e.key + newVal.slice(pos + prefix.length);
+
+      setter(withChar);
+      setTimeout(() => {
+        try {
+          el.selectionStart = el.selectionEnd = insertPos + 1;
+        } catch {}
+      }, 0);
+    }
   }
 }
 function lowerFirst(s = "") {
@@ -2154,24 +2222,30 @@ function PlannedRow({
 
         {/* ACTIONS */}
         <div className="shrink-0 flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="h-8 px-2"
-            onClick={() => openEditMain(p)}
-            disabled={disabled}
-            title={disabled ? "Cây đang Dừng hoạt động — chỉ xem" : undefined}
-          >
-            Sửa
-          </Button>
           {!p.completed && (
-            <Button
-              className="h-8 px-2"
-              onClick={() => openComplete(p.id)}
-              disabled={disabled}
-              title={disabled ? "Cây đang Dừng hoạt động — chỉ xem" : undefined}
-            >
-              ✓ Hoàn thành
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                className="h-8 px-2"
+                onClick={() => openEditMain(p)}
+                disabled={disabled}
+                title={
+                  disabled ? "Cây đang Dừng hoạt động — chỉ xem" : undefined
+                }
+              >
+                Sửa
+              </Button>
+              <Button
+                className="h-8 px-2"
+                onClick={() => openComplete(p.id)}
+                disabled={disabled}
+                title={
+                  disabled ? "Cây đang Dừng hoạt động — chỉ xem" : undefined
+                }
+              >
+                ✓ Hoàn thành
+              </Button>
+            </>
           )}
         </div>
       </li>
@@ -2610,7 +2684,7 @@ function AsideCards({
         </Card>
       )}
 
-      {/* Lịch sử công việc ĐÃ hoàn thành */}
+      {/* Lịch sử công việc  */}
       <Card>
         <CardHeader className="flex items-center justify-between">
           <CardTitle>
@@ -3254,6 +3328,10 @@ function mapDtoToTree(dto) {
     flowerStatus: dto.flowerStatus,
     fruitStatus: dto.fruitStatus,
 
+    // Tuổi cây (preMonths)
+    preMonths: dto.preMonths ?? dto.preNurseryAgeMonths ?? 0,
+    preNurseryAgeMonths: dto.preMonths ?? dto.preNurseryAgeMonths ?? 0,
+
     // lifecycle cho vòng tròn giai đoạn
     lifecycle: {
       currentPhaseId: phaseId,
@@ -3742,6 +3820,54 @@ export default function TreeDetail() {
     initialValues: { leaf: "", branch: "", flower: "", fruit: "" },
   });
 
+  // Modal scale factor for zoom/resize
+  const [modalScale, setModalScale] = useState(1);
+
+  // Calculate modal scale based on viewport size
+  useEffect(() => {
+    if (!dailyHealthModal.open) return;
+
+    const calculateScale = () => {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      // Base modal size: max-w-lg = 32rem = 512px
+      const baseWidth = 512;
+      const baseHeight = 550; // Reduced estimated base height
+
+      // Calculate available space (with padding)
+      const padding = 16; // Fixed 16px padding
+      const availableWidth = vw - padding * 2;
+      const availableHeight = vh - padding * 2;
+
+      // Calculate scale factors
+      const widthScale = availableWidth / baseWidth;
+      const heightScale = availableHeight / baseHeight;
+
+      // Use the smaller scale to ensure it fits both dimensions
+      let scale = Math.min(widthScale, heightScale, 1); // Never scale up, only down
+
+      // For very small viewports, ensure minimum scale (increased from 0.5 to 0.7)
+      const minScale = Math.min(vw / 400, vh / 450, 0.7);
+      scale = Math.max(scale, minScale);
+
+      // Ensure scale is not too small (at least 0.7 for normal viewports)
+      if (vw > 800 && vh > 600) {
+        scale = Math.max(scale, 0.75);
+      }
+
+      return scale;
+    };
+
+    setModalScale(calculateScale());
+
+    const handleResize = () => {
+      setModalScale(calculateScale());
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [dailyHealthModal.open]);
+
   // Confirm modal for daily health changes
   const [confirmModal, setConfirmModal] = useState({
     open: false,
@@ -3856,6 +3982,36 @@ export default function TreeDetail() {
       );
     }
   }, [treeId, baseTree, apiTree, currentDate, loading, dailyHealthModal.open]);
+
+  // Prevent body scroll when daily health modal is open
+  useEffect(() => {
+    if (dailyHealthModal.open) {
+      // Save current scroll position
+      const scrollY = window.scrollY;
+      // Disable body scroll
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = "100%";
+      document.body.style.overflow = "hidden";
+    } else {
+      // Restore body scroll
+      const scrollY = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+      if (scrollY) {
+        window.scrollTo(0, parseInt(scrollY || "0") * -1);
+      }
+    }
+    return () => {
+      // Cleanup: restore body scroll on unmount
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.width = "";
+      document.body.style.overflow = "";
+    };
+  }, [dailyHealthModal.open]);
 
   // 1. Thiếu treeId trong URL / state
   if (!treeId) {
@@ -4518,7 +4674,7 @@ export default function TreeDetail() {
 
       // planned chính là source cho:
       // - Các công việc đã lên kế hoạch
-      // - Lịch sử công việc đã hoàn thành (lọc những cái completed === true)
+      // - Lịch sử công việc (lọc những cái completed === true)
       setPlanned(mapped);
     } catch (err) {
       console.error("Failed to load care tasks", err);
@@ -4767,6 +4923,27 @@ export default function TreeDetail() {
   // Field đang sửa trong "Tình trạng hiện tại": "leaf" | "branch" | "flower" | "fruit" | null
   const [editingPhenField, setEditingPhenField] = useState(null);
   const [phenFieldDraft, setPhenFieldDraft] = useState("");
+  const [statusHistoryOpen, setStatusHistoryOpen] = useState(false);
+  const [statusHistory, setStatusHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Hàm refresh lại lịch sử thay đổi
+  const refreshStatusHistory = React.useCallback(async () => {
+    if (!treeId) return;
+    try {
+      const res = await TreeRepository.getStatusHistory(treeId);
+      const historyList = Array.isArray(res) ? res : res?.data || [];
+      // Sắp xếp theo thời gian mới nhất trước
+      const sortedHistory = [...historyList].sort((a, b) => {
+        const dateA = new Date(a.changedAt || 0);
+        const dateB = new Date(b.changedAt || 0);
+        return dateB - dateA;
+      });
+      setStatusHistory(sortedHistory);
+    } catch (err) {
+      console.error("Failed to refresh status history", err);
+    }
+  }, [treeId]);
   const statusDefs = [
     { key: "leaf", label: "Lá" },
     { key: "branch", label: "Cành" },
@@ -4847,11 +5024,20 @@ export default function TreeDetail() {
 
   // ==== Inline edit từng trường trong "Tình trạng hiện tại" ====
   function startPhenFieldEdit(fieldKey, initialValue) {
-    if (isStopped) return;
+    if (isStopped) {
+      console.log("Cannot edit: tree is stopped");
+      return;
+    }
 
     // Không cho sửa Hoa/Quả nếu chưa tới giai đoạn
-    if (fieldKey === "flower" && !canEditFlower) return;
-    if (fieldKey === "fruit" && !canEditFruit) return;
+    if (fieldKey === "flower" && !canEditFlower) {
+      console.log("Cannot edit flower: not in correct phase", currentPhaseId);
+      return;
+    }
+    if (fieldKey === "fruit" && !canEditFruit) {
+      console.log("Cannot edit fruit: not in correct phase", currentPhaseId);
+      return;
+    }
 
     // Bấm lại vào icon bút/tiêu đề -> đóng editor
     if (editingPhenField === fieldKey) {
@@ -4860,6 +5046,12 @@ export default function TreeDetail() {
       return;
     }
 
+    console.log(
+      "Starting edit for field:",
+      fieldKey,
+      "initialValue:",
+      initialValue
+    );
     setEditingPhenField(fieldKey);
     setPhenFieldDraft(initialValue ?? "");
   }
@@ -4917,6 +5109,9 @@ export default function TreeDetail() {
       branchStatus: nextPhen.branch,
       flowerStatus: nextPhen.flower,
       fruitStatus: nextPhen.fruit,
+    }).then(() => {
+      // Refresh lại lịch sử thay đổi sau khi lưu thành công
+      refreshStatusHistory();
     });
   }
 
@@ -5072,6 +5267,9 @@ export default function TreeDetail() {
       fruitStatus: nextPhen.fruit,
     });
 
+    // Refresh lại lịch sử thay đổi sau khi lưu thành công
+    await refreshStatusHistory();
+
     setConfirmModal({ open: false, oldValues: {}, newValues: {} });
     setDailyHealthModal({
       open: false,
@@ -5111,7 +5309,7 @@ export default function TreeDetail() {
   // Quy tắc “không nhập = Bình thường” sẽ áp dụng khi hiển thị (UI), không ép vào dữ liệu.
 
   // Phân trang
-  const PAGE_SIZE = 5;
+  const PAGE_SIZE = 10;
   const AI_PAGE_SIZE = 6;
   const [plannedPage, setPlannedPage] = useState({
     water: 1,
@@ -5181,7 +5379,10 @@ export default function TreeDetail() {
      --------------------------------------------------------------------- */
   function validateTaskDraft(d) {
     const e = {};
-    if (!String(d.title || "").trim()) e.title = "Vui lòng nhập tiêu đề";
+    const title = String(d.title || "").trim();
+    if (!title) e.title = "Vui lòng nhập tiêu đề";
+    else if (title.length > 30)
+      e.title = "Tiêu đề không được vượt quá 30 ký tự";
     if (daysBetween(d.due, today()) > 0) e.due = "Hạn phải từ hôm nay trở đi";
     return e;
   }
@@ -5203,6 +5404,8 @@ export default function TreeDetail() {
     if (isStopped) return;
 
     try {
+      console.log("[performAddTask] Starting with draft:", draft);
+
       // ✅ map sang giá trị mà API chấp nhận
       const apiTaskType = mapTaskTypeForApi(draft.type);
       if (!apiTaskType) {
@@ -5210,11 +5413,25 @@ export default function TreeDetail() {
         showToast("Loại công việc này chưa được hỗ trợ để gửi lên server.");
         return;
       }
+
       const numericTreeId =
         stateTree?.id ||
         stateTree?._id ||
         baseTree?.id ||
         (treeId ? Number(treeId) : null);
+
+      console.log("[performAddTask] numericTreeId:", numericTreeId, {
+        stateTreeId: stateTree?.id,
+        stateTree_id: stateTree?._id,
+        baseTreeId: baseTree?.id,
+        treeId: treeId,
+      });
+
+      if (!numericTreeId || Number.isNaN(numericTreeId)) {
+        console.error("[performAddTask] Invalid treeId:", numericTreeId);
+        showToast("Không tìm thấy ID cây. Vui lòng tải lại trang.");
+        return;
+      }
 
       const detailsStr = Array.isArray(draft.details)
         ? draft.details.filter(Boolean).join("\n") // ["a","b"] -> "a\nb"
@@ -5229,7 +5446,9 @@ export default function TreeDetail() {
         priority: "Medium", // tạm fix, sau nếu có UI priority thì map thêm
       };
 
+      console.log("[performAddTask] Sending payload:", payload);
       const res = await CareScheduleRepository.addCareTask(payload);
+      console.log("[performAddTask] Response received:", res);
       const saved = res?.data ?? res;
 
       // Tuỳ response của backend, thường sẽ có ScheduleId / TaskId
@@ -5241,6 +5460,7 @@ export default function TreeDetail() {
         details: draft.details,
       };
 
+      console.log("[performAddTask] Creating newPlannedItem:", newPlannedItem);
       setPlanned((prev) => [newPlannedItem, ...prev]);
       setConfirmAddTask({ open: false, snapshot: null });
 
@@ -5250,8 +5470,14 @@ export default function TreeDetail() {
       setPlannedPage((p) => ({ ...p, [draft.type]: 1 }));
       setNewTask({ title: "", type: draft.type, due: today(), details: "" });
       setErrorsTask({});
+      console.log("[performAddTask] Successfully added task");
     } catch (err) {
-      console.error("Lỗi khi thêm CareTask", err);
+      console.error("[performAddTask] Error details:", {
+        error: err,
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
+      });
       showToast("Không thêm được công việc. Vui lòng thử lại.");
     }
   }
@@ -5279,13 +5505,23 @@ export default function TreeDetail() {
       return true;
     });
 
-    const todo = filtered
-      .filter((p) => !p.completed)
-      .sort((a, b) => (a.due || "").localeCompare(b.due || ""));
-    const done = filtered
-      .filter((p) => p.completed)
-      .sort((a, b) => (b.completedAt || "").localeCompare(a.completedAt || ""));
-    return [...todo, ...done];
+    // Sắp xếp: Quá hạn lên đầu, sau đó theo ngày hạn (sớm trước), cuối cùng là đã hoàn thành
+    const todo = filtered.filter((p) => !p.completed);
+    const done = filtered.filter((p) => p.completed);
+
+    // Tách việc quá hạn ra riêng
+    const overdue = todo.filter((p) => isOverdue(p.due));
+    const notOverdue = todo.filter((p) => !isOverdue(p.due));
+
+    // Sort: quá hạn theo ngày (cũ nhất trước), không quá hạn theo ngày (sớm nhất trước)
+    overdue.sort((a, b) => (a.due || "").localeCompare(b.due || ""));
+    notOverdue.sort((a, b) => (a.due || "").localeCompare(b.due || ""));
+    done.sort((a, b) =>
+      (b.completedAt || "").localeCompare(a.completedAt || "")
+    );
+
+    // Quá hạn lên đầu, sau đó là chưa quá hạn, cuối cùng là đã hoàn thành
+    return [...overdue, ...notOverdue, ...done];
   }
 
   function openComplete(id) {
@@ -5443,11 +5679,31 @@ export default function TreeDetail() {
     const start = (safePage - 1) * PAGE_SIZE;
     const pageItems = list.slice(start, start + PAGE_SIZE);
 
+    // Đếm số việc quá hạn trong danh sách hiện tại
+    const overdueInPage = pageItems.filter(
+      (p) => !p.completed && isOverdue(p.due)
+    ).length;
+    const treeName = meta.name || baseTree.treeName || baseTree.name || "Cây";
+
     return (
       <section className="mb-2">
-        <div className="text-sm font-medium mb-2">
-          <ClipboardList className="inline h-4 w-4 mr-1" />
-          Các công việc đã lên kế hoạch — {theme.name}
+        {/* Hiển thị tên cây ở đầu khi phân trang (từ trang 2 trở đi) */}
+        {safePage > 1 && (
+          <div className="mb-3 p-2 rounded-lg bg-emerald-50 border border-emerald-200">
+            <div className="text-sm font-medium text-emerald-800">
+              🌳 {treeName} — Trang {safePage}/{totalPages}
+            </div>
+          </div>
+        )}
+
+        <div className="text-sm font-medium mb-2 flex items-center gap-2">
+          <ClipboardList className="inline h-4 w-4" />
+          <span>Các công việc đã lên kế hoạch — {theme.name}</span>
+          {overdueInPage > 0 && (
+            <span className="px-2 py-0.5 text-xs rounded-full bg-rose-100 text-rose-700 font-semibold">
+              {overdueInPage} quá hạn
+            </span>
+          )}
         </div>
 
         <ul className="space-y-3">
@@ -5779,7 +6035,7 @@ export default function TreeDetail() {
             {/* Thông tin chung */}
             {/* Thông tin cây (gộp ảnh vào cùng card) */}
             {/* Thông tin cây (gộp ảnh vào cùng card, inline edit từng trường) */}
-            <Card>
+            <Card id="sec-info">
               <CardHeader className="flex items-center justify-between">
                 {/* BÊN TRÁI: Tiêu đề + pill trạng thái */}
                 <div className="flex items-center gap-3">
@@ -6155,7 +6411,7 @@ export default function TreeDetail() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card id="sec-status">
               <CardHeader className="flex items-center justify-between gap-3">
                 <CardTitle>Tình trạng hiện tại</CardTitle>
                 <div className="flex items-center gap-2 text-xs text-neutral-500">
@@ -6167,6 +6423,28 @@ export default function TreeDetail() {
                   )}
                   <button
                     type="button"
+                    onClick={async () => {
+                      const currentTreeId =
+                        baseTree?.treeId ||
+                        baseTree?.id ||
+                        meta?.treeId ||
+                        treeId;
+                      if (!currentTreeId) {
+                        console.error("No treeId available for status history");
+                        return;
+                      }
+                      setStatusHistoryOpen(true);
+                      // Luôn refresh lại history khi mở modal để đảm bảo hiển thị đúng
+                      setLoadingHistory(true);
+                      try {
+                        await refreshStatusHistory();
+                      } catch (err) {
+                        console.error("Failed to load status history", err);
+                        setStatusHistory([]);
+                      } finally {
+                        setLoadingHistory(false);
+                      }
+                    }}
                     className="inline-flex items-center gap-1 rounded-full border border-neutral-200 px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-50"
                   >
                     <span>📅</span>
@@ -6393,109 +6671,12 @@ export default function TreeDetail() {
               meta={meta}
             />
 
-            {/* Các công việc đã lên kế hoạch */}
-            <Card>
+            {/* Gợi ý từ AI */}
+            <Card id="sec-ai" className="relative">
               <CardHeader>
-                <CardTitle>Các công việc đã lên kế hoạch</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Filter bar */}
-                <div className="flex flex-wrap items-center gap-2">
-                  <TypeSwitch
-                    type="water"
-                    overdue={overdueCounts.water}
-                    active={activeType === "water"}
-                    onClick={() => setActiveType("water")}
-                  />
-                  <TypeSwitch
-                    type="fert"
-                    overdue={overdueCounts.fert}
-                    active={activeType === "fert"}
-                    onClick={() => setActiveType("fert")}
-                  />
-                  <TypeSwitch
-                    type="pest"
-                    overdue={overdueCounts.pest}
-                    active={activeType === "pest"}
-                    onClick={() => setActiveType("pest")}
-                  />
-                  <TypeSwitch
-                    type="other"
-                    overdue={overdueCounts.other}
-                    active={activeType === "other"}
-                    onClick={() => setActiveType("other")}
-                  />
-
-                  <div className="flex items-center gap-1 ml-auto">
-                    <Input
-                      placeholder="Tìm kiếm..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="h-9 w-56"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <FilterChip
-                    active={statusFilter === "all"}
-                    onClick={() => setStatusFilter("all")}
-                  >
-                    Tất cả
-                  </FilterChip>
-                  <FilterChip
-                    active={statusFilter === "todo"}
-                    onClick={() => setStatusFilter("todo")}
-                  >
-                    Việc cần làm
-                  </FilterChip>
-                  <FilterChip
-                    active={statusFilter === "done"}
-                    onClick={() => setStatusFilter("done")}
-                  >
-                    Đã hoàn thành
-                  </FilterChip>
-
-                  <div className="mx-2 h-4 w-px bg-neutral-200" />
-
-                  <FilterChip
-                    active={dateFilter === "all"}
-                    onClick={() => setDateFilter("all")}
-                  >
-                    Tất cả
-                  </FilterChip>
-                  <FilterChip
-                    active={dateFilter === "today"}
-                    onClick={() => setDateFilter("today")}
-                  >
-                    Hôm nay
-                  </FilterChip>
-                  <FilterChip
-                    active={dateFilter === "week"}
-                    onClick={() => setDateFilter("week")}
-                  >
-                    Trong 7 ngày
-                  </FilterChip>
-                  <FilterChip
-                    active={dateFilter === "overdue"}
-                    onClick={() => setDateFilter("overdue")}
-                  >
-                    Quá hạn
-                  </FilterChip>
-                </div>
-
-                <PlannedSection type={activeType} disabled={isStopped} />
-              </CardContent>
-            </Card>
-
-            {/* Gợi ý AI & Thêm việc */}
-            <Card className="relative">
-              <CardHeader>
-                <CardTitle>Gợi ý từ AI & Thêm việc</CardTitle>
+                <CardTitle>Gợi ý từ AI</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 relative">
-                <InCardToast show={toast.show} message={toast.msg} />
-
                 {isStopped ? (
                   <div className="rounded-2xl border p-3 bg-white text-sm text-neutral-700">
                     <b>Đã dừng hoạt động:</b> Ngừng mọi gợi ý mới. Chỉ hiển thị
@@ -6504,8 +6685,18 @@ export default function TreeDetail() {
                 ) : (
                   <AISuggestionsList />
                 )}
+              </CardContent>
+            </Card>
 
-                {/* Thêm việc (gộp) */}
+            {/* Thêm việc & Các công việc đã lên kế hoạch */}
+            <Card id="sec-planned" className="relative">
+              <CardHeader>
+                <CardTitle>Thêm việc & Các công việc đã lên kế hoạch</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 relative">
+                <InCardToast show={toast.show} message={toast.msg} />
+
+                {/* Thêm việc */}
                 <section>
                   <div className="text-sm font-medium mb-2">Thêm việc</div>
 
@@ -6556,7 +6747,7 @@ export default function TreeDetail() {
                       </label>
                       <Textarea
                         rows={2}
-                        maxLength={100} // Giới hạn người dùng nhập tối đa 60 ký tự
+                        maxLength={30}
                         value={newTask.title}
                         onChange={(e) => {
                           setNewTask({ ...newTask, title: e.target.value });
@@ -6616,10 +6807,25 @@ export default function TreeDetail() {
                             setNewTask((s) => ({ ...s, details: v }))
                           )
                         }
-                        onChange={(e) =>
-                          setNewTask({ ...newTask, details: e.target.value })
-                        }
-                        placeholder="Mỗi dòng 1 ý: liều lượng, cách làm, ghi chú..."
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Giới hạn mỗi dòng 120 ký tự (không tính phần số)
+                          const lines = value.split("\n");
+                          const limitedLines = lines.map((line) => {
+                            const prefixMatch = line.match(/^(\s*\d+\.\s*)/);
+                            const prefix = prefixMatch ? prefixMatch[1] : "";
+                            const content = line.replace(/^\s*\d+\.\s*/, "");
+                            if (content.length > 120) {
+                              return prefix + content.slice(0, 120);
+                            }
+                            return line;
+                          });
+                          setNewTask({
+                            ...newTask,
+                            details: limitedLines.join("\n"),
+                          });
+                        }}
+                        placeholder="Mỗi dòng 1 ý (tối đa 120 ký tự): liều lượng, cách làm, ghi chú..."
                         disabled={isStopped}
                         className="border-2 border-neutral-300"
                       />
@@ -6635,6 +6841,103 @@ export default function TreeDetail() {
                       </Button>
                     </div>
                   </div>
+                </section>
+
+                {/* Đường kẻ phân cách */}
+                <div className="border-t border-neutral-200 my-2" />
+
+                {/* Các công việc đã lên kế hoạch */}
+                <section>
+                  <div className="text-sm font-medium mb-2">
+                    Các công việc đã lên kế hoạch
+                  </div>
+
+                  {/* Filter bar */}
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <TypeSwitch
+                      type="water"
+                      overdue={overdueCounts.water}
+                      active={activeType === "water"}
+                      onClick={() => setActiveType("water")}
+                    />
+                    <TypeSwitch
+                      type="fert"
+                      overdue={overdueCounts.fert}
+                      active={activeType === "fert"}
+                      onClick={() => setActiveType("fert")}
+                    />
+                    <TypeSwitch
+                      type="pest"
+                      overdue={overdueCounts.pest}
+                      active={activeType === "pest"}
+                      onClick={() => setActiveType("pest")}
+                    />
+                    <TypeSwitch
+                      type="other"
+                      overdue={overdueCounts.other}
+                      active={activeType === "other"}
+                      onClick={() => setActiveType("other")}
+                    />
+
+                    <div className="flex items-center gap-1 ml-auto">
+                      <Input
+                        placeholder="Tìm kiếm..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        className="h-9 w-56"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 mb-4">
+                    <FilterChip
+                      active={statusFilter === "all"}
+                      onClick={() => setStatusFilter("all")}
+                    >
+                      Tất cả
+                    </FilterChip>
+                    <FilterChip
+                      active={statusFilter === "todo"}
+                      onClick={() => setStatusFilter("todo")}
+                    >
+                      Việc cần làm
+                    </FilterChip>
+                    <FilterChip
+                      active={statusFilter === "done"}
+                      onClick={() => setStatusFilter("done")}
+                    >
+                      Đã hoàn thành
+                    </FilterChip>
+
+                    <div className="mx-2 h-4 w-px bg-neutral-200" />
+
+                    <FilterChip
+                      active={dateFilter === "all"}
+                      onClick={() => setDateFilter("all")}
+                    >
+                      Tất cả
+                    </FilterChip>
+                    <FilterChip
+                      active={dateFilter === "today"}
+                      onClick={() => setDateFilter("today")}
+                    >
+                      Hôm nay
+                    </FilterChip>
+                    <FilterChip
+                      active={dateFilter === "week"}
+                      onClick={() => setDateFilter("week")}
+                    >
+                      Trong 7 ngày
+                    </FilterChip>
+                    <FilterChip
+                      active={dateFilter === "overdue"}
+                      onClick={() => setDateFilter("overdue")}
+                    >
+                      Quá hạn
+                    </FilterChip>
+                  </div>
+
+                  <PlannedSection type={activeType} disabled={isStopped} />
                 </section>
               </CardContent>
             </Card>
@@ -6772,81 +7075,108 @@ export default function TreeDetail() {
       })()}
       {dailyHealthModal.open && (
         <div
-          className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[9999] bg-black/50 flex items-center justify-center"
+          style={{ padding: "0.75rem" }}
           // Prevent closing by clicking outside - modal can only be closed by buttons
           onClick={(e) => {
             e.stopPropagation();
           }}
+          onWheel={(e) => {
+            // Prevent background scroll when modal is open
+            e.stopPropagation();
+          }}
         >
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
-              <div className="text-xl font-semibold text-gray-900">
+          <div
+            className="rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden"
+            style={{
+              width: "32rem",
+              maxWidth: "calc(100vw - 1.5rem)",
+              height: "auto",
+              maxHeight: "calc(100vh - 1.5rem)",
+              transform: `scale(${modalScale})`,
+              transformOrigin: "center center",
+              margin: "auto",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <div className="px-4 py-3 border-b flex items-center justify-between flex-shrink-0 min-w-0">
+              <div className="text-base font-semibold text-gray-900 truncate pr-2">
                 Cập nhật tình trạng hiện tại
               </div>
               {/* Remove close button - modal can only be closed by action buttons */}
             </div>
 
-            <div className="p-6 space-y-4">
-              <div className="text-sm text-gray-600 mb-4">
+            <div
+              className="p-4 flex-1 flex flex-col min-h-0 overflow-hidden"
+              style={{ gap: "0.75rem" }}
+            >
+              <div className="text-xs text-gray-600 flex-shrink-0">
                 Vui lòng cập nhật tình trạng hiện tại của cây. Bạn có thể giữ
                 nguyên nếu không có thay đổi.
               </div>
 
-              {HEALTH_FIELDS.map((field) => {
-                const isDisabled =
-                  (field.key === "flower" && !canEditFlower) ||
-                  (field.key === "fruit" && !canEditFruit);
+              <div
+                className="flex-1 min-h-0 overflow-y-auto flex flex-col"
+                style={{ gap: "0.625rem" }}
+              >
+                {HEALTH_FIELDS.map((field) => {
+                  const isDisabled =
+                    (field.key === "flower" && !canEditFlower) ||
+                    (field.key === "fruit" && !canEditFruit);
 
-                // Determine placeholder: if field is enabled and it's flower/fruit, show "Cập nhật thông tin"
-                const placeholder = isDisabled
-                  ? field.defaultText
-                  : field.key === "flower" || field.key === "fruit"
-                  ? "Cập nhật thông tin"
-                  : field.defaultText;
+                  // Determine placeholder: if field is enabled and it's flower/fruit, show "Cập nhật thông tin"
+                  const placeholder = isDisabled
+                    ? field.defaultText
+                    : field.key === "flower" || field.key === "fruit"
+                    ? "Cập nhật thông tin"
+                    : field.defaultText;
 
-                return (
-                  <div key={field.key} className="space-y-2">
-                    <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                      <span className="text-lg">{field.icon}</span>
-                      <span>{field.label}</span>
-                      {isDisabled && (
-                        <span className="text-xs text-gray-500">
-                          (Chưa đến giai đoạn)
-                        </span>
-                      )}
-                    </label>
-                    <Textarea
-                      rows={3}
-                      value={dailyHealthModal.values[field.key] || ""}
-                      onChange={(e) =>
-                        handleDailyHealthChange(field.key, e.target.value)
-                      }
-                      placeholder={placeholder}
-                      disabled={isDisabled}
-                      className={
-                        isDisabled
-                          ? "bg-gray-50 text-gray-400 cursor-not-allowed"
-                          : ""
-                      }
-                    />
-                  </div>
-                );
-              })}
+                  return (
+                    <div key={field.key} className="flex-shrink-0 space-y-1">
+                      <label className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                        <span className="text-base">{field.icon}</span>
+                        <span>{field.label}</span>
+                        {isDisabled && (
+                          <span className="text-xs text-gray-500">
+                            (Chưa đến giai đoạn)
+                          </span>
+                        )}
+                      </label>
+                      <Textarea
+                        rows={1}
+                        className={
+                          "text-sm resize-none " +
+                          (isDisabled
+                            ? "bg-gray-50 text-gray-400 cursor-not-allowed"
+                            : "")
+                        }
+                        value={dailyHealthModal.values[field.key] || ""}
+                        onChange={(e) =>
+                          handleDailyHealthChange(field.key, e.target.value)
+                        }
+                        placeholder={placeholder}
+                        disabled={isDisabled}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex flex-row justify-end gap-2 pt-3 border-t flex-shrink-0 flex-wrap">
                 {hasDailyHealthChanges ? (
                   <>
                     <Button
                       variant="outline"
                       onClick={handleDailyHealthReset}
-                      className="px-6"
+                      className="px-4 py-2 text-sm h-9 flex-shrink-0"
                       disabled={saving}
                     >
                       Cài lại dữ liệu cũ
                     </Button>
                     <Button
                       onClick={handleDailyHealthConfirm}
-                      className="px-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 flex-shrink-0"
                       disabled={saving}
                     >
                       Xác nhận thay đổi
@@ -6855,7 +7185,7 @@ export default function TreeDetail() {
                 ) : (
                   <Button
                     onClick={handleDailyHealthClose}
-                    className="px-6 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm h-9 flex-shrink-0"
                   >
                     Không có thay đổi
                   </Button>
@@ -7321,6 +7651,7 @@ export default function TreeDetail() {
                 <div className="grid gap-1">
                   <label className="text-xs text-neutral-600">Tiêu đề</label>
                   <Input
+                    maxLength={30}
                     value={editMain.title}
                     onChange={(e) =>
                       setEditMain((s) => ({ ...s, title: e.target.value }))
@@ -7352,10 +7683,26 @@ export default function TreeDetail() {
                         setEditMain((s) => ({ ...s, details: v }))
                       )
                     }
-                    onChange={(e) =>
-                      setEditMain((s) => ({ ...s, details: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      // Giới hạn mỗi dòng 120 ký tự (không tính phần số)
+                      const lines = value.split("\n");
+                      const limitedLines = lines.map((line) => {
+                        const prefixMatch = line.match(/^(\s*\d+\.\s*)/);
+                        const prefix = prefixMatch ? prefixMatch[1] : "";
+                        const content = line.replace(/^\s*\d+\.\s*/, "");
+                        if (content.length > 120) {
+                          return prefix + content.slice(0, 120);
+                        }
+                        return line;
+                      });
+                      setEditMain((s) => ({
+                        ...s,
+                        details: limitedLines.join("\n"),
+                      }));
+                    }}
                     disabled={isStopped}
+                    placeholder="Mỗi dòng 1 ý (tối đa 120 ký tự)"
                   />
                 </div>
               </div>
@@ -7491,6 +7838,79 @@ export default function TreeDetail() {
           </div>
         </div>
       )}
+
+      {/* Dialog Lịch sử thay đổi tình trạng */}
+      {statusHistoryOpen && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setStatusHistoryOpen(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <div className="text-lg font-semibold text-black">
+                Lịch sử thay đổi tình trạng
+              </div>
+              <button
+                type="button"
+                className="h-8 w-8 grid place-items-center rounded-lg hover:bg-neutral-50 text-neutral-700"
+                onClick={() => setStatusHistoryOpen(false)}
+              >
+                <span className="text-xl leading-none">×</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingHistory ? (
+                <div className="text-center py-8 text-neutral-500">
+                  Đang tải...
+                </div>
+              ) : statusHistory.length === 0 ? (
+                <div className="text-center py-8 text-neutral-500">
+                  Chưa có lịch sử thay đổi nào
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(() => {
+                    // Chỉ hiển thị lịch sử gần nhất (item đầu tiên sau khi đã sắp xếp)
+                    const latestItem = statusHistory[0];
+                    if (!latestItem) return null;
+
+                    const fieldLabels = {
+                      LeafStatus: "Lá",
+                      BranchStatus: "Cành",
+                      FlowerStatus: "Hoa",
+                      FruitStatus: "Quả",
+                    };
+                    const fieldLabel =
+                      fieldLabels[latestItem.statusField] ||
+                      latestItem.statusField;
+                    const changedDate = latestItem.changedAt
+                      ? formatVN(String(latestItem.changedAt).slice(0, 10))
+                      : "";
+
+                    return (
+                      <div className="border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="font-medium text-neutral-900">
+                            {fieldLabel}
+                          </div>
+                          <div className="text-xs text-neutral-500">
+                            {changedDate}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -7589,8 +8009,8 @@ function StickySectionNav() {
   const sections = [
     { id: "sec-info", name: "Thông tin cây", Icon: Sprout },
     { id: "sec-status", name: "Tình trạng hiện tại", Icon: Activity },
-    { id: "sec-planned", name: "Kế hoạch", Icon: ClipboardList },
-    { id: "sec-ai", name: "Gợi ý & Thêm việc", Icon: CheckCircle2 },
+    { id: "sec-ai", name: "Gợi ý AI", Icon: CheckCircle2 },
+    { id: "sec-planned", name: "Thêm việc & Kế hoạch", Icon: ClipboardList },
   ];
   const [active, setActive] = React.useState(sections[0].id);
 
