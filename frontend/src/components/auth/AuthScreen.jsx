@@ -179,6 +179,7 @@ export default function AuthScreen({ defaultTab = "login" }) {
     resetPassword,
     resendOtp,
     verifyOtp,
+    verifyResetOtp,
   } = useAuth();
   const navigate = useNavigate();
 
@@ -460,14 +461,28 @@ export default function AuthScreen({ defaultTab = "login" }) {
           autoCloseSeconds: 3,
         });
       } else if (pendingAction.type === "reset") {
-        // Lưu OTP + contact lại, chuyển sang bước đặt mật khẩu mới
+        // Xác thực OTP reset password với backend trước khi chuyển sang đặt mật khẩu mới
         const payload = pendingAction.payload || {};
+        const contact =
+          payload.contact ||
+          payload.acct ||
+          (otpTarget && otpTarget.value) ||
+          "";
+
+        // Gọi API verify reset OTP
+        if (verifyResetOtp && contact) {
+          const res = await verifyResetOtp(contact, code);
+          if (!res || res.success === false) {
+            setOtpError(
+              res?.message || "Mã OTP không chính xác hoặc đã hết hạn."
+            );
+            return;
+          }
+        }
+
+        // OTP hợp lệ - lưu context và chuyển sang bước đặt mật khẩu mới
         const context = {
-          contact:
-            payload.contact ||
-            payload.acct ||
-            (otpTarget && otpTarget.value) ||
-            "",
+          contact,
           mode: payload.mode || (otpTarget && otpTarget.channel) || "unknown",
           otpCode: code,
         };

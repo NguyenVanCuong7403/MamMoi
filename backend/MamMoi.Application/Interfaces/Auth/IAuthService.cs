@@ -66,6 +66,14 @@ public interface IAuthService
     Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordRequestDto request);
 
     /// <summary>
+    /// Xác thực OTP reset password (không đổi password, chỉ verify OTP)
+    /// </summary>
+    /// <param name="email">Email của user</param>
+    /// <param name="resetToken">Mã OTP reset password</param>
+    /// <returns>Response xác nhận OTP hợp lệ</returns>
+    Task<AuthResponseDto> VerifyResetOtpAsync(string email, string resetToken);
+
+    /// <summary>
     /// Đổi password khi user đã đăng nhập
     /// </summary>
     /// <param name="userId">ID của user</param>

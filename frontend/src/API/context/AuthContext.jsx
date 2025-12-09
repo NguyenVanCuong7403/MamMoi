@@ -473,6 +473,38 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const verifyResetOtp = async (email, otpCode) => {
+    setLoading(true);
+    try {
+      const response = await AuthRepository.verifyResetOtp({
+        email,
+        otpCode,
+      });
+
+      console.log("🔍 AuthContext verifyResetOtp response:", response);
+
+      if (response.success) {
+        return {
+          success: true,
+          message: response.message || "Xác thực OTP thành công!",
+        };
+      } else {
+        return {
+          success: false,
+          message: response.message || "OTP không hợp lệ hoặc đã hết hạn",
+        };
+      }
+    } catch (err) {
+      console.error("Verify Reset OTP failed:", err);
+      return {
+        success: false,
+        message: err.message || "Đã xảy ra lỗi. Vui lòng thử lại.",
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const resetPassword = async (email, resetToken, newPassword) => {
     setLoading(true);
     try {
@@ -573,6 +605,7 @@ export const AuthProvider = ({ children }) => {
         loginWithGoogle,
         register,
         verifyOtp,
+        verifyResetOtp,
         forgotPassword,
         resetPassword,
         resendOtp,

@@ -562,6 +562,63 @@ public class AuthService : IAuthService
     }
 
     /// <summary>
+    /// CHỨC NĂNG 8.5: Verify Reset OTP - Chỉ xác thực OTP reset password (không đổi password)
+    /// </summary>
+    public async Task<AuthResponseDto> VerifyResetOtpAsync(string email, string resetToken)
+    {
+        // 1. Kiểm tra user có tồn tại không
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null)
+        {
+            throw new InvalidOperationException("Email không tồn tại trong hệ thống.");
+        }
+
+        var userEntity = (User)user;
+
+        // 2. Kiểm tra tài khoản có bị khóa không
+        if (userEntity.IsActive != true)
+        {
+            if (userEntity.LastLoginAt != null)
+            {
+                throw new InvalidOperationException("Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ.");
+            }
+
+            if (userEntity.RoleId == 4)
+            {
+                var hasActiveGarden = await _context.GardenMembers
+                    .AnyAsync(gm => gm.UserId == userEntity.UserId && gm.Status == "Active");
+
+                if (!hasActiveGarden)
+                {
+                    throw new InvalidOperationException("Tài khoản nhân viên tạm thời bị khóa do không có vườn hoạt động. Vui lòng liên hệ quản lý vườn để được phân công.");
+                }
+            }
+
+            throw new InvalidOperationException("Tài khoản chưa được kích hoạt. Vui lòng xác thực OTP trước.");
+        }
+
+        // 3. Lấy reset token từ cache
+        var resetTokenKey = $"reset_{email}";
+        if (!_cache.TryGetValue(resetTokenKey, out string? cachedToken))
+        {
+            throw new InvalidOperationException("Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại.");
+        }
+
+        // 4. Verify reset token
+        if (cachedToken != resetToken)
+        {
+            throw new InvalidOperationException("Mã OTP không đúng. Vui lòng thử lại.");
+        }
+
+        // 5. OTP hợp lệ - KHÔNG xóa khỏi cache (sẽ xóa khi reset password thực sự)
+        return new AuthResponseDto
+        {
+            Success = true,
+            Message = "Mã OTP hợp lệ. Vui lòng đặt mật khẩu mới."
+        };
+    }
+
+    /// <summary>
     /// CHỨC NĂNG 9: Change Password - Đổi password khi đã login
     /// </summary>
     public async Task<AuthResponseDto> ChangePasswordAsync(int userId, ChangePasswordRequestDto request)

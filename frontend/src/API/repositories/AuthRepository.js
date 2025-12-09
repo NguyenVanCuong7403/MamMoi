@@ -21,6 +21,10 @@ export default class AuthRepository {
     return ApiClient.post("/api/auth/forgot-password", { email });
   }
 
+  static async verifyResetOtp(data) {
+    return ApiClient.post("/api/auth/verify-reset-otp", data);
+  }
+
   static async resetPassword(data) {
     return ApiClient.post("/api/auth/reset-password", data);
   }
@@ -40,4 +44,4 @@ export default class AuthRepository {
   static async loginWithGoogle(idToken) {
     return ApiClient.post("/api/auth/google-login", { idToken });
   }
-};
+}

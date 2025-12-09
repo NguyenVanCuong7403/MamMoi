@@ -381,6 +381,43 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
+    /// API 8.5: Verify Reset OTP - Xác thực mã OTP reset password (không đổi password)
+    /// </summary>
+    /// <param name="request">Email và mã OTP</param>
+    /// <returns>Thông báo OTP hợp lệ hay không</returns>
+    [HttpPost("verify-reset-otp")]
+    public async Task<IActionResult> VerifyResetOtp([FromBody] VerifyOtpRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.VerifyResetOtpAsync(request.Email, request.OtpCode);
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Message,
+                data = result
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new
+            {
+                success = false,
+                message = ex.Message
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during verify reset OTP");
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Đã xảy ra lỗi. Vui lòng thử lại sau."
+            });
+        }
+    }
+
+    /// <summary>
     /// API 9: Change Password - Đổi password khi đã đăng nhập
     /// </summary>
     /// <param name="request">Password hiện tại và password mới</param>
