@@ -1143,18 +1143,6 @@ export default function PlantDetail() {
           <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/90 via-emerald-800/70 to-emerald-900/50" />
         </div>
 
-        {/* Back Button */}
-        <div className="absolute left-4 top-4 z-30 sm:left-6 sm:top-6">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/plants")}
-            className="rounded-full bg-white/90 backdrop-blur-sm hover:bg-white"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </div>
-
         {/* Hero Content */}
         <div className="absolute bottom-0 left-0 right-0 z-20 px-0 pb-6 sm:pb-8 md:pb-10 lg:pb-12">
           <motion.div

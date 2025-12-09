@@ -356,7 +356,7 @@ function ConfirmModal({ open, title, children, onClose, onConfirm }) {
 function ErrorModal({ open, message, onClose }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-[1200] grid place-items-center">
+    <div className="fixed inset-0 z-[10000] grid place-items-center">
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div
         className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl"
@@ -910,9 +910,22 @@ function clampText(str, max) {
   return s.length <= max ? s : s.slice(0, max - 1) + "…";
 }
 
+function normalizeText(v) {
+  return String(v || "")
+    .trim()
+    .toLowerCase();
+}
+
 function formatGardenLocation(g) {
   const full = [g.address, g.ward, g.province].filter(Boolean).join(", ");
   return full;
+}
+
+function makeLocationKey(obj = {}) {
+  return [obj.address, obj.ward, obj.province]
+    .map(normalizeText)
+    .filter(Boolean)
+    .join(" | ");
 }
 
 function toArray(value) {
@@ -1196,6 +1209,25 @@ export default function GardenManagement() {
 
     (async () => {
       try {
+        // Prevent duplicate garden names at the same location
+        const currentNameKey = normalizeText(form.name);
+        const currentLocationKey = makeLocationKey(form);
+        const hasDuplicate = gardens.some((g, idx) => {
+          if (editingIdx >= 0 && idx === editingIdx) return false;
+          return (
+            normalizeText(g.name) === currentNameKey &&
+            makeLocationKey(g) === currentLocationKey
+          );
+        });
+        if (hasDuplicate) {
+          setError({
+            open: true,
+            message:
+              "Tên vườn này đã tồn tại tại cùng địa chỉ. Vui lòng đổi tên hoặc cập nhật địa chỉ.",
+          });
+          return;
+        }
+
         let coverUrl = form.coverUrl; // fallback if user uses URL
 
         // If user uploaded a file, upload it first
