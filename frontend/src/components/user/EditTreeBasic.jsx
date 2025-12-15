@@ -129,7 +129,7 @@ export default function EditTreeBasic() {
               </div>
               <div className="grid md:grid-cols-2 gap-4 text-sm">
                 <Field label="Mã cây">
-                  <input className={INPUT} value={form.id} onChange={e => set("id", e.target.value)} />
+                  <input className={INPUT} value={form.id} onChange={e => set("id", e.target.value)} disabled />
                 </Field>
                 <Field label="Ảnh (URL)">
                   <input
@@ -169,6 +169,7 @@ export default function EditTreeBasic() {
                   className={INPUT}
                   value={toInputDate(form.plantedAt)}
                   onChange={e => set("plantedAt", e.target.value)}
+                  max={new Date().toISOString().split("T")[0]}
                 />
               </Field>
               <Field label="Trạng thái (hệ thống)">
