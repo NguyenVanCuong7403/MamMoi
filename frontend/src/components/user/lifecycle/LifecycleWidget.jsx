@@ -1,9 +1,4 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import TreeRepository from "@/API/repositories/TreeRepository";
 import {
@@ -347,7 +342,7 @@ export default function LifecycleWidget({
     if (externalStageId != null && externalStageId !== activeStageId) {
       setActiveStageId(externalStageId);
     }
-  }, [externalStageId, activeStageId]);
+  }, [externalStageId]);
 
   useEffect(() => {
     if (!phaseList.length) return;
@@ -365,7 +360,6 @@ export default function LifecycleWidget({
   }, [
     phaseList,
     activeStageId,
-    activePhase,
     findPhaseByStageId,
     findPhaseByCanonical,
     initPhase,
@@ -1068,4 +1062,3 @@ export default function LifecycleWidget({
     </div>
   );
 }
-
