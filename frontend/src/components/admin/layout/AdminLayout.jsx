@@ -62,6 +62,7 @@ const ROLE_NAV_ITEMS = {
       icon: RefreshCcw,
       path: "/admin/business/lifecycle",
     },
+
     {
       key: "tree-types",
       label: "Quản lý loại cây",
@@ -145,7 +146,7 @@ export default function AdminLayout({ children }) {
                       "flex items-center gap-3 rounded-xl px-4 py-3 text-base font-semibold transition-all",
                       "text-emerald-50/80 hover:bg-emerald-500/10 hover:text-emerald-50",
                       isActive &&
-                        "bg-emerald-500/15 text-emerald-50 shadow-[0_0_0_1px_rgba(16,185,129,0.45)]"
+                      "bg-emerald-500/15 text-emerald-50 shadow-[0_0_0_1px_rgba(16,185,129,0.45)]"
                     )
                   }
                 >

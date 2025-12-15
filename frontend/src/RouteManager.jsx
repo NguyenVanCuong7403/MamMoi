@@ -12,6 +12,7 @@ import UserProfile from "./components/user/UserProfile";
 import Notifications from "./components/user/Notifications";
 import Demo from "./components/user/Demo";
 import Report from "./components/user/Report";
+import IntroPage from "./components/user/IntroPage";
 import ReportManagement from "./components/user/ReportManagement";
 import SupportRequestDetail from "./components/user/SupportRequestDetail";
 import PaymentHistory from "./components/user/PaymentHistory";
@@ -37,6 +38,7 @@ import BusinessAdminLifecycleProcessManagement from "./components/admin/Business
 import PlantGallery from "./components/user/PlantGallery";
 import PlantDetail from "./components/user/PlantDetail";
 import LogoutGuard from "./guards/LogoutGuard";
+import GuestGuard from "./guards/GuestGuard";
 
 export default function RouteManager({ authTab }) {
   return (
@@ -47,7 +49,12 @@ export default function RouteManager({ authTab }) {
           <LogoutGuard>
             <Home />
           </LogoutGuard>} />
-        <Route path="/auth" element={<AuthScreen defaultTab={authTab} />} />
+        <Route path="/auth" element={
+          <GuestGuard>
+            <AuthScreen defaultTab={authTab} />
+          </GuestGuard>
+        } />
+        <Route path="/intro" element={<IntroPage />} />
         <Route
           path="/new"
           element={
@@ -72,9 +79,9 @@ export default function RouteManager({ authTab }) {
             <InvoiceSuccess />
           </LoginGuard>} />
         <Route path="/paymenthistory" element={
-        <LoginGuard>
-          <PaymentHistory />
-        </LoginGuard>} />
+          <LoginGuard>
+            <PaymentHistory />
+          </LoginGuard>} />
         <Route path="/plants" element={
           <LogoutGuard>
             <PlantGallery />

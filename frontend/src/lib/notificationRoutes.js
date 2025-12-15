@@ -135,11 +135,15 @@ export function getNotificationRoute(notification, user) {
     notifType === "announcement" ||
     notifType === "system"
   ) {
-    // Nếu có actionUrl trong notification, sử dụng nó
+    // Nếu là SystemAdmin, đưa tới màn quản lý thông báo của admin
+    if (userRole === "systemadmin") {
+      if (actionUrl && actionUrl.startsWith("/")) return actionUrl;
+      return "/admin/notifications";
+    }
+    // Các role khác: nếu có actionUrl (relative), ưu tiên actionUrl, còn lại về trang notifications
     if (actionUrl && actionUrl.startsWith("/")) {
       return actionUrl;
     }
-    // Mặc định đi đến trang notifications
     return "/notifications";
   }
 

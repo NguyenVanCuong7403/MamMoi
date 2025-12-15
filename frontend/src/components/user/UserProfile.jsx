@@ -2598,7 +2598,10 @@ export default function UserProfile() {
             setApiGardenCount(gardensResponse.data.totalCount);
           } else if (gardensResponse?.totalCount !== undefined) {
             setApiGardenCount(gardensResponse.totalCount);
-          } else if (gardensResponse?.success && gardensResponse?.data?.gardens) {
+          } else if (
+            gardensResponse?.success &&
+            gardensResponse?.data?.gardens
+          ) {
             // If response has gardens array but no totalCount, use array length as fallback
             // Note: This is not accurate for pagination, but better than 0
             setApiGardenCount(gardensResponse.data.gardens.length);
@@ -2614,10 +2617,10 @@ export default function UserProfile() {
             page: 1,
             pageSize: 1, // Only need count, so pageSize=1 is fine
           });
-          
+
           // Handle different response formats
           const payload = treesResponse?.data ?? treesResponse;
-          
+
           if (payload?.total !== undefined) {
             setApiTreeCount(payload.total);
           } else if (treesResponse?.total !== undefined) {
@@ -3288,8 +3291,8 @@ export default function UserProfile() {
         inert={overlayOpen ? "" : undefined}
       >
         <div className="flex gap-4 md:gap-6 lg:gap-8 w-full min-w-0">
-          {/* Sidebar Menu - Left */}
-          <aside className="w-64 md:w-72 lg:w-80 shrink-0">
+          {/* Sidebar Menu - Left (removed - moved to header) */}
+          <aside className="hidden">
             <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
               <CardContent className="p-8">
                 <div className="mb-8">

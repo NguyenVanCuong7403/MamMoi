@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Play, VolumeX } from "lucide-react";
 import {
   motion,
@@ -9,6 +9,8 @@ import {
   useInView,
 } from "framer-motion";
 import useViewportScale from "@/hooks/useViewportScale";
+import SubscriptionPlanRepository from "@/API/repositories/SubscriptionPlanRepository";
+import { useAuth } from "@/API/context/AuthContext";
 
 /**
  * Mam Moi — Home (Page Only, no header) [JavaScript version]
@@ -58,9 +60,13 @@ const ROTATE_PARTS = [
   "hỗ trợ AI",
 ];
 
+
+
+
 /* =========================================================================
    TYPE-&-ERASE Rotator (thay cho reveal cũ) — KHÔNG blur
    - Giữ nguyên API <Rotator items=[] className="" />
+
    - Gõ tới hết chữ → tạm dừng → xoá dần → chuyển từ tiếp theo
    - Tự tắt animation nếu người dùng bật “reduce motion”
    ========================================================================= */
@@ -225,6 +231,80 @@ export default function Home() {
   const [isMuted, setIsMuted] = useState(true);
   const [showHeroText, setShowHeroText] = useState(true);
 
+  // Pricing packages state
+  const [packages, setPackages] = useState([]);
+  const [packagesLoading, setPackagesLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        setPackagesLoading(true);
+        // Get all active plans (including free)
+        const data = await SubscriptionPlanRepository.getAll(true);
+        if (!data) return;
+
+        const transformed = data.map((plan, index) => {
+          let planDescription = "";
+          let price = Number(plan.price) || 0;
+          const formattedPrice = price === 0
+            ? "Miễn phí"
+            : price.toLocaleString("vi-VN") + "đ";
+
+          const unit = price === 0 ? "" : "/tháng";
+
+          // Generate description if not present or fallback
+          if (plan.description) {
+            planDescription = plan.description;
+          } else {
+            if (plan.maxGardens === 1 && plan.maxTreesPerGarden === 5) {
+              planDescription = "Khởi đầu hành trình số hóa vườn cây.";
+            } else if (plan.maxGardens === 5 && plan.maxTreesPerGarden === 5) {
+              planDescription = "Giải pháp chuyên sâu cho nhà vườn chuyên nghiệp.";
+            } else {
+              planDescription = "Hệ sinh thái toàn diện cho doanh nghiệp.";
+            }
+          }
+
+          // Parse features
+          const features = [];
+          if (plan.features) {
+            if (typeof plan.features === "string" && plan.features.startsWith("[")) {
+              try {
+                const parsed = JSON.parse(plan.features);
+                if (Array.isArray(parsed)) features.push(...parsed);
+              } catch { }
+            }
+            if (features.length === 0) {
+              const parsed = String(plan.features).split("\n").filter(f => f.trim());
+              if (parsed.length > 0) features.push(...parsed);
+            }
+          }
+          if (features.length === 0) features.push(planDescription);
+
+          return {
+            id: plan.planId,
+            name: plan.planName,
+            price: formattedPrice,
+            unit,
+            desc: planDescription,
+            features,
+            cta: price === 0 ? "Bắt đầu ngay" : "Dùng thử ngay",
+            popular: index === 1, // Highlight 2nd plan
+          };
+        });
+
+        // Ensure we display at least 3 cards if fewer plans returned, or just used returned
+        setPackages(transformed);
+      } catch (err) {
+        console.error("Failed to load packages", err);
+      } finally {
+        setPackagesLoading(false);
+      }
+    };
+
+    fetchPlans();
+  }, []);
+
   const handleHeroToggle = async () => {
     const v = videoRef.current;
     if (!v) return;
@@ -234,7 +314,7 @@ export default function Home() {
         v.muted = false;
         setIsMuted(false);
         await v.play();
-      } catch (_) {}
+      } catch (_) { }
       setShowHeroText(false);
     } else {
       v.muted = true;
@@ -259,7 +339,7 @@ export default function Home() {
     (async () => {
       try {
         await v.play();
-      } catch (_) {}
+      } catch (_) { }
     })();
   }, []);
 
@@ -267,6 +347,17 @@ export default function Home() {
   const { scrollY } = useScroll();
   const videoScale = useTransform(scrollY, [0, 400], [1.08, 1]);
   const titleY = useTransform(scrollY, [0, 300], [0, -40]);
+
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handlePackageClick = () => {
+    if (user) {
+      navigate("/price");
+    } else {
+      navigate("/auth");
+    }
+  };
 
   // --- Smoke tests (runtime) ------------------------------------------------
   useEffect(() => {
@@ -405,12 +496,12 @@ export default function Home() {
                 onLoadedData={async () => {
                   try {
                     await videoRef.current?.play();
-                  } catch (_) {}
+                  } catch (_) { }
                 }}
                 onCanPlay={async () => {
                   try {
                     await videoRef.current?.play();
-                  } catch (_) {}
+                  } catch (_) { }
                 }}
                 data-testid="hero-media"
               />
@@ -540,12 +631,12 @@ export default function Home() {
                   chăm sóc cây ăn quả tốt nhất và hiệu quả nhất cho người dùng.
                 </p>
                 <div>
-                  <a
-                    href="#register"
+                  <Link
+                    to="/intro"
                     className="inline-flex items-center justify-center rounded-full bg-[#FFFFA5] text-[#1F302F] px-7 py-3.5 text-[clamp(14px,1.8vw,20px)] font-semibold shadow hover:shadow-md transition mm-text-wrap-safe break-words"
                   >
                     Tìm hiểu về Mầm Mới
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -611,45 +702,100 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Territory teaser */}
+
+
+        {/* Service Packages (Pricing) */}
         <section
-          id="territory-teaser"
-          data-testid="territory-teaser"
-          className="cv-auto bg-[#FBFFDF]"
+          id="pricing"
+          data-testid="pricing-section"
+          className="cv-auto bg-[#FBFFDF] text-[#1F302F] py-16 md:py-24"
         >
-          <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px] py-16 md:py-24 relative">
-            <div
-              aria-hidden
-              className="pointer-events-none absolute -bottom-28 right-[12%] w-[520px] h-[520px] rounded-full bg-[#EEF3CC] z-0"
-            />
-            <div className="relative grid md:grid-cols-2 gap-10 items-end">
-              <div className="relative order-2 md:order-1 z-10">
-                <div className="relative md:-mt-20 md:-ml-[6%] w-[min(92vw,880px)] md:w-[760px] aspect-square rounded-full overflow-hidden bg-[#EDEFCF] shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
-                  <SafeImage
-                    srcs={[
-                      "https://images.unsplash.com/photo-1502680390469-be75c86b636f?q=80&w=2000&auto=format&fit=crop",
-                      "https://picsum.photos/seed/silo/1600/1600",
-                    ]}
-                    alt="Silhouette cơ sở sơ chế"
-                    className="w-full h-full object-cover"
-                    testId="teaser-img-circle"
-                  />
-                </div>
-                <div className="absolute md:-bottom-6 md:right-[14%] -bottom-5 right-[18%] w-16 h-16 rounded-full bg-[#D1DFB6] z-20" />
-              </div>
-              <div className="order-1 md:order-2 z-20 flex md:justify-end">
-                <div className="rounded-[28px] overflow-hidden shadow-lg ring-1 ring-black/5 w-[min(86vw,760px)] h-[min(60vh,520px)] md:translate-y-6">
-                  <SafeImage
-                    srcs={[
-                      "https://images.unsplash.com/photo-1542831371-29b0f74f9713?q=80&w=2000&auto=format&fit=crop",
-                      "https://picsum.photos/seed/forestperson/1800/1200",
-                    ]}
-                    alt="Người làm vườn trong rừng cây"
-                    className="w-full h-full object-cover"
-                    testId="teaser-img-rect"
-                  />
-                </div>
-              </div>
+          <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px]">
+            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+              <h2 className="text-[clamp(28px,3.2vw,48px)] font-display font-bold mb-4 mm-text-wrap-safe break-words">
+                Lựa chọn gói dịch vụ phù hợp
+              </h2>
+              <p className="text-[clamp(16px,1.8vw,20px)] opacity-80 mm-text-wrap-safe break-words">
+                Từ nông hộ nhỏ đến doanh nghiệp lớn, Mầm Mới đều có giải pháp tối ưu cho nhu cầu của bạn.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+              {packagesLoading ? (
+                /* Skeleton loading state */
+                [1, 2, 3].map((i) => (
+                  <div key={i} className="rounded-[24px] bg-white border border-[#1F302F]/10 p-8 h-[400px] animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
+                    <div className="h-10 bg-gray-200 rounded w-1/3 mb-6"></div>
+                    <div className="space-y-3">
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                      <div className="h-4 bg-gray-200 rounded"></div>
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                packages.map((pkg) => (
+                  <div
+                    key={pkg.id}
+                    className={`relative flex flex-col rounded-[24px] p-6 md:p-8 transition-all duration-300 hover:-translate-y-1 ${pkg.popular
+                      ? "bg-[#1F302F] text-[#FBFFDF] shadow-[0_20px_40px_rgba(31,48,47,0.25)] ring-1 ring-[#1F302F]"
+                      : "bg-white border border-[#1F302F]/10 shadow-lg hover:shadow-xl text-[#1F302F]"
+                      }`}
+                  >
+                    {pkg.popular && (
+                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#FFFFA5] text-[#1F302F] text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-sm">
+                        Khuyên dùng
+                      </div>
+                    )}
+
+                    <div className="mb-6">
+                      <h3 className={`text-xl font-bold mb-2 ${pkg.popular ? "text-[#FFFFA5]" : "text-[#5B6B4E]"}`}>
+                        {pkg.name}
+                      </h3>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-[clamp(32px,2.5vw,40px)] font-display font-bold">
+                          {pkg.price}
+                        </span>
+                        <span className="text-sm opacity-80">{pkg.unit}</span>
+                      </div>
+                      <p className={`mt-3 text-sm leading-relaxed ${pkg.popular ? "opacity-90" : "opacity-75"}`}>
+                        {pkg.desc}
+                      </p>
+                    </div>
+
+                    <ul className="space-y-4 mb-8 flex-1">
+                      {pkg.features.map((feat, idx) => (
+                        <li key={idx} className="flex items-start gap-3 text-sm">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`w-5 h-5 flex-shrink-0 ${pkg.popular ? "text-[#FFFFA5]" : "text-[#1F302F]"}`}
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                          <span className="opacity-90">{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <button
+                      onClick={handlePackageClick}
+                      className={`w-full py-4 rounded-xl font-semibold transition-all ${pkg.popular
+                        ? "bg-[#FFFFA5] text-[#1F302F] hover:bg-white"
+                        : "bg-[#1F302F] text-[#FBFFDF] hover:bg-[#5B6B4E]"
+                        }`}
+                    >
+                      {pkg.cta}
+                    </button>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </section>
@@ -724,59 +870,7 @@ export default function Home() {
         {/* Main content */}
         <main id="main">
           {/* News */}
-          <section id="news" className="cv-auto bg-[#D1DFB6]">
-            <div className="mm-fluid-shell mx-auto max-w-[1280px] px-4 md:px-[90px] py-14 md:py-20">
-              <h2 className="text-center text-[clamp(34px,3.6vw,48px)] leading-tight font-semibold text-[#1F302F] mm-text-wrap-safe break-words">
-                Tin mới
-              </h2>
 
-              {/* Overlay news cards (2 tall images) */}
-              <div
-                className="mt-10 grid md:grid-cols-2 gap-8 md:gap-10 place-items-center"
-                data-testid="news-overlay"
-              >
-                {[
-                  {
-                    title: "Tạo vườn & tạo cây trong 5 phút",
-                    body: "Điền thông tin đất, gán lô, cấp mã cây và QR ngay trên web – dữ liệu tự động chảy sang TreeDetail và RouteManager.",
-                    image:
-                      "https://images.unsplash.com/photo-1592924357228-91a4daadcfea?q=80&w=1600&auto=format&fit=crop",
-                    fallback: "https://picsum.photos/seed/bleuet/1200/1600",
-                    href: "#news-a",
-                  },
-                  {
-                    title: "TreeDetail gom đủ sức khỏe, công việc, AI",
-                    body: "Modal cập nhật lá/cành/hoa/quả mở hằng ngày, CareSchedule đồng bộ sau mỗi thao tác, AI đề xuất việc theo giai đoạn.",
-                    image:
-                      "https://images.unsplash.com/photo-1502680390469-be75c86b636f?q=80&w=1600&auto=format&fit=crop",
-                    fallback: "https://picsum.photos/seed/silo/1200/1600",
-                    href: "#news-b",
-                  },
-                ].map((n) => (
-                  <a
-                    key={n.title}
-                    href={n.href}
-                    className="group relative w-full max-w-[620px] aspect-[3/4] overflow-hidden rounded-2xl shadow-lg focus:outline-none focus:ring-4 focus:ring-white/40"
-                  >
-                    <img
-                      src={n.image}
-                      alt=""
-                      className="absolute inset-0 w-full h-full object-cover transform-gpu will-change-transform scale-105 group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/35 to-black/10" />
-                    <div className="relative z-10 h-full p-6 md:p-8 flex flex-col justify-end text-white">
-                      <h3 className="text-[clamp(22px,2.3vw,30px)] leading-snug font-semibold drop-shadow-md mm-text-wrap-safe break-words">
-                        {n.title}
-                      </h3>
-                      <p className="mm-fluid-text mt-4 text-[clamp(13px,1.7vw,16px)] opacity-95 drop-shadow max-w-[92%] mm-text-wrap-safe break-words">
-                        {n.body}
-                      </p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          </section>
         </main>
 
         {/* Cookie banner */}

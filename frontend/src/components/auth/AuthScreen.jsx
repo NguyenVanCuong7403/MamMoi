@@ -20,9 +20,11 @@ import {
   Clock,
 } from "lucide-react";
 import { useAuth } from "../../API/context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import { LivingBackground } from "@/components/background";
+
+// ... (existing imports/constants)
 
 // input rõ hơn, font to hơn, placeholder đậm hơn
 const baseInputClass =
@@ -145,7 +147,15 @@ const getPostLoginPath = (role, roleId = null) => {
 };
 
 export default function AuthScreen({ defaultTab = "login" }) {
-  const [tab, setTab] = useState(defaultTab);
+  const [searchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
+  // Prioritize query param 'tab' if it exists and is valid ('login' or 'register')
+  const initialTab = (tabParam === "login" || tabParam === "register")
+    ? tabParam
+    : defaultTab;
+
+  const [tab, setTab] = useState(initialTab);
 
   const [loginResetToken, setLoginResetToken] = useState(0);
   const [dialogId, setDialogId] = useState(0);
@@ -184,8 +194,13 @@ export default function AuthScreen({ defaultTab = "login" }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setTab(defaultTab);
-  }, [defaultTab]);
+    // If param exists, let it control the state, otherwise fallback to prop
+    if (tabParam === "login" || tabParam === "register") {
+      setTab(tabParam);
+    } else {
+      setTab(defaultTab);
+    }
+  }, [defaultTab, tabParam]);
 
   const openOtpFor = (type, payload) => {
     const channel = payload.mode || (payload.email ? "email" : "phone");
@@ -735,7 +750,7 @@ export default function AuthScreen({ defaultTab = "login" }) {
 
           {/* OTP (cho đăng ký + quên mật khẩu) */}
           <OtpDialog
-            key={otpSession}
+            key={`otp-${otpSession}`}
             open={otpOpen}
             onClose={handleOtpClose}
             onSubmit={handleVerifyOtp}
@@ -761,7 +776,7 @@ export default function AuthScreen({ defaultTab = "login" }) {
 
           {/* Popup thông báo chung */}
           <AuthMessageDialog
-            key={dialogId}
+            key={`dialog-${dialogId}`}
             open={!!authDialog}
             title={authDialog?.title}
             message={authDialog?.message}
@@ -869,12 +884,12 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
     }
 
     setAcctError(message);
-    
+
     // Nếu email hợp lệ và checkbox "Ghi nhớ đăng nhập" đang được tick, thêm email vào danh sách
     if (!message && remember && value) {
       addRememberedEmail(value);
     }
-    
+
     return !message;
   };
 
@@ -1142,7 +1157,7 @@ function LoginForm({ onForgot, onSubmitLogin, resetToken }) {
             onCheckedChange={(v) => {
               const newValue = Boolean(v);
               setRemember(newValue);
-              
+
               if (!newValue) {
                 // Nếu bỏ tick, chỉ xóa email hiện tại khỏi danh sách (nếu có)
                 // Không xóa toàn bộ danh sách để giữ lại các email khác
@@ -1898,8 +1913,8 @@ function OtpDialog({
     actionType === "register"
       ? "Hoàn tất đăng ký"
       : actionType === "reset"
-      ? "Hoàn tất xác minh"
-      : "Hoàn tất đăng nhập";
+        ? "Hoàn tất xác minh"
+        : "Hoàn tất đăng nhập";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm">
@@ -1936,8 +1951,8 @@ function OtpDialog({
             {actionType === "register"
               ? "hoàn tất đăng ký."
               : actionType === "reset"
-              ? "xác nhận yêu cầu của bạn."
-              : "hoàn tất đăng nhập."}
+                ? "xác nhận yêu cầu của bạn."
+                : "hoàn tất đăng nhập."}
           </p>
 
           <div className="mt-4 flex justify-between gap-2">
@@ -1947,11 +1962,10 @@ function OtpDialog({
                 ref={(el) => {
                   inputsRef.current[index] = el;
                 }}
-                className={`h-12 w-11 rounded-2xl border text-center text-lg font-semibold tracking-[0.3em] shadow-none focus-visible:ring-emerald-500 ${
-                  hasError
-                    ? "border-rose-400 bg-rose-50 text-rose-700"
-                    : "border-slate-300 bg-slate-50 text-slate-800"
-                }`}
+                className={`h-12 w-11 rounded-2xl border text-center text-lg font-semibold tracking-[0.3em] shadow-none focus-visible:ring-emerald-500 ${hasError
+                  ? "border-rose-400 bg-rose-50 text-rose-700"
+                  : "border-slate-300 bg-slate-50 text-slate-800"
+                  }`}
                 maxLength={1}
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
@@ -2251,10 +2265,9 @@ function Field({ label, icon, error, isErrorBorder, children }) {
           focus-within:ring-2 focus-within:ring-emerald-200/70
           focus-within:bg-white
           focus-within:shadow-md
-          ${
-            hasBorderError
-              ? "border-rose-500 bg-rose-50 shadow-sm"
-              : "border-slate-300 bg-slate-50 shadow-sm"
+          ${hasBorderError
+            ? "border-rose-500 bg-rose-50 shadow-sm"
+            : "border-slate-300 bg-slate-50 shadow-sm"
           }
         `}
       >
@@ -2276,10 +2289,10 @@ function PasswordStrengthBar({ strength }) {
     strength.score >= 4
       ? "Rất mạnh"
       : strength.score === 3
-      ? "Mạnh"
-      : strength.score === 2
-      ? "Vừa"
-      : "Yếu";
+        ? "Mạnh"
+        : strength.score === 2
+          ? "Vừa"
+          : "Yếu";
   const pct = (strength.score / 4) * 100;
 
   return (
@@ -2293,8 +2306,8 @@ function PasswordStrengthBar({ strength }) {
               strength.score >= 3
                 ? "linear-gradient(90deg,#10b981,#22c55e)"
                 : strength.score === 2
-                ? "linear-gradient(90deg,#f59e0b,#fbbf24)"
-                : "linear-gradient(90deg,#ef4444,#f87171)",
+                  ? "linear-gradient(90deg,#f59e0b,#fbbf24)"
+                  : "linear-gradient(90deg,#ef4444,#f87171)",
           }}
         />
       </div>
@@ -2359,10 +2372,9 @@ function AuthMessageDialog({
       <div
         className={`
           w-full overflow-hidden rounded-[28px] border shadow-2xl
-          ${
-            isSuccess
-              ? "max-w-lg border-emerald-200 bg-emerald-50"
-              : "max-w-sm border-rose-200 bg-rose-50"
+          ${isSuccess
+            ? "max-w-lg border-emerald-200 bg-emerald-50"
+            : "max-w-sm border-rose-200 bg-rose-50"
           }
         `}
       >
@@ -2371,8 +2383,7 @@ function AuthMessageDialog({
           <p
             className={`
               font-semibold
-              ${
-                isSuccess ? "text-lg text-emerald-800" : "text-sm text-rose-800"
+              ${isSuccess ? "text-lg text-emerald-800" : "text-sm text-rose-800"
               }
             `}
           >
@@ -2383,10 +2394,9 @@ function AuthMessageDialog({
             onClick={onClose}
             className={`
               rounded-full p-1.5 transition
-              ${
-                isSuccess
-                  ? "text-emerald-700 hover:bg-emerald-100"
-                  : "text-rose-700 hover:bg-rose-100"
+              ${isSuccess
+                ? "text-emerald-700 hover:bg-emerald-100"
+                : "text-rose-700 hover:bg-rose-100"
               }
             `}
           >
@@ -2398,10 +2408,9 @@ function AuthMessageDialog({
         <div
           className={`
             px-6 pb-5
-            ${
-              isSuccess
-                ? "text-sm sm:text-base text-emerald-800"
-                : "text-xs text-rose-700"
+            ${isSuccess
+              ? "text-sm sm:text-base text-emerald-800"
+              : "text-xs text-rose-700"
             }
           `}
         >

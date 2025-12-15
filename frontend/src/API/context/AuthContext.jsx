@@ -541,7 +541,7 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await AuthRepository.logout();
-    } catch {}
+    } catch { }
     localStorage.removeItem("token");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
@@ -550,6 +550,16 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setRefreshToken(null);
   }, []);
+
+  /* ===== SIDE EFFECT HANDLER ===== */
+  // Sync user state to localStorage and notify listeners whenever user changes.
+  // This replaces side effects that were previously inside setUser updaters.
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem("user", JSON.stringify(user));
+      window.dispatchEvent(new CustomEvent("userProfileUpdated"));
+    }
+  }, [user]);
 
   const refreshUser = useCallback(async () => {
     try {
@@ -581,7 +591,7 @@ export const AuthProvider = ({ children }) => {
             roles: roleList,
           };
 
-          localStorage.setItem("user", JSON.stringify(nextUser));
+          // Side effects removed from here!
           return nextUser;
         });
       }
@@ -592,8 +602,8 @@ export const AuthProvider = ({ children }) => {
   }, [logout]);
 
   useEffect(() => {
-    if (token && !user) refreshUser();
-  }, [token, user, refreshUser]);
+    if (token) refreshUser();
+  }, [token, refreshUser]);
 
   return (
     <AuthContext.Provider
