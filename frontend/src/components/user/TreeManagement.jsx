@@ -217,15 +217,15 @@ function PhaseBadge({ value, size = "xs", preferAbbr = true, autoFit = true }) {
     size === "xs"
       ? "px-2 py-0.5 text-[10px]"
       : size === "sm"
-      ? "px-2.5 py-1 text-[11px]"
-      : "px-3 py-1.5 text-[12px]";
+        ? "px-2.5 py-1 text-[11px]"
+        : "px-3 py-1.5 text-[12px]";
 
   const iconCls =
     size === "xs"
       ? "text-[12px]"
       : size === "sm"
-      ? "text-[14px]"
-      : "text-[16px]";
+        ? "text-[14px]"
+        : "text-[16px]";
 
   if (!meta) {
     const raw = String(value || "").trim();
@@ -884,8 +884,8 @@ function normalizeTree(raw, effectiveGardenId, effectiveGardenName) {
     (raw?.plantDate
       ? String(raw.plantDate).slice(0, 10)
       : raw?.createdAt
-      ? String(raw.createdAt).slice(0, 10)
-      : "2024-01-01");
+        ? String(raw.createdAt).slice(0, 10)
+        : "2024-01-01");
 
   const phenology = {
     leafStatus: raw?.leafStatus,
@@ -1900,6 +1900,7 @@ export default function TreeManagement() {
                         </div>
                       </div>
 
+                      {/*
                       <div className="mt-4">
                         <div className="flex items-center justify-between">
                           <div className="text-neutral-500 text-sm">
@@ -1945,6 +1946,7 @@ export default function TreeManagement() {
                           })()
                         )}
                       </div>
+                      */}
 
                       <div className="mt-auto pt-4">
                         <Separator />
@@ -2020,7 +2022,7 @@ function GardenWeatherPanel({ garden, gardenInfo, weather }) {
           Object.prototype.hasOwnProperty.call(document.body.style, "zoom")
         );
       }
-    } catch (_) {}
+    } catch (_) { }
   }, []);
 
   // auto tính scale mỗi khi panel thay đổi width
@@ -2048,14 +2050,14 @@ function GardenWeatherPanel({ garden, gardenInfo, weather }) {
 
   const innerScaleStyle = supportsZoom
     ? {
-        zoom: scale,
-      }
+      zoom: scale,
+    }
     : {
-        transform: `scale(${scale})`,
-        transformOrigin: "center right",
-        // đảm bảo sau khi scale, phần nội dung vẫn fill đủ chiều ngang
-        width: `${100 / scale}%`,
-      };
+      transform: `scale(${scale})`,
+      transformOrigin: "center right",
+      // đảm bảo sau khi scale, phần nội dung vẫn fill đủ chiều ngang
+      width: `${100 / scale}%`,
+    };
 
   // ====== DATA THỜI TIẾT DEMO NHƯ CŨ ======
   const locationName =
@@ -2198,8 +2200,8 @@ function GardenWeatherPanel({ garden, gardenInfo, weather }) {
                     {current.feelsLike != null
                       ? Math.round(Number(current.feelsLike))
                       : current.temp != null
-                      ? Math.round(Number(current.temp))
-                      : "—"}
+                        ? Math.round(Number(current.temp))
+                        : "—"}
                     °
                   </span>
                 </div>
@@ -2511,10 +2513,10 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
         prev.map((item) =>
           item.scheduleId === id
             ? {
-                ...item,
-                status: "Completed",
-                completedNote: note,
-              }
+              ...item,
+              status: "Completed",
+              completedNote: note,
+            }
             : item
         )
       );
@@ -2803,21 +2805,19 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
         <div className="mt-4 flex gap-2 border-b border-white/20">
           <button
             onClick={() => setShowCompleted(false)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              !showCompleted
-                ? "text-white border-b-2 border-emerald-400"
-                : "text-white/60 hover:text-white/80"
-            }`}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${!showCompleted
+              ? "text-white border-b-2 border-emerald-400"
+              : "text-white/60 hover:text-white/80"
+              }`}
           >
             Đang thực hiện
           </button>
           <button
             onClick={() => setShowCompleted(true)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              showCompleted
-                ? "text-white border-b-2 border-emerald-400"
-                : "text-white/60 hover:text-white/80"
-            }`}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${showCompleted
+              ? "text-white border-b-2 border-emerald-400"
+              : "text-white/60 hover:text-white/80"
+              }`}
           >
             Đã hoàn thành
           </button>
@@ -2991,44 +2991,40 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
 
                         return (
                           <div
-                            className={`bg-gradient-to-r ${
-                              hasOverdue
-                                ? "from-rose-500/20 to-rose-600/20 border-rose-400/40"
-                                : allCompleted
+                            className={`bg-gradient-to-r ${hasOverdue
+                              ? "from-rose-500/20 to-rose-600/20 border-rose-400/40"
+                              : allCompleted
                                 ? "from-neutral-500/20 to-neutral-600/20 border-neutral-400/40"
                                 : "from-emerald-500/20 to-teal-500/20 border-emerald-400/40"
-                            } border rounded-xl px-3 py-2 shadow-sm`}
+                              } border rounded-xl px-3 py-2 shadow-sm`}
                           >
                             <div className="flex items-center gap-1.5 text-[10px]">
                               <Sprout
-                                className={`h-5 w-5 ${
-                                  hasOverdue
-                                    ? "text-rose-400"
-                                    : allCompleted
+                                className={`h-5 w-5 ${hasOverdue
+                                  ? "text-rose-400"
+                                  : allCompleted
                                     ? "text-neutral-400"
                                     : "text-emerald-400"
-                                }`}
+                                  }`}
                               />
                               <h3
-                                className={`text-[11px] font-semibold ${
-                                  hasOverdue
-                                    ? "text-rose-200"
-                                    : allCompleted
+                                className={`text-[11px] font-semibold ${hasOverdue
+                                  ? "text-rose-200"
+                                  : allCompleted
                                     ? "text-neutral-300"
                                     : "text-emerald-200"
-                                }`}
+                                  }`}
                               >
                                 {treeGroup.treeName}
                               </h3>
                               <Badge
                                 variant="secondary"
-                                className={`ml-auto text-[10px] px-2 py-0 ${
-                                  hasOverdue
-                                    ? "bg-rose-500/30 text-rose-200 border-rose-400/40"
-                                    : allCompleted
+                                className={`ml-auto text-[10px] px-2 py-0 ${hasOverdue
+                                  ? "bg-rose-500/30 text-rose-200 border-rose-400/40"
+                                  : allCompleted
                                     ? "bg-neutral-500/30 text-neutral-200 border-neutral-400/40"
                                     : "bg-emerald-500/30 text-emerald-200 border-emerald-400/40"
-                                } border`}
+                                  } border`}
                               >
                                 {filteredTasks.length}{" "}
                                 {filteredTasks.length === 1
@@ -3438,13 +3434,12 @@ function TaskItem({
     <>
       <div
         ref={containerRef}
-        className={`rounded-2xl border px-2.5 py-2.5 shadow-sm space-y-2 ${
-          overdue
-            ? "border-rose-400/40 bg-rose-500/10"
-            : normalizeKey(task.status) === "completed"
+        className={`rounded-2xl border px-2.5 py-2.5 shadow-sm space-y-2 ${overdue
+          ? "border-rose-400/40 bg-rose-500/10"
+          : normalizeKey(task.status) === "completed"
             ? "border-neutral-400/40 bg-neutral-500/10"
             : "border-white/20 bg-white/10"
-        }`}
+          }`}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       >
@@ -3470,11 +3465,10 @@ function TaskItem({
                 </Badge>
                 <Badge
                   variant="outline"
-                  className={`gap-1 px-2 py-0.5 text-xs ${
-                    overdue
-                      ? "border-rose-400/60 text-rose-200 bg-rose-500/20"
-                      : "border-white/20 text-white/80"
-                  }`}
+                  className={`gap-1 px-2 py-0.5 text-xs ${overdue
+                    ? "border-rose-400/60 text-rose-200 bg-rose-500/20"
+                    : "border-white/20 text-white/80"
+                    }`}
                 >
                   <Calendar className="h-3.5 w-3.5" />
                   {formatTaskDate(task.scheduledDate)}
@@ -3709,8 +3703,8 @@ function TodoRow({ text, due }) {
   const dueColor = d.includes("quá hạn")
     ? "bg-rose-50 text-rose-700 border-rose-200"
     : d.includes("hôm nay")
-    ? "bg-amber-50 text-amber-700 border-amber-200"
-    : "bg-neutral-50 text-neutral-600 border-neutral-200";
+      ? "bg-amber-50 text-amber-700 border-amber-200"
+      : "bg-neutral-50 text-neutral-600 border-neutral-200";
   return (
     <li className="flex items-center justify-between gap-2 py-1">
       <span className="text-sm text-neutral-800">{text}</span>

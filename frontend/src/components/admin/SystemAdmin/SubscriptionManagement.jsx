@@ -69,6 +69,7 @@ const TRANSACTION_STATUS = [
   { value: "success", label: "Thành công" },
   { value: "failed", label: "Thất bại" },
   { value: "pending", label: "Đang xử lý" },
+  { value: "cancelled", label: "Đã hủy" },
 ];
 
 const PLAN_OPTIONS = [
@@ -82,6 +83,7 @@ const STATUS_META = {
   success: { label: "Thành công", className: "bg-emerald-50 text-emerald-700" },
   failed: { label: "Thất bại", className: "bg-rose-50 text-rose-700" },
   pending: { label: "Đang xử lý", className: "bg-amber-50 text-amber-700" },
+  cancelled: { label: "Đã hủy", className: "bg-rose-50 text-rose-700" },
 };
 
 const BACKGROUND_PALETTE = {
@@ -286,6 +288,120 @@ function RevenueGrowthChart({ data, timeframeLabel, valueFormatter }) {
   );
 }
 
+function RevenueByPlanChart({ data }) {
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+    const value = payload[0].value;
+    return (
+      <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2 text-xs shadow-md">
+        <p className="font-medium text-slate-900">{label}</p>
+        <p className="mt-1 text-emerald-600">
+          {formatCurrency(value)}
+        </p>
+      </div>
+    );
+  };
+
+  // Calculate total revenue
+  const totalRevenue = data.reduce((sum, item) => sum + (item.totalRevenue || 0), 0);
+
+  return (
+    <div className="flex h-full flex-col gap-4 rounded-2xl border border-emerald-50 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-700 p-5 text-emerald-50 shadow-lg">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-emerald-200">
+            Phân bổ theo gói
+          </p>
+          <h3 className="mt-1 text-lg font-semibold text-white">
+            Doanh thu theo gói dịch vụ
+          </h3>
+          <p className="mt-1 text-xs text-emerald-100/80">
+            So sánh hiệu quả kinh doanh giữa các gói dịch vụ.
+          </p>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <span className="text-[11px] text-emerald-200">
+            Tổng doanh thu:{" "}
+            <span className="font-semibold text-white">
+              {formatCurrency(totalRevenue)}
+            </span>
+          </span>
+        </div>
+      </div>
+      <div className="flex-1 min-h-[260px]">
+        {data && data.length > 0 ? (
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data}
+              margin={{
+                left: 0,
+                right: 4,
+                top: 10,
+                bottom: 0,
+              }}
+            >
+              <defs>
+                <linearGradient
+                  id="planBarGradient"
+                  x1="0"
+                  y1="0"
+                  x2="0"
+                  y2="1"
+                >
+                  <stop offset="0%" stopColor="#bbf7d0" stopOpacity={0.95} />
+                  <stop offset="100%" stopColor="#22c55e" stopOpacity={0.8} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid
+                stroke="#064e3b"
+                strokeDasharray="3 3"
+                opacity={0.35}
+              />
+              <XAxis
+                dataKey="planName"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fill: "#d1fae5", fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                tick={{ fill: "#a7f3d0", fontSize: 11 }}
+                width={60}
+                domain={[0, "auto"]}
+                allowDecimals={true}
+                tickFormatter={(value) => formatCurrency(value)}
+              />
+              <RechartsTooltip content={<CustomTooltip />} />
+              <Bar
+                dataKey="totalRevenue"
+                fill="url(#planBarGradient)"
+                radius={[8, 8, 0, 0]}
+                maxBarSize={60}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="flex h-full items-center justify-center text-emerald-200/60">
+            <p className="text-sm">
+              Chưa có dữ liệu doanh thu theo gói
+            </p>
+          </div>
+        )}
+      </div>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-[11px]">
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/40 bg-emerald-950/40 px-3 py-1">
+          <span className="h-2 w-2 rounded-full bg-emerald-300" />
+          <span className="font-medium text-emerald-100">Doanh thu</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 function StatusDistributionChart({ data }) {
   // Remove dependency on allTransactions for revenue calculation
   const chartData = data.map((item) => ({
@@ -295,8 +411,8 @@ function StatusDistributionChart({ data }) {
       item.key === "success"
         ? "#22c55e"
         : item.key === "pending"
-        ? "#f59e0b"
-        : "#ef4444",
+          ? "#f59e0b"
+          : "#ef4444",
   }));
 
   const peakValue = chartData.reduce(
@@ -364,7 +480,7 @@ function StatusDistributionChart({ data }) {
                 tickMargin={8}
                 tick={{ fill: "#6b7280", fontSize: 11 }}
                 width={50}
-                domain={[0, peakValue ? peakValue * 1.2 : 1]}
+                domain={[0, peakValue ? Math.ceil(peakValue * 1.2) : 1]}
                 allowDecimals={false}
               />
               <RechartsTooltip content={<CustomTooltip />} />
@@ -553,9 +669,9 @@ function SubscriptionManagement() {
     };
   }, [revenueStatistics]);
 
-  // Calculate status distribution from API payments
+  // Calculate status distribution from statistics (not filtered payments)
   const statusDistributionData = useMemo(() => {
-    if (!revenuePayments || revenuePayments.length === 0) {
+    if (!revenueStatistics) {
       return [
         { key: "success", label: "Thành công", value: 0 },
         { key: "pending", label: "Đang xử lý", value: 0 },
@@ -563,24 +679,24 @@ function SubscriptionManagement() {
       ];
     }
 
-    const counts = revenuePayments.reduce((acc, payment) => {
-      const status = payment.transactionStatus?.toLowerCase() || "pending";
-      if (status === "success" || status === "completed") {
-        acc.success = (acc.success || 0) + 1;
-      } else if (status === "failed") {
-        acc.failed = (acc.failed || 0) + 1;
-      } else {
-        acc.pending = (acc.pending || 0) + 1;
-      }
-      return acc;
-    }, {});
+    const totalTransactions = revenueStatistics.totalTransactions || 0;
+    const successfulTransactions = revenueStatistics.successfulTransactions || 0;
+    const failedTransactions = revenueStatistics.failedTransactions || 0;
+    const cancelledTransactions = revenueStatistics.cancelledTransactions || 0;
+    const pendingTransactions = revenueStatistics.pendingTransactions || 0;
+
+    // Calculate pending as the remaining if not provided by API
+    const calculatedPending = pendingTransactions > 0
+      ? pendingTransactions
+      : Math.max(0, totalTransactions - successfulTransactions - failedTransactions - cancelledTransactions);
 
     return [
-      { key: "success", label: "Thành công", value: counts.success || 0 },
-      { key: "pending", label: "Đang xử lý", value: counts.pending || 0 },
-      { key: "failed", label: "Thất bại", value: counts.failed || 0 },
+      { key: "success", label: "Thành công", value: successfulTransactions },
+      { key: "pending", label: "Đang xử lý", value: calculatedPending },
+      { key: "failed", label: "Thất bại", value: failedTransactions + cancelledTransactions },
     ];
-  }, [revenuePayments]);
+  }, [revenueStatistics]);
+
 
   // Prepare revenue chart data for growth chart
   const revenueGrowthData = useMemo(() => {
@@ -699,41 +815,6 @@ function SubscriptionManagement() {
             )}
             {/* Revenue Chart */}
 
-            {/* Revenue by Plan */}
-            {revenueByPlan.length > 0 && (
-              <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-slate-900">
-                    Doanh thu theo gói dịch vụ
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[300px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={revenueByPlan}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                        <XAxis
-                          dataKey="planName"
-                          tick={{ fill: "#6b7280", fontSize: 11 }}
-                        />
-                        <YAxis
-                          tick={{ fill: "#6b7280", fontSize: 11 }}
-                          tickFormatter={formatCurrency}
-                        />
-                        <RechartsTooltip
-                          formatter={(value) => formatCurrency(value)}
-                        />
-                        <Bar
-                          dataKey="totalRevenue"
-                          fill="#22c55e"
-                          radius={[8, 8, 0, 0]}
-                        />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
             {/* Charts Section */}
             <Card className="border-none bg-transparent text-slate-900 shadow-none">
               <CardContent className="grid gap-6 grid-cols-1 xl:grid-cols-2 p-0 lg:min-h-[360px]">
@@ -750,6 +831,11 @@ function SubscriptionManagement() {
                 <div className="xl:col-span-1 h-full">
                   <StatusDistributionChart data={statusDistributionData} />
                 </div>
+                {revenueByPlan.length > 0 && (
+                  <div className="xl:col-span-2 h-full">
+                    <RevenueByPlanChart data={revenueByPlan} />
+                  </div>
+                )}
               </CardContent>
             </Card>
             {/* Revenue Payments Table */}
@@ -778,8 +864,8 @@ function SubscriptionManagement() {
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {revenueStartDate
                             ? new Date(revenueStartDate).toLocaleDateString(
-                                "vi-VN"
-                              )
+                              "vi-VN"
+                            )
                             : "Từ ngày"}
                         </Button>
                       </PopoverTrigger>
@@ -802,8 +888,8 @@ function SubscriptionManagement() {
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {revenueEndDate
                             ? new Date(revenueEndDate).toLocaleDateString(
-                                "vi-VN"
-                              )
+                              "vi-VN"
+                            )
                             : "Đến ngày"}
                         </Button>
                       </PopoverTrigger>
@@ -901,9 +987,9 @@ function SubscriptionManagement() {
                                 <TableCell className="text-slate-600">
                                   {payment.subscriptionEndDate
                                     ? formatDate(
-                                        payment.subscriptionEndDate,
-                                        "Không giới hạn"
-                                      )
+                                      payment.subscriptionEndDate,
+                                      "Không giới hạn"
+                                    )
                                     : "Không giới hạn"}
                                 </TableCell>
                                 <TableCell className="font-semibold text-emerald-700">
@@ -924,15 +1010,19 @@ function SubscriptionManagement() {
                                       payment.transactionStatus === "Success"
                                         ? "bg-emerald-50 text-emerald-700"
                                         : payment.transactionStatus === "Failed"
-                                        ? "bg-rose-50 text-rose-700"
-                                        : "bg-amber-50 text-amber-700"
+                                          ? "bg-rose-50 text-rose-700"
+                                          : payment.transactionStatus === "Cancelled"
+                                            ? "bg-rose-50 text-rose-700"
+                                            : "bg-amber-50 text-amber-700"
                                     )}
                                   >
                                     {payment.transactionStatus === "Success"
                                       ? "Thành công"
                                       : payment.transactionStatus === "Failed"
-                                      ? "Thất bại"
-                                      : "Đang xử lý"}
+                                        ? "Thất bại"
+                                        : payment.transactionStatus === "Cancelled"
+                                          ? "Đã hủy"
+                                          : "Đang xử lý"}
                                   </Badge>
                                 </TableCell>
                               </TableRow>

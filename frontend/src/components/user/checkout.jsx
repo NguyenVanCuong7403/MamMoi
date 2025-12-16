@@ -199,11 +199,11 @@ const RESPONSIVE_QR_STYLES = `
 /* =========================================================
    Theme & constants
 ========================================================= */
-const PALETTE = { 
-  bg: "#1F302F", 
-  leaf: "#D1DFB6", 
-  ivory: "#FBFFDF", 
-  accent: "#FFFFA5" 
+const PALETTE = {
+  bg: "#1F302F",
+  leaf: "#D1DFB6",
+  ivory: "#FBFFDF",
+  accent: "#FFFFA5"
 };
 
 /* ========================== Utilities ========================== */
@@ -274,7 +274,7 @@ export default function MamMoiQrCheckout() {
   const zoomStyle = useZoomStyle();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   // Get planId and subscription info from location state or URL params
   const searchParams = new URLSearchParams(location.search);
   const planIdFromUrl = searchParams.get("planId");
@@ -282,13 +282,13 @@ export default function MamMoiQrCheckout() {
   const planId = planIdFromState || planIdFromUrl || null;
   const isYearly = location.state?.isYearly || false; // Check if yearly subscription was selected
   const returnUrl = location.state?.returnUrl; // Get return URL from location state if available
-  
+
   // State for checkout data from API
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [checkoutData, setCheckoutData] = useState(null);
   const hasFetchedRef = useRef(false);
-  
+
   // Derived data from API response
   const order = checkoutData?.orderInfo || {
     code: "---",
@@ -299,7 +299,7 @@ export default function MamMoiQrCheckout() {
     subtotal: 0,
     fee: 0,
   };
-  
+
   const bank = checkoutData?.bankInfo || {
     name: "---",
     account: "---",
@@ -307,7 +307,7 @@ export default function MamMoiQrCheckout() {
     amount: 0,
     note: "---",
   };
-  
+
   const transactionId = checkoutData?.transactionId || "---";
   const orderCode = checkoutData?.orderCode || "";
   const expirationSeconds = checkoutData?.expirationSeconds || 900;
@@ -318,16 +318,16 @@ export default function MamMoiQrCheckout() {
     if (hasFetchedRef.current || checkoutData) {
       return;
     }
-    
+
     const fetchCheckout = async () => {
       if (!planId) {
         setError("Không tìm thấy thông tin gói đăng ký. Vui lòng chọn gói từ trang giá.");
         setLoading(false);
         return;
       }
-      
+
       hasFetchedRef.current = true;
-      
+
       try {
         const response = await PaymentRepository.createCheckout({
           planId: parseInt(planId),
@@ -335,7 +335,7 @@ export default function MamMoiQrCheckout() {
           cancelUrl: `${window.location.origin}/price`,
           subscriptionMonth: isYearly ? 12 : null, // Pass 12 months for yearly, null for monthly
         });
-        
+
         if (response?.success) {
           setCheckoutData(response);
         } else {
@@ -349,7 +349,7 @@ export default function MamMoiQrCheckout() {
         setLoading(false);
       }
     };
-    
+
     fetchCheckout();
   }, [planId, isYearly]);
 
@@ -362,15 +362,66 @@ export default function MamMoiQrCheckout() {
       setRemain(checkoutData.expirationSeconds || 900);
     }
   }, [checkoutData]);
-  
+
   useEffect(() => {
     if (remain <= 0) return;
     const id = setInterval(() => setRemain((s) => (s > 0 ? s - 1 : 0)), 1000);
     return () => clearInterval(id);
   }, [remain]);
-  
+
   const mm = String(Math.floor(remain / 60)).padStart(2, "0");
   const ss = String(remain % 60).padStart(2, "0");
+
+  // ====== Payment Timeout Handler ======
+  const timeoutHandledRef = useRef(false); // Prevent double handling
+
+  useEffect(() => {
+    // When timer reaches 0 and we have an order code, handle timeout
+    if (remain === 0 && orderCode && orderCode !== "---" && !timeoutHandledRef.current) {
+      timeoutHandledRef.current = true;
+
+      const handleTimeout = async () => {
+        try {
+          console.log("[Payment Timeout] Timer expired, cancelling payment...");
+
+          // Stop polling if it's running
+          if (pollingRef.current) {
+            clearInterval(pollingRef.current);
+            pollingRef.current = null;
+            setIsPolling(false);
+          }
+
+          // Call the cancel payment API to mark as failed
+          await PaymentRepository.cancelPayment(orderCode);
+
+          // Show timeout message
+          setError("Phiên thanh toán đã hết hạn. Vui lòng thử lại.");
+
+          // Wait 2 seconds to show message, then redirect
+          setTimeout(() => {
+            if (returnUrl) {
+              navigate(returnUrl);
+            } else {
+              navigate(-1);
+            }
+          }, 2000);
+        } catch (err) {
+          console.error("[Payment Timeout] Error handling timeout:", err);
+          // Even if cancel API fails, still redirect after showing error
+          setError("Phiên thanh toán đã hết hạn.");
+          setTimeout(() => {
+            if (returnUrl) {
+              navigate(returnUrl);
+            } else {
+              navigate(-1);
+            }
+          }, 2000);
+        }
+      };
+
+      handleTimeout();
+    }
+  }, [remain, orderCode, returnUrl, navigate]);
 
   // ====== Payment Status Polling ======
   const [isPolling, setIsPolling] = useState(false);
@@ -384,12 +435,12 @@ export default function MamMoiQrCheckout() {
 
   // ====== Window width for responsive layout ======
   const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1920);
-  
+
   useEffect(() => {
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
     };
-    
+
     if (typeof window !== 'undefined') {
       window.addEventListener('resize', handleResize);
       return () => window.removeEventListener('resize', handleResize);
@@ -398,17 +449,17 @@ export default function MamMoiQrCheckout() {
 
   // ====== QR Code Size (responsive) ======
   const [qrSize, setQrSize] = useState(320);
-  
+
   useEffect(() => {
     const calculateQrSize = () => {
       // Use container width for better zoom handling
       const container = document.querySelector('[data-qr-container]');
       const containerWidth = container ? container.clientWidth : (document.documentElement.clientWidth || window.innerWidth);
-      
+
       // Account for padding (p-4 sm:p-5 md:p-6 = 16px/20px/24px)
       const padding = containerWidth < 640 ? 32 : containerWidth < 1024 ? 40 : 48;
       const availableWidth = containerWidth - padding;
-      
+
       if (containerWidth < 640) {
         // Mobile
         setQrSize(Math.max(200, Math.min(240, Math.floor(availableWidth * 0.9))));
@@ -420,13 +471,13 @@ export default function MamMoiQrCheckout() {
         setQrSize(Math.max(280, Math.min(320, Math.floor(availableWidth * 0.8))));
       }
     };
-    
+
     // Initial calculation
     calculateQrSize();
-    
+
     // Recalculate on resize
     window.addEventListener('resize', calculateQrSize);
-    
+
     // Use ResizeObserver for better container size tracking
     const container = document.querySelector('[data-qr-container]');
     let resizeObserver = null;
@@ -434,7 +485,7 @@ export default function MamMoiQrCheckout() {
       resizeObserver = new ResizeObserver(calculateQrSize);
       resizeObserver.observe(container);
     }
-    
+
     return () => {
       window.removeEventListener('resize', calculateQrSize);
       if (resizeObserver && container) {
@@ -457,7 +508,7 @@ export default function MamMoiQrCheckout() {
     }
 
     setIsCancelling(true);
-    
+
     try {
       // Stop polling if it's running
       if (pollingRef.current) {
@@ -468,12 +519,12 @@ export default function MamMoiQrCheckout() {
 
       // Call the cancel payment API
       const response = await PaymentRepository.cancelPayment(orderCode);
-      
+
       if (response?.success !== false) {
         // Success - show cancelled message
         setShowCancelDialog(false);
         setShowCancelledMessage(true);
-        
+
         // After 1.5 seconds, navigate back to previous page
         setTimeout(() => {
           if (returnUrl) {
@@ -507,28 +558,28 @@ export default function MamMoiQrCheckout() {
       hasPollingRef: !!pollingRef.current,
       checkoutData: !!checkoutData
     });
-    
+
     // Only poll if autoReconcile is enabled, not already polling, and we have an orderCode
     if (!autoReconcile) {
       console.log("[Payment Poll] Skipping: autoReconcile is false");
       return;
     }
-    
+
     if (isPolling) {
       console.log("[Payment Poll] Skipping: already polling");
       return;
     }
-    
+
     if (!orderCode || orderCode === "---") {
       console.log("[Payment Poll] Skipping: no orderCode yet", orderCode);
       return;
     }
-    
+
     if (pollingRef.current) {
       console.log("[Payment Poll] Skipping: polling ref already exists");
       return;
     }
-    
+
     console.log("[Payment Poll] Starting polling for orderCode:", orderCode);
     setIsPolling(true);
     let pollCount = 0;
@@ -536,22 +587,22 @@ export default function MamMoiQrCheckout() {
     // Add 10% buffer to ensure we poll for the full expiration period
     const maxPolls = Math.ceil((expirationSeconds / 10) * 1.1);
     console.log("[Payment Poll] Max polls:", maxPolls, "Expiration seconds:", expirationSeconds);
-    
+
     // Start polling immediately (don't wait 10 seconds for first check)
     const checkStatus = async () => {
       pollCount++;
-      
+
       try {
         console.log(`[Payment Poll] Checking payment status (attempt ${pollCount}/${maxPolls})...`);
         const status = await PaymentRepository.checkPaymentStatus(orderCode);
         console.log(`[Payment Poll] Payment status:`, status);
-        
+
         if (status?.status === "Completed") {
           console.log(`[Payment Poll] Payment completed! Navigating to invoice...`);
           clearInterval(pollInterval);
           setIsPolling(false);
           pollingRef.current = null;
-          
+
           // Navigate to invoice with data
           navigate("/invoice", {
             state: {
@@ -580,7 +631,7 @@ export default function MamMoiQrCheckout() {
       } catch (err) {
         console.error("[Payment Poll] Error checking payment status:", err);
       }
-      
+
       if (pollCount >= maxPolls) {
         console.log(`[Payment Poll] Reached max polls (${maxPolls}), stopping...`);
         clearInterval(pollInterval);
@@ -588,13 +639,13 @@ export default function MamMoiQrCheckout() {
         pollingRef.current = null;
       }
     };
-    
+
     // Check immediately, then every 10 seconds
     checkStatus();
     const pollInterval = setInterval(checkStatus, 10000);
-    
+
     pollingRef.current = pollInterval;
-    
+
     return () => {
       console.log("[Payment Poll] Cleaning up polling interval");
       if (pollInterval) {
@@ -618,14 +669,15 @@ export default function MamMoiQrCheckout() {
     setLoading(true);
     setError(null);
     hasFetchedRef.current = false; // Reset to allow new fetch
-    
+    timeoutHandledRef.current = false; // Reset timeout flag for new session
+
     // Stop any existing polling
     if (pollingRef.current) {
       clearInterval(pollingRef.current);
       pollingRef.current = null;
       setIsPolling(false);
     }
-    
+
     try {
       const response = await PaymentRepository.createCheckout({
         planId: parseInt(planId),
@@ -633,7 +685,7 @@ export default function MamMoiQrCheckout() {
         cancelUrl: `${window.location.origin}/price`,
         subscriptionMonth: isYearly ? 12 : null, // Pass 12 months for yearly, null for monthly
       });
-      
+
       if (response?.success) {
         setCheckoutData(response);
         setRemain(response.expirationSeconds || 900);
@@ -659,7 +711,7 @@ export default function MamMoiQrCheckout() {
   // ====== Demo complete payment ======
   const handleDemoComplete = async () => {
     if (!orderCode) return;
-    
+
     try {
       await PaymentRepository.demoCompletePayment(orderCode);
       // The polling will pick up the completed status
@@ -740,172 +792,172 @@ export default function MamMoiQrCheckout() {
         <div className="relative min-h-screen pt-[64px] z-10 flex items-center justify-center overflow-x-hidden">
           <div className="mx-auto w-full px-4 sm:px-6 md:px-8 lg:px-10 py-6 sm:py-8 md:py-10 lg:py-12 min-w-0">
             <div className="w-full grid grid-cols-1 md:grid-cols-[1.15fr_0.85fr] gap-4 sm:gap-6 md:gap-8 min-w-0">
-          {/* LEFT: QR & bank info */}
-          <Card className="border border-white/20 bg-white/10 backdrop-blur-lg shadow-[0_20px_60px_rgba(0,0,0,0.3)] rounded-2xl md:rounded-3xl overflow-visible min-w-0 mm-qr-payment-card">
-            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 px-4 sm:px-6 min-w-0">
-              <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto min-w-0">
-                <QrCode className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-400 shrink-0" />
-                <CardTitle className="text-xl sm:text-2xl font-bold text-white break-words min-w-0 mm-qr-title">Quét QR để thanh toán</CardTitle>
-              </div>
-              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end shrink-0">
-                <Badge className="bg-emerald-500/90 hover:bg-emerald-500/90 text-white text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 shrink-0">PayOS</Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="gap-1 sm:gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm shrink-0"
-                  onClick={handleRefresh}
+              {/* LEFT: QR & bank info */}
+              <Card className="border border-white/20 bg-white/10 backdrop-blur-lg shadow-[0_20px_60px_rgba(0,0,0,0.3)] rounded-2xl md:rounded-3xl overflow-visible min-w-0 mm-qr-payment-card">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-2 px-4 sm:px-6 min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto min-w-0">
+                    <QrCode className="h-6 w-6 sm:h-7 sm:w-7 text-emerald-400 shrink-0" />
+                    <CardTitle className="text-xl sm:text-2xl font-bold text-white break-words min-w-0 mm-qr-title">Quét QR để thanh toán</CardTitle>
+                  </div>
+                  <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end shrink-0">
+                    <Badge className="bg-emerald-500/90 hover:bg-emerald-500/90 text-white text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5 shrink-0">PayOS</Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1 sm:gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20 h-9 sm:h-10 px-3 sm:px-4 text-xs sm:text-sm shrink-0"
+                      onClick={handleRefresh}
+                    >
+                      <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5" />
+                      <span className="hidden sm:inline">Tạo QR mới</span>
+                      <span className="sm:hidden">Mới</span>
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent
+                  className="flex flex-col xl:grid gap-4 sm:gap-6 md:gap-8 pt-2 px-4 sm:px-6 min-w-0 overflow-visible mm-qr-content"
+                  style={windowWidth >= 1280 ? { gridTemplateColumns: 'minmax(min-content, min(100%, 380px)) minmax(0, 1fr)' } : {}}
                 >
-                  <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5" /> 
-                  <span className="hidden sm:inline">Tạo QR mới</span>
-                  <span className="sm:hidden">Mới</span>
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent 
-              className="flex flex-col xl:grid gap-4 sm:gap-6 md:gap-8 pt-2 px-4 sm:px-6 min-w-0 overflow-visible mm-qr-content" 
-              style={windowWidth >= 1280 ? { gridTemplateColumns: 'minmax(min-content, min(100%, 380px)) minmax(0, 1fr)' } : {}}
-            >
-              {/* QR block */}
-              <div className="flex flex-col items-center gap-3 sm:gap-4 relative w-full min-w-0">
-                <div 
-                  data-qr-container
-                  className="rounded-xl sm:rounded-2xl border-2 border-white/30 bg-white/95 p-4 sm:p-5 md:p-6 shadow-lg w-full flex items-center justify-center overflow-hidden min-w-0"
-                  style={{ maxWidth: 'min(100%, 320px)', width: '100%' }}
-                >
-                  {QR && QR.$$typeof ? (
-                    <QR 
-                      value={qrValue} 
-                      size={qrSize}
-                      style={{ maxWidth: '100%', height: 'auto', width: '100%', aspectRatio: '1/1' }}
-                    />
-                  ) : (
-                    <div className="text-sm text-red-600">QR component not loaded</div>
-                  )}
-                </div>
-                <div className="text-sm sm:text-base text-white/90 flex items-center gap-2 mm-qr-timer">
-                  <Clock className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" /> 
-                  <span>Hiệu lực còn:</span>
-                  <span className={`font-semibold ${remain < 60 ? 'text-red-400' : 'text-white'}`}>
-                    {mm}:{ss}
-                  </span>
-                </div>
-              </div>
-
-              {/* Bank details */}
-              <div className="space-y-2 min-w-0 w-full overflow-visible mm-qr-bank-details">
-                <Line label="Ngân hàng" value={bank.bankName} />
-                <Line label="Số tài khoản" value={bank.accountNumber} copy={bank.accountNumber} />
-                <Line label="Chủ tài khoản" value={bank.accountHolder} />
-                <Line label="Số tiền" value={currency(bank.amount)} />
-                <Line label="Nội dung" value={bank.transferNote} copy={bank.transferNote} />
-
-                <Separator className="my-4 sm:my-5 bg-white/20" />
-
-                <div className="flex items-start gap-3 sm:gap-4 min-w-0">
-                  <Checkbox 
-                    id="auto-reconcile" 
-                    className="mt-1 shrink-0 flex-shrink-0" 
-                    checked={autoReconcile}
-                    onCheckedChange={(checked) => setAutoReconcile(checked === true)}
-                  />
-                  <label htmlFor="auto-reconcile" className="text-sm sm:text-base leading-6 sm:leading-7 text-white min-w-0 break-words">
-                    <span className="font-semibold">Đối soát tự động.</span>
-                    <br />
-                    <span className="text-white/70">
-                      Sau khi chuyển khoản, hóa đơn sẽ được gửi qua email.
-                    </span>
-                    {isPolling && (
-                      <span className="block mt-2 text-xs sm:text-sm text-emerald-400">
-                        Đang kiểm tra thanh toán...
+                  {/* QR block */}
+                  <div className="flex flex-col items-center gap-3 sm:gap-4 relative w-full min-w-0">
+                    <div
+                      data-qr-container
+                      className="rounded-xl sm:rounded-2xl border-2 border-white/30 bg-white/95 p-4 sm:p-5 md:p-6 shadow-lg w-full flex items-center justify-center overflow-hidden min-w-0"
+                      style={{ maxWidth: 'min(100%, 320px)', width: '100%' }}
+                    >
+                      {QR && QR.$$typeof ? (
+                        <QR
+                          value={qrValue}
+                          size={qrSize}
+                          style={{ maxWidth: '100%', height: 'auto', width: '100%', aspectRatio: '1/1' }}
+                        />
+                      ) : (
+                        <div className="text-sm text-red-600">QR component not loaded</div>
+                      )}
+                    </div>
+                    <div className="text-sm sm:text-base text-white/90 flex items-center gap-2 mm-qr-timer">
+                      <Clock className="h-4 w-4 sm:h-5 sm:w-5 shrink-0" />
+                      <span>Hiệu lực còn:</span>
+                      <span className={`font-semibold ${remain < 60 ? 'text-red-400' : 'text-white'}`}>
+                        {mm}:{ss}
                       </span>
+                    </div>
+                  </div>
+
+                  {/* Bank details */}
+                  <div className="space-y-2 min-w-0 w-full overflow-visible mm-qr-bank-details">
+                    <Line label="Ngân hàng" value={bank.bankName} />
+                    <Line label="Số tài khoản" value={bank.accountNumber} copy={bank.accountNumber} />
+                    <Line label="Chủ tài khoản" value={bank.accountHolder} />
+                    <Line label="Số tiền" value={currency(bank.amount)} />
+                    <Line label="Nội dung" value={bank.transferNote} copy={bank.transferNote} />
+
+                    <Separator className="my-4 sm:my-5 bg-white/20" />
+
+                    <div className="flex items-start gap-3 sm:gap-4 min-w-0">
+                      <Checkbox
+                        id="auto-reconcile"
+                        className="mt-1 shrink-0 flex-shrink-0"
+                        checked={autoReconcile}
+                        onCheckedChange={(checked) => setAutoReconcile(checked === true)}
+                      />
+                      <label htmlFor="auto-reconcile" className="text-sm sm:text-base leading-6 sm:leading-7 text-white min-w-0 break-words">
+                        <span className="font-semibold">Đối soát tự động.</span>
+                        <br />
+                        <span className="text-white/70">
+                          Sau khi chuyển khoản, hóa đơn sẽ được gửi qua email.
+                        </span>
+                        {isPolling && (
+                          <span className="block mt-2 text-xs sm:text-sm text-emerald-400">
+                            Đang kiểm tra thanh toán...
+                          </span>
+                        )}
+                      </label>
+                    </div>
+
+                    {/* Demo button for testing */}
+                    {autoReconcile && (
+                      <Button
+                        onClick={handleDemoComplete}
+                        className="hidden mt-4 w-full bg-yellow-500/80 hover:bg-yellow-500 text-white text-sm sm:text-base min-w-0"
+                      >
+                        Demo: Hoàn tất thanh toán
+                      </Button>
                     )}
-                  </label>
-                </div>
-                
-                {/* Demo button for testing */}
-                {autoReconcile && (
+                  </div>
+                </CardContent>
+                <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex justify-end min-w-0">
                   <Button
-                    onClick={handleDemoComplete}
-                    className="hidden mt-4 w-full bg-yellow-500/80 hover:bg-yellow-500 text-white text-sm sm:text-base min-w-0"
+                    onClick={() => setShowCancelDialog(true)}
+                    className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base shrink-0"
                   >
-                    Demo: Hoàn tất thanh toán
+                    Hủy thanh toán
                   </Button>
-                )}
+                </div>
+              </Card>
+
+              {/* RIGHT: Order summary */}
+              <Card className="border border-white/20 bg-white/10 backdrop-blur-lg shadow-[0_20px_60px_rgba(0,0,0,0.3)] rounded-2xl md:rounded-3xl overflow-hidden min-w-0">
+                <CardHeader className="pb-4 sm:pb-6 px-4 sm:px-6 min-w-0">
+                  <CardTitle className="text-xl sm:text-2xl font-bold text-white break-words min-w-0">Thông tin đơn hàng</CardTitle>
+                </CardHeader>
+                <CardContent className="px-4 sm:px-6 min-w-0">
+                  <div className="min-w-0">
+                    <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
+                      <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Mã đơn</div>
+                      <div className="text-sm sm:text-base font-medium text-white break-words break-all min-w-0">{toStr(order.orderCode || orderCode)}</div>
+                    </div>
+                    <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
+                      <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Người thanh toán</div>
+                      <div className="text-sm sm:text-base font-medium text-white break-words break-all min-w-0">{toStr(order.payerName)}</div>
+                    </div>
+                    <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
+                      <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Email</div>
+                      <div className="text-sm sm:text-base font-medium text-white break-all min-w-0">{toStr(order.payerEmail)}</div>
+                    </div>
+                    <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
+                      <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Gói</div>
+                      <div className="text-sm sm:text-base font-medium text-white break-words break-all min-w-0">{toStr(order.planName)}</div>
+                    </div>
+                    <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
+                      <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Kỳ hạn</div>
+                      <div className="text-sm sm:text-base font-medium text-white break-words break-all min-w-0">{toStr(order.period)}</div>
+                    </div>
+
+                    <Separator className="my-4 sm:my-5 bg-white/20" />
+
+                    <div className="grid items-center py-2 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
+                      <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Tạm tính</div>
+                      <div className="text-sm sm:text-base text-right font-medium text-white break-words min-w-0">{currency(order.subtotal)}</div>
+                    </div>
+                    <div className="grid items-center py-2 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
+                      <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Phí VAT</div>
+                      <div className="text-sm sm:text-base text-right font-medium text-white break-words min-w-0">{currency(order.fee)}</div>
+                    </div>
+
+                    <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 gap-2 min-w-0">
+                      <div className="text-base sm:text-lg font-semibold text-white break-words min-w-0">THANH TOÁN</div>
+                      <div className="text-2xl sm:text-3xl font-bold text-emerald-400 break-words min-w-0">{currency(total)}</div>
+                    </div>
+                    <p className="mt-3 text-xs sm:text-sm text-white/70 break-words min-w-0">* Hóa đơn sẽ gửi về email sau khi kích hoạt.</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* BOTTOM: Steps */}
+              <div className="md:col-span-2 min-w-0">
+                <Card className="border border-white/20 bg-white/10 backdrop-blur-lg shadow-[0_20px_60px_rgba(0,0,0,0.3)] rounded-2xl md:rounded-3xl overflow-hidden min-w-0">
+                  <CardHeader className="pb-4 sm:pb-6 px-4 sm:px-6 min-w-0">
+                    <CardTitle className="text-lg sm:text-xl font-bold text-white break-words min-w-0">Hướng dẫn</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 sm:px-6 min-w-0">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 min-w-0">
+                      <Step number={1} text="Mở app ngân hàng và chọn Quét QR" />
+                      <Step number={2} text="Kiểm tra số tiền & nội dung (mã đơn + TXID)" />
+                      <Step number={3} text="Hoàn tất chuyển khoản - bấm Xác nhận" />
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-            <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex justify-end min-w-0">
-              <Button
-                onClick={() => setShowCancelDialog(true)}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base shrink-0"
-              >
-                Hủy thanh toán
-              </Button>
-            </div>
-          </Card>
-
-          {/* RIGHT: Order summary */}
-          <Card className="border border-white/20 bg-white/10 backdrop-blur-lg shadow-[0_20px_60px_rgba(0,0,0,0.3)] rounded-2xl md:rounded-3xl overflow-hidden min-w-0">
-            <CardHeader className="pb-4 sm:pb-6 px-4 sm:px-6 min-w-0">
-              <CardTitle className="text-xl sm:text-2xl font-bold text-white break-words min-w-0">Thông tin đơn hàng</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 sm:px-6 min-w-0">
-              <div className="min-w-0">
-                <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
-                  <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Mã đơn</div>
-                  <div className="text-sm sm:text-base font-medium text-white break-words break-all min-w-0">{toStr(order.orderCode || orderCode)}</div>
-                </div>
-                <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
-                  <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Người thanh toán</div>
-                  <div className="text-sm sm:text-base font-medium text-white break-words break-all min-w-0">{toStr(order.payerName)}</div>
-                </div>
-                <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
-                  <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Email</div>
-                  <div className="text-sm sm:text-base font-medium text-white break-all min-w-0">{toStr(order.payerEmail)}</div>
-                </div>
-                <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
-                  <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Gói</div>
-                  <div className="text-sm sm:text-base font-medium text-white break-words break-all min-w-0">{toStr(order.planName)}</div>
-                </div>
-                <div className="grid py-2 sm:py-3 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
-                  <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Kỳ hạn</div>
-                  <div className="text-sm sm:text-base font-medium text-white break-words break-all min-w-0">{toStr(order.period)}</div>
-                </div>
-
-                <Separator className="my-4 sm:my-5 bg-white/20" />
-
-                <div className="grid items-center py-2 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
-                  <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Tạm tính</div>
-                  <div className="text-sm sm:text-base text-right font-medium text-white break-words min-w-0">{currency(order.subtotal)}</div>
-                </div>
-                <div className="grid items-center py-2 gap-2 min-w-0" style={{ gridTemplateColumns: 'minmax(min-content, 8rem) 1fr' }}>
-                  <div className="text-sm sm:text-base text-white/80 shrink-0 min-w-0 break-words">Phí VAT</div>
-                  <div className="text-sm sm:text-base text-right font-medium text-white break-words min-w-0">{currency(order.fee)}</div>
-                </div>
-
-                <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 gap-2 min-w-0">
-                  <div className="text-base sm:text-lg font-semibold text-white break-words min-w-0">THANH TOÁN</div>
-                  <div className="text-2xl sm:text-3xl font-bold text-emerald-400 break-words min-w-0">{currency(total)}</div>
-                </div>
-                <p className="mt-3 text-xs sm:text-sm text-white/70 break-words min-w-0">* Hóa đơn sẽ gửi về email sau khi kích hoạt.</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* BOTTOM: Steps */}
-          <div className="md:col-span-2 min-w-0">
-            <Card className="border border-white/20 bg-white/10 backdrop-blur-lg shadow-[0_20px_60px_rgba(0,0,0,0.3)] rounded-2xl md:rounded-3xl overflow-hidden min-w-0">
-              <CardHeader className="pb-4 sm:pb-6 px-4 sm:px-6 min-w-0">
-                <CardTitle className="text-lg sm:text-xl font-bold text-white break-words min-w-0">Hướng dẫn</CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 sm:px-6 min-w-0">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8 min-w-0">
-                  <Step number={1} text="Mở app ngân hàng và chọn Quét QR" />
-                  <Step number={2} text="Kiểm tra số tiền & nội dung (mã đơn + TXID)" />
-                  <Step number={3} text="Hoàn tất chuyển khoản - bấm Xác nhận" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
             </div>
           </div>
         </div>
@@ -936,7 +988,7 @@ export default function MamMoiQrCheckout() {
               Xác nhận hủy thanh toán
             </DialogTitle>
             <DialogDescription className="text-sm sm:text-base text-gray-600 text-center break-words min-w-0 leading-relaxed px-2">
-              Bạn có chắc chắn muốn hủy thanh toán này không? 
+              Bạn có chắc chắn muốn hủy thanh toán này không?
               <br />
               Phiên thanh toán sẽ bị hủy và bạn sẽ được chuyển về trang chọn gói.
             </DialogDescription>

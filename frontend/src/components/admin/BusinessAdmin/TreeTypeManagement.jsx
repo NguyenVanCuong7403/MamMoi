@@ -396,16 +396,15 @@ async function fetchTreeTypes() {
           const varieties = Array.isArray(varietiesResponse.data)
             ? varietiesResponse.data
             : Array.isArray(varietiesResponse)
-            ? varietiesResponse
-            : [];
+              ? varietiesResponse
+              : [];
           return {
             ...treeType,
             varieties: varieties.map(mapVarietyFromApi),
           };
         } catch (error) {
           console.warn(
-            `Failed to fetch varieties for tree type ${
-              treeType.treeTypeId || treeType.TreeTypeId
+            `Failed to fetch varieties for tree type ${treeType.treeTypeId || treeType.TreeTypeId
             }:`,
             error
           );
@@ -465,8 +464,8 @@ async function fetchSoils() {
     const soils = Array.isArray(response.data)
       ? response.data
       : Array.isArray(response)
-      ? response
-      : [];
+        ? response
+        : [];
     return soils.map(mapSoilFromApi);
   } catch (error) {
     console.warn("Error fetching soils, returning empty array:", error);
@@ -649,13 +648,13 @@ const soilDefaultValues = {
 const mapSoilToFormValues = (soil) =>
   soil
     ? {
-        SoilName: soil.SoilName ?? "",
-        Texture: soil.Texture ?? "",
-        Drainage: soil.Drainage ?? "",
-        OrganicMatterPct: soil.OrganicMatterPct ?? undefined,
-        EC_dS_m: soil.EC_dS_m ?? undefined,
-        Notes: soil.Notes ?? "",
-      }
+      SoilName: soil.SoilName ?? "",
+      Texture: soil.Texture ?? "",
+      Drainage: soil.Drainage ?? "",
+      OrganicMatterPct: soil.OrganicMatterPct ?? undefined,
+      EC_dS_m: soil.EC_dS_m ?? undefined,
+      Notes: soil.Notes ?? "",
+    }
     : soilDefaultValues;
 
 function ImageDropzone({ value, onChange, onFileChange }) {
@@ -1627,14 +1626,42 @@ export default function TreeTypeManagement() {
   };
 
   const handleToggleStatus = async (tree) => {
+    // Only send IsActive to avoid backend issues with other fields
     const updated = await updateTreeType(tree.TreeTypeID, {
       IsActive: !tree.IsActive,
     });
-    setTrees((prev) =>
-      prev.map((item) =>
-        item.TreeTypeID === updated.TreeTypeID ? updated : item
-      )
-    );
+
+    // Fetch varieties again to ensure count is accurate
+    try {
+      const varietiesResponse = await AdminTreeRepository.getVarietiesByTreeTypeId(
+        tree.TreeTypeID
+      );
+      const varieties = Array.isArray(varietiesResponse.data)
+        ? varietiesResponse.data
+        : Array.isArray(varietiesResponse)
+          ? varietiesResponse
+          : [];
+
+      const updatedWithVarieties = {
+        ...updated,
+        Varieties: varieties.map(mapVarietyFromApi),
+      };
+
+      setTrees((prev) =>
+        prev.map((item) =>
+          item.TreeTypeID === updatedWithVarieties.TreeTypeID ? updatedWithVarieties : item
+        )
+      );
+    } catch (error) {
+      console.warn('Failed to fetch varieties after status toggle:', error);
+      // If fetching varieties fails, still update with what we have
+      setTrees((prev) =>
+        prev.map((item) =>
+          item.TreeTypeID === updated.TreeTypeID ? updated : item
+        )
+      );
+    }
+
     // Dispatch event để PlantDetail đồng bộ ảnh
     window.dispatchEvent(
       new CustomEvent("mm:treetype:updated", {
@@ -1668,15 +1695,15 @@ export default function TreeTypeManagement() {
   const mapVarietyToFormValues = (variety) =>
     variety
       ? {
-          VarietyID: variety.VarietyID ?? "",
-          VarietyName: variety.VarietyName ?? "",
-          VarietyDescription: variety.VarietyDescription ?? "",
-        }
+        VarietyID: variety.VarietyID ?? "",
+        VarietyName: variety.VarietyName ?? "",
+        VarietyDescription: variety.VarietyDescription ?? "",
+      }
       : {
-          VarietyID: "",
-          VarietyName: "",
-          VarietyDescription: "",
-        };
+        VarietyID: "",
+        VarietyName: "",
+        VarietyDescription: "",
+      };
 
   const handleOpenVarietyDialog = (tree) => {
     setActiveVarietyTree(tree);
@@ -1750,9 +1777,9 @@ export default function TreeTypeManagement() {
     : 0;
   const varietyRangeEnd = filteredVarieties.length
     ? Math.min(
-        filteredVarieties.length,
-        varietyRangeStart + paginatedVarieties.length - 1
-      )
+      filteredVarieties.length,
+      varietyRangeStart + paginatedVarieties.length - 1
+    )
     : 0;
   const shouldShowVarietyPagination =
     filteredVarieties.length > VARIETY_PAGE_SIZE;
@@ -1923,10 +1950,10 @@ export default function TreeTypeManagement() {
       const newList = (activeVarietyTree.Varieties || []).map((item) =>
         item.VarietyID === selectedVarietyId
           ? {
-              ...item,
-              VarietyName: values.VarietyName,
-              VarietyDescription: values.VarietyDescription ?? "",
-            }
+            ...item,
+            VarietyName: values.VarietyName,
+            VarietyDescription: values.VarietyDescription ?? "",
+          }
           : item
       );
       const updated = await updateTreeType(activeVarietyTree.TreeTypeID, {
@@ -2076,8 +2103,8 @@ export default function TreeTypeManagement() {
                               {...field}
                               className={cn(
                                 form.formState.isSubmitted &&
-                                  fieldState.error &&
-                                  "border-red-500 focus-visible:ring-red-500"
+                                fieldState.error &&
+                                "border-red-500 focus-visible:ring-red-500"
                               )}
                             />
                           </FormControl>
@@ -2135,8 +2162,8 @@ export default function TreeTypeManagement() {
                                 className={cn(
                                   "h-12 w-full",
                                   form.formState.isSubmitted &&
-                                    fieldState.error &&
-                                    "border-red-500 focus-visible:ring-red-500"
+                                  fieldState.error &&
+                                  "border-red-500 focus-visible:ring-red-500"
                                 )}
                               >
                                 <SelectValue placeholder="Chọn loại đất" />
@@ -2295,12 +2322,12 @@ export default function TreeTypeManagement() {
                                   className={cn(
                                     "h-12",
                                     field.value &&
-                                      toleranceLevels.find(
-                                        (t) => t.value === field.value
-                                      )?.color,
+                                    toleranceLevels.find(
+                                      (t) => t.value === field.value
+                                    )?.color,
                                     form.formState.isSubmitted &&
-                                      form.formState.errors[fieldName] &&
-                                      "border-red-500 focus-visible:ring-red-500"
+                                    form.formState.errors[fieldName] &&
+                                    "border-red-500 focus-visible:ring-red-500"
                                   )}
                                 >
                                   <SelectValue placeholder="Chọn mức độ" />
@@ -2371,62 +2398,61 @@ export default function TreeTypeManagement() {
                             <div className="space-y-3 pb-4">
                               {Array.isArray(field.value)
                                 ? field.value.map((step, index) => (
-                                    <div
-                                      key={index}
-                                      className="flex gap-3 items-start"
-                                    >
-                                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 mt-1">
-                                        {index + 1}
-                                      </div>
-                                      <div className="flex-1 space-y-2">
-                                        <Textarea
-                                          placeholder={`Bước ${
-                                            index + 1
+                                  <div
+                                    key={index}
+                                    className="flex gap-3 items-start"
+                                  >
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 mt-1">
+                                      {index + 1}
+                                    </div>
+                                    <div className="flex-1 space-y-2">
+                                      <Textarea
+                                        placeholder={`Bước ${index + 1
                                           }: Mô tả hướng dẫn chăm sóc...`}
-                                          value={step}
-                                          onChange={(e) => {
-                                            const currentValue = Array.isArray(
-                                              field.value
-                                            )
-                                              ? field.value
-                                              : [];
-                                            const newSteps = [...currentValue];
-                                            newSteps[index] = e.target.value;
-                                            field.onChange(newSteps);
-                                          }}
-                                          className="min-h-[80px] text-sm"
-                                        />
-                                      </div>
-                                      <Button
-                                        type="button"
-                                        size="icon"
-                                        variant="ghost"
-                                        className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
-                                        onClick={() => {
+                                        value={step}
+                                        onChange={(e) => {
                                           const currentValue = Array.isArray(
                                             field.value
                                           )
                                             ? field.value
                                             : [];
-                                          const newSteps = currentValue.filter(
-                                            (_, i) => i !== index
-                                          );
+                                          const newSteps = [...currentValue];
+                                          newSteps[index] = e.target.value;
                                           field.onChange(newSteps);
                                         }}
-                                      >
-                                        <X className="h-4 w-4" />
-                                      </Button>
+                                        className="min-h-[80px] text-sm"
+                                      />
                                     </div>
-                                  ))
+                                    <Button
+                                      type="button"
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                                      onClick={() => {
+                                        const currentValue = Array.isArray(
+                                          field.value
+                                        )
+                                          ? field.value
+                                          : [];
+                                        const newSteps = currentValue.filter(
+                                          (_, i) => i !== index
+                                        );
+                                        field.onChange(newSteps);
+                                      }}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                ))
                                 : null}
                               {(!Array.isArray(field.value) ||
                                 field.value.length === 0) && (
-                                <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-8 text-center text-sm text-slate-500">
-                                  <Leaf className="h-8 w-8 text-emerald-300" />
-                                  <p>Chưa có hướng dẫn nào.</p>
-                                  <p>Bấm &quot;Thêm bước&quot; để bắt đầu.</p>
-                                </div>
-                              )}
+                                  <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-8 text-center text-sm text-slate-500">
+                                    <Leaf className="h-8 w-8 text-emerald-300" />
+                                    <p>Chưa có hướng dẫn nào.</p>
+                                    <p>Bấm &quot;Thêm bước&quot; để bắt đầu.</p>
+                                  </div>
+                                )}
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -2478,191 +2504,191 @@ export default function TreeTypeManagement() {
                             <div className="space-y-3 pb-4">
                               {Array.isArray(field.value)
                                 ? field.value.map((pest, index) => {
-                                    const nameError = form.formState.isSubmitted
-                                      ? form.formState.errors?.Pests?.[index]
-                                          ?.name
-                                      : null;
-                                    const descriptionError = form.formState
-                                      .isSubmitted
-                                      ? form.formState.errors?.Pests?.[index]
-                                          ?.description
-                                      : null;
-                                    const severityError = form.formState
-                                      .isSubmitted
-                                      ? form.formState.errors?.Pests?.[index]
-                                          ?.severity
-                                      : null;
-                                    const hasError =
-                                      nameError ||
-                                      descriptionError ||
-                                      severityError;
-                                    const severityColor = pest.severity
-                                      ? severityColors[pest.severity]
-                                      : null;
+                                  const nameError = form.formState.isSubmitted
+                                    ? form.formState.errors?.Pests?.[index]
+                                      ?.name
+                                    : null;
+                                  const descriptionError = form.formState
+                                    .isSubmitted
+                                    ? form.formState.errors?.Pests?.[index]
+                                      ?.description
+                                    : null;
+                                  const severityError = form.formState
+                                    .isSubmitted
+                                    ? form.formState.errors?.Pests?.[index]
+                                      ?.severity
+                                    : null;
+                                  const hasError =
+                                    nameError ||
+                                    descriptionError ||
+                                    severityError;
+                                  const severityColor = pest.severity
+                                    ? severityColors[pest.severity]
+                                    : null;
 
-                                    return (
-                                      <div
-                                        key={index}
-                                        className={cn(
-                                          "rounded-xl border bg-slate-50/50 p-3 space-y-2",
-                                          hasError
-                                            ? "border-red-300 bg-red-50/30"
-                                            : "border-slate-200"
-                                        )}
-                                      >
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div className="flex-1 space-y-2">
-                                            <div>
-                                              <Input
-                                                placeholder="Tên bệnh..."
-                                                value={pest.name || ""}
-                                                onChange={(e) => {
-                                                  const currentValue =
-                                                    Array.isArray(field.value)
-                                                      ? field.value
-                                                      : [];
-                                                  const newPests = [
-                                                    ...currentValue,
-                                                  ];
-                                                  newPests[index] = {
-                                                    ...(newPests[index] || {}),
-                                                    name: e.target.value,
-                                                  };
-                                                  field.onChange(newPests);
-                                                }}
+                                  return (
+                                    <div
+                                      key={index}
+                                      className={cn(
+                                        "rounded-xl border bg-slate-50/50 p-3 space-y-2",
+                                        hasError
+                                          ? "border-red-300 bg-red-50/30"
+                                          : "border-slate-200"
+                                      )}
+                                    >
+                                      <div className="flex items-start justify-between gap-2">
+                                        <div className="flex-1 space-y-2">
+                                          <div>
+                                            <Input
+                                              placeholder="Tên bệnh..."
+                                              value={pest.name || ""}
+                                              onChange={(e) => {
+                                                const currentValue =
+                                                  Array.isArray(field.value)
+                                                    ? field.value
+                                                    : [];
+                                                const newPests = [
+                                                  ...currentValue,
+                                                ];
+                                                newPests[index] = {
+                                                  ...(newPests[index] || {}),
+                                                  name: e.target.value,
+                                                };
+                                                field.onChange(newPests);
+                                              }}
+                                              className={cn(
+                                                "h-9",
+                                                nameError &&
+                                                "border-red-500 focus-visible:ring-red-500"
+                                              )}
+                                            />
+                                            {nameError && (
+                                              <p className="text-xs text-red-600 mt-1">
+                                                {nameError.message}
+                                              </p>
+                                            )}
+                                          </div>
+                                          <div>
+                                            <Textarea
+                                              placeholder="Mô tả bệnh và cách phòng trừ..."
+                                              value={pest.description || ""}
+                                              onChange={(e) => {
+                                                const currentValue =
+                                                  Array.isArray(field.value)
+                                                    ? field.value
+                                                    : [];
+                                                const newPests = [
+                                                  ...currentValue,
+                                                ];
+                                                newPests[index] = {
+                                                  ...(newPests[index] || {}),
+                                                  description: e.target.value,
+                                                };
+                                                field.onChange(newPests);
+                                              }}
+                                              className={cn(
+                                                "min-h-[60px] text-sm",
+                                                descriptionError &&
+                                                "border-red-500 focus-visible:ring-red-500"
+                                              )}
+                                            />
+                                            {descriptionError && (
+                                              <p className="text-xs text-red-600 mt-1">
+                                                {descriptionError.message}
+                                              </p>
+                                            )}
+                                          </div>
+                                          <div>
+                                            <Select
+                                              value={pest.severity || ""}
+                                              onValueChange={(value) => {
+                                                const currentValue =
+                                                  Array.isArray(field.value)
+                                                    ? field.value
+                                                    : [];
+                                                const newPests = [
+                                                  ...currentValue,
+                                                ];
+                                                newPests[index] = {
+                                                  ...(newPests[index] || {}),
+                                                  severity: value,
+                                                };
+                                                field.onChange(newPests);
+                                              }}
+                                            >
+                                              <SelectTrigger
                                                 className={cn(
                                                   "h-9",
-                                                  nameError &&
-                                                    "border-red-500 focus-visible:ring-red-500"
+                                                  severityError &&
+                                                  "border-red-500 focus-visible:ring-red-500",
+                                                  severityColor &&
+                                                  cn(
+                                                    severityColor.bg,
+                                                    severityColor.text,
+                                                    severityColor.border
+                                                  )
                                                 )}
-                                              />
-                                              {nameError && (
-                                                <p className="text-xs text-red-600 mt-1">
-                                                  {nameError.message}
-                                                </p>
-                                              )}
-                                            </div>
-                                            <div>
-                                              <Textarea
-                                                placeholder="Mô tả bệnh và cách phòng trừ..."
-                                                value={pest.description || ""}
-                                                onChange={(e) => {
-                                                  const currentValue =
-                                                    Array.isArray(field.value)
-                                                      ? field.value
-                                                      : [];
-                                                  const newPests = [
-                                                    ...currentValue,
-                                                  ];
-                                                  newPests[index] = {
-                                                    ...(newPests[index] || {}),
-                                                    description: e.target.value,
-                                                  };
-                                                  field.onChange(newPests);
-                                                }}
-                                                className={cn(
-                                                  "min-h-[60px] text-sm",
-                                                  descriptionError &&
-                                                    "border-red-500 focus-visible:ring-red-500"
-                                                )}
-                                              />
-                                              {descriptionError && (
-                                                <p className="text-xs text-red-600 mt-1">
-                                                  {descriptionError.message}
-                                                </p>
-                                              )}
-                                            </div>
-                                            <div>
-                                              <Select
-                                                value={pest.severity || ""}
-                                                onValueChange={(value) => {
-                                                  const currentValue =
-                                                    Array.isArray(field.value)
-                                                      ? field.value
-                                                      : [];
-                                                  const newPests = [
-                                                    ...currentValue,
-                                                  ];
-                                                  newPests[index] = {
-                                                    ...(newPests[index] || {}),
-                                                    severity: value,
-                                                  };
-                                                  field.onChange(newPests);
-                                                }}
                                               >
-                                                <SelectTrigger
-                                                  className={cn(
-                                                    "h-9",
-                                                    severityError &&
-                                                      "border-red-500 focus-visible:ring-red-500",
-                                                    severityColor &&
-                                                      cn(
-                                                        severityColor.bg,
-                                                        severityColor.text,
-                                                        severityColor.border
-                                                      )
-                                                  )}
+                                                <SelectValue placeholder="Chọn mức độ" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem
+                                                  value="High"
+                                                  className="text-red-700 focus:bg-red-50"
                                                 >
-                                                  <SelectValue placeholder="Chọn mức độ" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  <SelectItem
-                                                    value="High"
-                                                    className="text-red-700 focus:bg-red-50"
-                                                  >
-                                                    Cao
-                                                  </SelectItem>
-                                                  <SelectItem
-                                                    value="Medium"
-                                                    className="text-orange-700 focus:bg-orange-50"
-                                                  >
-                                                    Trung bình
-                                                  </SelectItem>
-                                                  <SelectItem
-                                                    value="Low"
-                                                    className="text-yellow-700 focus:bg-yellow-50"
-                                                  >
-                                                    Thấp
-                                                  </SelectItem>
-                                                </SelectContent>
-                                              </Select>
-                                              {severityError && (
-                                                <p className="text-xs text-red-600 mt-1">
-                                                  {severityError.message}
-                                                </p>
-                                              )}
-                                            </div>
+                                                  Cao
+                                                </SelectItem>
+                                                <SelectItem
+                                                  value="Medium"
+                                                  className="text-orange-700 focus:bg-orange-50"
+                                                >
+                                                  Trung bình
+                                                </SelectItem>
+                                                <SelectItem
+                                                  value="Low"
+                                                  className="text-yellow-700 focus:bg-yellow-50"
+                                                >
+                                                  Thấp
+                                                </SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                            {severityError && (
+                                              <p className="text-xs text-red-600 mt-1">
+                                                {severityError.message}
+                                              </p>
+                                            )}
                                           </div>
-                                          <Button
-                                            type="button"
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
-                                            onClick={() => {
-                                              const currentValue =
-                                                Array.isArray(field.value)
-                                                  ? field.value
-                                                  : [];
-                                              const newPests =
-                                                currentValue.filter(
-                                                  (_, i) => i !== index
-                                                );
-                                              field.onChange(newPests);
-                                            }}
-                                          >
-                                            <X className="h-4 w-4" />
-                                          </Button>
                                         </div>
+                                        <Button
+                                          type="button"
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
+                                          onClick={() => {
+                                            const currentValue =
+                                              Array.isArray(field.value)
+                                                ? field.value
+                                                : [];
+                                            const newPests =
+                                              currentValue.filter(
+                                                (_, i) => i !== index
+                                              );
+                                            field.onChange(newPests);
+                                          }}
+                                        >
+                                          <X className="h-4 w-4" />
+                                        </Button>
                                       </div>
-                                    );
-                                  })
+                                    </div>
+                                  );
+                                })
                                 : null}
                               {(!Array.isArray(field.value) ||
                                 field.value.length === 0) && (
-                                <p className="text-sm text-slate-500 text-center py-4">
-                                  Chưa có bệnh nào. Bấm "Thêm bệnh" để bắt đầu.
-                                </p>
-                              )}
+                                  <p className="text-sm text-slate-500 text-center py-4">
+                                    Chưa có bệnh nào. Bấm "Thêm bệnh" để bắt đầu.
+                                  </p>
+                                )}
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -3498,7 +3524,7 @@ export default function TreeTypeManagement() {
                 <ScrollArea className="max-h-[440px] overflow-visible pr-2">
                   <div className="grid gap-2">
                     {!activeVarietyTree ||
-                    (activeVarietyTree.Varieties || []).length === 0 ? (
+                      (activeVarietyTree.Varieties || []).length === 0 ? (
                       <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
                         <Layers className="h-5 w-5 text-emerald-300" />
                         Chưa có giống nào. Bấm &quot;Thêm giống mới&quot; để bắt
