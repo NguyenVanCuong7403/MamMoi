@@ -509,12 +509,12 @@ function formatDateVietnam(value, withTime = true) {
   if (isNaN(d.getTime())) return String(value);
   const options = withTime
     ? {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
     : { year: "numeric", month: "2-digit", day: "2-digit" };
   // Format using Vietnamese locale. Trim any extra comma/space returned by some locales.
   return new Intl.DateTimeFormat("vi-VN", options)
@@ -1114,6 +1114,9 @@ export default function ReportManagement() {
     setFilters(defaultFilters);
   };
 
+  // SystemAdmin chỉ được xem báo cáo loại: auth, payment, system, other
+  const SA_ALLOWED_TYPES = ["auth", "payment", "system", "other"];
+
   const filteredReports = useMemo(() => {
     const timeWindow = TIME_SEGMENTS.find(
       (item) => item.value === filters.time
@@ -1122,6 +1125,10 @@ export default function ReportManagement() {
     const now = Date.now();
 
     return reports.filter((report) => {
+      // Chỉ hiển thị báo cáo loại auth, payment, system, other cho SystemAdmin
+      const isAllowedType = SA_ALLOWED_TYPES.includes(report.type);
+      if (!isAllowedType) return false;
+
       const createdAt = new Date(report.createdAt).getTime();
       const diffHours = (now - createdAt) / (1000 * 60 * 60);
       const matchesTime = diffHours >= 0 && diffHours <= limitHours;
@@ -1135,8 +1142,8 @@ export default function ReportManagement() {
         filters.status === "all"
           ? true
           : filters.status === "in_progress"
-          ? ["in_progress", "new"].includes(report.status)
-          : report.status === filters.status;
+            ? ["in_progress", "new"].includes(report.status)
+            : report.status === filters.status;
       const term = filters.search.trim().toLowerCase();
       const matchesSearch =
         term.length === 0 ||
@@ -1205,7 +1212,7 @@ export default function ReportManagement() {
         const cached = supportRequestCacheRef.current[key];
         if (!cached) {
           // fire-and-forget; fetchSupportRequestForRow updates cache when done
-          fetchSupportRequestForRow(id).catch(() => {});
+          fetchSupportRequestForRow(id).catch(() => { });
         }
       });
     });
@@ -1605,8 +1612,7 @@ export default function ReportManagement() {
         showActionToast(
           "success",
           "Đã gửi cập nhật",
-          `Báo cáo ${currentReportId} đã chuyển sang trạng thái ${
-            statusLabel || statusUpdate
+          `Báo cáo ${currentReportId} đã chuyển sang trạng thái ${statusLabel || statusUpdate
           }.`
         );
       } catch (err) {
@@ -2025,9 +2031,9 @@ export default function ReportManagement() {
                                         <span className="line-clamp-1">
                                           {report.internalNote.length > 100
                                             ? `${report.internalNote.substring(
-                                                0,
-                                                100
-                                              )}...`
+                                              0,
+                                              100
+                                            )}...`
                                             : report.internalNote}
                                         </span>
                                       </div>
@@ -2051,11 +2057,10 @@ export default function ReportManagement() {
                                         {[1, 2, 3, 4, 5].map((s) => (
                                           <Star
                                             key={s}
-                                            className={`w-4 h-4 ${
-                                              s <= rating
+                                            className={`w-4 h-4 ${s <= rating
                                                 ? "fill-yellow-400 text-yellow-400"
                                                 : "text-gray-200"
-                                            }`}
+                                              }`}
                                           />
                                         ))}
                                       </div>
@@ -2271,18 +2276,17 @@ export default function ReportManagement() {
                           ) : supportRequestDetail &&
                             supportRequestDetail.satisfactionRating !== null &&
                             supportRequestDetail.satisfactionRating !==
-                              undefined ? (
+                            undefined ? (
                             <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                   <Star
                                     key={star}
-                                    className={`w-5 h-5 ${
-                                      star <=
-                                      supportRequestDetail.satisfactionRating
+                                    className={`w-5 h-5 ${star <=
+                                        supportRequestDetail.satisfactionRating
                                         ? "fill-yellow-400 text-yellow-400"
                                         : "text-gray-300"
-                                    }`}
+                                      }`}
                                   />
                                 ))}
                               </div>
@@ -2335,14 +2339,14 @@ export default function ReportManagement() {
                                     ]?.className?.includes("rose")
                                       ? "bg-rose-500"
                                       : STATUS_META[
-                                          option.value
-                                        ]?.className?.includes("sky")
-                                      ? "bg-sky-500"
-                                      : STATUS_META[
+                                        option.value
+                                      ]?.className?.includes("sky")
+                                        ? "bg-sky-500"
+                                        : STATUS_META[
                                           option.value
                                         ]?.className?.includes("amber")
-                                      ? "bg-amber-500"
-                                      : "bg-emerald-500"
+                                          ? "bg-amber-500"
+                                          : "bg-emerald-500"
                                   )}
                                 />
                                 {option.label}

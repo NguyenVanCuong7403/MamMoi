@@ -495,12 +495,12 @@ function formatDateVietnam(value, withTime = true) {
   if (isNaN(d.getTime())) return String(value);
   const options = withTime
     ? {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
     : { year: "numeric", month: "2-digit", day: "2-digit" };
   return new Intl.DateTimeFormat("vi-VN", options)
     .format(d)
@@ -1040,6 +1040,9 @@ export default function ReportManagementBA() {
     setFilters(defaultFilters);
   };
 
+  // BusinessAdmin chỉ được xem báo cáo loại: tree (Cây) và other (Khác)
+  const BA_ALLOWED_TYPES = ["tree", "other"];
+
   const filteredReports = useMemo(() => {
     const timeWindow = TIME_SEGMENTS.find(
       (item) => item.value === filters.time
@@ -1048,6 +1051,10 @@ export default function ReportManagementBA() {
     const now = Date.now();
 
     return reports.filter((report) => {
+      // Chỉ hiển thị báo cáo loại tree và other cho BusinessAdmin
+      const isAllowedType = BA_ALLOWED_TYPES.includes(report.type);
+      if (!isAllowedType) return false;
+
       const createdAt = new Date(report.createdAt).getTime();
       const diffHours = (now - createdAt) / (1000 * 60 * 60);
       const matchesTime = diffHours >= 0 && diffHours <= limitHours;
@@ -1061,8 +1068,8 @@ export default function ReportManagementBA() {
         filters.status === "all"
           ? true
           : filters.status === "in_progress"
-          ? ["in_progress", "new"].includes(report.status)
-          : report.status === filters.status;
+            ? ["in_progress", "new"].includes(report.status)
+            : report.status === filters.status;
       const term = filters.search.trim().toLowerCase();
       const matchesSearch =
         term.length === 0 ||
@@ -1422,8 +1429,7 @@ export default function ReportManagementBA() {
         showActionToast(
           "success",
           "Đã gửi cập nhật",
-          `Báo cáo ${currentReportId} đã chuyển sang trạng thái ${
-            statusLabel || statusUpdate
+          `Báo cáo ${currentReportId} đã chuyển sang trạng thái ${statusLabel || statusUpdate
           }.`
         );
       } catch (err) {
@@ -1839,9 +1845,9 @@ export default function ReportManagementBA() {
                                         <span className="line-clamp-1">
                                           {report.internalNote.length > 100
                                             ? `${report.internalNote.substring(
-                                                0,
-                                                100
-                                              )}...`
+                                              0,
+                                              100
+                                            )}...`
                                             : report.internalNote}
                                         </span>
                                       </div>
@@ -2071,14 +2077,14 @@ export default function ReportManagementBA() {
                                     ]?.className?.includes("rose")
                                       ? "bg-rose-500"
                                       : STATUS_META[
-                                          option.value
-                                        ]?.className?.includes("sky")
-                                      ? "bg-sky-500"
-                                      : STATUS_META[
+                                        option.value
+                                      ]?.className?.includes("sky")
+                                        ? "bg-sky-500"
+                                        : STATUS_META[
                                           option.value
                                         ]?.className?.includes("amber")
-                                      ? "bg-amber-500"
-                                      : "bg-emerald-500"
+                                          ? "bg-amber-500"
+                                          : "bg-emerald-500"
                                   )}
                                 />
                                 {option.label}
