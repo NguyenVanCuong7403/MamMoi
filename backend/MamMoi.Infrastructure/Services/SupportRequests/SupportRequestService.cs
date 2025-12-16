@@ -75,7 +75,7 @@ public class SupportRequestService : ISupportRequestService
             // Don't throw - notification failure shouldn't break request creation
         }
 
-        return await GetRequestByIdAsync(request.RequestId, userId) ?? 
+        return await GetRequestByIdAsync(request.RequestId, userId) ??
             throw new InvalidOperationException("Failed to retrieve created request");
     }
 
@@ -111,7 +111,8 @@ public class SupportRequestService : ISupportRequestService
                 RequestDate = sr.RequestDate,
                 ResolvedAt = sr.ResolvedAt,
                 TicketNumber = sr.TicketNumber,
-                ResponseCount = sr.ResponseCount
+                ResponseCount = sr.ResponseCount,
+                SatisfactionRating = sr.SatisfactionRating
             })
             .ToListAsync();
 

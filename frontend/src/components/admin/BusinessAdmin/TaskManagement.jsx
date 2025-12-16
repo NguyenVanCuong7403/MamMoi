@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   Table,
   TableBody,
@@ -459,24 +460,13 @@ export default function BusinessAdminTaskManagement() {
   };
 
   const renderStatusSelect = (task) => (
-    <Select
+    <SearchableSelect
       value={task.status || "Pending"}
-      onValueChange={(value) => handleStatusUpdate(task, value)}
+      onChange={(value) => handleStatusUpdate(task, value)}
+      options={STATUS_OPTIONS.filter((option) => option.value !== "all")}
+      placeholder="Trạng thái"
       disabled={Boolean(statusUpdating[task.scheduleId])}
-    >
-      <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {STATUS_OPTIONS.filter((option) => option.value !== "all").map(
-          (option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          )
-        )}
-      </SelectContent>
-    </Select>
+    />
   );
 
   return (
@@ -564,79 +554,52 @@ export default function BusinessAdminTaskManagement() {
                     </div>
                   </div>
                   <div className="lg:col-span-4">
-                    <Select
+                    <SearchableSelect
                       value={filters.gardenId}
-                      onValueChange={(value) =>
+                      onChange={(value) =>
                         handleFilterChange("gardenId", value)
                       }
-                    >
-                      <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                        <SelectValue placeholder="Chọn vườn" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tất cả vườn</SelectItem>
-                        {gardens.map((garden) => (
-                          <SelectItem
-                            key={garden.gardenId}
-                            value={garden.gardenId?.toString()}
-                          >
-                            {garden.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      options={[
+                        { value: "all", label: "Tất cả vườn" },
+                        ...gardens.map((g) => ({
+                          value: g.gardenId?.toString(),
+                          label: g.name,
+                        })),
+                      ]}
+                      placeholder="Chọn vườn"
+                    />
                   </div>
                   <div className="lg:col-span-4">
-                    <Select
+                    <SearchableSelect
                       value={filters.taskType}
-                      onValueChange={(value) =>
+                      onChange={(value) =>
                         handleFilterChange("taskType", value)
                       }
-                    >
-                      <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                        <SelectValue placeholder="Chọn loại công việc" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {TASK_TYPE_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      options={TASK_TYPE_OPTIONS}
+                      placeholder="Chọn loại công việc"
+                    />
                   </div>
                 </div>
 
                 <div className="grid gap-4 lg:grid-cols-12">
                   <div className="lg:col-span-3">
-                    <Select
+                    <SearchableSelect
                       value={filters.status}
-                      onValueChange={(value) =>
-                        handleFilterChange("status", value)
-                      }
-                    >
-                      <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                        <SelectValue placeholder="Trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={(value) => handleFilterChange("status", value)}
+                      options={STATUS_OPTIONS}
+                      placeholder="Trạng thái"
+                    />
                   </div>
                   <div className="lg:col-span-3">
-                    <Select
+                    <SearchableSelect
                       value={filters.priority}
-                      onValueChange={(value) =>
+                      onChange={(value) =>
                         handleFilterChange("priority", value)
                       }
-                    >
-                      <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                        <SelectValue placeholder="Mức ưu tiên" />
-                      </SelectTrigger>
+                      options={PRIORITY_OPTIONS}
+                      placeholder="Mức ưu tiên"
+                    />
+                    {/*
                       <SelectContent>
                         {PRIORITY_OPTIONS.map((option) => (
                           <SelectItem key={option.value} value={option.value}>
@@ -644,7 +607,7 @@ export default function BusinessAdminTaskManagement() {
                           </SelectItem>
                         ))}
                       </SelectContent>
-                    </Select>
+                    */}
                   </div>
                   <div className="lg:col-span-3">
                     <Input

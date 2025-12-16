@@ -330,9 +330,18 @@ export default function PricingPage() {
                   </Card>
                 ))
               : plans.map((plan, index) => {
+                  const currentIndex =
+                    currentSubscription && plans
+                      ? plans.findIndex(
+                          (p) => p.id === currentSubscription.planId
+                        )
+                      : -1;
                   const isCurrentPlan =
                     currentSubscription &&
                     currentSubscription.planId === plan.id;
+                  // Disable current plan and any plan lower (index <= currentIndex)
+                  const isLowerOrCurrent =
+                    currentIndex >= 0 && index <= currentIndex;
                   return (
                     <Card
                       key={plan.id}
@@ -340,6 +349,8 @@ export default function PricingPage() {
                         plan.popular
                           ? "ring-2 ring-emerald-500 shadow-xl scale-105"
                           : ""
+                      } ${
+                        isLowerOrCurrent ? "opacity-60 cursor-not-allowed" : ""
                       }`}
                     >
                       {plan.popular && (
@@ -384,7 +395,10 @@ export default function PricingPage() {
                           <ul className="space-y-3 mb-6">
                             {plan.features.length > 0 ? (
                               plan.features.map((feature, fIndex) => (
-                                <li key={fIndex} className="flex items-start gap-2">
+                                <li
+                                  key={fIndex}
+                                  className="flex items-start gap-2"
+                                >
                                   <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                                   <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
                                     {feature}
@@ -420,11 +434,22 @@ export default function PricingPage() {
                               plan.popular
                                 ? "bg-gray-900 hover:bg-gray-800"
                                 : "bg-gray-900 hover:bg-gray-800"
+                            } ${
+                              isLowerOrCurrent
+                                ? "opacity-50 pointer-events-none"
+                                : ""
                             }`}
                             onClick={() => handleSelectPlan(plan)}
+                            disabled={isLowerOrCurrent}
                           >
-                            {plan.buttonText}
+                            {isCurrentPlan ? "Đang dùng" : plan.buttonText}
                           </Button>
+
+                          {isLowerOrCurrent && !isCurrentPlan && (
+                            <p className="text-xs text-gray-500 text-center mt-3">
+                              Bạn đang ở gói thấp hơn hoặc tương đương
+                            </p>
+                          )}
 
                           <p className="text-xs text-gray-500 text-center mt-3">
                             Giá đã bao gồm thuế nếu có.
@@ -457,102 +482,40 @@ export default function PricingPage() {
         </div>
       </div>
 
-      {/* Newsletter Section */}
-      <div className="bg-gray-100 py-12">
-        <div className="mm-fluid-shell container mx-auto px-4">
-          <div className="mm-fluid-shell max-w-3xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+      {/* New section: Thông tin & Tư vấn */}
+      <div className="mm-fluid-shell container mx-auto px-4 py-12">
+        <div className="mm-fluid-shell max-w-6xl mx-auto">
+          <Card className="bg-white">
+            <CardContent className="p-6 flex flex-col md:flex-row items-center gap-6">
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Đăng ký nhận tin & ưu đãi
+                  Thông tin & Tư vấn
                 </h2>
-                <p className="mm-fluid-text text-gray-600">
-                  Chúng tôi sẽ gửi hướng dẫn kỹnh tạo vườn, kèm 7 ngày dùng thử
-                  Pro.
+                <p className="text-gray-600 mb-2">
+                  Cần trợ giúp chọn gói phù hợp cho vườn của bạn? Chúng tôi hỗ
+                  trợ tư vấn miễn phí qua email hoặc gọi điện. Đội ngũ sẽ phản
+                  hồi trong vòng 24 giờ làm việc.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Email:{" "}
+                  <a className="text-emerald-600">support@mamnoi.example</a>
+                  &nbsp;•&nbsp; Hotline:{" "}
+                  <span className="font-medium">0123 456 789</span>
                 </p>
               </div>
-              <div className="flex gap-2 w-full md:w-auto">
-                <Input
-                  type="email"
-                  placeholder="Email của bạn"
-                  className="flex-1 md:w-64"
-                />
-                <Button className="text-white bg-gray-900 hover:bg-gray-800">
-                  Đăng ký
+              <div>
+                <Button
+                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                  onClick={() =>
+                    (window.location.href =
+                      "mailto:support@mamnoi.example?subject=Y%C3%AAn%20c%E1%BA%A7u%20t%C6%B0%20v%E1%BA%A5n%20g%C3%B3i%20ch%E1%BB%8Dn")
+                  }
+                >
+                  Liên hệ ngay
                 </Button>
               </div>
-            </div>
-            <p className="mm-fluid-text text-xs text-gray-500 mt-4">
-              Bằng việc đăng ký bạn đồng ý với Điều khoản & Chính sách bảo mật.
-            </p>
-          </div>
-
-          {/* Promo Box */}
-          <div className="mm-fluid-shell max-w-3xl mx-auto mt-8">
-            <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Sparkles className="w-5 h-5 text-emerald-600" />
-                      <span className="font-semibold text-emerald-900">
-                        Gợi ý
-                      </span>
-                    </div>
-                    <p className="mm-fluid-text text-emerald-800">
-                      {plans.length > 0
-                        ? `Gói ${plans[plans.length - 1]?.name} rất chi tiết`
-                        : "Gói Farm+ rất chi tiết"}
-                    </p>
-                  </div>
-                  <Button variant="link" className="text-emerald-700">
-                    Tư vấn nhanh →
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </div>
-
-      {/* FAQ Section */}
-      <div className="mm-fluid-shell container mx-auto px-4 py-16">
-        <div className="mm-fluid-shell max-w-3xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">
-              Câu hỏi thường gặp
-            </h2>
-            <p className="mm-fluid-text text-gray-600">
-              Nếu không thấy câu trả lời, hãy nhắn chúng tôi qua chat.
-            </p>
-          </div>
-
-          <div className="space-y-4">
-            {faqs.map((faq, index) => (
-              <Card key={index} className="overflow-hidden">
-                <CardContent className="p-0">
-                  <button
-                    onClick={() => toggleFaq(index)}
-                    className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors"
-                  >
-                    <span className="font-medium text-gray-900">
-                      {faq.question}
-                    </span>
-                    <ChevronDown
-                      className={`w-5 h-5 text-gray-500 transition-transform ${
-                        expandedFaq === index ? "transform rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                  {expandedFaq === index && (
-                    <div className="px-6 pb-6 text-gray-600">
-                      <p className="mm-fluid-text">{faq.answer}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

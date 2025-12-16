@@ -430,6 +430,15 @@ export default function BusinessAdminLifecycleProcessManagement() {
   );
 
   const handleCreateStage = () => {
+    // Prevent creating more than 7 stages
+    if (stages.length >= 7) {
+      setNotice({
+        type: "error",
+        message: "Không thể tạo giai đoạn mới — đã đạt giới hạn 7 giai đoạn.",
+      });
+      return;
+    }
+
     setEditingStage({
       treeTypeId: selectedTreeTypeId,
       stageName: "",

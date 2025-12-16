@@ -28,6 +28,7 @@ import SystemAdminSubscriptionPlanManagement from "./components/admin/SystemAdmi
 import SystemAdminReportManagement from "./components/admin/SystemAdmin/ReportManagement";
 import SystemAdminRevenueManagement from "./components/admin/SystemAdmin/RevenueManagement";
 import SystemAdminNotificationManagement from "./components/admin/SystemAdmin/NotificationManagement";
+import SystemAdminSupportRequestDetail from "./components/admin/SystemAdmin/SupportRequestDetail";
 import BusinessAdminTreeVarietyManagement from "./components/admin/BusinessAdmin/TreeVarietyManagement";
 import BusinessAdminTreeManagement from "./components/admin/BusinessAdmin/TreeManagement";
 import BusinessAdminTreeTypeManagement from "./components/admin/BusinessAdmin/TreeTypeManagement";
@@ -45,15 +46,22 @@ export default function RouteManager({ authTab }) {
     <>
       <ScrollToTop />
       <Routes>
-        <Route path="/" element={
-          <LogoutGuard>
-            <Home />
-          </LogoutGuard>} />
-        <Route path="/auth" element={
-          <GuestGuard>
-            <AuthScreen defaultTab={authTab} />
-          </GuestGuard>
-        } />
+        <Route
+          path="/"
+          element={
+            <LogoutGuard>
+              <Home />
+            </LogoutGuard>
+          }
+        />
+        <Route
+          path="/auth"
+          element={
+            <GuestGuard>
+              <AuthScreen defaultTab={authTab} />
+            </GuestGuard>
+          }
+        />
         <Route path="/intro" element={<IntroPage />} />
         <Route
           path="/new"
@@ -66,30 +74,54 @@ export default function RouteManager({ authTab }) {
         <Route path="/preview" element={<CareFlowEditablePreview />} />
         <Route path="/edit" element={<EditTreeBasic />} />
         <Route path="/demo" element={<Demo />} />
-        <Route path="/price" element={
-          <LogoutGuard>
-            <PricingPage />
-          </LogoutGuard>} />
-        <Route path="/checkout" element={
-          <LoginGuard>
-            <MamMoiQrCheckout />
-          </LoginGuard>} />
-        <Route path="/invoice" element={
-          <LoginGuard>
-            <InvoiceSuccess />
-          </LoginGuard>} />
-        <Route path="/paymenthistory" element={
-          <LoginGuard>
-            <PaymentHistory />
-          </LoginGuard>} />
-        <Route path="/plants" element={
-          <LogoutGuard>
-            <PlantGallery />
-          </LogoutGuard>} />
-        <Route path="/plants/:id" element={
-          <LogoutGuard>
-            <PlantDetail />
-          </LogoutGuard>} />
+        <Route
+          path="/price"
+          element={
+            <LogoutGuard>
+              <PricingPage />
+            </LogoutGuard>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <LoginGuard>
+              <MamMoiQrCheckout />
+            </LoginGuard>
+          }
+        />
+        <Route
+          path="/invoice"
+          element={
+            <LoginGuard>
+              <InvoiceSuccess />
+            </LoginGuard>
+          }
+        />
+        <Route
+          path="/paymenthistory"
+          element={
+            <LoginGuard>
+              <PaymentHistory />
+            </LoginGuard>
+          }
+        />
+        <Route
+          path="/plants"
+          element={
+            <LogoutGuard>
+              <PlantGallery />
+            </LogoutGuard>
+          }
+        />
+        <Route
+          path="/plants/:id"
+          element={
+            <LogoutGuard>
+              <PlantDetail />
+            </LogoutGuard>
+          }
+        />
         {/* Garden list/management */}
         <Route
           path="/garden"
@@ -187,12 +219,28 @@ export default function RouteManager({ authTab }) {
             </RoleGuard>
           }
         />
+        <Route
+          path="/admin/support-requests/:id"
+          element={
+            <RoleGuard roles={["SystemAdmin"]}>
+              <SystemAdminSupportRequestDetail />
+            </RoleGuard>
+          }
+        />
         {/* BusinessAdmin routes - BusinessAdmin only */}
         <Route
           path="/admin/business/reports"
           element={
             <RoleGuard roles={["BusinessAdmin"]}>
               <BusinessAdminReportManagement />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/admin/business/support-requests/:id"
+          element={
+            <RoleGuard roles={["BusinessAdmin"]}>
+              <SystemAdminSupportRequestDetail />
             </RoleGuard>
           }
         />

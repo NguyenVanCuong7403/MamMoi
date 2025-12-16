@@ -201,6 +201,42 @@ public class NotificationsController : ControllerBase
     }
 
     /// <summary>
+    /// Send notification to specific users (SystemAdmin only)
+    /// POST /api/notifications/send-to-users
+    /// </summary>
+    [HttpPost("send-to-users")]
+    [Authorize(Roles = "SystemAdmin")]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> SendNotificationToUsers([FromBody] SendNotificationToUsersDto dto)
+    {
+        try
+        {
+            if (!ModelState.IsValid)
+                return BadRequest(new { success = false, message = "Invalid input", errors = ModelState });
+
+            var count = await _notificationService.SendNotificationToUsersAsync(dto);
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Notification sent to {count} users",
+                data = new { recipientsCount = count }
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error sending notifications to users");
+            return StatusCode(500, new { success = false, message = "Internal server error" });
+        }
+    }
+
+    /// <summary>
     /// Get list of broadcast notifications (SystemAdmin only)
     /// GET /api/notifications/broadcasts
     /// </summary>

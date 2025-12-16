@@ -179,7 +179,7 @@ function PaymentHistory({
               <TableHeader>
                 <TableRow className="bg-gray-50">
                   <TableHead className="text-gray-900 font-semibold text-[clamp(12px,1.5vw,16px)] py-3 md:py-4 lg:py-6 px-3 md:px-4 lg:px-6 whitespace-nowrap">
-                    Mã đơn
+                    STT
                   </TableHead>
                   <TableHead className="text-gray-900 font-semibold text-[clamp(12px,1.5vw,16px)] py-3 md:py-4 lg:py-6 px-3 md:px-4 lg:px-6 whitespace-nowrap">
                     Thời gian
@@ -212,7 +212,7 @@ function PaymentHistory({
                   currentPageData.map((t, index) => (
                     <TableRow key={index} className="hover:bg-gray-50">
                       <TableCell className="text-gray-900 text-[clamp(12px,1.4vw,16px)] py-3 md:py-4 lg:py-6 px-3 md:px-4 lg:px-6 break-words">
-                        {t.id}
+                        {(page - 1) * pageSize + index + 1}
                       </TableCell>
                       <TableCell className="text-gray-900 text-[clamp(12px,1.4vw,16px)] py-3 md:py-4 lg:py-6 px-3 md:px-4 lg:px-6 break-words whitespace-nowrap">
                         {t.time}
@@ -271,9 +271,9 @@ function PaymentHistory({
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <div className="text-xs text-gray-500 mb-1">Mã đơn</div>
+                  <div className="text-xs text-gray-500 mb-1">STT</div>
                   <div className="text-sm font-semibold text-gray-900 break-words">
-                    {t.id}
+                    {(page - 1) * pageSize + index + 1}
                   </div>
                 </div>
                 <Button

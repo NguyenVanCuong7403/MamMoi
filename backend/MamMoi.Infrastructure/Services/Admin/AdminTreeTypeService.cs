@@ -405,6 +405,17 @@ public class AdminTreeTypeService : IAdminTreeTypeService
         if (treeType == null)
             return false;
 
+        // Ensure there is at least one variety and one growth stage before activating
+        var varietiesCount = await _dbContext.TreeVarietys.CountAsync(v => v.TreeTypeId == treeTypeId);
+        var stagesCount = await _dbContext.TreeGrowthStages.CountAsync(s => s.TreeTypeId == treeTypeId);
+
+        var missing = new List<string>();
+        if (varietiesCount == 0) missing.Add("giống cây");
+        if (stagesCount == 0) missing.Add("giai đoạn cây");
+
+        if (missing.Any())
+            throw new InvalidOperationException($"Không thể bật active: chưa có {string.Join(" và ", missing)}.");
+
         treeType.IsActive = true;
         await _dbContext.SaveChangesAsync();
 

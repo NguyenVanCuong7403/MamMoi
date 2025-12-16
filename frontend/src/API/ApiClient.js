@@ -1,3 +1,5 @@
+// Default API base — override with `VITE_API_BASE` in your env.
+// Keep default as the local backend HTTPS dev URL used by this project.
 const API_BASE = import.meta.env.VITE_API_BASE || "https://localhost:7237";
 
 // Flag to prevent infinite refresh loops
@@ -47,6 +49,13 @@ export default class ApiClient {
   }
 
   static async requestWithRetry(path, options) {
+    // Debug: log the full URL being requested so we can diagnose malformed base URLs
+    try {
+      // Keep this as debug only to avoid noisy logs in production
+      // eslint-disable-next-line no-console
+      console.debug("ApiClient -> requesting:", `${API_BASE}${path}`);
+    } catch {}
+
     let res = await fetch(`${API_BASE}${path}`, options);
 
     // If 401 and not already refreshing, try to refresh token
@@ -197,6 +206,11 @@ export default class ApiClient {
         ) {
           errorMessage = errorData.join("\n");
         }
+        // Preserve the raw errors object so callers can map field-level errors
+        var validationObject = null;
+        if (errorsBag && typeof errorsBag === "object") {
+          validationObject = errorsBag;
+        }
       } catch {
         // If not JSON, try to read as text from the original response
         try {
@@ -216,6 +230,16 @@ export default class ApiClient {
       const error = new Error(errorMessage.trim());
       error.status = res.status;
       error.statusText = res.statusText;
+      // Attach parsed validation object (if any) and raw error payload
+      if (typeof validationObject === "object" && validationObject !== null) {
+        error.validation = validationObject;
+      }
+      try {
+        // also attach the full parsed payload for advanced handling
+        error.errorData = validationObject || (await clonedRes.json());
+      } catch {
+        // ignore
+      }
       throw error;
     }
     if (res.status === 204) return null;

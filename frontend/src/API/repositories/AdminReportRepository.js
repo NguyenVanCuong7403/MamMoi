@@ -32,7 +32,9 @@ export default class AdminReportRepository {
     if (startDate) params.append("startDate", startDate.toISOString());
     if (endDate) params.append("endDate", endDate.toISOString());
 
-    const response = await ApiClient.get(`/api/admin/reports?${params.toString()}`);
+    const response = await ApiClient.get(
+      `/api/admin/reports?${params.toString()}`
+    );
     return response;
   }
 
@@ -65,8 +67,9 @@ export default class AdminReportRepository {
     if (startDate) params.append("startDate", startDate.toISOString());
     if (endDate) params.append("endDate", endDate.toISOString());
 
-    const response = await ApiClient.get(`/api/admin/reports/statistics?${params.toString()}`);
+    const response = await ApiClient.get(
+      `/api/admin/reports/statistics?${params.toString()}`
+    );
     return response.data;
   }
 }
-

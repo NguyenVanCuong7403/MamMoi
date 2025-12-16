@@ -25,6 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   Table,
   TableBody,
@@ -91,20 +92,25 @@ export default function AdminTreeManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [gardenFilter, setGardenFilter] = useState(null);
   const [treeTypeFilter, setTreeTypeFilter] = useState(null);
-  
+
   // Dialog states
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedTree, setSelectedTree] = useState(null);
   const [treeDetail, setTreeDetail] = useState(null);
-  
+
   const [actionNotice, setActionNotice] = useState(null);
 
   // Fetch tree types for filter dropdown
   const fetchTreeTypes = async () => {
     try {
-      const response = await AdminTreeRepository.getAllTreeTypes(1, 100, null, true);
+      const response = await AdminTreeRepository.getAllTreeTypes(
+        1,
+        100,
+        null,
+        true
+      );
       if (response.success && response.data) {
         setTreeTypes(response.data);
       }
@@ -130,7 +136,7 @@ export default function AdminTreeManagement() {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await TreeRepository.searchTrees({
         q: searchTerm || "",
         gardenId: gardenFilter ? parseInt(gardenFilter) : null,
@@ -138,7 +144,7 @@ export default function AdminTreeManagement() {
         page,
         pageSize: PAGE_SIZE,
       });
-      
+
       if (response.items) {
         setTrees(response.items || []);
         setTotalCount(response.total || 0);
@@ -161,7 +167,10 @@ export default function AdminTreeManagement() {
       setTreeDetail(detail);
     } catch (err) {
       console.error("Error fetching tree detail:", err);
-      setActionNotice({ message: "Có lỗi xảy ra khi tải chi tiết cây trồng", tone: "error" });
+      setActionNotice({
+        message: "Có lỗi xảy ra khi tải chi tiết cây trồng",
+        tone: "error",
+      });
     }
   };
 
@@ -182,17 +191,23 @@ export default function AdminTreeManagement() {
 
   const handleDelete = async () => {
     if (!selectedTree) return;
-    
+
     try {
       // Admin can delete any tree - pass null for userId to use JWT
       await TreeRepository.deleteTree(selectedTree.treeId, null);
-      setActionNotice({ message: "Đã xóa cây trồng thành công!", tone: "success" });
+      setActionNotice({
+        message: "Đã xóa cây trồng thành công!",
+        tone: "success",
+      });
       setIsDeleteDialogOpen(false);
       setSelectedTree(null);
       await fetchTrees();
     } catch (err) {
       console.error("Error deleting tree:", err);
-      setActionNotice({ message: err.message || "Có lỗi xảy ra khi xóa cây trồng", tone: "error" });
+      setActionNotice({
+        message: err.message || "Có lỗi xảy ra khi xóa cây trồng",
+        tone: "error",
+      });
     }
   };
 
@@ -221,7 +236,10 @@ export default function AdminTreeManagement() {
   const getHealthStatusClassName = (status) => {
     if (!status) return HEALTH_STATUS_META.unknown.className;
     const normalized = status.toLowerCase();
-    return HEALTH_STATUS_META[normalized]?.className || HEALTH_STATUS_META.unknown.className;
+    return (
+      HEALTH_STATUS_META[normalized]?.className ||
+      HEALTH_STATUS_META.unknown.className
+    );
   };
 
   return (
@@ -249,7 +267,8 @@ export default function AdminTreeManagement() {
                   Quản lý cây trồng
                 </h1>
                 <p className="text-emerald-100/80">
-                  Quản lý tất cả cây trồng trong hệ thống, theo dõi trạng thái và thông tin chi tiết.
+                  Quản lý tất cả cây trồng trong hệ thống, theo dõi trạng thái
+                  và thông tin chi tiết.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
@@ -259,7 +278,9 @@ export default function AdminTreeManagement() {
                   onClick={fetchTrees}
                   disabled={loading}
                 >
-                  <RefreshCcw className={cn("mr-2 h-4 w-4", loading && "animate-spin")} />
+                  <RefreshCcw
+                    className={cn("mr-2 h-4 w-4", loading && "animate-spin")}
+                  />
                   {loading ? "Đang tải..." : "Làm mới"}
                 </Button>
               </div>
@@ -303,46 +324,38 @@ export default function AdminTreeManagement() {
                     </div>
                   </div>
                   <div className="lg:col-span-4">
-                    <Select
+                    <SearchableSelect
                       value={gardenFilter || "all"}
-                      onValueChange={(value) => {
+                      onChange={(value) => {
                         setGardenFilter(value === "all" ? null : value);
                         setPage(1);
                       }}
-                    >
-                      <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                        <SelectValue placeholder="Chọn vườn" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tất cả vườn</SelectItem>
-                        {gardens.map((garden) => (
-                          <SelectItem key={garden.gardenId} value={garden.gardenId.toString()}>
-                            {garden.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      options={[
+                        { value: "all", label: "Tất cả vườn" },
+                        ...gardens.map((g) => ({
+                          value: g.gardenId.toString(),
+                          label: g.name,
+                        })),
+                      ]}
+                      placeholder="Chọn vườn"
+                    />
                   </div>
                   <div className="lg:col-span-4">
-                    <Select
+                    <SearchableSelect
                       value={treeTypeFilter || "all"}
-                      onValueChange={(value) => {
+                      onChange={(value) => {
                         setTreeTypeFilter(value === "all" ? null : value);
                         setPage(1);
                       }}
-                    >
-                      <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                        <SelectValue placeholder="Chọn loại cây" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tất cả loại cây</SelectItem>
-                        {treeTypes.map((treeType) => (
-                          <SelectItem key={treeType.treeTypeId} value={treeType.treeTypeId.toString()}>
-                            {treeType.treeTypeName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      options={[
+                        { value: "all", label: "Tất cả loại cây" },
+                        ...treeTypes.map((t) => ({
+                          value: t.treeTypeId.toString(),
+                          label: t.treeTypeName,
+                        })),
+                      ]}
+                      placeholder="Chọn loại cây"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -365,7 +378,9 @@ export default function AdminTreeManagement() {
                 {loading && trees.length === 0 ? (
                   <div className="flex items-center justify-center p-12">
                     <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-                    <span className="ml-3 text-slate-600">Đang tải dữ liệu...</span>
+                    <span className="ml-3 text-slate-600">
+                      Đang tải dữ liệu...
+                    </span>
                   </div>
                 ) : (
                   <>
@@ -382,13 +397,18 @@ export default function AdminTreeManagement() {
                             <TableHead>Giai đoạn</TableHead>
                             <TableHead>Trạng thái</TableHead>
                             <TableHead>Ngày trồng</TableHead>
-                            <TableHead className="text-right">Hành động</TableHead>
+                            <TableHead className="text-right">
+                              Hành động
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {trees.length === 0 ? (
                             <TableRow>
-                              <TableCell colSpan={10} className="py-8 text-center text-slate-500">
+                              <TableCell
+                                colSpan={10}
+                                className="py-8 text-center text-slate-500"
+                              >
                                 Không có cây trồng nào.
                               </TableCell>
                             </TableRow>
@@ -425,14 +445,18 @@ export default function AdminTreeManagement() {
                                   <Badge
                                     className={cn(
                                       "border-0",
-                                      getHealthStatusClassName(tree.healthStatus)
+                                      getHealthStatusClassName(
+                                        tree.healthStatus
+                                      )
                                     )}
                                   >
                                     {getHealthStatusLabel(tree.healthStatus)}
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-slate-500">
-                                  {tree.plantDate ? formatDate(tree.plantDate) : "-"}
+                                  {tree.plantDate
+                                    ? formatDate(tree.plantDate)
+                                    : "-"}
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
@@ -471,10 +495,17 @@ export default function AdminTreeManagement() {
                                 e.preventDefault();
                                 setPage((prev) => Math.max(1, prev - 1));
                               }}
-                              className={page === 1 ? "pointer-events-none opacity-50" : ""}
+                              className={
+                                page === 1
+                                  ? "pointer-events-none opacity-50"
+                                  : ""
+                              }
                             />
                           </PaginationItem>
-                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                          {Array.from(
+                            { length: totalPages },
+                            (_, i) => i + 1
+                          ).map((p) => (
                             <PaginationItem key={p}>
                               <PaginationLink
                                 href="#"
@@ -493,9 +524,15 @@ export default function AdminTreeManagement() {
                               href="#"
                               onClick={(e) => {
                                 e.preventDefault();
-                                setPage((prev) => Math.min(totalPages, prev + 1));
+                                setPage((prev) =>
+                                  Math.min(totalPages, prev + 1)
+                                );
                               }}
-                              className={page === totalPages ? "pointer-events-none opacity-50" : ""}
+                              className={
+                                page === totalPages
+                                  ? "pointer-events-none opacity-50"
+                                  : ""
+                              }
                             />
                           </PaginationItem>
                         </PaginationContent>
@@ -560,7 +597,9 @@ export default function AdminTreeManagement() {
                 <div>
                   <p className="text-sm text-slate-500">Ngày trồng</p>
                   <p className="font-medium text-slate-900">
-                    {treeDetail.plantDate ? formatDate(treeDetail.plantDate) : "-"}
+                    {treeDetail.plantDate
+                      ? formatDate(treeDetail.plantDate)
+                      : "-"}
                   </p>
                 </div>
                 <div>
@@ -591,14 +630,19 @@ export default function AdminTreeManagement() {
                 {treeDetail.notes && (
                   <div className="col-span-2">
                     <p className="text-sm text-slate-500">Ghi chú</p>
-                    <p className="font-medium text-slate-900">{treeDetail.notes}</p>
+                    <p className="font-medium text-slate-900">
+                      {treeDetail.notes}
+                    </p>
                   </div>
                 )}
               </div>
             </div>
           )}
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsDetailDialogOpen(false)}>
+            <Button
+              variant="ghost"
+              onClick={() => setIsDetailDialogOpen(false)}
+            >
               Đóng
             </Button>
           </DialogFooter>
@@ -606,13 +650,19 @@ export default function AdminTreeManagement() {
       </Dialog>
 
       {/* Delete Confirmation */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa cây trồng "{selectedTree?.treeName || selectedTree?.treeCode || `#${selectedTree?.treeId}`}"? 
-              Hành động này không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa cây trồng "
+              {selectedTree?.treeName ||
+                selectedTree?.treeCode ||
+                `#${selectedTree?.treeId}`}
+              "? Hành động này không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -629,4 +679,3 @@ export default function AdminTreeManagement() {
     </>
   );
 }
-

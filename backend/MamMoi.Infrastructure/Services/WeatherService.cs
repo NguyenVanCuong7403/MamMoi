@@ -1,4 +1,5 @@
-﻿using MamMoi.Application.DTOs;
+﻿using System.Text.RegularExpressions;
+using MamMoi.Application.DTOs;
 using MamMoi.Application.Interfaces;
 using MamMoi.Infrastructure.External.Weather;
 using MamMoi.Infrastructure.Models;
@@ -12,6 +13,52 @@ public sealed class WeatherService : IWeatherService
     private readonly IWeatherProvider _provider;
     private readonly MamMoiDbContext _db;
     private readonly AlertThresholds _th;
+
+    private static string NormalizeLocationQuery(string location)
+    {
+        var s = (location ?? string.Empty).Trim();
+        if (string.IsNullOrWhiteSpace(s)) return s;
+
+        s = Regex.Replace(s, @"\s+", " ");
+
+        var first = s.Split(',', ';', '|')[0].Trim();
+        var lower = first.ToLowerInvariant();
+
+        var prefixes = new[]
+        {
+            "thành phố ",
+            "tp. ",
+            "tp ",
+            "tỉnh ",
+            "thị xã ",
+            "tx. ",
+            "tx ",
+        };
+
+        foreach (var p in prefixes)
+        {
+            if (lower.StartsWith(p))
+            {
+                first = first.Substring(p.Length).Trim();
+                lower = first.ToLowerInvariant();
+                break;
+            }
+        }
+
+        var mapped = lower switch
+        {
+            "hà nội" => "Hanoi",
+            "đà nẵng" => "Da Nang",
+            "hồ chí minh" => "Ho Chi Minh City",
+            "hcm" => "Ho Chi Minh City",
+            "sài gòn" => "Ho Chi Minh City",
+            _ => first
+        };
+
+        var query = mapped;
+        if (!query.Contains(',')) query = $"{query},VN";
+        return query;
+    }
 
     public WeatherService(
         IWeatherProvider provider,
@@ -205,15 +252,15 @@ public sealed class WeatherService : IWeatherService
 
     // MamMoi.Infrastructure/Services/WeatherService.cs  (bổ sung)
     public Task<CurrentWeatherDto> GetCurrentByLocationAsync(string location, CancellationToken ct)
-        => _provider.FetchCurrentByQueryAsync(location, ct);
+        => _provider.FetchCurrentByQueryAsync(NormalizeLocationQuery(location), ct);
 
     public Task<ForecastDto> GetForecastByLocationAsync(string location, int range, CancellationToken ct)
-        => _provider.FetchForecastByQueryAsync(location, ct);
+        => _provider.FetchForecastByQueryAsync(NormalizeLocationQuery(location), ct);
 
     // Alerts theo location: geocode trước, rồi dùng FetchAlertsAsync(lat,lon)
     public async Task<IReadOnlyList<WeatherAlertDto>> GetAlertsByLocationAsync(string location, CancellationToken ct)
     {
-        var pos = await _provider.GeocodeAsync(location, ct);
+        var pos = await _provider.GeocodeAsync(NormalizeLocationQuery(location), ct);
         if (pos is null) return Array.Empty<WeatherAlertDto>();
         var (lat, lon) = pos.Value;
 

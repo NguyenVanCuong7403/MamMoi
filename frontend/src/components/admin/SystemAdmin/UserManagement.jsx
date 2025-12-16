@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   Table,
   TableBody,
@@ -301,7 +302,7 @@ const generateMockUsers = () => {
   ];
 
   const plans = ["seedling", "orchard", "harvest"];
-  const userStatuses = ["active", "active", "active", "inactive", "banned"];
+  const userStatuses = ["active", "active", "active", "inactive", "inactive"];
 
   return userTemplates.map((template, index) => {
     const userId = `USR-${String(index + 1).padStart(6, "0")}`;
@@ -558,13 +559,15 @@ function PlanDistributionChart({
       previousPeriodEnd = currentPeriodStart;
     }
 
-    const previousCounts = { seedling: 0, orchard: 0, harvest: 0, free: 0 };
+    const previousCounts = { seedling: 0, orchard: 0, harvest: 0 };
 
     allUsers.forEach((user) => {
       if (!user.lastLogin) return;
       const userDate = new Date(user.lastLogin);
       if (userDate >= previousPeriodStart && userDate < previousPeriodEnd) {
         const planKey = normalizePlanValue(user.plan);
+        // exclude free users from previous period counts
+        if (planKey === "free") return;
         previousCounts[planKey] = (previousCounts[planKey] || 0) + 1;
       }
     });
@@ -746,7 +749,7 @@ function ActionMenu({ user, onOpenModal }) {
         <DropdownMenuItem onSelect={() => onOpenModal("details", user)}>
           Xem chi tiết
         </DropdownMenuItem>
-        {user.status === "banned" ? (
+        {user.status === "inactive" ? (
           <DropdownMenuItem
             className="text-emerald-600 focus:bg-emerald-50"
             onSelect={() => onOpenModal("unlock", user)}
@@ -844,7 +847,7 @@ export default function SystemAdminUserManagement() {
           email: user.email,
           phone: user.phone || "",
           role: user.roleName,
-          status: user.isActive ? "active" : "banned",
+          status: user.isActive ? "active" : "inactive",
           plan: user.planType || "free", // Use planType from backend, default to "free" if null
           planStartDate: user.planStartDate || null,
           planEndDate: user.planEndDate || null,
@@ -855,6 +858,12 @@ export default function SystemAdminUserManagement() {
           treesCount: user.treesCount || 0,
         }));
 
+        // Sort by lastLogin descending (most recent first) as default
+        transformedUsers.sort((a, b) => {
+          const da = a.lastLogin ? new Date(a.lastLogin).getTime() : 0;
+          const db = b.lastLogin ? new Date(b.lastLogin).getTime() : 0;
+          return db - da;
+        });
         setUsers(transformedUsers);
         setTotalCount(response.pagination?.totalCount || 0);
         setTotalPages(response.pagination?.totalPages || 1);
@@ -1003,6 +1012,8 @@ export default function SystemAdminUserManagement() {
 
     const counts = sourceUsers.reduce((acc, user) => {
       const planKey = normalizePlanValue(user.plan);
+      // Exclude free users from the breakdown
+      if (planKey === "free") return acc;
       acc[planKey] = (acc[planKey] ?? 0) + 1;
       return acc;
     }, {});
@@ -1012,9 +1023,6 @@ export default function SystemAdminUserManagement() {
       (key) => !preferredOrder.includes(key) && key !== "free"
     );
     const orderedKeys = [...preferredOrder, ...extraKeys];
-    if (!orderedKeys.includes("free")) {
-      orderedKeys.push("free");
-    }
 
     const data = orderedKeys.map((key) => ({
       key,
@@ -1022,6 +1030,7 @@ export default function SystemAdminUserManagement() {
       value: counts[key] ?? 0,
     }));
 
+    // Total excludes free users by design
     const total = data.reduce((sum, item) => sum + item.value, 0);
 
     // Tính change tổng thể so với kỳ trước
@@ -1756,70 +1765,30 @@ export default function SystemAdminUserManagement() {
                       </div>
                     </div>
                     <div className="lg:col-span-2">
-                      <Select
+                      <SearchableSelect
                         value={filters.role}
-                        onValueChange={(value) =>
-                          handleFilterChange("role", value)
-                        }
-                      >
-                        <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                          <SelectValue
-                            placeholder="Vai trò"
-                            className="text-slate-500"
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ROLE_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(value) => handleFilterChange("role", value)}
+                        options={ROLE_OPTIONS}
+                        placeholder="Vai trò"
+                      />
                     </div>
                     <div className="lg:col-span-2">
-                      <Select
+                      <SearchableSelect
                         value={filters.status}
-                        onValueChange={(value) =>
+                        onChange={(value) =>
                           handleFilterChange("status", value)
                         }
-                      >
-                        <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                          <SelectValue
-                            placeholder="Trạng thái"
-                            className="text-slate-500"
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STATUS_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        options={STATUS_OPTIONS}
+                        placeholder="Trạng thái"
+                      />
                     </div>
                     <div className="lg:col-span-2">
-                      <Select
+                      <SearchableSelect
                         value={filters.plan}
-                        onValueChange={(value) =>
-                          handleFilterChange("plan", value)
-                        }
-                      >
-                        <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                          <SelectValue
-                            placeholder="Loại gói"
-                            className="text-slate-500"
-                          />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {PACKAGE_OPTIONS.map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        onChange={(value) => handleFilterChange("plan", value)}
+                        options={PACKAGE_OPTIONS}
+                        placeholder="Loại gói"
+                      />
                     </div>
                     <div className="lg:col-span-2">
                       <Button
@@ -2160,7 +2129,7 @@ export default function SystemAdminUserManagement() {
                           <ShieldCheck className="h-4 w-4" />
                           Đặt lại mật khẩu
                         </Button>
-                        {selectedUser?.status === "banned" ? (
+                        {selectedUser?.status === "inactive" ? (
                           <Button
                             variant="outline"
                             className="w-full justify-start gap-2 border-emerald-100 text-emerald-700 hover:bg-emerald-50"
@@ -2217,26 +2186,17 @@ export default function SystemAdminUserManagement() {
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <Select
+                  <SearchableSelect
                     value={planDraft}
-                    onValueChange={(value) => {
+                    onChange={(value) => {
                       setPlanDraft(value);
                       setPlanAcknowledged(false);
                     }}
-                  >
-                    <SelectTrigger className="rounded-xl border-slate-200 bg-white">
-                      <SelectValue placeholder="Chọn gói" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PACKAGE_OPTIONS.filter(
-                        (option) => option.value !== "all"
-                      ).map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    options={PACKAGE_OPTIONS.filter(
+                      (option) => option.value !== "all"
+                    )}
+                    placeholder="Chọn gói"
+                  />
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <label className="text-sm font-medium text-slate-600">
@@ -2528,44 +2488,24 @@ export default function SystemAdminUserManagement() {
                     <label className="text-sm font-medium text-slate-600">
                       Vai trò
                     </label>
-                    <Select
+                    <SearchableSelect
                       value={editDraft.role}
-                      onValueChange={(value) => {
-                        // Ngăn không cho chọn SystemAdmin
-                        if (value === "SystemAdmin") {
-                          return;
-                        }
-                        // Ngăn không cho thay đổi role nếu user là SystemAdmin
-                        if (selectedUser?.role === "SystemAdmin") {
-                          return;
-                        }
+                      onChange={(value) => {
+                        // Prevent selecting SystemAdmin
+                        if (value === "SystemAdmin") return;
+                        if (selectedUser?.role === "SystemAdmin") return;
                         setEditDraft((prev) => ({ ...prev, role: value }));
                       }}
+                      options={ROLE_OPTIONS.filter(
+                        (option) => option.value !== "all"
+                      ).filter((option) => {
+                        if (option.value === "SystemAdmin")
+                          return selectedUser?.role === "SystemAdmin";
+                        return true;
+                      })}
+                      placeholder="Chọn vai trò"
                       disabled={selectedUser?.role === "SystemAdmin"}
-                    >
-                      <SelectTrigger className="rounded-xl border-slate-200 bg-white">
-                        <SelectValue placeholder="Chọn vai trò" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ROLE_OPTIONS.filter((option) => option.value !== "all")
-                          .filter((option) => {
-                            // Ẩn SystemAdmin cho user không phải SystemAdmin
-                            if (option.value === "SystemAdmin") {
-                              return selectedUser?.role === "SystemAdmin";
-                            }
-                            return true;
-                          })
-                          .map((option) => (
-                            <SelectItem
-                              key={option.value}
-                              value={option.value}
-                              disabled={option.value === "SystemAdmin"}
-                            >
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                      </SelectContent>
-                    </Select>
+                    />
                     {selectedUser?.role === "SystemAdmin" && (
                       <p className="text-xs text-amber-600 mt-1">
                         Không thể thay đổi vai trò của Quản trị hệ thống

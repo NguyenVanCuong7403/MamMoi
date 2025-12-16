@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   Table,
   TableBody,
@@ -348,28 +349,21 @@ export default function TreeVarietyManagement() {
                     </div>
                   </div>
                   <div className="lg:col-span-4">
-                    <Select
+                    <SearchableSelect
                       value={treeTypeFilter || "all"}
-                      onValueChange={(value) => {
+                      onChange={(value) => {
                         setTreeTypeFilter(value === "all" ? null : value);
                         setPage(1);
                       }}
-                    >
-                      <SelectTrigger className="rounded-xl border-slate-200 bg-white text-slate-900">
-                        <SelectValue placeholder="Chọn loại cây" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tất cả loại cây</SelectItem>
-                        {treeTypes.map((treeType) => (
-                          <SelectItem
-                            key={treeType.treeTypeId}
-                            value={treeType.treeTypeId.toString()}
-                          >
-                            {treeType.treeTypeName}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      options={[
+                        { value: "all", label: "Tất cả loại cây" },
+                        ...treeTypes.map((t) => ({
+                          value: t.treeTypeId.toString(),
+                          label: t.treeTypeName,
+                        })),
+                      ]}
+                      placeholder="Chọn loại cây"
+                    />
                   </div>
                 </div>
               </CardContent>
@@ -547,26 +541,17 @@ export default function TreeVarietyManagement() {
               <label className="text-sm font-medium text-slate-700">
                 Loại cây *
               </label>
-              <Select
+              <SearchableSelect
                 value={formData.treeTypeId}
-                onValueChange={(value) =>
+                onChange={(value) =>
                   setFormData({ ...formData, treeTypeId: value })
                 }
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Chọn loại cây" />
-                </SelectTrigger>
-                <SelectContent>
-                  {treeTypes.map((treeType) => (
-                    <SelectItem
-                      key={treeType.treeTypeId}
-                      value={treeType.treeTypeId.toString()}
-                    >
-                      {treeType.treeTypeName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={treeTypes.map((t) => ({
+                  value: t.treeTypeId.toString(),
+                  label: t.treeTypeName,
+                }))}
+                placeholder="Chọn loại cây"
+              />
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700">
@@ -629,26 +614,17 @@ export default function TreeVarietyManagement() {
               <label className="text-sm font-medium text-slate-700">
                 Loại cây
               </label>
-              <Select
+              <SearchableSelect
                 value={formData.treeTypeId}
-                onValueChange={(value) =>
+                onChange={(value) =>
                   setFormData({ ...formData, treeTypeId: value })
                 }
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue placeholder="Chọn loại cây" />
-                </SelectTrigger>
-                <SelectContent>
-                  {treeTypes.map((treeType) => (
-                    <SelectItem
-                      key={treeType.treeTypeId}
-                      value={treeType.treeTypeId.toString()}
-                    >
-                      {treeType.treeTypeName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                options={treeTypes.map((t) => ({
+                  value: t.treeTypeId.toString(),
+                  label: t.treeTypeName,
+                }))}
+                placeholder="Chọn loại cây"
+              />
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700">

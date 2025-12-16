@@ -77,7 +77,8 @@ public class AdminSupportRequestService : IAdminSupportRequestService
                 RequestDate = sr.RequestDate,
                 ResolvedAt = sr.ResolvedAt,
                 TicketNumber = sr.TicketNumber,
-                ResponseCount = sr.ResponseCount
+                ResponseCount = sr.ResponseCount,
+                SatisfactionRating = sr.SatisfactionRating
             })
             .ToListAsync();
 
@@ -132,10 +133,10 @@ public class AdminSupportRequestService : IAdminSupportRequestService
         if (!string.IsNullOrWhiteSpace(dto.Status))
         {
             request.Status = dto.Status;
-            
+
             if (dto.Status == "Resolved" && request.ResolvedAt == null)
                 request.ResolvedAt = DateTime.UtcNow;
-            
+
             if (dto.Status == "Closed" && request.ClosedAt == null)
                 request.ClosedAt = DateTime.UtcNow;
         }

@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Menu, Bell, User as UserIcon, ArrowLeft, LogOut } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/API/context/AuthContext";
 import NotificationRepository from "@/API/repositories/NotificationRepository";
 import { getNotificationRoute } from "@/lib/notificationRoutes";
@@ -161,7 +161,7 @@ export default function MMHeader({
         const parsed = JSON.parse(profile);
         return parsed?.avatarUrl || "";
       }
-    } catch { }
+    } catch {}
     return "";
   });
 
@@ -190,10 +190,10 @@ export default function MMHeader({
               if (userFromStorage?.ProfileImageUrl) {
                 setProfileAvatar(userFromStorage.ProfileImageUrl);
               }
-            } catch { }
+            } catch {}
           }
         }
-      } catch { }
+      } catch {}
     }
 
     // Lắng nghe storage event (từ tab khác) và custom event (từ cùng tab)
@@ -215,6 +215,7 @@ export default function MMHeader({
   const lastScrollY = useRef(0);
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLoginClick = () => {
     onLogin();
@@ -243,11 +244,7 @@ export default function MMHeader({
 
   // Filter and add menu items based on user role
   const filteredMenuItems = useMemo(() => {
-    // Hide all nav items for admins
-    if (isAdmin(user)) {
-      return [];
-    }
-
+    // Show the standard menu by default. For guests, hide certain items.
     let items = [...menuItems];
 
     // Remove "Quản lý vườn & cây" for guests
@@ -262,8 +259,13 @@ export default function MMHeader({
       href: "/plants",
     });
 
+    // If admin and currently inside admin area, hide the public nav
+    if (isAdmin(user) && location?.pathname?.startsWith("/admin")) {
+      return [];
+    }
+
     return items;
-  }, [menuItems, user]);
+  }, [menuItems, user, location?.pathname]);
 
   useEffect(() => {
     const close = (e) => {
@@ -433,7 +435,7 @@ export default function MMHeader({
                           "px-4 py-2 rounded-full transition-all duration-200 text-sm font-medium whitespace-nowrap",
                           "hover:bg-[#FFFFA5] hover:text-[#1F302F]",
                           active ? "font-semibold" : "",
-                          isTop ? "text-[#FBFFDF]" : "text-[#D1DFB6]"
+                          isTop ? "text-[#FBFFDF]" : "text-[#D1DFB6]",
                         ].join(" ")}
                         aria-current={active ? "page" : undefined}
                       >
@@ -544,7 +546,7 @@ export default function MMHeader({
                                         className={[
                                           "font-medium text-xs sm:text-sm break-words",
                                           !notification.isRead &&
-                                          "font-semibold",
+                                            "font-semibold",
                                         ].join(" ")}
                                       >
                                         {notification.title}

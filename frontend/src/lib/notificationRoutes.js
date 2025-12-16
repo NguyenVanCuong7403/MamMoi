@@ -54,6 +54,22 @@ export function getNotificationRoute(notification, user) {
     entityType === "supportrequest" ||
     notifType === "supportrequest"
   ) {
+    // Nếu là support request cụ thể (có relatedEntityId) thì ưu tiên dẫn tới trang chi tiết
+    if (entityType === "supportrequest" || notifType === "supportrequest") {
+      if (relatedEntityId) {
+        if (userRole === "systemadmin")
+          return `/admin/support-requests/${relatedEntityId}`;
+        if (userRole === "businessadmin")
+          return `/admin/business/support-requests/${relatedEntityId}`;
+        return `/support-requests/${relatedEntityId}`;
+      }
+      // Nếu không có ID, fallback về list
+      if (userRole === "systemadmin") return "/admin/reports";
+      if (userRole === "businessadmin") return "/admin/business/reports";
+      return "/reports";
+    }
+
+    // Trường hợp là report (không phải support request)
     if (userRole === "systemadmin") {
       return "/admin/reports";
     }

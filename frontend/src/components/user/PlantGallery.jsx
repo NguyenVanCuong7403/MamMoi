@@ -108,7 +108,7 @@ function PlantCard({ tree, index, onClick }) {
         </div>
 
         {/* Image Section with modern effects */}
-        <div className="relative h-[320px] w-full overflow-hidden rounded-t-2xl sm:h-[360px] md:h-[380px] lg:h-[400px]">
+        <div className="relative h-[320px] w-full overflow-hidden rounded-t-2xl sm:h-[360px] md:h-[380px] lg:h-[400px] flex items-center justify-center bg-white/5">
           <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
           <img
             src={
@@ -116,7 +116,8 @@ function PlantCard({ tree, index, onClick }) {
               "https://images.unsplash.com/photo-1437750769465-301382cdf094?w=400"
             }
             alt={tree.treeTypeName}
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.15]"
+            // use object-contain so images keep their aspect ratio and aren't distorted
+            className="h-full w-full object-contain object-center transition-transform duration-700 group-hover:scale-105"
           />
 
           {/* Animated overlay gradient with emerald tint */}
@@ -210,7 +211,8 @@ export default function PlantGallery() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15; // Maximum 15 items per page
+  // Show 4 items per row, 10 rows per page = 40 items per page
+  const itemsPerPage = 4 * 10; // 40 items per page
 
   useEffect(() => {
     const fetchData = async () => {
@@ -286,10 +288,10 @@ export default function PlantGallery() {
     return filteredTrees.slice(startIndex, startIndex + itemsPerPage);
   }, [filteredTrees, currentPage, itemsPerPage]);
 
-  // Calculate items in first row for centering (5 columns on lg screens)
-  // Only center if first row has less than 5 items
+  // Calculate items in first row for centering (4 columns on lg screens)
+  // Only center if first row has less than 4 items
   const firstRowItems = useMemo(() => {
-    return Math.min(paginatedTrees.length, 5);
+    return Math.min(paginatedTrees.length, 4);
   }, [paginatedTrees.length]);
 
   // Reset to page 1 when search changes
@@ -368,7 +370,7 @@ export default function PlantGallery() {
               <div className="relative">
                 {/* Glow effect */}
                 <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400 opacity-25 blur-xl" />
-                
+
                 <div className="relative">
                   <div className="absolute left-5 top-1/2 -translate-y-1/2">
                     <Search className="h-5 w-5 text-emerald-600/70" />
@@ -392,7 +394,7 @@ export default function PlantGallery() {
                   )}
                 </div>
               </div>
-              
+
               {/* Quick stats - More compact */}
               <motion.div
                 initial={{ opacity: 0 }}
@@ -422,7 +424,6 @@ export default function PlantGallery() {
 
       {/* Plant Grid Section - Full width with natural decorative elements */}
       <section className="relative z-10 w-full bg-transparent py-20">
-
         <div className="w-full">
           {loading ? (
             <div className="flex min-h-[500px] items-center justify-center">
@@ -454,19 +455,16 @@ export default function PlantGallery() {
             </motion.div>
           ) : (
             <>
-              {/* Dynamic styles for centering first row - only when < 5 items on lg screens */}
-              {firstRowItems > 0 && firstRowItems < 5 && (
+              {/* Dynamic styles for centering first row - only when < 4 items on lg screens */}
+              {firstRowItems > 0 && firstRowItems < 4 && (
                 <style>{`
                   @media (min-width: 1024px) {
                     ${Array.from({ length: firstRowItems }, (_, i) => {
-                      // Calculate starting column to center the items
-                      // For n items in 5 columns:
-                      // - 1 item: column 3 (center)
-                      // - 2 items: columns 2, 3
-                      // - 3 items: columns 2, 3, 4
-                      // - 4 items: columns 1, 2, 3, 4
-                      // Formula: startCol = Math.floor((5 - n + 1) / 2) + i
-                      const baseCol = Math.floor((5 - firstRowItems + 1) / 2);
+                      // Calculate starting column to center the items for 4 columns:
+                      // startCol = Math.floor((columns - n) / 2) + 1 + i
+                      const columns = 4;
+                      const baseCol =
+                        Math.floor((columns - firstRowItems) / 2) + 1;
                       const startCol = baseCol + i;
                       return `.plant-grid-item-first-row-${firstRowItems}-${i} {
                         grid-column-start: ${startCol} !important;
@@ -476,13 +474,13 @@ export default function PlantGallery() {
                 `}</style>
               )}
 
-              {/* Grid: 5 columns on large screens for vertical portrait cards */}
-              <div className="grid w-full grid-cols-1 gap-x-6 gap-y-10 px-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 sm:gap-x-8 sm:gap-y-14 md:gap-x-10 md:gap-y-18 lg:gap-x-12 lg:gap-y-24 sm:px-3">
+              {/* Grid: 4 columns on large screens for vertical portrait cards */}
+              <div className="grid w-full grid-cols-1 gap-x-6 gap-y-10 px-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 sm:gap-x-8 sm:gap-y-14 md:gap-x-10 md:gap-y-18 lg:gap-x-12 lg:gap-y-24 sm:px-3">
                 <AnimatePresence mode="wait">
                   {paginatedTrees.map((tree, index) => {
-                    const isFirstRow = index < 5;
+                    const isFirstRow = index < 4;
                     const shouldCenter =
-                      firstRowItems > 0 && firstRowItems < 5 && isFirstRow;
+                      firstRowItems > 0 && firstRowItems < 4 && isFirstRow;
                     const itemIndexInFirstRow = shouldCenter ? index : -1;
 
                     return (
@@ -567,4 +565,3 @@ export default function PlantGallery() {
     </div>
   );
 }
-

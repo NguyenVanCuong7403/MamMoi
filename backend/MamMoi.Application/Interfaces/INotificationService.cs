@@ -48,6 +48,11 @@ public interface INotificationService
     Task<int> BroadcastNotificationAsync(BroadcastNotificationDto dto);
 
     /// <summary>
+    /// Send notification to a specific list of users (SystemAdmin only)
+    /// </summary>
+    Task<int> SendNotificationToUsersAsync(SendNotificationToUsersDto dto);
+
+    /// <summary>
     /// Update broadcast notifications by group ID (SystemAdmin only)
     /// </summary>
     Task<bool> UpdateBroadcastNotificationAsync(string groupId, UpdateBroadcastNotificationDto dto);

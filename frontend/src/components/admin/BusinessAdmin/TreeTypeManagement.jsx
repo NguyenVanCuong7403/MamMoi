@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   Sheet,
   SheetContent,
@@ -120,6 +121,10 @@ const toleranceLevels = [
     color: "text-slate-600 bg-slate-50 border-slate-200",
   },
 ];
+
+// Limits for lists
+const MAX_CAREGUIDE_ITEMS = 20;
+const MAX_PEST_ITEMS = 20;
 
 // Màu sắc cho mức độ bệnh (đồng bộ với PlantDetail.jsx)
 const severityColors = {
@@ -274,94 +279,103 @@ const mapSoilFromApi = (apiSoil) => {
   };
 };
 
-const mapTreeTypeToApi = (componentTreeType) => {
+const mapTreeTypeToApi = (treeType) => {
   const result = {
-    treeTypeName:
-      componentTreeType.TreeTypeName || componentTreeType.treeTypeName,
-    scientificName:
-      componentTreeType.ScientificName || componentTreeType.scientificName,
-    description: componentTreeType.Description || componentTreeType.description,
-    category: componentTreeType.Category || componentTreeType.category,
-    imageUrl: componentTreeType.ImageUrl || componentTreeType.imageUrl,
-    isActive: componentTreeType.IsActive ?? componentTreeType.isActive ?? true,
+    treeTypeName: treeType.TreeTypeName || treeType.treeTypeName,
+    scientificName: treeType.ScientificName || treeType.scientificName,
+    description: treeType.Description || treeType.description,
+    category: treeType.Category || treeType.category,
+    imageUrl: treeType.ImageUrl || treeType.imageUrl,
+    isActive: treeType.IsActive ?? treeType.isActive ?? true,
   };
 
   // Only include fields that are not undefined/null
-  if (componentTreeType.SoilMasterID || componentTreeType.soilMasterId) {
-    const soilMasterId = parseInt(
-      componentTreeType.SoilMasterID || componentTreeType.soilMasterId
-    );
-    if (!isNaN(soilMasterId)) {
-      result.soilMasterId = soilMasterId;
-    }
+  if (treeType.SoilMasterID || treeType.soilMasterId) {
+    // Accept either numeric ids or string ids (GUIDs). If numeric, convert to number.
+    const rawId = treeType.SoilMasterID ?? treeType.soilMasterId;
+    const parsed = Number(rawId);
+    result.soilMasterId = Number.isNaN(parsed) ? rawId : parsed;
   }
 
   if (
-    componentTreeType.AverageLifespanYears !== undefined ||
-    componentTreeType.averageLifespanYears !== undefined
+    treeType.AverageLifespanYears !== undefined ||
+    treeType.averageLifespanYears !== undefined
   ) {
     result.averageLifespanYears =
-      componentTreeType.AverageLifespanYears ??
-      componentTreeType.averageLifespanYears;
+      treeType.AverageLifespanYears ?? treeType.averageLifespanYears;
   }
 
   if (
-    componentTreeType.OptimalTemperatureMin !== undefined ||
-    componentTreeType.optimalTemperatureMin !== undefined
+    treeType.OptimalTemperatureMin !== undefined ||
+    treeType.optimalTemperatureMin !== undefined
   ) {
     result.optimalTemperatureMin =
-      componentTreeType.OptimalTemperatureMin ??
-      componentTreeType.optimalTemperatureMin;
+      treeType.OptimalTemperatureMin ?? treeType.optimalTemperatureMin;
   }
 
   if (
-    componentTreeType.OptimalTemperatureMax !== undefined ||
-    componentTreeType.optimalTemperatureMax !== undefined
+    treeType.OptimalTemperatureMax !== undefined ||
+    treeType.optimalTemperatureMax !== undefined
   ) {
     result.optimalTemperatureMax =
-      componentTreeType.OptimalTemperatureMax ??
-      componentTreeType.optimalTemperatureMax;
+      treeType.OptimalTemperatureMax ?? treeType.optimalTemperatureMax;
   }
 
   if (
-    componentTreeType.OptimalHumidityMin !== undefined ||
-    componentTreeType.optimalHumidityMin !== undefined
+    treeType.OptimalHumidityMin !== undefined ||
+    treeType.optimalHumidityMin !== undefined
   ) {
     result.optimalHumidityMin =
-      componentTreeType.OptimalHumidityMin ??
-      componentTreeType.optimalHumidityMin;
+      treeType.OptimalHumidityMin ?? treeType.optimalHumidityMin;
   }
 
   if (
-    componentTreeType.OptimalHumidityMax !== undefined ||
-    componentTreeType.optimalHumidityMax !== undefined
+    treeType.OptimalHumidityMax !== undefined ||
+    treeType.optimalHumidityMax !== undefined
   ) {
     result.optimalHumidityMax =
-      componentTreeType.OptimalHumidityMax ??
-      componentTreeType.optimalHumidityMax;
+      treeType.OptimalHumidityMax ?? treeType.optimalHumidityMax;
   }
 
-  if (
-    componentTreeType.DroughtTolerance ||
-    componentTreeType.droughtTolerance
-  ) {
+  if (treeType.DroughtTolerance || treeType.droughtTolerance) {
     result.droughtTolerance =
-      componentTreeType.DroughtTolerance || componentTreeType.droughtTolerance;
+      treeType.DroughtTolerance || treeType.droughtTolerance;
   }
 
-  if (componentTreeType.FloodTolerance || componentTreeType.floodTolerance) {
-    result.floodTolerance =
-      componentTreeType.FloodTolerance || componentTreeType.floodTolerance;
+  if (treeType.FloodTolerance || treeType.floodTolerance) {
+    result.floodTolerance = treeType.FloodTolerance || treeType.floodTolerance;
   }
 
-  if (componentTreeType.FrostTolerance || componentTreeType.frostTolerance) {
-    result.frostTolerance =
-      componentTreeType.FrostTolerance || componentTreeType.frostTolerance;
+  if (treeType.FrostTolerance || treeType.frostTolerance) {
+    result.frostTolerance = treeType.FrostTolerance || treeType.frostTolerance;
   }
 
-  if (componentTreeType.WindTolerance || componentTreeType.windTolerance) {
-    result.windTolerance =
-      componentTreeType.WindTolerance || componentTreeType.windTolerance;
+  if (treeType.WindTolerance || treeType.windTolerance) {
+    result.windTolerance = treeType.WindTolerance || treeType.windTolerance;
+  }
+
+  // Include CareGuide (array of strings) if present — backend expects a string
+  if (treeType.CareGuide) {
+    const cg = Array.isArray(treeType.CareGuide)
+      ? treeType.CareGuide
+      : ensureArray(treeType.CareGuide, []);
+    // Serialize to JSON string for backend compatibility
+    result.careGuide = JSON.stringify(cg.slice(0, MAX_CAREGUIDE_ITEMS));
+  }
+
+  // Include Pests (array of objects) if present
+  if (treeType.Pests) {
+    const pestsArr = Array.isArray(treeType.Pests)
+      ? treeType.Pests
+      : ensureArray(treeType.Pests, []);
+    // Normalize pest objects to expected API shape and limit length
+    const normalized = pestsArr.slice(0, MAX_PEST_ITEMS).map((p) => ({
+      name: p?.name ?? p?.Name ?? "",
+      description: p?.description ?? p?.Description ?? "",
+      severity: p?.severity ?? p?.Severity ?? "",
+    }));
+    // Backend expects a JSON string for pests as well
+    result.pests = JSON.stringify(normalized);
   }
 
   return result;
@@ -768,35 +782,32 @@ function FilterBar({ filters, onChange, soils }) {
   const soilOptions = Array.isArray(soils) ? soils : [];
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 text-[16px] shadow-sm">
-      <Select
-        value={filters.soil}
-        onValueChange={(value) => onChange({ ...filters, soil: value })}
-      >
-        <SelectTrigger className="h-12 w-48 rounded-xl text-base">
-          <SelectValue placeholder="Loại đất" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Tất cả đất</SelectItem>
-          {soilOptions.map((soil) => (
-            <SelectItem key={soil.SoilMasterID} value={soil.SoilMasterID}>
-              {soil.SoilName}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select
-        value={filters.status}
-        onValueChange={(value) => onChange({ ...filters, status: value })}
-      >
-        <SelectTrigger className="h-12 w-40 rounded-xl text-base">
-          <SelectValue placeholder="Trạng thái" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Tất cả</SelectItem>
-          <SelectItem value="active">Active</SelectItem>
-          <SelectItem value="inactive">Inactive</SelectItem>
-        </SelectContent>
-      </Select>
+      <div className="w-48">
+        <SearchableSelect
+          value={filters.soil}
+          onChange={(value) => onChange({ ...filters, soil: value })}
+          options={[
+            { value: "all", label: "Tất cả đất" },
+            ...soilOptions.map((s) => ({
+              value: s.SoilMasterID,
+              label: s.SoilName,
+            })),
+          ]}
+          placeholder="Loại đất"
+        />
+      </div>
+      <div className="w-40">
+        <SearchableSelect
+          value={filters.status}
+          onChange={(value) => onChange({ ...filters, status: value })}
+          options={[
+            { value: "all", label: "Tất cả" },
+            { value: "active", label: "Active" },
+            { value: "inactive", label: "Inactive" },
+          ]}
+          placeholder="Trạng thái"
+        />
+      </div>
     </div>
   );
 }
@@ -869,15 +880,24 @@ function TreeTable({
             {trees.map((tree) => (
               <TableRow
                 key={tree.TreeTypeID}
-                className="text-[16px] hover:bg-emerald-50/40"
+                className={cn(
+                  "text-[16px] hover:bg-emerald-50/40",
+                  !tree.IsActive && "ring-1 ring-rose-300/60"
+                )}
               >
                 <TableCell>
-                  <div className="flex gap-4">
+                  <div
+                    className={cn(
+                      "flex gap-4",
+                      !tree.IsActive &&
+                        "rounded-2xl border border-rose-300/80 bg-rose-50/40 p-2"
+                    )}
+                  >
                     {tree.ImageUrl ? (
                       <img
                         src={tree.ImageUrl}
                         alt={tree.TreeTypeName}
-                        className="h-14 w-14 rounded-2xl object-cover"
+                        className="h-14 w-14 rounded-2xl object-contain"
                       />
                     ) : (
                       <div className="h-14 w-14 rounded-2xl bg-slate-100 flex items-center justify-center">
@@ -1457,10 +1477,34 @@ export default function TreeTypeManagement() {
       setSheetOpen(false);
     } catch (error) {
       console.error("Error saving tree type:", error);
-      form.setError("root", {
-        type: "manual",
-        message: error.message || "Có lỗi xảy ra khi lưu. Vui lòng thử lại.",
-      });
+      // If server returned validation object, map field errors to form
+      if (error && error.validation && typeof error.validation === "object") {
+        try {
+          Object.entries(error.validation).forEach(([field, msgs]) => {
+            const message = Array.isArray(msgs)
+              ? msgs.join("\n")
+              : String(msgs);
+            // Attempt to set the exact field name first
+            try {
+              form.setError(field, { type: "server", message });
+            } catch (e) {
+              // Fallback: set root error if field mapping fails
+              form.setError("root", { type: "server", message });
+            }
+          });
+        } catch (e) {
+          form.setError("root", {
+            type: "manual",
+            message:
+              error.message || "Có lỗi xảy ra khi lưu. Vui lòng thử lại.",
+          });
+        }
+      } else {
+        form.setError("root", {
+          type: "manual",
+          message: error.message || "Có lỗi xảy ra khi lưu. Vui lòng thử lại.",
+        });
+      }
     } finally {
       setSaving(false);
     }
@@ -2039,6 +2083,11 @@ export default function TreeTypeManagement() {
             className="flex flex-col flex-1 min-h-0"
             onSubmit={form.handleSubmit(handleSubmit)}
           >
+            {form.formState?.errors?.root && (
+              <div className="mb-4 rounded-md border border-rose-200 bg-rose-50/60 p-3 text-sm text-rose-700">
+                {String(form.formState.errors.root.message)}
+              </div>
+            )}
             <div className="grid grid-cols-[1fr_400px] gap-6 flex-1 min-h-0 overflow-hidden">
               {/* Cột trái: Form chỉnh sửa/thêm loại cây */}
               <ScrollArea className="h-full pr-4">
@@ -2126,33 +2175,22 @@ export default function TreeTypeManagement() {
                       render={({ field, fieldState }) => (
                         <FormItem>
                           <FormLabel>Loại đất phù hợp</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger
-                                className={cn(
-                                  "h-12 w-full",
-                                  form.formState.isSubmitted &&
-                                    fieldState.error &&
-                                    "border-red-500 focus-visible:ring-red-500"
-                                )}
-                              >
-                                <SelectValue placeholder="Chọn loại đất" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {soils.map((soil) => (
-                                <SelectItem
-                                  key={soil.SoilMasterID}
-                                  value={soil.SoilMasterID}
-                                >
-                                  {soil.SoilName}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <FormControl>
+                            <SearchableSelect
+                              value={field.value}
+                              onChange={field.onChange}
+                              options={soils.map((s) => ({
+                                value: s.SoilMasterID,
+                                label: s.SoilName,
+                              }))}
+                              placeholder="Chọn loại đất"
+                              error={
+                                form.formState.isSubmitted && fieldState.error
+                                  ? fieldState.error.message
+                                  : undefined
+                              }
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -2286,41 +2324,23 @@ export default function TreeTypeManagement() {
                               {fieldName === "WindTolerance" &&
                                 "Khả năng chịu gió mạnh"}
                             </FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value || ""}
-                            >
-                              <FormControl>
-                                <SelectTrigger
-                                  className={cn(
-                                    "h-12",
-                                    field.value &&
-                                      toleranceLevels.find(
-                                        (t) => t.value === field.value
-                                      )?.color,
-                                    form.formState.isSubmitted &&
-                                      form.formState.errors[fieldName] &&
-                                      "border-red-500 focus-visible:ring-red-500"
-                                  )}
-                                >
-                                  <SelectValue placeholder="Chọn mức độ" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {toleranceLevels.map((option) => (
-                                  <SelectItem
-                                    key={option.value}
-                                    value={option.value}
-                                    className={cn(
-                                      "focus:bg-opacity-50",
-                                      option.color
-                                    )}
-                                  >
-                                    {option.label}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <SearchableSelect
+                                value={field.value || ""}
+                                onChange={field.onChange}
+                                options={toleranceLevels.map((opt) => ({
+                                  value: opt.value,
+                                  label: opt.label,
+                                }))}
+                                placeholder="Chọn mức độ"
+                                error={
+                                  form.formState.isSubmitted &&
+                                  form.formState.errors[fieldName]
+                                    ? form.formState.errors[fieldName].message
+                                    : undefined
+                                }
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -2352,6 +2372,12 @@ export default function TreeTypeManagement() {
                           const currentArray = Array.isArray(current)
                             ? current
                             : [];
+                          if (currentArray.length >= MAX_CAREGUIDE_ITEMS) {
+                            alert(
+                              `Không thể thêm quá ${MAX_CAREGUIDE_ITEMS} bước`
+                            );
+                            return;
+                          }
                           form.setValue("CareGuide", [...currentArray, ""]);
                         }}
                         className="h-8"
@@ -2456,6 +2482,10 @@ export default function TreeTypeManagement() {
                           const currentArray = Array.isArray(current)
                             ? current
                             : [];
+                          if (currentArray.length >= MAX_PEST_ITEMS) {
+                            alert(`Không thể thêm quá ${MAX_PEST_ITEMS} bệnh`);
+                            return;
+                          }
                           form.setValue("Pests", [
                             ...currentArray,
                             { name: "", description: "", severity: "" },
@@ -2573,9 +2603,9 @@ export default function TreeTypeManagement() {
                                               )}
                                             </div>
                                             <div>
-                                              <Select
+                                              <SearchableSelect
                                                 value={pest.severity || ""}
-                                                onValueChange={(value) => {
+                                                onChange={(value) => {
                                                   const currentValue =
                                                     Array.isArray(field.value)
                                                       ? field.value
@@ -2589,43 +2619,22 @@ export default function TreeTypeManagement() {
                                                   };
                                                   field.onChange(newPests);
                                                 }}
-                                              >
-                                                <SelectTrigger
-                                                  className={cn(
-                                                    "h-9",
-                                                    severityError &&
-                                                      "border-red-500 focus-visible:ring-red-500",
-                                                    severityColor &&
-                                                      cn(
-                                                        severityColor.bg,
-                                                        severityColor.text,
-                                                        severityColor.border
-                                                      )
-                                                  )}
-                                                >
-                                                  <SelectValue placeholder="Chọn mức độ" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  <SelectItem
-                                                    value="High"
-                                                    className="text-red-700 focus:bg-red-50"
-                                                  >
-                                                    Cao
-                                                  </SelectItem>
-                                                  <SelectItem
-                                                    value="Medium"
-                                                    className="text-orange-700 focus:bg-orange-50"
-                                                  >
-                                                    Trung bình
-                                                  </SelectItem>
-                                                  <SelectItem
-                                                    value="Low"
-                                                    className="text-yellow-700 focus:bg-yellow-50"
-                                                  >
-                                                    Thấp
-                                                  </SelectItem>
-                                                </SelectContent>
-                                              </Select>
+                                                options={[
+                                                  {
+                                                    value: "High",
+                                                    label: "Cao",
+                                                  },
+                                                  {
+                                                    value: "Medium",
+                                                    label: "Trung bình",
+                                                  },
+                                                  {
+                                                    value: "Low",
+                                                    label: "Thấp",
+                                                  },
+                                                ]}
+                                                placeholder="Chọn mức độ"
+                                              />
                                               {severityError && (
                                                 <p className="text-xs text-red-600 mt-1">
                                                   {severityError.message}

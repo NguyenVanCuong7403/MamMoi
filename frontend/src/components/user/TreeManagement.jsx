@@ -273,7 +273,7 @@ const TASK_STATUS_FILTERS = [
   { value: "all", label: "Tất cả trạng thái" },
   { value: "Pending", label: "Chờ thực hiện" },
   { value: "InProgress", label: "Đang thực hiện" },
-  { value: "Completed", label: "Hoàn thành" },
+  { value: "Completed", label: "Quá hạn" },
   { value: "Postponed", label: "Hoãn lại" },
   { value: "Cancelled", label: "Đã hủy" },
 ];
@@ -294,7 +294,7 @@ const TASK_STATUS_META = {
     className: "border-sky-200 bg-sky-50 text-sky-700",
   },
   completed: {
-    label: "Hoàn thành",
+    label: "Quá hạn",
     className: "border-emerald-200 bg-emerald-50 text-emerald-700",
   },
   scheduled: {
@@ -2924,7 +2924,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                     { label: "Tổng việc", value: statusStats.total },
                     { label: "Chờ thực hiện", value: statusStats.pending },
                     { label: "Đang thực hiện", value: statusStats.inprogress },
-                    { label: "Hoàn thành", value: statusStats.completed },
+                    { label: "Quá hạn", value: statusStats.completed },
                   ].map((stat, idx) => (
                     <div
                       key={idx}
@@ -3345,7 +3345,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                         ) : (
                           <CheckCircle2 className="h-4 w-4" />
                         )}
-                        Hoàn thành
+                        Quá hạn
                       </Button>
                     </div>
                   </div>

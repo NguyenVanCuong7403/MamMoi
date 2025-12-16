@@ -209,7 +209,7 @@ public class NotificationService : INotificationService
         // Validate required fields
         if (string.IsNullOrWhiteSpace(dto.Title))
             throw new ArgumentException("Title is required", nameof(dto));
-        
+
         if (string.IsNullOrWhiteSpace(dto.Message))
             throw new ArgumentException("Message is required", nameof(dto));
 
@@ -249,6 +249,60 @@ public class NotificationService : INotificationService
         await _dbContext.SaveChangesAsync();
 
         _logger.LogInformation("Broadcast notification sent to {Count} users with GroupId {GroupId}", notifications.Count, notifications.First().GroupId);
+
+        return notifications.Count;
+    }
+
+    public async Task<int> SendNotificationToUsersAsync(SendNotificationToUsersDto dto)
+    {
+        if (dto == null) throw new ArgumentNullException(nameof(dto));
+        if (dto.UserIds == null || !dto.UserIds.Any())
+            throw new ArgumentException("UserIds are required", nameof(dto.UserIds));
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+            throw new ArgumentException("Title is required", nameof(dto.Title));
+
+        if (string.IsNullOrWhiteSpace(dto.Message))
+            throw new ArgumentException("Message is required", nameof(dto.Message));
+
+        // Validate and get only active users that exist
+        var users = await _dbContext.Users
+            .Where(u => dto.UserIds.Contains(u.UserId) && u.IsActive)
+            .Select(u => u.UserId)
+            .ToListAsync();
+
+        if (!users.Any())
+        {
+            _logger.LogWarning("No valid active users found for send-to-users notification");
+            return 0;
+        }
+
+        var groupId = $"SendToUsers-{DateTime.UtcNow:yyyyMMddHHmmss}";
+
+        var notifications = users.Select(userId => new Notification
+        {
+            UserId = userId,
+            Title = dto.Title.Trim(),
+            Message = dto.Message.Trim(),
+            NotificationType = dto.NotificationType ?? "Direct",
+            Priority = dto.Priority ?? "Normal",
+            Category = dto.Category?.Trim(),
+            ActionUrl = dto.ActionUrl?.Trim(),
+            ActionLabel = dto.ActionLabel?.Trim(),
+            ImageUrl = dto.ImageUrl?.Trim(),
+            IconName = dto.IconName?.Trim(),
+            Status = "Sent",
+            IsRead = false,
+            SentAt = DateTime.UtcNow,
+            DeliveredAt = DateTime.UtcNow,
+            ExpiresAt = dto.ExpiresAt,
+            GroupId = groupId
+        }).ToList();
+
+        _dbContext.Notifications.AddRange(notifications);
+        await _dbContext.SaveChangesAsync();
+
+        _logger.LogInformation("Sent notification to {Count} specified users with GroupId {GroupId}", notifications.Count, groupId);
 
         return notifications.Count;
     }
@@ -344,10 +398,10 @@ public class NotificationService : INotificationService
             .ToListAsync();
 
         _logger.LogInformation("Total notifications with GroupId: {Count}", allNotifications.Count);
-        
+
         // Filter and group in memory for more flexibility
         var broadcastGroups = allNotifications
-            .Where(n => 
+            .Where(n =>
                 (!string.IsNullOrEmpty(n.GroupId) && n.GroupId.StartsWith("Broadcast-")) ||
                 (n.NotificationType != null && n.NotificationType.Equals("Broadcast", StringComparison.OrdinalIgnoreCase)))
             .GroupBy(n => n.GroupId!)

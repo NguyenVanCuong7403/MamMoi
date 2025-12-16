@@ -60,9 +60,6 @@ const ROTATE_PARTS = [
   "hỗ trợ AI",
 ];
 
-
-
-
 /* =========================================================================
    TYPE-&-ERASE Rotator (thay cho reveal cũ) — KHÔNG blur
    - Giữ nguyên API <Rotator items=[] className="" />
@@ -245,12 +242,13 @@ export default function Home() {
 
         const transformed = data.map((plan, index) => {
           let planDescription = "";
-          let price = Number(plan.price) || 0;
-          const formattedPrice = price === 0
-            ? "Miễn phí"
-            : price.toLocaleString("vi-VN") + "đ";
+          const rawPrice = Number(plan.price) || 0;
+          const formattedPrice =
+            rawPrice === 0
+              ? "Miễn phí"
+              : rawPrice.toLocaleString("vi-VN") + "đ";
 
-          const unit = price === 0 ? "" : "/tháng";
+          const unit = rawPrice === 0 ? "" : "/tháng";
 
           // Generate description if not present or fallback
           if (plan.description) {
@@ -259,7 +257,8 @@ export default function Home() {
             if (plan.maxGardens === 1 && plan.maxTreesPerGarden === 5) {
               planDescription = "Khởi đầu hành trình số hóa vườn cây.";
             } else if (plan.maxGardens === 5 && plan.maxTreesPerGarden === 5) {
-              planDescription = "Giải pháp chuyên sâu cho nhà vườn chuyên nghiệp.";
+              planDescription =
+                "Giải pháp chuyên sâu cho nhà vườn chuyên nghiệp.";
             } else {
               planDescription = "Hệ sinh thái toàn diện cho doanh nghiệp.";
             }
@@ -268,14 +267,19 @@ export default function Home() {
           // Parse features
           const features = [];
           if (plan.features) {
-            if (typeof plan.features === "string" && plan.features.startsWith("[")) {
+            if (
+              typeof plan.features === "string" &&
+              plan.features.startsWith("[")
+            ) {
               try {
                 const parsed = JSON.parse(plan.features);
                 if (Array.isArray(parsed)) features.push(...parsed);
-              } catch { }
+              } catch {}
             }
             if (features.length === 0) {
-              const parsed = String(plan.features).split("\n").filter(f => f.trim());
+              const parsed = String(plan.features)
+                .split("\n")
+                .filter((f) => f.trim());
               if (parsed.length > 0) features.push(...parsed);
             }
           }
@@ -288,8 +292,10 @@ export default function Home() {
             unit,
             desc: planDescription,
             features,
-            cta: price === 0 ? "Bắt đầu ngay" : "Dùng thử ngay",
+            cta: rawPrice === 0 ? "Bắt đầu ngay" : "Dùng thử ngay",
             popular: index === 1, // Highlight 2nd plan
+            isFree: rawPrice === 0,
+            rawPrice: rawPrice,
           };
         });
 
@@ -314,7 +320,7 @@ export default function Home() {
         v.muted = false;
         setIsMuted(false);
         await v.play();
-      } catch (_) { }
+      } catch (_) {}
       setShowHeroText(false);
     } else {
       v.muted = true;
@@ -339,7 +345,7 @@ export default function Home() {
     (async () => {
       try {
         await v.play();
-      } catch (_) { }
+      } catch (_) {}
     })();
   }, []);
 
@@ -496,12 +502,12 @@ export default function Home() {
                 onLoadedData={async () => {
                   try {
                     await videoRef.current?.play();
-                  } catch (_) { }
+                  } catch (_) {}
                 }}
                 onCanPlay={async () => {
                   try {
                     await videoRef.current?.play();
-                  } catch (_) { }
+                  } catch (_) {}
                 }}
                 data-testid="hero-media"
               />
@@ -702,103 +708,223 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Service Packages (Pricing) - only show when user is logged in */}
+        {user && (
+          <section
+            id="pricing"
+            data-testid="pricing-section"
+            className="cv-auto bg-[#FBFFDF] text-[#1F302F] py-16 md:py-24"
+          >
+            <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px]">
+              <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
+                <h2 className="text-[clamp(28px,3.2vw,48px)] font-display font-bold mb-4 mm-text-wrap-safe break-words">
+                  Lựa chọn gói dịch vụ phù hợp
+                </h2>
+                <p className="text-[clamp(16px,1.8vw,20px)] opacity-80 mm-text-wrap-safe break-words">
+                  Từ nông hộ nhỏ đến doanh nghiệp lớn, Mầm Mới đều có giải pháp
+                  tối ưu cho nhu cầu của bạn.
+                </p>
+              </div>
 
-
-        {/* Service Packages (Pricing) */}
-        <section
-          id="pricing"
-          data-testid="pricing-section"
-          className="cv-auto bg-[#FBFFDF] text-[#1F302F] py-16 md:py-24"
-        >
-          <div className="mm-fluid-shell mx-auto max-w-[1650px] px-4 md:px-[90px]">
-            <div className="text-center max-w-3xl mx-auto mb-12 md:mb-16">
-              <h2 className="text-[clamp(28px,3.2vw,48px)] font-display font-bold mb-4 mm-text-wrap-safe break-words">
-                Lựa chọn gói dịch vụ phù hợp
-              </h2>
-              <p className="text-[clamp(16px,1.8vw,20px)] opacity-80 mm-text-wrap-safe break-words">
-                Từ nông hộ nhỏ đến doanh nghiệp lớn, Mầm Mới đều có giải pháp tối ưu cho nhu cầu của bạn.
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-              {packagesLoading ? (
-                /* Skeleton loading state */
-                [1, 2, 3].map((i) => (
-                  <div key={i} className="rounded-[24px] bg-white border border-[#1F302F]/10 p-8 h-[400px] animate-pulse">
-                    <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
-                    <div className="h-10 bg-gray-200 rounded w-1/3 mb-6"></div>
-                    <div className="space-y-3">
-                      <div className="h-4 bg-gray-200 rounded"></div>
-                      <div className="h-4 bg-gray-200 rounded"></div>
-                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                packages.map((pkg) => (
-                  <div
-                    key={pkg.id}
-                    className={`relative flex flex-col rounded-[24px] p-6 md:p-8 transition-all duration-300 hover:-translate-y-1 ${pkg.popular
-                      ? "bg-[#1F302F] text-[#FBFFDF] shadow-[0_20px_40px_rgba(31,48,47,0.25)] ring-1 ring-[#1F302F]"
-                      : "bg-white border border-[#1F302F]/10 shadow-lg hover:shadow-xl text-[#1F302F]"
-                      }`}
-                  >
-                    {pkg.popular && (
-                      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#FFFFA5] text-[#1F302F] text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-sm">
-                        Khuyên dùng
+              <div className="grid md:grid-cols-3 gap-6 md:gap-8">
+                {packagesLoading
+                  ? /* Skeleton loading state */
+                    [1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="rounded-[24px] bg-white border border-[#1F302F]/10 p-8 h-[400px] animate-pulse"
+                      >
+                        <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
+                        <div className="h-10 bg-gray-200 rounded w-1/3 mb-6"></div>
+                        <div className="space-y-3">
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </div>
                       </div>
-                    )}
-
-                    <div className="mb-6">
-                      <h3 className={`text-xl font-bold mb-2 ${pkg.popular ? "text-[#FFFFA5]" : "text-[#5B6B4E]"}`}>
-                        {pkg.name}
-                      </h3>
-                      <div className="flex items-baseline gap-1">
-                        <span className="text-[clamp(32px,2.5vw,40px)] font-display font-bold">
-                          {pkg.price}
-                        </span>
-                        <span className="text-sm opacity-80">{pkg.unit}</span>
-                      </div>
-                      <p className={`mt-3 text-sm leading-relaxed ${pkg.popular ? "opacity-90" : "opacity-75"}`}>
-                        {pkg.desc}
-                      </p>
-                    </div>
-
-                    <ul className="space-y-4 mb-8 flex-1">
-                      {pkg.features.map((feat, idx) => (
-                        <li key={idx} className="flex items-start gap-3 text-sm">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2.5"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            className={`w-5 h-5 flex-shrink-0 ${pkg.popular ? "text-[#FFFFA5]" : "text-[#1F302F]"}`}
+                    ))
+                  : packages.map((pkg) => {
+                      // If this is the free plan, render as a descriptive block
+                      if (pkg.isFree) {
+                        return (
+                          <div
+                            key={pkg.id}
+                            className={`relative flex flex-col rounded-[24px] p-6 md:p-8 transition-all duration-300 ${
+                              pkg.popular
+                                ? "bg-[#1F302F] text-[#FBFFDF] shadow-[0_20px_40px_rgba(31,48,47,0.25)] ring-1 ring-[#1F302F]"
+                                : "bg-white border border-[#1F302F]/10 shadow-lg hover:shadow-xl text-[#1F302F]"
+                            }`}
                           >
-                            <polyline points="20 6 9 17 4 12" />
-                          </svg>
-                          <span className="opacity-90">{feat}</span>
-                        </li>
-                      ))}
-                    </ul>
+                            {pkg.popular && (
+                              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#FFFFA5] text-[#1F302F] text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-sm">
+                                Khuyên dùng
+                              </div>
+                            )}
 
-                    <button
-                      onClick={handlePackageClick}
-                      className={`w-full py-4 rounded-xl font-semibold transition-all ${pkg.popular
-                        ? "bg-[#FFFFA5] text-[#1F302F] hover:bg-white"
-                        : "bg-[#1F302F] text-[#FBFFDF] hover:bg-[#5B6B4E]"
-                        }`}
-                    >
-                      {pkg.cta}
-                    </button>
-                  </div>
-                ))
-              )}
+                            <div className="mb-6">
+                              <h3
+                                className={`text-xl font-bold mb-2 ${
+                                  pkg.popular
+                                    ? "text-[#FFFFA5]"
+                                    : "text-[#5B6B4E]"
+                                }`}
+                              >
+                                {pkg.name} {"(Miễn phí)"}
+                              </h3>
+                              <p
+                                className={`mt-3 text-sm leading-relaxed ${
+                                  pkg.popular ? "opacity-90" : "opacity-75"
+                                }`}
+                              >
+                                {/* If user logged in, show the real description; otherwise show a short callout for new users */}
+                                {user
+                                  ? pkg.desc
+                                  : "Người dùng mới sẽ được trải nghiệm miễn phí. Đăng nhập hoặc đăng ký để bắt đầu."}
+                              </p>
+                            </div>
+
+                            <ul className="space-y-4 mb-8 flex-1">
+                              {pkg.features.map((feat, idx) => (
+                                <li
+                                  key={idx}
+                                  className="flex items-start gap-3 text-sm"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className={`w-5 h-5 flex-shrink-0 ${
+                                      pkg.popular
+                                        ? "text-[#FFFFA5]"
+                                        : "text-[#1F302F]"
+                                    }`}
+                                  >
+                                    <polyline points="20 6 9 17 4 12" />
+                                  </svg>
+                                  <span className="opacity-90">{feat}</span>
+                                </li>
+                              ))}
+                            </ul>
+
+                            {/* CTA differs for guests vs logged-in users */}
+                            {user ? (
+                              <button
+                                disabled
+                                className={`w-full py-4 rounded-xl font-semibold transition-all ${
+                                  pkg.popular
+                                    ? "bg-[#FFFFA5] text-[#1F302F] opacity-80"
+                                    : "bg-[#1F302F] text-[#FBFFDF] opacity-80"
+                                }`}
+                              >
+                                Gói miễn phí
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => navigate("/auth")}
+                                className={`w-full py-4 rounded-xl font-semibold transition-all ${
+                                  pkg.popular
+                                    ? "bg-[#FFFFA5] text-[#1F302F] hover:bg-white"
+                                    : "bg-[#1F302F] text-[#FBFFDF] hover:bg-[#5B6B4E]"
+                                }`}
+                              >
+                                Đăng ký để trải nghiệm
+                              </button>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      // Paid plans: keep original card layout
+                      return (
+                        <div
+                          key={pkg.id}
+                          className={`relative flex flex-col rounded-[24px] p-6 md:p-8 transition-all duration-300 hover:-translate-y-1 ${
+                            pkg.popular
+                              ? "bg-[#1F302F] text-[#FBFFDF] shadow-[0_20px_40px_rgba(31,48,47,0.25)] ring-1 ring-[#1F302F]"
+                              : "bg-white border border-[#1F302F]/10 shadow-lg hover:shadow-xl text-[#1F302F]"
+                          }`}
+                        >
+                          {pkg.popular && (
+                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#FFFFA5] text-[#1F302F] text-xs font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-sm">
+                              Khuyên dùng
+                            </div>
+                          )}
+
+                          <div className="mb-6">
+                            <h3
+                              className={`text-xl font-bold mb-2 ${
+                                pkg.popular
+                                  ? "text-[#FFFFA5]"
+                                  : "text-[#5B6B4E]"
+                              }`}
+                            >
+                              {pkg.name}
+                            </h3>
+                            <div className="flex items-baseline gap-1">
+                              <span className="text-[clamp(32px,2.5vw,40px)] font-display font-bold">
+                                {pkg.price}
+                              </span>
+                              <span className="text-sm opacity-80">
+                                {pkg.unit}
+                              </span>
+                            </div>
+                            <p
+                              className={`mt-3 text-sm leading-relaxed ${
+                                pkg.popular ? "opacity-90" : "opacity-75"
+                              }`}
+                            >
+                              {pkg.desc}
+                            </p>
+                          </div>
+
+                          <ul className="space-y-4 mb-8 flex-1">
+                            {pkg.features.map((feat, idx) => (
+                              <li
+                                key={idx}
+                                className="flex items-start gap-3 text-sm"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className={`w-5 h-5 flex-shrink-0 ${
+                                    pkg.popular
+                                      ? "text-[#FFFFA5]"
+                                      : "text-[#1F302F]"
+                                  }`}
+                                >
+                                  <polyline points="20 6 9 17 4 12" />
+                                </svg>
+                                <span className="opacity-90">{feat}</span>
+                              </li>
+                            ))}
+                          </ul>
+
+                          <button
+                            onClick={handlePackageClick}
+                            className={`w-full py-4 rounded-xl font-semibold transition-all ${
+                              pkg.popular
+                                ? "bg-[#FFFFA5] text-[#1F302F] hover:bg-white"
+                                : "bg-[#1F302F] text-[#FBFFDF] hover:bg-[#5B6B4E]"
+                            }`}
+                          >
+                            {pkg.cta}
+                          </button>
+                        </div>
+                      );
+                    })}
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Always-on support */}
         <section
@@ -868,10 +994,7 @@ export default function Home() {
         </section>
 
         {/* Main content */}
-        <main id="main">
-          {/* News */}
-
-        </main>
+        <main id="main">{/* News */}</main>
 
         {/* Cookie banner */}
         {!cookieAccepted && (

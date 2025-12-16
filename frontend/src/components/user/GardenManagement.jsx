@@ -1112,6 +1112,14 @@ export default function GardenManagement() {
     }
   }, [gardens]);
 
+  // Nếu số lượng cây thay đổi (sau khi load từ API), reset page về 1
+  // Tránh tình trạng phân trang bị lệch khi filter dựa trên tree counts cập nhật bất ngờ
+  useEffect(() => {
+    // stringify để phát hiện cả khi value của từng garden thay đổi
+    setPage(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(gardenTreeCounts)]);
+
   // mỗi khi thay đổi bộ lọc / search → quay lại trang 1
   useEffect(() => {
     setPage(1);
@@ -1140,8 +1148,18 @@ export default function GardenManagement() {
         if (!hit) return false;
       }
 
-      // 2) Filter theo tỉnh/thành
-      if (provinceFilter && g.province !== provinceFilter) return false;
+      // 2) Filter theo tỉnh/thành (so khớp linh hoạt bằng normalize)
+      if (provinceFilter) {
+        const norm = (s) =>
+          String(s || "")
+            .toLowerCase()
+            .normalize("NFD")
+            .replace(/\p{Diacritic}/gu, "")
+            .trim();
+        const pf = norm(provinceFilter);
+        const gp = norm(g.province || "");
+        if (!pf || !gp || !(gp.includes(pf) || pf.includes(gp))) return false;
+      }
 
       // 3) Filter theo số lượng cây (range)
       const treeCount = gardenTreeCounts[g.id] || 0;
@@ -1167,14 +1185,61 @@ export default function GardenManagement() {
   }, [gardens, gardenTreeCounts]);
 
   // ===== phân trang từ filtered =====
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Sắp xếp ổn định (theo tên) trước khi phân trang để tránh thay đổi thứ tự
+  const sortedFiltered = useMemo(() => {
+    try {
+      return filtered.slice().sort((a, b) => {
+        const na = String(a?.name || "").toLowerCase();
+        const nb = String(b?.name || "").toLowerCase();
+        if (na < nb) return -1;
+        if (na > nb) return 1;
+        return 0;
+      });
+    } catch (err) {
+      return filtered.slice();
+    }
+  }, [filtered]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paged = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+  const paged = sortedFiltered.slice(startIndex, startIndex + PAGE_SIZE);
+
+  // Nếu số lượng item sau filter thay đổi (do dữ liệu async), clamp page vào totalPages
+  useEffect(() => {
+    setPage((p) =>
+      Math.min(p, Math.max(1, Math.ceil(sortedFiltered.length / PAGE_SIZE)))
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortedFiltered.length]);
 
   // ===== provinces cho filter combobox =====
   const { provinces = [] } =
     (typeof useVnAdmin === "function" ? useVnAdmin() : {}) || {};
+
+  // Provinces that actually contain at least one garden (to show in filter)
+  const provinceOptionsForFilter = useMemo(() => {
+    if (!Array.isArray(provinces) || provinces.length === 0) return [];
+    // Normalize helper
+    const norm = (s) =>
+      String(s || "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "")
+        .trim();
+
+    return provinces.filter((p) => {
+      const label = (p.full_name || p.name || "").toString();
+      const pNorm = norm(label);
+      if (!pNorm) return false;
+      // If any garden's province roughly matches this province label, include it
+      return gardens.some((g) => {
+        const gProv = norm(g.province || "");
+        if (!gProv) return false;
+        return pNorm.includes(gProv) || gProv.includes(pNorm);
+      });
+    });
+  }, [provinces, gardens]);
 
   // ===== Tính max tree count cho slider =====
   const maxTreeCount = useMemo(() => {
@@ -1447,19 +1512,19 @@ export default function GardenManagement() {
           {/* Filters */}
           <section className="sticky top-[64px] z-[50] overflow-visible">
             <div
-              className="flex flex-col xl:flex-row gap-3 rounded-2xl p-3"
+              className="flex flex-col xl:flex-row gap-3 rounded-3xl p-4"
               style={{
-                background: "rgba(251,255,223,0.06)",
-                border: "1px solid rgba(255,255,165,0.15)",
+                background: "rgba(31,48,47,0.12)",
+                border: "1px solid rgba(255,255,165,0.09)",
               }}
             >
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/60" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
                 <Input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Tìm tên/địa chỉ/tỉnh..."
-                  className="pl-9 bg-white/95 text-[#0f1f1e] placeholder:text-neutral-500 rounded-full h-12 text-[clamp(13px,1.6vw,15px)] mm-text-wrap-safe"
+                  className="pl-11 bg-white text-[#0f1f1e] placeholder:text-neutral-400 rounded-full h-14 text-[clamp(14px,1.6vw,16px)] mm-text-wrap-safe shadow-sm"
                 />
               </div>
 
@@ -1468,40 +1533,72 @@ export default function GardenManagement() {
                 <select
                   value={provinceFilter}
                   onChange={(e) => setProvinceFilter(e.target.value)}
-                  className="h-12 rounded-full border bg-white px-3 text-[clamp(13px,1.6vw,15px)] transition-all duration-200 hover:border-emerald-400 hover:shadow-md hover:scale-[1.02] cursor-pointer mm-text-wrap-safe min-w-[180px]"
+                  className="h-12 rounded-full border bg-white px-4 text-[clamp(13px,1.6vw,15px)] transition-all duration-150 hover:border-emerald-300 cursor-pointer mm-text-wrap-safe min-w-[180px]"
                   title="Lọc theo tỉnh/thành"
                 >
                   <option value="">Tất cả tỉnh/thành</option>
-                  {(provinces || []).map((p) => (
-                    <option key={p.code} value={p.name}>
+                  {(provinceOptionsForFilter || []).map((p) => (
+                    <option key={p.code} value={p.full_name || p.name}>
                       {p.full_name || p.name}
                     </option>
                   ))}
                 </select>
 
-                {/* Filter theo số lượng cây - Slider */}
-                <div className="flex-1 min-w-[200px] xl:min-w-[300px] bg-white/95 rounded-full px-4 py-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-[clamp(12px,1.5vw,14px)] text-neutral-700 font-medium">
-                      Số lượng cây: {treeCountRange[0]} - {treeCountRange[1]}
-                    </label>
+                {/* Filter theo số lượng cây - numeric inputs */}
+                <div className="flex-1 min-w-[200px] xl:min-w-[320px] bg-white rounded-full px-4 py-3 shadow-sm flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm text-neutral-700 font-medium mr-2 hidden sm:block">
+                      Số lượng cây
+                    </div>
+                    <div className="flex items-center gap-2 bg-white">
+                      <input
+                        type="number"
+                        value={treeCountRange[0]}
+                        onChange={(e) => {
+                          const v = Number(e.target.value || 0);
+                          const newMin = Math.max(
+                            0,
+                            Math.min(v, treeCountRange[1])
+                          );
+                          setTreeCountRange([newMin, treeCountRange[1]]);
+                        }}
+                        min={0}
+                        max={maxTreeCount}
+                        className="w-28 rounded-full border border-neutral-200 px-4 py-2 text-sm shadow-sm"
+                        aria-label="Số lượng cây tối thiểu"
+                      />
+                      <span className="text-sm text-neutral-500">-</span>
+                      <input
+                        type="number"
+                        value={treeCountRange[1]}
+                        onChange={(e) => {
+                          const v = Number(e.target.value || 0);
+                          const newMax = Math.min(
+                            maxTreeCount,
+                            Math.max(v, treeCountRange[0])
+                          );
+                          setTreeCountRange([treeCountRange[0], newMax]);
+                        }}
+                        min={0}
+                        max={maxTreeCount}
+                        className="w-28 rounded-full border border-neutral-200 px-4 py-2 text-sm shadow-sm"
+                        aria-label="Số lượng cây tối đa"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm text-neutral-500 hidden sm:block">
+                      (tối đa {maxTreeCount})
+                    </div>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-6 px-2 text-[11px] text-neutral-500 hover:text-neutral-700"
+                      className="h-8 px-3 text-[12px] text-neutral-600 hover:text-neutral-800"
                       onClick={() => setTreeCountRange([0, maxTreeCount])}
                     >
                       Đặt lại
                     </Button>
                   </div>
-                  <Slider
-                    value={treeCountRange}
-                    onValueChange={setTreeCountRange}
-                    min={0}
-                    max={maxTreeCount}
-                    step={1}
-                    className="w-full"
-                  />
                 </div>
 
                 {q ||

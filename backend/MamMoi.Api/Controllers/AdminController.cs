@@ -562,20 +562,60 @@ public class AdminController : ControllerBase
     /// </summary>
     [HttpPost("tree-types/{id}/activate")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ActivateTreeType(int id)
+    public async Task<IActionResult> ActivateTreeType(int id, [FromQuery] bool confirm = false)
     {
         try
         {
+            if (!confirm)
+                return BadRequest(new { success = false, message = "Vui lòng xác nhận thao tác bằng tham số 'confirm=true'." });
+
             var result = await _adminTreeTypeService.ActivateTreeTypeAsync(id);
             if (!result)
                 return NotFound(new { success = false, message = "Tree type not found" });
 
             return Ok(new { success = true, message = "Tree type activated successfully" });
         }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error activating tree type: {TreeTypeId}", id);
+            return StatusCode(500, new { success = false, message = "Internal server error" });
+        }
+    }
+
+    /// <summary>
+    /// Deactivate a tree type
+    /// POST /api/admin/tree-types/{id}/deactivate
+    /// </summary>
+    [HttpPost("tree-types/{id}/deactivate")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeactivateTreeType(int id, [FromQuery] bool confirm = false)
+    {
+        try
+        {
+            if (!confirm)
+                return BadRequest(new { success = false, message = "Vui lòng xác nhận thao tác bằng tham số 'confirm=true'." });
+
+            var result = await _adminTreeTypeService.DeactivateTreeTypeAsync(id);
+            if (!result)
+                return NotFound(new { success = false, message = "Tree type not found" });
+
+            return Ok(new { success = true, message = "Tree type deactivated successfully" });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deactivating tree type: {TreeTypeId}", id);
             return StatusCode(500, new { success = false, message = "Internal server error" });
         }
     }
@@ -1274,11 +1314,11 @@ public class AdminController : ControllerBase
         try
         {
             var plans = await _subscriptionPlanService.GetAllPlansAsync(isActive);
-            
+
             // Apply search filter if provided
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
-                plans = plans.Where(p => 
+                plans = plans.Where(p =>
                     p.PlanName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                     (p.Description != null && p.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
@@ -1948,7 +1988,7 @@ public class AdminController : ControllerBase
         try
         {
             var statistics = await _adminSupportRequestService.GetStatisticsAsync(startDate, endDate);
-            
+
             // Transform to report statistics format expected by frontend
             var reportStats = new
             {

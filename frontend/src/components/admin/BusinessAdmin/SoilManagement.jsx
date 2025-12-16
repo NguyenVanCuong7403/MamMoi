@@ -1,9 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  Plus,
-  Search,
-  Layers,
-} from "lucide-react";
+import { Plus, Search, Layers } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -69,7 +65,10 @@ const buildDuplicateMessage = (entityLabel, value) =>
 const mapSoilFromApi = (apiSoil) => {
   if (!apiSoil) return null;
   return {
-    SoilMasterID: apiSoil.soilMasterId?.toString() || apiSoil.SoilMasterId?.toString() || "",
+    SoilMasterID:
+      apiSoil.soilMasterId?.toString() ||
+      apiSoil.SoilMasterId?.toString() ||
+      "",
     SoilName: apiSoil.soilName || apiSoil.SoilName || "",
     Texture: apiSoil.texture || apiSoil.Texture || "",
     Drainage: apiSoil.drainage || apiSoil.Drainage || "",
@@ -84,8 +83,10 @@ const mapSoilToApi = (componentSoil) => {
     soilName: componentSoil.SoilName || componentSoil.soilName,
     texture: componentSoil.Texture || componentSoil.texture,
     drainage: componentSoil.Drainage || componentSoil.drainage,
-    organicMatterPct: componentSoil.OrganicMatterPct || componentSoil.organicMatterPct,
-    ecDSM: componentSoil.EC_dS_m || componentSoil.eC_dS_m || componentSoil.ecDSM,
+    organicMatterPct:
+      componentSoil.OrganicMatterPct || componentSoil.organicMatterPct,
+    ecDSM:
+      componentSoil.EC_dS_m || componentSoil.eC_dS_m || componentSoil.ecDSM,
     notes: componentSoil.Notes || componentSoil.notes,
   };
 };
@@ -93,8 +94,12 @@ const mapSoilToApi = (componentSoil) => {
 async function fetchSoils() {
   try {
     const response = await AdminSoilMasterRepository.getAllSoilMasters();
-    const soils = Array.isArray(response.data) ? response.data : (Array.isArray(response) ? response : []);
-    return soils.map(mapSoilFromApi).filter(soil => soil !== null);
+    const soils = Array.isArray(response.data)
+      ? response.data
+      : Array.isArray(response)
+      ? response
+      : [];
+    return soils.map(mapSoilFromApi).filter((soil) => soil !== null);
   } catch (error) {
     console.warn("Error fetching soils, returning empty array:", error);
     return [];
@@ -104,7 +109,9 @@ async function fetchSoils() {
 async function createSoil(payload) {
   try {
     const apiPayload = mapSoilToApi(payload);
-    const response = await AdminSoilMasterRepository.createSoilMaster(apiPayload);
+    const response = await AdminSoilMasterRepository.createSoilMaster(
+      apiPayload
+    );
     return mapSoilFromApi(response);
   } catch (error) {
     console.error("Error creating soil:", error);
@@ -116,7 +123,10 @@ async function updateSoil(soilId, payload) {
   try {
     const apiPayload = mapSoilToApi(payload);
     const id = parseInt(soilId);
-    const response = await AdminSoilMasterRepository.updateSoilMaster(id, apiPayload);
+    const response = await AdminSoilMasterRepository.updateSoilMaster(
+      id,
+      apiPayload
+    );
     return mapSoilFromApi(response);
   } catch (error) {
     console.error("Error updating soil:", error);
@@ -239,14 +249,22 @@ export default function SoilManagement() {
       setSoilPage(1);
       // Check if endpoint is not implemented
       const response = await AdminSoilMasterRepository.getAllSoilMasters();
-      if (response && response.success === false && response.message?.includes("not implemented")) {
-        setEndpointError("Tính năng quản lý loại đất chưa được triển khai ở backend. Vui lòng liên hệ quản trị viên.");
+      if (
+        response &&
+        response.success === false &&
+        response.message?.includes("not implemented")
+      ) {
+        setEndpointError(
+          "Tính năng quản lý loại đất chưa được triển khai ở backend. Vui lòng liên hệ quản trị viên."
+        );
       }
     } catch (error) {
       console.error("Error refreshing data:", error);
       setSoils([]);
       if (error.message?.includes("not implemented") || error.status === 404) {
-        setEndpointError("Tính năng quản lý loại đất chưa được triển khai ở backend. Vui lòng liên hệ quản trị viên.");
+        setEndpointError(
+          "Tính năng quản lý loại đất chưa được triển khai ở backend. Vui lòng liên hệ quản trị viên."
+        );
       }
     } finally {
       setLoading(false);
@@ -335,7 +353,8 @@ export default function SoilManagement() {
     } catch (error) {
       console.error("Error creating soil:", error);
       // Show user-friendly error message
-      const errorMessage = error.message || "Không thể tạo loại đất. Vui lòng thử lại sau.";
+      const errorMessage =
+        error.message || "Không thể tạo loại đất. Vui lòng thử lại sau.";
       alert(errorMessage);
       throw error;
     } finally {
@@ -435,7 +454,8 @@ export default function SoilManagement() {
     } catch (error) {
       console.error("Error updating soil:", error);
       // Show user-friendly error message
-      const errorMessage = error.message || "Không thể cập nhật loại đất. Vui lòng thử lại sau.";
+      const errorMessage =
+        error.message || "Không thể cập nhật loại đất. Vui lòng thử lại sau.";
       alert(errorMessage);
       throw error;
     } finally {
@@ -465,7 +485,8 @@ export default function SoilManagement() {
     } catch (error) {
       console.error("Error deleting soil:", error);
       // Show user-friendly error message
-      const errorMessage = error.message || "Không thể xóa loại đất. Vui lòng thử lại sau.";
+      const errorMessage =
+        error.message || "Không thể xóa loại đất. Vui lòng thử lại sau.";
       alert(errorMessage);
       // Don't close dialog on error so user can see the message
       setSoilDeleting(false);
@@ -499,7 +520,9 @@ export default function SoilManagement() {
                   Quản lý loại đất
                 </h1>
                 <p className="text-base text-white/80">
-                  Quản lý các loại đất (SoilMaster) trong hệ thống, bao gồm thông tin về thành phần, khả năng thoát nước, độ hữu cơ và độ mặn.
+                  Quản lý các loại đất (SoilMaster) trong hệ thống, bao gồm
+                  thông tin về thành phần, khả năng thoát nước, độ hữu cơ và độ
+                  mặn.
                 </p>
                 {endpointError && (
                   <div className="mt-4 rounded-xl border border-amber-500/50 bg-amber-50/90 p-4 text-sm text-amber-900 shadow-lg">
@@ -542,7 +565,8 @@ export default function SoilManagement() {
                           {soils.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
                               <Layers className="h-5 w-5 text-emerald-300" />
-                              Chưa có loại đất nào. Bấm &quot;Thêm loại đất&quot; để bắt đầu.
+                              Chưa có loại đất nào. Bấm &quot;Thêm loại
+                              đất&quot; để bắt đầu.
                             </div>
                           ) : filteredSoils.length === 0 ? (
                             <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
@@ -551,7 +575,8 @@ export default function SoilManagement() {
                             </div>
                           ) : (
                             paginatedSoils.map((soil, index) => {
-                              const isActive = selectedSoilId === soil.SoilMasterID;
+                              const isActive =
+                                selectedSoilId === soil.SoilMasterID;
                               const absoluteIndex = soilRangeStart + index;
                               return (
                                 <div
@@ -562,9 +587,14 @@ export default function SoilManagement() {
                                       ? "border-emerald-500 shadow-sm shadow-emerald-100"
                                       : "border-slate-200 hover:border-emerald-200"
                                   )}
-                                  onClick={() => handleSelectSoil(soil.SoilMasterID)}
+                                  onClick={() =>
+                                    handleSelectSoil(soil.SoilMasterID)
+                                  }
                                   onKeyDown={(event) => {
-                                    if (event.key === "Enter" || event.key === " ") {
+                                    if (
+                                      event.key === "Enter" ||
+                                      event.key === " "
+                                    ) {
                                       event.preventDefault();
                                       handleSelectSoil(soil.SoilMasterID);
                                     }
@@ -578,9 +608,6 @@ export default function SoilManagement() {
                                     </p>
                                     <p className="text-sm font-semibold leading-snug text-slate-900 line-clamp-2">
                                       {soil.SoilName}
-                                    </p>
-                                    <p className="text-xs text-slate-500">
-                                      {soil.SoilMasterID}
                                     </p>
                                   </div>
                                   <Badge
@@ -642,9 +669,6 @@ export default function SoilManagement() {
                     {selectedSoil ? (
                       <>
                         <div className="mb-6 rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                            {selectedSoil.SoilMasterID}
-                          </p>
                           <h3 className="mt-2 text-2xl font-bold text-slate-900">
                             {selectedSoil.SoilName}
                           </h3>
@@ -690,7 +714,8 @@ export default function SoilManagement() {
                                       <Input
                                         placeholder="Thịt nhẹ, cát pha..."
                                         disabled={
-                                          !soilDetailEditMode || soilDetailSaving
+                                          !soilDetailEditMode ||
+                                          soilDetailSaving
                                         }
                                         className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                                         {...field}
@@ -710,7 +735,8 @@ export default function SoilManagement() {
                                       <Input
                                         placeholder="Tốt/Trung bình/Kém"
                                         disabled={
-                                          !soilDetailEditMode || soilDetailSaving
+                                          !soilDetailEditMode ||
+                                          soilDetailSaving
                                         }
                                         className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
                                         {...field}
@@ -733,7 +759,8 @@ export default function SoilManagement() {
                                         type="number"
                                         step="0.1"
                                         disabled={
-                                          !soilDetailEditMode || soilDetailSaving
+                                          !soilDetailEditMode ||
+                                          soilDetailSaving
                                         }
                                         value={field.value ?? ""}
                                         onChange={(e) =>
@@ -758,7 +785,8 @@ export default function SoilManagement() {
                                         type="number"
                                         step="0.1"
                                         disabled={
-                                          !soilDetailEditMode || soilDetailSaving
+                                          !soilDetailEditMode ||
+                                          soilDetailSaving
                                         }
                                         value={field.value ?? ""}
                                         onChange={(e) =>
@@ -813,12 +841,14 @@ export default function SoilManagement() {
                                 >
                                   Huỷ
                                 </Button>
-                                <Button 
-                                  type="submit" 
+                                <Button
+                                  type="submit"
                                   disabled={soilDetailSaving}
                                   className="transition-all hover:bg-emerald-600 hover:shadow-md"
                                 >
-                                  {soilDetailSaving ? "Đang lưu..." : "Lưu thay đổi"}
+                                  {soilDetailSaving
+                                    ? "Đang lưu..."
+                                    : "Lưu thay đổi"}
                                 </Button>
                               </div>
                             ) : (
@@ -873,7 +903,8 @@ export default function SoilManagement() {
                 <DialogHeader>
                   <DialogTitle>Thêm loại đất mới</DialogTitle>
                   <DialogDescription>
-                    Điền thông tin SoilMaster mới. Bạn sẽ cần xác nhận trước khi lưu.
+                    Điền thông tin SoilMaster mới. Bạn sẽ cần xác nhận trước khi
+                    lưu.
                   </DialogDescription>
                 </DialogHeader>
                 <Form {...soilForm}>
@@ -888,10 +919,10 @@ export default function SoilManagement() {
                         <FormItem>
                           <FormLabel>Tên đất</FormLabel>
                           <FormControl>
-                            <Input 
-                              placeholder="Ví dụ: Đất phù sa ngọt" 
+                            <Input
+                              placeholder="Ví dụ: Đất phù sa ngọt"
                               className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                              {...field} 
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -906,10 +937,10 @@ export default function SoilManagement() {
                           <FormItem>
                             <FormLabel>Thành phần</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="Thịt nhẹ, cát pha..." 
+                              <Input
+                                placeholder="Thịt nhẹ, cát pha..."
                                 className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                                {...field} 
+                                {...field}
                               />
                             </FormControl>
                             <FormMessage />
@@ -923,10 +954,10 @@ export default function SoilManagement() {
                           <FormItem>
                             <FormLabel>Khả năng thoát nước</FormLabel>
                             <FormControl>
-                              <Input 
-                                placeholder="Tốt/Trung bình/Kém" 
+                              <Input
+                                placeholder="Tốt/Trung bình/Kém"
                                 className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                                {...field} 
+                                {...field}
                               />
                             </FormControl>
                             <FormMessage />
@@ -983,10 +1014,10 @@ export default function SoilManagement() {
                         <FormItem>
                           <FormLabel>Ghi chú</FormLabel>
                           <FormControl>
-                            <Textarea 
-                              placeholder="Ghi chú thêm..." 
+                            <Textarea
+                              placeholder="Ghi chú thêm..."
                               className="transition-all hover:border-slate-400 hover:shadow-sm focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200"
-                              {...field} 
+                              {...field}
                             />
                           </FormControl>
                           <FormMessage />
@@ -1002,8 +1033,8 @@ export default function SoilManagement() {
                       >
                         Đóng
                       </Button>
-                      <Button 
-                        type="submit" 
+                      <Button
+                        type="submit"
                         disabled={soilSaving}
                         className="transition-all hover:bg-emerald-600 hover:shadow-md"
                       >
@@ -1037,7 +1068,9 @@ export default function SoilManagement() {
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={soilSaving}>Huỷ</AlertDialogCancel>
+                  <AlertDialogCancel disabled={soilSaving}>
+                    Huỷ
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     onClick={() => handleCreateSoil(pendingSoilCreate)}
                     disabled={soilSaving}
@@ -1101,12 +1134,14 @@ export default function SoilManagement() {
                   <AlertDialogTitle>Xoá loại đất</AlertDialogTitle>
                   <AlertDialogDescription>
                     Thao tác này sẽ xoá vĩnh viễn{" "}
-                    {selectedSoil?.SoilName ?? "loại đất"} khỏi danh sách và không
-                    thể hoàn tác.
+                    {selectedSoil?.SoilName ?? "loại đất"} khỏi danh sách và
+                    không thể hoàn tác.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel disabled={soilDeleting}>Huỷ</AlertDialogCancel>
+                  <AlertDialogCancel disabled={soilDeleting}>
+                    Huỷ
+                  </AlertDialogCancel>
                   <AlertDialogAction
                     className="bg-rose-600 hover:bg-rose-500"
                     onClick={handleDeleteSoil}
@@ -1130,8 +1165,8 @@ export default function SoilManagement() {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Huỷ chỉnh sửa</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Bạn sẽ thoát chế độ chỉnh sửa và mọi thay đổi chưa lưu sẽ bị bỏ.
-                    Chắc chắn muốn huỷ?
+                    Bạn sẽ thoát chế độ chỉnh sửa và mọi thay đổi chưa lưu sẽ bị
+                    bỏ. Chắc chắn muốn huỷ?
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -1188,4 +1223,3 @@ export default function SoilManagement() {
     </>
   );
 }
-

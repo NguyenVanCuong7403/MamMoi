@@ -17,5 +17,6 @@ public class SupportRequestListItemDto
     public DateTime? ResolvedAt { get; set; }
     public string? TicketNumber { get; set; }
     public int ResponseCount { get; set; }
+    public int? SatisfactionRating { get; set; }
 }
 

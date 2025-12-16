@@ -22,7 +22,9 @@ export default class SupportRequestRepository {
     params.append("pageSize", pageSize);
     if (status) params.append("status", status);
 
-    const response = await ApiClient.get(`/api/support-requests?${params.toString()}`);
+    const response = await ApiClient.get(
+      `/api/support-requests?${params.toString()}`
+    );
     return response;
   }
 
@@ -35,14 +37,47 @@ export default class SupportRequestRepository {
     return response.data;
   }
 
+  static async getAdminRequests(
+    page = 1,
+    pageSize = 20,
+    status = null,
+    priority = null,
+    category = null,
+    userId = null,
+    startDate = null,
+    endDate = null
+  ) {
+    const params = new URLSearchParams();
+    params.append("page", page);
+    params.append("pageSize", pageSize);
+    if (status) params.append("status", status);
+    if (priority) params.append("priority", priority);
+    if (category) params.append("category", category);
+    if (userId) params.append("userId", userId);
+    if (startDate) params.append("startDate", startDate.toISOString());
+    if (endDate) params.append("endDate", endDate.toISOString());
+
+    const response = await ApiClient.get(
+      `/api/admin/support-requests?${params.toString()}`
+    );
+    return response;
+  }
+
+  static async getAdminRequestById(id) {
+    const response = await ApiClient.get(`/api/admin/support-requests/${id}`);
+    return response.data;
+  }
+
   /**
    * Submit feedback for resolved support request
    * @param {number} id - Request ID
    * @param {object} data - Feedback data { satisfactionRating, feedback }
    */
   static async submitFeedback(id, data) {
-    const response = await ApiClient.post(`/api/support-requests/${id}/feedback`, data);
+    const response = await ApiClient.post(
+      `/api/support-requests/${id}/feedback`,
+      data
+    );
     return response.data;
   }
 }
-

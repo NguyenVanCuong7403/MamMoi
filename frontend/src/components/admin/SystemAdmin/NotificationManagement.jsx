@@ -31,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   Table,
   TableBody,
@@ -76,6 +77,18 @@ const CATEGORY_OPTIONS = [
   { value: "Promotion", label: "Khuyến mãi" },
   { value: "Update", label: "Cập nhật" },
   { value: "Maintenance", label: "Bảo trì" },
+];
+
+const ICON_OPTIONS = [
+  { value: "bell", label: "Bell" },
+  { value: "gift", label: "Gift" },
+  { value: "info", label: "Info" },
+  { value: "check", label: "Check" },
+  { value: "alert-circle", label: "Alert" },
+  { value: "users", label: "Users" },
+  { value: "leaf", label: "Leaf" },
+  { value: "star", label: "Star" },
+  { value: "calendar", label: "Calendar" },
 ];
 
 // Format date helper
@@ -126,9 +139,6 @@ export default function NotificationManagement() {
     message: "",
     notificationType: "Broadcast",
     priority: "Normal",
-    category: "General",
-    actionUrl: "",
-    actionLabel: "",
     imageUrl: "",
     iconName: "",
     expiresAt: "",
@@ -158,9 +168,6 @@ export default function NotificationManagement() {
       message: "",
       notificationType: "Broadcast",
       priority: "Normal",
-      category: "General",
-      actionUrl: "",
-      actionLabel: "",
       imageUrl: "",
       iconName: "",
       expiresAt: "",
@@ -179,15 +186,26 @@ export default function NotificationManagement() {
       const response = await NotificationRepository.getBroadcastNotifications();
       console.log("Broadcast notifications response:", response);
 
-      if (response.success) {
-        const broadcastData = Array.isArray(response.data) ? response.data : [];
-        console.log("Setting broadcasts:", broadcastData);
-        setBroadcasts(broadcastData);
+      // Support two possible API response shapes:
+      // 1) { success: true, data: [...] }
+      // 2) [...] (raw array)
+      let broadcastData = [];
+      if (Array.isArray(response)) {
+        broadcastData = response;
+      } else if (response && response.success) {
+        broadcastData = Array.isArray(response.data) ? response.data : [];
+      } else if (response && Array.isArray(response.data)) {
+        // Some APIs may return { data: [...] } without success flag
+        broadcastData = response.data;
       } else {
         setError(
-          response.message || "Có lỗi xảy ra khi tải danh sách thông báo"
+          (response && response.message) ||
+            "Có lỗi xảy ra khi tải danh sách thông báo"
         );
       }
+
+      console.log("Setting broadcasts:", broadcastData);
+      setBroadcasts(broadcastData);
     } catch (err) {
       console.error("Error fetching broadcast notifications:", err);
       const errorMsg =
@@ -425,9 +443,7 @@ export default function NotificationManagement() {
         message: formData.message.trim(), // Required field
         notificationType: formData.notificationType || "Broadcast",
         priority: formData.priority || "Normal",
-        category: formData.category || null,
-        actionUrl: formData.actionUrl.trim() || null,
-        actionLabel: formData.actionLabel.trim() || null,
+        // category/actionUrl/actionLabel intentionally omitted per admin UX decision
         imageUrl: formData.imageUrl.trim() || null,
         iconName: formData.iconName.trim() || null,
         expiresAt: formData.expiresAt
@@ -679,30 +695,20 @@ export default function NotificationManagement() {
                         <label className="text-sm font-medium mb-2 block">
                           Loại thông báo
                         </label>
-                        <Select
+                        <SearchableSelect
                           value={filters.notificationType || "all"}
-                          onValueChange={(value) =>
+                          onChange={(value) =>
                             setFilters({
                               ...filters,
                               notificationType: value === "all" ? "" : value,
                             })
                           }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Tất cả loại" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Tất cả loại</SelectItem>
-                            {NOTIFICATION_TYPE_OPTIONS.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          options={[
+                            { value: "all", label: "Tất cả loại" },
+                            ...NOTIFICATION_TYPE_OPTIONS,
+                          ]}
+                          placeholder="Tất cả loại"
+                        />
                       </div>
 
                       {/* Priority */}
@@ -710,32 +716,20 @@ export default function NotificationManagement() {
                         <label className="text-sm font-medium mb-2 block">
                           Độ ưu tiên
                         </label>
-                        <Select
+                        <SearchableSelect
                           value={filters.priority || "all"}
-                          onValueChange={(value) =>
+                          onChange={(value) =>
                             setFilters({
                               ...filters,
                               priority: value === "all" ? "" : value,
                             })
                           }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Tất cả độ ưu tiên" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">
-                              Tất cả độ ưu tiên
-                            </SelectItem>
-                            {PRIORITY_OPTIONS.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          options={[
+                            { value: "all", label: "Tất cả độ ưu tiên" },
+                            ...PRIORITY_OPTIONS,
+                          ]}
+                          placeholder="Tất cả độ ưu tiên"
+                        />
                       </div>
 
                       {/* Category */}
@@ -743,30 +737,20 @@ export default function NotificationManagement() {
                         <label className="text-sm font-medium mb-2 block">
                           Danh mục
                         </label>
-                        <Select
+                        <SearchableSelect
                           value={filters.category || "all"}
-                          onValueChange={(value) =>
+                          onChange={(value) =>
                             setFilters({
                               ...filters,
                               category: value === "all" ? "" : value,
                             })
                           }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Tất cả danh mục" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="all">Tất cả danh mục</SelectItem>
-                            {CATEGORY_OPTIONS.map((option) => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          options={[
+                            { value: "all", label: "Tất cả danh mục" },
+                            ...CATEGORY_OPTIONS,
+                          ]}
+                          placeholder="Tất cả danh mục"
+                        />
                       </div>
 
                       {/* Date From */}
@@ -1153,95 +1137,28 @@ export default function NotificationManagement() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Loại thông báo</label>
-                <Select
+                <SearchableSelect
                   value={formData.notificationType}
-                  onValueChange={(value) =>
+                  onChange={(value) =>
                     setFormData({ ...formData, notificationType: value })
                   }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {NOTIFICATION_TYPE_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={NOTIFICATION_TYPE_OPTIONS}
+                />
               </div>
 
               <div>
                 <label className="text-sm font-medium">Độ ưu tiên</label>
-                <Select
+                <SearchableSelect
                   value={formData.priority}
-                  onValueChange={(value) =>
+                  onChange={(value) =>
                     setFormData({ ...formData, priority: value })
                   }
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PRIORITY_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  options={PRIORITY_OPTIONS}
+                />
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium">Danh mục</label>
-              <Select
-                value={formData.category}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, category: value })
-                }
-              >
-                <SelectTrigger className="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORY_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">
-                URL hành động (tùy chọn)
-              </label>
-              <Input
-                value={formData.actionUrl}
-                onChange={(e) =>
-                  setFormData({ ...formData, actionUrl: e.target.value })
-                }
-                placeholder="/promotions/discount"
-                className="mt-1"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">
-                Nhãn hành động (tùy chọn)
-              </label>
-              <Input
-                value={formData.actionLabel}
-                onChange={(e) =>
-                  setFormData({ ...formData, actionLabel: e.target.value })
-                }
-                placeholder="Xem ngay"
-                className="mt-1"
-              />
-            </div>
+            {/* Removed: Danh mục, URL hành động, Nhãn hành động — not required in admin create form */}
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -1324,16 +1241,17 @@ export default function NotificationManagement() {
               </div>
 
               <div>
-                <label className="text-sm font-medium">
-                  Tên icon (tùy chọn)
-                </label>
-                <Input
-                  value={formData.iconName}
-                  onChange={(e) =>
-                    setFormData({ ...formData, iconName: e.target.value })
+                <label className="text-sm font-medium">Icon (tùy chọn)</label>
+                <SearchableSelect
+                  value={formData.iconName || ""}
+                  onChange={(value) =>
+                    setFormData({ ...formData, iconName: value })
                   }
-                  placeholder="bell, gift, etc."
-                  className="mt-1"
+                  options={[
+                    { value: "", label: "Không chọn" },
+                    ...ICON_OPTIONS,
+                  ]}
+                  placeholder="Chọn icon"
                 />
               </div>
             </div>

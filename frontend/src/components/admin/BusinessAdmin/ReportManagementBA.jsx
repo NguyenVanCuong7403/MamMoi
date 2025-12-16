@@ -19,7 +19,6 @@ import {
   AreaChart as RechartsAreaChart,
   CartesianGrid,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
   PieChart,
@@ -29,12 +28,14 @@ import {
   BarChart,
   Tooltip as RechartsTooltip,
 } from "recharts";
+
+import { LivingBackground } from "@/components/background";
+import AdminLayout from "../layout/AdminLayout";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -42,21 +43,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   Table,
-  TableHeader,
-  TableRow,
-  TableHead,
   TableBody,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -68,47 +70,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { LivingBackground } from "@/components/background";
-import AdminLayout from "../layout/AdminLayout";
-import ActionToast from "../components/ActionToast";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import AdminReportRepository from "@/API/repositories/AdminReportRepository";
-
-// Utility function to format date in Vietnam timezone
-// Handles dates from backend that may be in UTC or without timezone info
-const formatDateVietnam = (dateString) => {
-  if (!dateString) return "";
-
-  let date;
-  if (typeof dateString === "string") {
-    // Check if date string has timezone info
-    const hasTimezone =
-      dateString.endsWith("Z") ||
-      /[+-]\d{2}:\d{2}$/.test(dateString) ||
-      /[+-]\d{4}$/.test(dateString);
-
-    // If no timezone info, assume it's UTC (backend typically stores in UTC)
-    if (!hasTimezone) {
-      // Append Z to treat as UTC
-      date = new Date(dateString + "Z");
-    } else {
-      date = new Date(dateString);
-    }
-  } else {
-    date = new Date(dateString);
-  }
-
-  // Format in Vietnam timezone (UTC+7)
-  return date.toLocaleString("vi-VN", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    hour12: false,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-};
+import ActionToast from "@/components/admin/components/ActionToast";
 
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
@@ -118,6 +89,7 @@ const BACKGROUND_PALETTE = {
 };
 
 const TIME_SEGMENTS = [
+  { value: "all", label: "Tất cả" },
   { value: "day", label: "Ngày", durationHours: 24 },
   { value: "week", label: "Tuần", durationHours: 24 * 7 },
   { value: "month", label: "Tháng", durationHours: 24 * 30 },
@@ -514,6 +486,24 @@ function getStatusLabel(value) {
 function getStatusBadgeClass(value) {
   const normalized = normalizeStatus(value);
   return STATUS_META[normalized]?.className ?? STATUS_BADGE_FALLBACK;
+}
+
+function formatDateVietnam(value, withTime = true) {
+  if (value === undefined || value === null || value === "") return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return String(value);
+  const options = withTime
+    ? {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    : { year: "numeric", month: "2-digit", day: "2-digit" };
+  return new Intl.DateTimeFormat("vi-VN", options)
+    .format(d)
+    .replace(/,\s*/g, " ");
 }
 
 function getOverdueBadgeMeta(report) {
@@ -1495,7 +1485,7 @@ export default function ReportManagementBA() {
                     Business Admin
                   </p>
                   <h1 className="mt-2 text-3xl font-semibold text-white">
-                    Quản lý báo cáo 
+                    Quản lý báo cáo
                   </h1>
                   <p className="text-emerald-100/80">
                     Giám sát báo cáo chất lượng cây trồng và những phản hồi kinh
@@ -1731,58 +1721,29 @@ export default function ReportManagementBA() {
                         }
                       />
                     </div>
-                    <Select
+                    <SearchableSelect
                       value={filters.priority}
-                      onValueChange={(value) =>
+                      onChange={(value) =>
                         handleFilterChange("priority", value)
                       }
-                    >
-                      <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                        <SelectValue placeholder="Ưu tiên" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PRIORITY_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
+                      options={PRIORITY_OPTIONS}
+                      placeholder="Ưu tiên"
+                    />
+                    <SearchableSelect
                       value={filters.type}
-                      onValueChange={(value) =>
-                        handleFilterChange("type", value)
-                      }
-                    >
-                      <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                        <SelectValue placeholder="Loại báo cáo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tất cả loại</SelectItem>
-                        {BA_REPORT_TYPES.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
+                      onChange={(value) => handleFilterChange("type", value)}
+                      options={[
+                        { value: "all", label: "Tất cả loại" },
+                        ...BA_REPORT_TYPES,
+                      ]}
+                      placeholder="Loại báo cáo"
+                    />
+                    <SearchableSelect
                       value={filters.status}
-                      onValueChange={(value) =>
-                        handleFilterChange("status", value)
-                      }
-                    >
-                      <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                        <SelectValue placeholder="Trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={(value) => handleFilterChange("status", value)}
+                      options={STATUS_OPTIONS}
+                      placeholder="Trạng thái"
+                    />
                     <Button
                       variant="outline"
                       className="rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50"

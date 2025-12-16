@@ -26,6 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   Table,
   TableBody,
@@ -706,23 +707,20 @@ export default function RevenueManagement() {
                     </div>
                   </div>
                   <div className="lg:col-span-3">
-                    <Select
+                    <SearchableSelect
                       value={statusFilter || "all"}
-                      onValueChange={(value) => {
+                      onChange={(value) => {
                         setStatusFilter(value === "all" ? null : value);
                         setPage(1);
                       }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                        <SelectItem value="Success">Thành công</SelectItem>
-                        <SelectItem value="Failed">Thất bại</SelectItem>
-                        <SelectItem value="Pending">Đang xử lý</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      options={[
+                        { value: "all", label: "Tất cả trạng thái" },
+                        { value: "Success", label: "Thành công" },
+                        { value: "Failed", label: "Thất bại" },
+                        { value: "Pending", label: "Đang xử lý" },
+                      ]}
+                      placeholder="Trạng thái"
+                    />
                   </div>
                   <div className="lg:col-span-3">
                     <Button
@@ -750,7 +748,7 @@ export default function RevenueManagement() {
                       <Table>
                         <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
                           <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
-                            <TableHead>ID</TableHead>
+                            <TableHead>STT</TableHead>
                             <TableHead>Khách hàng</TableHead>
                             <TableHead>Gói dịch vụ</TableHead>
                             <TableHead>Ngày bắt đầu</TableHead>
@@ -771,13 +769,13 @@ export default function RevenueManagement() {
                               </TableCell>
                             </TableRow>
                           ) : (
-                            payments.map((payment) => (
+                            payments.map((payment, index) => (
                               <TableRow
                                 key={payment.paymentId}
                                 className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
                               >
                                 <TableCell className="font-semibold text-slate-900">
-                                  #{payment.paymentId}
+                                  {(page - 1) * PAGE_SIZE + index + 1}
                                 </TableCell>
                                 <TableCell>
                                   <div>
@@ -954,7 +952,7 @@ export default function RevenueManagement() {
                   <Table>
                     <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
                       <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
-                        <TableHead>ID</TableHead>
+                        <TableHead>STT</TableHead>
                         <TableHead>Gói dịch vụ</TableHead>
                         <TableHead>Ngày bắt đầu</TableHead>
                         <TableHead>Ngày kết thúc</TableHead>
@@ -965,31 +963,31 @@ export default function RevenueManagement() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {userPaymentHistory.map((payment) => (
+                      {userPaymentHistory.map((payment, idx) => (
                         <TableRow
                           key={payment.paymentId}
                           className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
                         >
                           <TableCell className="font-semibold text-slate-900">
-                            #{payment.paymentId}
+                            {(paymentHistoryPage - 1) * PAGE_SIZE + idx + 1}
                           </TableCell>
                           <TableCell className="text-slate-800">
                             {payment.planName}
                           </TableCell>
-                      <TableCell className="text-slate-600">
-                        {formatDate(
-                          payment.subscriptionStartDate,
-                          "Chưa xác định"
-                        )}
-                      </TableCell>
-                      <TableCell className="text-slate-600">
-                        {payment.subscriptionEndDate
-                          ? formatDate(
-                              payment.subscriptionEndDate,
-                              "Không giới hạn"
-                            )
-                          : "Không giới hạn"}
-                      </TableCell>
+                          <TableCell className="text-slate-600">
+                            {formatDate(
+                              payment.subscriptionStartDate,
+                              "Chưa xác định"
+                            )}
+                          </TableCell>
+                          <TableCell className="text-slate-600">
+                            {payment.subscriptionEndDate
+                              ? formatDate(
+                                  payment.subscriptionEndDate,
+                                  "Không giới hạn"
+                                )
+                              : "Không giới hạn"}
+                          </TableCell>
                           <TableCell className="font-semibold text-emerald-700">
                             {payment.amount.toLocaleString("vi-VN", {
                               style: "currency",

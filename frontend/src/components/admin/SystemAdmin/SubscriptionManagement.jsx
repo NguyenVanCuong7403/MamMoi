@@ -33,6 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   Table,
   TableBody,
@@ -817,23 +818,20 @@ function SubscriptionManagement() {
                     </Popover>
                   </div>
                   <div className="lg:col-span-3">
-                    <Select
+                    <SearchableSelect
                       value={revenueStatusFilter || "all"}
-                      onValueChange={(value) => {
+                      onChange={(value) => {
                         setRevenueStatusFilter(value === "all" ? null : value);
                         setRevenuePage(1);
                       }}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                        <SelectItem value="Success">Thành công</SelectItem>
-                        <SelectItem value="Failed">Thất bại</SelectItem>
-                        <SelectItem value="Pending">Đang xử lý</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      options={[
+                        { value: "all", label: "Tất cả trạng thái" },
+                        { value: "Success", label: "Thành công" },
+                        { value: "Failed", label: "Thất bại" },
+                        { value: "Pending", label: "Đang xử lý" },
+                      ]}
+                      placeholder="Trạng thái"
+                    />
                   </div>
                 </div>
 
@@ -850,7 +848,7 @@ function SubscriptionManagement() {
                       <Table>
                         <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
                           <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
-                            <TableHead>ID</TableHead>
+                            <TableHead>STT</TableHead>
                             <TableHead>Khách hàng</TableHead>
                             <TableHead>Gói dịch vụ</TableHead>
                             <TableHead>Ngày bắt đầu</TableHead>
@@ -871,13 +869,15 @@ function SubscriptionManagement() {
                               </TableCell>
                             </TableRow>
                           ) : (
-                            revenuePayments.map((payment) => (
+                            revenuePayments.map((payment, index) => (
                               <TableRow
                                 key={payment.paymentId}
                                 className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
                               >
                                 <TableCell className="font-semibold text-slate-900">
-                                  #{payment.paymentId}
+                                  {(revenuePage - 1) * REVENUE_PAGE_SIZE +
+                                    index +
+                                    1}
                                 </TableCell>
                                 <TableCell>
                                   <div>

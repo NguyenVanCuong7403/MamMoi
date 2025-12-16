@@ -1,4 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -11,6 +17,7 @@ import {
   Search,
   ShieldCheck,
   ShieldQuestion,
+  Star,
   TrendingUp,
   TrendingDown,
 } from "lucide-react";
@@ -19,7 +26,6 @@ import {
   AreaChart as RechartsAreaChart,
   CartesianGrid,
   ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
   PieChart,
@@ -29,6 +35,9 @@ import {
   BarChart,
   Tooltip as RechartsTooltip,
 } from "recharts";
+
+import { LivingBackground } from "@/components/background";
+import AdminLayout from "../layout/AdminLayout";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,21 +51,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/searchable-select";
 import {
   Table,
-  TableHeader,
-  TableRow,
-  TableHead,
   TableBody,
   TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -68,46 +78,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { LivingBackground } from "@/components/background";
-import AdminLayout from "../layout/AdminLayout";
-import ActionToast from "../components/ActionToast";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import AdminReportRepository from "@/API/repositories/AdminReportRepository";
-
-// Utility function to format date in Vietnam timezone
-// Handles dates from backend that may be in UTC or without timezone info
-const formatDateVietnam = (dateString) => {
-  if (!dateString) return "";
-  
-  let date;
-  if (typeof dateString === "string") {
-    // Check if date string has timezone info
-    const hasTimezone = dateString.endsWith("Z") || 
-                       /[+-]\d{2}:\d{2}$/.test(dateString) ||
-                       /[+-]\d{4}$/.test(dateString);
-    
-    // If no timezone info, assume it's UTC (backend typically stores in UTC)
-    if (!hasTimezone) {
-      // Append Z to treat as UTC
-      date = new Date(dateString + "Z");
-    } else {
-      date = new Date(dateString);
-    }
-  } else {
-    date = new Date(dateString);
-  }
-  
-  // Format in Vietnam timezone (UTC+7)
-  return date.toLocaleString("vi-VN", {
-    timeZone: "Asia/Ho_Chi_Minh",
-    hour12: false,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-};
+import ActionToast from "@/components/admin/components/ActionToast";
+import SupportRequestRepository from "@/API/repositories/SupportRequestRepository";
 
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
@@ -117,6 +98,7 @@ const BACKGROUND_PALETTE = {
 };
 
 const TIME_SEGMENTS = [
+  { value: "all", label: "Tất cả" },
   { value: "day", label: "Ngày", durationHours: 24 },
   { value: "week", label: "Tuần", durationHours: 24 * 7 },
   { value: "month", label: "Tháng", durationHours: 24 * 30 },
@@ -500,7 +482,7 @@ function wasOverdue(report) {
   return elapsedHours > SLA_HOURS;
 }
 
-function getRemainingHours(report) {
+function _getRemainingHours(report) {
   const elapsedHours =
     (Date.now() - new Date(report.createdAt).getTime()) / (1000 * 60 * 60);
   return SLA_HOURS - elapsedHours;
@@ -519,6 +501,25 @@ function getStatusLabel(value) {
 function getStatusBadgeClass(value) {
   const normalized = normalizeStatus(value);
   return STATUS_META[normalized]?.className ?? STATUS_BADGE_FALLBACK;
+}
+
+function formatDateVietnam(value, withTime = true) {
+  if (value === undefined || value === null || value === "") return "";
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return String(value);
+  const options = withTime
+    ? {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    : { year: "numeric", month: "2-digit", day: "2-digit" };
+  // Format using Vietnamese locale. Trim any extra comma/space returned by some locales.
+  return new Intl.DateTimeFormat("vi-VN", options)
+    .format(d)
+    .replace(/,\s*/g, " ");
 }
 
 function getOverdueBadgeMeta(report) {
@@ -557,9 +558,7 @@ function exportReportsToCSV(reports) {
       escapeCsvValue(TYPE_META[report.type]?.label ?? report.type),
       escapeCsvValue(PRIORITY_META[report.priority]?.label ?? report.priority),
       escapeCsvValue(getStatusLabel(report.status)),
-      escapeCsvValue(
-        formatDateVietnam(report.createdAt)
-      ),
+      escapeCsvValue(formatDateVietnam(report.createdAt)),
       escapeCsvValue(overdueMeta ? overdueMeta.label : ""),
     ].join(",");
   });
@@ -705,7 +704,7 @@ function ReportTypeDistributionChart({
   }));
 
   const total = chartData.reduce((sum, item) => sum + item.value, 0);
-  const peakValue = chartData.reduce(
+  const _peakValue = chartData.reduce(
     (max, item) => Math.max(max, item.value),
     0
   );
@@ -935,9 +934,9 @@ export default function ReportManagement() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
+  const [page, _setPage] = useState(1);
+  const [, setTotalPages] = useState(1);
+  const [, setTotalCount] = useState(0);
   const [selectedReport, setSelectedReport] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDetailOpen, setViewDetailOpen] = useState(false);
@@ -955,7 +954,15 @@ export default function ReportManagement() {
     title: "",
     message: "",
   });
+  const [supportRequestDetail, setSupportRequestDetail] = useState(null);
+  const [loadingSupportRequest, setLoadingSupportRequest] = useState(false);
+  const [supportRequestCache, setSupportRequestCache] = useState({});
+  const supportRequestCacheRef = useRef({});
   const actionToastTimer = useRef(null);
+
+  useEffect(() => {
+    supportRequestCacheRef.current = supportRequestCache;
+  }, [supportRequestCache]);
 
   // Hàm cập nhật report
   const updateReport = async (reportId, updates) => {
@@ -982,7 +989,7 @@ export default function ReportManagement() {
   };
 
   // Fetch reports from API
-  const fetchReports = async () => {
+  const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -1035,18 +1042,69 @@ export default function ReportManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [
+    filters.priority,
+    filters.status,
+    filters.time,
+    filters.type,
+    page,
+    setTotalCount,
+    setTotalPages,
+  ]);
 
   // Initial fetch and when filters change
   useEffect(() => {
     fetchReports();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters.time, filters.status, filters.priority, filters.type, page]);
+  }, [fetchReports]);
 
   // Refresh button handler
   const handleRefresh = () => {
     fetchReports();
   };
+
+  const fetchSupportRequestForRow = useCallback(
+    async (requestId) => {
+      if (!requestId) return null;
+      const key = String(requestId);
+      // if cached or currently loading, return
+      const cached = supportRequestCacheRef.current[key];
+      if (cached && (cached.loading || cached.data)) return cached.data || null;
+
+      // mark loading
+      setSupportRequestCache((prev) => ({ ...prev, [key]: { loading: true } }));
+      try {
+        const data = await SupportRequestRepository.getAdminRequestById(
+          Number(requestId)
+        );
+        setSupportRequestCache((prev) => ({ ...prev, [key]: { data } }));
+        return data;
+      } catch (err) {
+        // If support request doesn't exist, cache the negative result to avoid repeated fetches
+        const msg = String(err?.message || "").toLowerCase();
+        if (
+          msg.includes("not found") ||
+          msg.includes("not exist") ||
+          msg.includes("404")
+        ) {
+          console.debug(`Support request ${requestId} not found.`);
+          setSupportRequestCache((prev) => ({
+            ...prev,
+            [key]: { error: true, loading: false },
+          }));
+          return null;
+        }
+
+        // For other errors, log once and cache an error marker
+        console.error("Error fetching support request for row:", err);
+        setSupportRequestCache((prev) => ({
+          ...prev,
+          [key]: { error: true, loading: false },
+        }));
+        return null;
+      }
+    },
+    [setSupportRequestCache]
+  );
 
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
@@ -1129,6 +1187,92 @@ export default function ReportManagement() {
       return 0;
     });
   }, [filteredReports]);
+
+  // Prefetch support request details (including satisfactionRating) for visible rows
+  useEffect(() => {
+    // Only prefetch for reports that have a linked support request (try multiple possible fields)
+    (sortedReports || []).forEach((r) => {
+      const possibleIds = [
+        r.requestId,
+        r.supportRequestId,
+        r.support_request_id,
+        r.request_id,
+        r.supportRequest?.id,
+      ].filter(Boolean);
+
+      possibleIds.forEach((id) => {
+        const key = String(id);
+        const cached = supportRequestCacheRef.current[key];
+        if (!cached) {
+          // fire-and-forget; fetchSupportRequestForRow updates cache when done
+          fetchSupportRequestForRow(id).catch(() => {});
+        }
+      });
+    });
+  }, [fetchSupportRequestForRow, sortedReports]);
+
+  // Helper to resolve satisfaction rating for a report from several possible sources
+  const resolveSatisfactionRating = (report) => {
+    if (!report) return null;
+    // Direct property on report
+    if (typeof report.satisfactionRating === "number")
+      return report.satisfactionRating;
+    if (typeof report.satisfaction_rating === "number")
+      return report.satisfaction_rating;
+    // Accept numeric strings as well (coerce)
+    if (
+      typeof report.satisfactionRating === "string" &&
+      !isNaN(Number(report.satisfactionRating))
+    )
+      return Number(report.satisfactionRating);
+    if (
+      typeof report.satisfaction_rating === "string" &&
+      !isNaN(Number(report.satisfaction_rating))
+    )
+      return Number(report.satisfaction_rating);
+    // Nested supportRequest object on report
+    if (
+      report.supportRequest &&
+      typeof report.supportRequest.satisfactionRating === "number"
+    )
+      return report.supportRequest.satisfactionRating;
+    if (
+      report.supportRequest &&
+      typeof report.supportRequest.satisfaction_rating === "number"
+    )
+      return report.supportRequest.satisfaction_rating;
+
+    // Try cache by different id fields
+    const ids = [
+      report.requestId,
+      report.supportRequestId,
+      report.support_request_id,
+      report.request_id,
+    ];
+    for (const id of ids) {
+      if (!id) continue;
+      const cached = supportRequestCache[String(id)];
+      if (cached && cached.data) {
+        const d = cached.data;
+        if (typeof d.satisfactionRating === "number")
+          return d.satisfactionRating;
+        if (typeof d.satisfaction_rating === "number")
+          return d.satisfaction_rating;
+        if (
+          typeof d.satisfactionRating === "string" &&
+          !isNaN(Number(d.satisfactionRating))
+        )
+          return Number(d.satisfactionRating);
+        if (
+          typeof d.satisfaction_rating === "string" &&
+          !isNaN(Number(d.satisfaction_rating))
+        )
+          return Number(d.satisfaction_rating);
+      }
+    }
+
+    return null;
+  };
 
   const stats = useMemo(() => {
     const overdue = filteredReports.filter((report) => isOverdue(report));
@@ -1319,17 +1463,13 @@ export default function ReportManagement() {
     }));
   }, [filteredReports]);
 
-  const priorityDistribution = useMemo(() => {
+  const _priorityDistribution = useMemo(() => {
     const map = { high: 0, medium: 0, low: 0 };
     filteredReports.forEach((report) => {
       map[report.priority] += 1;
     });
-    const total = Math.max(1, filteredReports.length);
-    return Object.entries(map).map(([key, value]) => ({
-      key,
-      label: PRIORITY_META[key].label,
-      percent: Math.round((value / total) * 100),
-    }));
+
+    return map;
   }, [filteredReports]);
 
   const isReportClosed = (report) => {
@@ -1394,6 +1534,8 @@ export default function ReportManagement() {
     setStatusUpdate("");
     setPendingStatus("");
     setHasSubmitAttempt(false);
+    // Clear any previously loaded support request detail
+    setSupportRequestDetail(null);
   }, [selectedReport]);
 
   useEffect(() => {
@@ -1409,6 +1551,31 @@ export default function ReportManagement() {
       }
     };
   }, []);
+
+  // When view detail dialog opens and selectedReport has a requestId, fetch support request detail
+  useEffect(() => {
+    const loadSupportRequest = async () => {
+      if (!selectedReport || !selectedReport.requestId) return;
+      try {
+        setLoadingSupportRequest(true);
+        const data = await SupportRequestRepository.getAdminRequestById(
+          Number(selectedReport.requestId)
+        );
+        setSupportRequestDetail(data);
+      } catch (err) {
+        console.error("Error loading linked support request:", err);
+        setSupportRequestDetail(null);
+      } finally {
+        setLoadingSupportRequest(false);
+      }
+    };
+
+    if (viewDetailOpen) {
+      loadSupportRequest();
+    } else {
+      setSupportRequestDetail(null);
+    }
+  }, [viewDetailOpen, selectedReport]);
 
   const isAdminNotesValid = adminNotes.trim().length > 0;
   const isEmailContentValid = emailContent.trim().length > 0;
@@ -1580,17 +1747,13 @@ export default function ReportManagement() {
                             overdueAlert.priority
                           ]?.label?.toLowerCase()}{" "}
                           · Báo cáo lâu nhất từ{" "}
-                          {formatDateVietnam(
-                            overdueAlert.nextReport.createdAt
-                          )}
+                          {formatDateVietnam(overdueAlert.nextReport.createdAt)}
                         </p>
                       )}
                       {overdueAlert.type === "general" && (
                         <p className="text-sm">
                           Báo cáo lâu nhất từ{" "}
-                          {formatDateVietnam(
-                            overdueAlert.nextReport.createdAt
-                          )}
+                          {formatDateVietnam(overdueAlert.nextReport.createdAt)}
                         </p>
                       )}
                     </div>
@@ -1742,58 +1905,29 @@ export default function ReportManagement() {
                         }
                       />
                     </div>
-                    <Select
+                    <SearchableSelect
                       value={filters.priority}
-                      onValueChange={(value) =>
+                      onChange={(value) =>
                         handleFilterChange("priority", value)
                       }
-                    >
-                      <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                        <SelectValue placeholder="Ưu tiên" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PRIORITY_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
+                      options={PRIORITY_OPTIONS}
+                      placeholder="Ưu tiên"
+                    />
+                    <SearchableSelect
                       value={filters.type}
-                      onValueChange={(value) =>
-                        handleFilterChange("type", value)
-                      }
-                    >
-                      <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                        <SelectValue placeholder="Loại báo cáo" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Tất cả loại</SelectItem>
-                        {REPORT_TYPES.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Select
+                      onChange={(value) => handleFilterChange("type", value)}
+                      options={[
+                        { value: "all", label: "Tất cả loại" },
+                        ...REPORT_TYPES,
+                      ]}
+                      placeholder="Loại báo cáo"
+                    />
+                    <SearchableSelect
                       value={filters.status}
-                      onValueChange={(value) =>
-                        handleFilterChange("status", value)
-                      }
-                    >
-                      <SelectTrigger className="w-[180px] rounded-xl border-slate-200 bg-slate-50 text-slate-800">
-                        <SelectValue placeholder="Trạng thái" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {STATUS_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={(value) => handleFilterChange("status", value)}
+                      options={STATUS_OPTIONS}
+                      placeholder="Trạng thái"
+                    />
                     <Button
                       variant="outline"
                       className="rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50"
@@ -1813,6 +1947,9 @@ export default function ReportManagement() {
                           <TableHead>Ưu tiên</TableHead>
                           <TableHead>Thời gian gửi</TableHead>
                           <TableHead>Trạng thái</TableHead>
+                          <TableHead className="text-center">
+                            Đánh giá
+                          </TableHead>
                           <TableHead className="text-right">
                             Hành động
                           </TableHead>
@@ -1896,6 +2033,36 @@ export default function ReportManagement() {
                                       </div>
                                     )}
                                 </div>
+                              </TableCell>
+                              <TableCell className="text-center">
+                                {(() => {
+                                  const rating =
+                                    resolveSatisfactionRating(report);
+                                  if (rating === null || rating === undefined) {
+                                    return (
+                                      <span className="text-slate-400">-</span>
+                                    );
+                                  }
+
+                                  // Render star icons similar to detail view
+                                  return (
+                                    <div className="inline-flex items-center gap-2">
+                                      <div className="inline-flex items-center gap-1">
+                                        {[1, 2, 3, 4, 5].map((s) => (
+                                          <Star
+                                            key={s}
+                                            className={`w-4 h-4 ${
+                                              s <= rating
+                                                ? "fill-yellow-400 text-yellow-400"
+                                                : "text-gray-200"
+                                            }`}
+                                          />
+                                        ))}
+                                      </div>
+                                      <span className="text-xs text-slate-500">{` ${rating}/5`}</span>
+                                    </div>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell className="text-right">
                                 <Button
@@ -2089,6 +2256,54 @@ export default function ReportManagement() {
                         )}
                       </div>
                     </div>
+
+                    {/* If this report links to a support request, try loading and show its rating */}
+                    {selectedReport.requestId && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase text-slate-400">
+                          Đánh giá từ user (nếu có)
+                        </p>
+                        <div className="mt-2">
+                          {loadingSupportRequest ? (
+                            <p className="text-sm text-slate-600">
+                              Đang tải đánh giá...
+                            </p>
+                          ) : supportRequestDetail &&
+                            supportRequestDetail.satisfactionRating !== null &&
+                            supportRequestDetail.satisfactionRating !==
+                              undefined ? (
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-1">
+                                {[1, 2, 3, 4, 5].map((star) => (
+                                  <Star
+                                    key={star}
+                                    className={`w-5 h-5 ${
+                                      star <=
+                                      supportRequestDetail.satisfactionRating
+                                        ? "fill-yellow-400 text-yellow-400"
+                                        : "text-gray-300"
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <div className="text-sm text-slate-700">
+                                ({supportRequestDetail.satisfactionRating}/5)
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="text-sm text-slate-600">
+                              Chưa có đánh giá từ user.
+                            </div>
+                          )}
+                          {supportRequestDetail &&
+                            supportRequestDetail.feedback && (
+                              <div className="mt-2 italic text-slate-700">
+                                "{supportRequestDetail.feedback}"
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    )}
 
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-slate-700">

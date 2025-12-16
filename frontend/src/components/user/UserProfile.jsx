@@ -3247,7 +3247,7 @@ export default function UserProfile() {
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
             {[
               {
-                label: "Hiển thị gói hiện tại",
+                label: "Gói hiện tại",
                 value: currentPackage,
                 icon: <Shield className="h-5 w-5" />,
               },
@@ -3291,8 +3291,8 @@ export default function UserProfile() {
         inert={overlayOpen ? "" : undefined}
       >
         <div className="flex gap-4 md:gap-6 lg:gap-8 w-full min-w-0">
-          {/* Sidebar Menu - Left (removed - moved to header) */}
-          <aside className="hidden">
+          {/* Sidebar Menu - Left (restored; hidden on small screens) */}
+          <aside className="hidden md:block md:w-72">
             <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
               <CardContent className="p-8">
                 <div className="mb-8">
