@@ -7,10 +7,115 @@ import {
   useScroll,
   useTransform,
   useInView,
+  useMotionValue,
+  useSpring,
 } from "framer-motion";
 import useViewportScale from "@/hooks/useViewportScale";
 import SubscriptionPlanRepository from "@/API/repositories/SubscriptionPlanRepository";
 import { useAuth } from "@/API/context/AuthContext";
+
+// Staggered animation variants for cards - prevent flash by using opacity: 1 initially
+const containerVariants = {
+  hidden: { opacity: 1 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+const cardVariants = {
+  hidden: {
+    opacity: 1,
+    y: 15,
+  },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 150,
+      damping: 20,
+    },
+  },
+};
+
+const slideInLeftVariants = {
+  hidden: { opacity: 0, x: -80 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      stiffness: 80,
+      damping: 20,
+    },
+  },
+};
+
+const slideInRightVariants = {
+  hidden: { opacity: 0, x: 80 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      stiffness: 80,
+      damping: 20,
+    },
+  },
+};
+
+const scaleUpVariants = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15,
+    },
+  },
+};
+
+// 3D Card Tilt Component
+function Card3D({ children, className = "" }) {
+  const ref = useRef(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [8, -8]), { stiffness: 300, damping: 30 });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-8, 8]), { stiffness: 300, damping: 30 });
+
+  const handleMouse = (e) => {
+    if (!ref.current) return;
+    const rect = ref.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    x.set((e.clientX - centerX) / rect.width);
+    y.set((e.clientY - centerY) / rect.height);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={handleMouse}
+      onMouseLeave={handleMouseLeave}
+      style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 /**
  * Mam Moi — Home (Page Only, no header) [JavaScript version]
@@ -292,7 +397,7 @@ export default function Home() {
             unit,
             desc: planDescription,
             features,
-            cta: rawPrice === 0 ? "Bắt đầu ngay" : "Dùng thử ngay",
+            cta: rawPrice === 0 ? "Bắt đầu ngay" : "Đăng ký ngay",
             popular: index === 1, // Highlight 2nd plan
             isFree: rawPrice === 0,
             rawPrice: rawPrice,
@@ -349,13 +454,37 @@ export default function Home() {
     })();
   }, []);
 
-  // Scroll effects (parallax only)
+  // Scroll effects with progress bar
+  const { scrollYProgress } = useScroll();
   const { scrollY } = useScroll();
   const videoScale = useTransform(scrollY, [0, 400], [1.08, 1]);
   const titleY = useTransform(scrollY, [0, 300], [0, -40]);
 
+  // Parallax for intro images
+  const introImage1Y = useTransform(scrollY, [400, 1200], [0, -60]);
+  const introImage2Y = useTransform(scrollY, [400, 1200], [0, -30]);
+
+  // Parallax for colloque section
+  const colloqueY = useTransform(scrollY, [200, 800], [40, -40]);
+  const colloqueScale = useTransform(scrollY, [200, 600], [0.95, 1]);
+
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  // Memoize admin check to prevent re-render flash
+  const isAdmin = useMemo(() => {
+    if (!user) return false;
+    const role = user.role?.toString().toLowerCase().trim();
+    return role === "systemadmin" || role === "businessadmin";
+  }, [user]);
+
+  const adminPath = useMemo(() => {
+    if (!user) return "/auth";
+    const role = user.role?.toString().toLowerCase().trim();
+    if (role === "systemadmin") return "/admin/users";
+    if (role === "businessadmin") return "/admin/business/trees";
+    return "/garden";
+  }, [user]);
 
   const handlePackageClick = () => {
     if (user) {
@@ -434,6 +563,13 @@ export default function Home() {
 
   return (
     <div style={zoomWrapperStyle}>
+      {/* Scroll Progress Bar */}
+      <motion.div
+        className="scroll-progress"
+        initial={{ scaleX: 0 }}
+        style={{ scaleX: scrollYProgress }}
+      />
+
       <div className="mm-fluid-page min-h-screen bg-[#FBFFDF] text-[#333] font-sans selection:bg-[#FFFFA5] selection:text-[#1F302F]">
         {/* Tokens */}
         <style>{`
@@ -547,6 +683,48 @@ export default function Home() {
         }
         .glow-effect:hover::before {
           opacity: 1;
+        }
+        
+        /* 3D Card Effects */
+        .card-3d {
+          perspective: 1000px;
+          transform-style: preserve-3d;
+        }
+        .card-3d-inner {
+          transform-style: preserve-3d;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .card-3d-inner:hover {
+          box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25),
+                      0 0 40px rgba(255,255,165,0.15);
+        }
+        
+        /* Scroll Progress Bar */
+        .scroll-progress {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 3px;
+          background: linear-gradient(90deg, #FFFFA5, #D1DFB6, #FFFFA5);
+          transform-origin: 0%;
+          z-index: 9999;
+        }
+        
+        /* Stagger delay utilities */
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        
+        /* Enhanced section reveal */
+        .section-reveal {
+          opacity: 0;
+          transform: translateY(40px);
+          transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .section-reveal.revealed {
+          opacity: 1;
+          transform: translateY(0);
         }
       `}</style>
 
@@ -667,17 +845,30 @@ export default function Home() {
                 </motion.div>
               )}
 
-              {/* Quản lý vườn button */}
-              <Link
-                to="/garden"
+              {/* Quản lý vườn button - dynamic based on user role */}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  navigate(adminPath);
+                }}
                 className="absolute bottom-6 left-6 z-30 inline-flex items-center gap-2 px-5 py-3 md:px-6 md:py-3.5 rounded-full bg-[#FFFFA5] text-[#1F302F] font-bold shadow-lg hover:scale-105 hover:shadow-xl transition-all duration-300"
                 data-testid="garden-link"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                <svg className="w-5 h-5 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  {isAdmin ? (
+                    <>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <circle cx="12" cy="12" r="3" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} />
+                    </>
+                  ) : (
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                  )}
                 </svg>
-                Quản lý vườn & cây
-              </Link>
+                <span className="transition-opacity duration-200">
+                  {isAdmin ? "Quản lý hệ thống" : "Quản lý vườn & cây"}
+                </span>
+              </button>
             </div>
           </div>
         </section>
@@ -722,12 +913,21 @@ export default function Home() {
 
           <div className="mm-fluid-shell mx-auto max-w-[1150px] px-4 relative z-10">
             <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7 }}
-              className="rounded-[24px] md:rounded-[32px] p-8 md:p-12 md:min-h-[480px] flex flex-col md:flex-row gap-10 md:gap-14 items-center relative overflow-hidden"
+              initial={{ opacity: 0, y: 60, scale: 0.95 }}
+              whileInView={{ opacity: 1, y: 0, scale: 1 }}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{
+                duration: 0.8,
+                type: "spring",
+                stiffness: 80,
+                damping: 20
+              }}
+              className="rounded-[24px] md:rounded-[32px] p-8 md:p-12 md:min-h-[480px] flex flex-col md:flex-row gap-10 md:gap-14 items-center relative overflow-hidden card-3d-inner"
+              whileHover={{
+                boxShadow: "0 40px 80px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.4)"
+              }}
               style={{
+                y: colloqueY,
                 background: 'linear-gradient(135deg, rgba(209,223,182,0.95) 0%, rgba(209,223,182,1) 100%)',
                 boxShadow: '0 30px 60px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.3)'
               }}
@@ -823,7 +1023,12 @@ export default function Home() {
                 transition={{ duration: 0.7, delay: 0.2 }}
                 className="grid grid-cols-2 gap-4 md:gap-6"
               >
-                <div className="rounded-[16px] md:rounded-[20px] overflow-hidden aspect-[4/3] shadow-xl transform hover:scale-[1.02] transition-transform duration-500">
+                <motion.div
+                  style={{ y: introImage1Y }}
+                  className="rounded-[16px] md:rounded-[20px] overflow-hidden aspect-[4/3] shadow-xl"
+                  whileHover={{ scale: 1.03, boxShadow: "0 25px 50px rgba(0,0,0,0.2)" }}
+                  transition={{ duration: 0.4 }}
+                >
                   <SafeImage
                     srcs={[
                       "https://images.unsplash.com/photo-1604608672516-f1b9b1e5c2b8?auto=format&fit=crop&w=800&q=80",
@@ -833,8 +1038,13 @@ export default function Home() {
                     className="w-full h-full object-cover"
                     testId="intro-img-1"
                   />
-                </div>
-                <div className="rounded-[16px] md:rounded-[20px] overflow-hidden aspect-[4/3] shadow-xl transform hover:scale-[1.02] transition-transform duration-500 mt-6 md:mt-8">
+                </motion.div>
+                <motion.div
+                  style={{ y: introImage2Y }}
+                  className="rounded-[16px] md:rounded-[20px] overflow-hidden aspect-[4/3] shadow-xl mt-6 md:mt-8"
+                  whileHover={{ scale: 1.03, boxShadow: "0 25px 50px rgba(0,0,0,0.2)" }}
+                  transition={{ duration: 0.4 }}
+                >
                   <SafeImage
                     srcs={[
                       "https://images.unsplash.com/photo-1546548970-71785318a17b?auto=format&fit=crop&w=800&q=80",
@@ -844,7 +1054,7 @@ export default function Home() {
                     className="w-full h-full object-cover"
                     testId="intro-img-2"
                   />
-                </div>
+                </motion.div>
               </motion.div>
             </div>
           </div>
@@ -883,12 +1093,19 @@ export default function Home() {
               </p>
             </motion.div>
 
-            <div className="grid md:grid-cols-3 gap-8 md:gap-10">
+            <motion.div
+              className="grid md:grid-cols-3 gap-8 md:gap-10"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.2 }}
+            >
               {packagesLoading
                 ? /* Skeleton loading state */
                 [1, 2, 3].map((i) => (
-                  <div
+                  <motion.div
                     key={i}
+                    variants={cardVariants}
                     className="rounded-[24px] bg-white border border-[#1F302F]/10 p-8 h-[400px] animate-pulse"
                   >
                     <div className="h-8 bg-gray-200 rounded w-1/2 mb-4"></div>
@@ -898,7 +1115,7 @@ export default function Home() {
                       <div className="h-4 bg-gray-200 rounded"></div>
                       <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                     </div>
-                  </div>
+                  </motion.div>
                 ))
                 : packages
                   .filter(pkg => !pkg.isFree) // Loại bỏ gói miễn phí
@@ -906,11 +1123,18 @@ export default function Home() {
                     // Gói thứ 2 (index 1) sau khi filter luôn là "Khuyên dùng"
                     const isPopular = idx === 1;
                     return (
-                      <div
+                      <motion.div
                         key={pkg.id}
-                        className={`relative flex flex-col rounded-[24px] p-6 md:p-8 transition-all duration-300 hover:-translate-y-1 ${isPopular
+                        variants={cardVariants}
+                        whileHover={{
+                          boxShadow: isPopular
+                            ? "0 30px 60px rgba(31,48,47,0.35)"
+                            : "0 25px 50px rgba(0,0,0,0.15)"
+                        }}
+                        transition={{ duration: 0.2 }}
+                        className={`relative flex flex-col rounded-[24px] p-6 md:p-8 h-full cursor-pointer ${isPopular
                           ? "bg-[#1F302F] text-[#FBFFDF] shadow-[0_20px_40px_rgba(31,48,47,0.25)] ring-1 ring-[#1F302F]"
-                          : "bg-white border border-[#1F302F]/10 shadow-lg hover:shadow-xl text-[#1F302F]"
+                          : "bg-white border border-[#1F302F]/10 shadow-lg text-[#1F302F]"
                           }`}
                       >
                         {isPopular && (
@@ -932,20 +1156,19 @@ export default function Home() {
                             <span className="text-[clamp(32px,2.5vw,40px)] font-display font-bold">
                               {pkg.price}
                             </span>
-                            <span className="text-sm opacity-80">
-                              {pkg.unit}
+                            <span
+                              className={`text-sm ${isPopular
+                                ? "text-[#D1DFB6]"
+                                : "text-[#1F302F]/60"
+                                }`}
+                            >
+                              / tháng
                             </span>
                           </div>
-                          <p
-                            className={`mt-3 text-sm leading-relaxed ${isPopular ? "opacity-90" : "opacity-75"
-                              }`}
-                          >
-                            {pkg.desc}
-                          </p>
                         </div>
 
-                        <ul className="space-y-4 mb-8 flex-1">
-                          {pkg.features.map((feat, idx) => (
+                        <ul className="flex-1 space-y-3 mb-8">
+                          {pkg.features.slice(0, 5).map((feat, idx) => (
                             <li
                               key={idx}
                               className="flex items-start gap-3 text-sm"
@@ -979,13 +1202,12 @@ export default function Home() {
                         >
                           {pkg.cta}
                         </button>
-                      </div>
+                      </motion.div>
                     );
                   })}
-            </div>
+            </motion.div>
           </div>
         </section>
-        )
 
         {/* Always-on support */}
         <section
@@ -1094,33 +1316,35 @@ export default function Home() {
         <main id="main">{/* News */}</main>
 
         {/* Cookie banner */}
-        {!cookieAccepted && (
-          <div className="fixed bottom-3 left-3 right-3 md:left-auto md:right-6 z-[90] max-w-2xl bg-[#E6E7E0] text-[#333] rounded-xl shadow-lg p-4 md:p-5">
-            <div className="text-sm">
-              Trang này sử dụng cookie để cải thiện trải nghiệm của bạn. Tiếp
-              tục sử dụng đồng nghĩa với việc bạn đồng ý với chính sách của
-              chúng tôi.
-              <a href="#cookies" className="underline underline-offset-2 ml-1">
-                Tìm hiểu thêm
-              </a>
+        {
+          !cookieAccepted && (
+            <div className="fixed bottom-3 left-3 right-3 md:left-auto md:right-6 z-[90] max-w-2xl bg-[#E6E7E0] text-[#333] rounded-xl shadow-lg p-4 md:p-5">
+              <div className="text-sm">
+                Trang này sử dụng cookie để cải thiện trải nghiệm của bạn. Tiếp
+                tục sử dụng đồng nghĩa với việc bạn đồng ý với chính sách của
+                chúng tôi.
+                <a href="#cookies" className="underline underline-offset-2 ml-1">
+                  Tìm hiểu thêm
+                </a>
+              </div>
+              <div className="mt-3 flex gap-2 justify-end">
+                <button
+                  onClick={() => setCookieAccepted(true)}
+                  className="rounded-lg bg-[#1F302F] text-[#E6E7E0] px-4 py-2 text-sm font-medium"
+                >
+                  Đồng ý
+                </button>
+                <button
+                  onClick={() => setCookieAccepted(true)}
+                  className="rounded-lg border border-[#1F302F] text-[#1F302F] px-4 py-2 text-sm font-medium hover:bg-[#1F302F] hover:text-[#FBFFDF] transition"
+                >
+                  Từ chối
+                </button>
+              </div>
             </div>
-            <div className="mt-3 flex gap-2 justify-end">
-              <button
-                onClick={() => setCookieAccepted(true)}
-                className="rounded-lg bg-[#1F302F] text-[#E6E7E0] px-4 py-2 text-sm font-medium"
-              >
-                Đồng ý
-              </button>
-              <button
-                onClick={() => setCookieAccepted(true)}
-                className="rounded-lg border border-[#1F302F] text-[#1F302F] px-4 py-2 text-sm font-medium hover:bg-[#1F302F] hover:text-[#FBFFDF] transition"
-              >
-                Từ chối
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+          )
+        }
+      </div >
+    </div >
   );
 }

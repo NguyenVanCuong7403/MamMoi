@@ -275,7 +275,7 @@ export default function PricingPage() {
             yearlyPrice: planPrice * 12,
             popular: index === 1,
             features: features,
-            buttonText: index === 0 ? "Bắt đầu" : `Chọn ${plan.planName}`,
+            buttonText: index === 0 ? "Bắt đầu" : `Đăng ký ${plan.planName}`,
             buttonVariant: "default",
             maxGardens: plan.maxGardens,
             maxTreesPerGarden: plan.maxTreesPerGarden,
@@ -312,6 +312,10 @@ export default function PricingPage() {
   };
 
   const getPlanTier = (plan) => {
+    // Nếu plan là object rỗng hoặc không có id (gói Free), trả về tier 0
+    if (!plan || !plan.id) {
+      return 0;
+    }
     if (!plan.maxGardens && !plan.maxTreesPerGarden) {
       return 3;
     } else if (plan.maxGardens === 5) {
