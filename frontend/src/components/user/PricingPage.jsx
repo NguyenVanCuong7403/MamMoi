@@ -71,7 +71,9 @@ export default function PricingPage() {
                 if (Array.isArray(parsed) && parsed.length > 0) {
                   features.push(...parsed);
                 }
-              } catch { }
+              } catch (error) {
+                void error;
+              }
             }
             // Handle newline-separated string
             if (features.length === 0) {
@@ -344,23 +346,23 @@ export default function PricingPage() {
           <div className="mm-fluid-shell grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {loading
               ? // Loading skeleton
-              [1, 2, 3].map((i) => (
-                <Card key={i} className="bg-white animate-pulse">
-                  <CardContent className="p-6">
-                    <div className="h-6 bg-gray-200 rounded mb-4 w-1/2"></div>
-                    <div className="h-10 bg-gray-200 rounded mb-6 w-3/4"></div>
-                    <div className="space-y-3 mb-6">
-                      {[1, 2, 3, 4].map((j) => (
-                        <div
-                          key={j}
-                          className="h-4 bg-gray-200 rounded"
-                        ></div>
-                      ))}
-                    </div>
-                    <div className="h-10 bg-gray-200 rounded"></div>
-                  </CardContent>
-                </Card>
-              ))
+                [1, 2, 3].map((i) => (
+                  <Card key={i} className="bg-white animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="h-6 bg-gray-200 rounded mb-4 w-1/2"></div>
+                      <div className="h-10 bg-gray-200 rounded mb-6 w-3/4"></div>
+                      <div className="space-y-3 mb-6">
+                        {[1, 2, 3, 4].map((j) => (
+                          <div
+                            key={j}
+                            className="h-4 bg-gray-200 rounded"
+                          ></div>
+                        ))}
+                      </div>
+                      <div className="h-10 bg-gray-200 rounded"></div>
+                    </CardContent>
+                  </Card>
+                ))
               : plans.map((plan, index) => {
                   const currentIndex =
                     currentSubscription && plans
@@ -487,80 +489,10 @@ export default function PricingPage() {
                             Giá đã bao gồm thuế nếu có.
                           </p>
                         </div>
-
-                        <div className="mb-6">
-                          <div className="flex items-baseline flex-wrap">
-                            <span className="text-[clamp(28px,4vw,36px)] font-bold text-gray-900 mm-text-wrap-safe break-words">
-                              {formatPrice(plan.monthlyPrice)}
-                            </span>
-                            <span className="text-[clamp(12px,1.5vw,14px)] text-gray-600 ml-1 mm-text-wrap-safe break-words">
-                              ₫/tháng
-                            </span>
-                          </div>
-                          <p className="text-[clamp(12px,1.5vw,14px)] text-gray-500 mt-1 mm-text-wrap-safe break-words">
-                            ({formatPrice(plan.yearlyPrice)}₫/năm)
-                          </p>
-                        </div>
-
-                        <ul className="space-y-3 mb-6">
-                          {plan.features.length > 0 ? (
-                            plan.features.map((feature, fIndex) => (
-                              <li key={fIndex} className="flex items-start gap-2">
-                                <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                                <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
-                                  {feature}
-                                </span>
-                              </li>
-                            ))
-                          ) : (
-                            <>
-                              <li className="flex items-start gap-2">
-                                <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                                <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
-                                  {plan.maxGardens
-                                    ? `Tối đa ${plan.maxGardens} vườn`
-                                    : "Không giới hạn vườn"}
-                                </span>
-                              </li>
-                              <li className="flex items-start gap-2">
-                                <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                                <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
-                                  {plan.maxTreesPerGarden
-                                    ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
-                                    : "Không giới hạn cây"}
-                                </span>
-                              </li>
-                            </>
-                          )}
-                        </ul>
-                      </div>
-
-                      <div className="mt-auto">
-                        <Button
-                          className={`w-full ${plan.popular
-                            ? "bg-gray-900 hover:bg-gray-800"
-                            : "bg-gray-900 hover:bg-gray-800"
-                            } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                          onClick={() => handleSelectPlan(plan)}
-                          disabled={isDisabled}
-                        >
-                          {isCurrentPlan
-                            ? "Gói hiện tại"
-                            : isDisabled
-                              ? "Không khả dụng"
-                              : plan.buttonText}
-                        </Button>
-
-                        <p className="text-xs text-gray-500 text-center mt-3">
-                          {isDisabled && !isCurrentPlan
-                            ? "Bạn chỉ có thể nâng cấp lên gói cao hơn."
-                            : "Giá đã bao gồm thuế nếu có."}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
           </div>
         </div>
       </div>
@@ -588,39 +520,42 @@ export default function PricingPage() {
       <div className="mm-fluid-shell container mx-auto px-4 py-12">
         <div className="mm-fluid-shell max-w-6xl mx-auto">
           <Card className="bg-white">
-            <CardContent className="p-6 flex flex-col md:flex-row items-center gap-6">
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                  Thông tin & Tư vấn
-                </h2>
-                <p className="text-gray-600 mb-2">
-                  Cần trợ giúp chọn gói phù hợp cho vườn của bạn? Chúng tôi hỗ
-                  trợ tư vấn miễn phí qua email hoặc gọi điện. Đội ngũ sẽ phản
-                  hồi trong vòng 24 giờ làm việc.
-                </p>
-                <p className="text-sm text-gray-500">
-                  Email:{" "}
-                  <a className="text-emerald-600">support@mamnoi.example</a>
-                  &nbsp;•&nbsp; Hotline:{" "}
-                  <span className="font-medium">0123 456 789</span>
-                </p>
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row items-center gap-6">
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                    Thông tin & Tư vấn
+                  </h2>
+                  <p className="text-gray-600 mb-2">
+                    Cần trợ giúp chọn gói phù hợp cho vườn của bạn? Chúng tôi hỗ
+                    trợ tư vấn miễn phí qua email hoặc gọi điện. Đội ngũ sẽ phản
+                    hồi trong vòng 24 giờ làm việc.
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    Email:{" "}
+                    <a className="text-emerald-600">support@mamnoi.example</a>
+                    &nbsp;•&nbsp; Hotline:{" "}
+                    <span className="font-medium">0123 456 789</span>
+                  </p>
+                </div>
+                <div>
+                  <Button
+                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    onClick={() =>
+                      (window.location.href =
+                        "mailto:support@mamnoi.example?subject=Y%C3%AAn%20c%E1%BA%A7u%20t%C6%B0%20v%E1%BA%A5n%20g%C3%B3i%20ch%E1%BB%8Dn")
+                    }
+                  >
+                    Liên hệ ngay
+                  </Button>
+                </div>
               </div>
-              <div>
-                <Button
-                  className="bg-emerald-600 text-white hover:bg-emerald-700"
-                  onClick={() =>
-                    (window.location.href =
-                      "mailto:support@mamnoi.example?subject=Y%C3%AAn%20c%E1%BA%A7u%20t%C6%B0%20v%E1%BA%A5n%20g%C3%B3i%20ch%E1%BB%8Dn")
-                  }
-                >
-                  Liên hệ ngay
-                </Button>
-              </div>
-            </div>
-            <p className="mm-fluid-text text-xs text-gray-500 mt-4">
-              Bằng việc đăng ký bạn đồng ý với Điều khoản & Chính sách bảo mật.
-            </p>
-          </div>
+              <p className="mm-fluid-text text-xs text-gray-500 mt-4">
+                Bằng việc đăng ký bạn đồng ý với Điều khoản & Chính sách bảo
+                mật.
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Promo Box */}
           <div className="mm-fluid-shell max-w-3xl mx-auto mt-8">
@@ -674,8 +609,9 @@ export default function PricingPage() {
                       {faq.question}
                     </span>
                     <ChevronDown
-                      className={`w-5 h-5 text-gray-500 transition-transform ${expandedFaq === index ? "transform rotate-180" : ""
-                        }`}
+                      className={`w-5 h-5 text-gray-500 transition-transform ${
+                        expandedFaq === index ? "transform rotate-180" : ""
+                      }`}
                     />
                   </button>
                   {expandedFaq === index && (
