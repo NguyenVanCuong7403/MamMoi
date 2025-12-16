@@ -4370,11 +4370,14 @@ export default function TreeDetail() {
 
   function startFieldEdit(fieldKey, initialValue) {
     if (isStopped) return; // nếu cây đã dừng hoạt động thì không cho sửa
+
+    // Không cho phép sửa mã cây
+    if (fieldKey === "code") return;
+
     if (
       plantInfoLocked &&
       (fieldKey === "plantedAt" ||
         fieldKey === "preNurseryAgeMonths" ||
-        fieldKey === "code" ||
         fieldKey === "name")
     )
       return;
@@ -4405,7 +4408,6 @@ export default function TreeDetail() {
       plantInfoLocked &&
       (editingField === "plantedAt" ||
         editingField === "preNurseryAgeMonths" ||
-        editingField === "code" ||
         editingField === "name")
     ) {
       setFieldError(
@@ -4414,17 +4416,12 @@ export default function TreeDetail() {
       return;
     }
 
-    // === 1. Đổi MÃ CÂY (codeKey) ===
+    // === 1. Đổi MÃ CÂY (codeKey) - DISABLED ===
     if (editingField === "code") {
-      const nextCode = (fieldDraft || "").trim();
-      if (!nextCode) {
-        setFieldError("Mã cây không được để trống.");
-        return;
-      }
-      if (nextCode === codeKey) {
-        cancelFieldEdit();
-        return;
-      }
+      // Không cho phép sửa mã cây
+      setFieldError("Không thể sửa mã cây.");
+      cancelFieldEdit();
+      return;
 
       // migrate ảnh + ghi chú localStorage
       const oldImg = imageRegistry.get(codeKey);
@@ -4475,6 +4472,15 @@ export default function TreeDetail() {
         setFieldError("Vui lòng chọn ngày trồng hợp lệ.");
         return;
       }
+      // Kiểm tra ngày trồng không được trong tương lai
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(next);
+      selectedDate.setHours(0, 0, 0, 0);
+      if (selectedDate > today) {
+        setFieldError("Ngày trồng không được chọn trong tương lai.");
+        return;
+      }
       const nextMeta = { ...meta, plantedAt: next };
       setMeta(nextMeta);
       syncTreePatch(codeKey, {
@@ -4501,6 +4507,10 @@ export default function TreeDetail() {
       let n = parseInt(fieldDraft || "0", 10);
       if (!Number.isFinite(n) || n < 0) {
         setFieldError("Vui lòng nhập số tháng hợp lệ (>= 0).");
+        return;
+      }
+      if (n > 240) {
+        setFieldError("Tuổi trước khi trồng không được vượt quá 240 tháng.");
         return;
       }
       const nextMeta = { ...meta, preNurseryAgeMonths: n };
@@ -6123,11 +6133,11 @@ export default function TreeDetail() {
                       editable={false}
                     />
 
-                    {/* 2. MÃ CÂY — cho sửa bằng bút */}
+                    {/* 2. MÃ CÂY — KHÔNG cho sửa */}
                     <Field
                       label="Mã cây"
                       value={`#${codeKey}`}
-                      editable
+                      editable={false}
                       disabled={isStopped || plantInfoLocked}
                       isEditing={editingField === "code"}
                       inlineBadge={
@@ -6475,6 +6485,7 @@ export default function TreeDetail() {
                           rows={10}
                           value={phenFieldDraft}
                           onChange={(e) => setPhenFieldDraft(e.target.value)}
+                          maxLength={100}
                           disabled={
                             isStopped ||
                             (editingPhenField === "flower" && !canEditFlower) ||

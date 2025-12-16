@@ -1707,7 +1707,7 @@ BEGIN
     BEGIN
         INSERT INTO [dbo].[Notifications] ([UserID], [TreeID], [Title], [Message], [NotificationType], [Priority], [Category], [ActionUrl], [RequiresAction], [Status], [IsRead])
         VALUES (@Farmer1ID, @Tree1ID, N'Nhắc tưới nước - Cây Xoài 1', N'Đã đến giờ tưới nước cho Cây Xoài 1. Lượng nước khuyến nghị: 2 lít.', 
-                N'Watering', N'Normal', N'CareReminder', N'/trees/' + CAST(@Tree1ID AS NVARCHAR(10)), 1, N'Sent', 0);
+                N'Watering', N'Normal', N'CareReminder', N'/tree_detail/' + CAST(@Tree1ID AS NVARCHAR(10)), 1, N'Sent', 0);
         PRINT '  - Inserted: Notification - Nhắc tưới nước'
     END
 END
@@ -1731,7 +1731,7 @@ BEGIN
     BEGIN
         INSERT INTO [dbo].[Notifications] ([UserID], [TreeID], [Title], [Message], [NotificationType], [Priority], [Category], [ActionUrl], [RequiresAction], [Status], [IsRead])
         VALUES (@Farmer1ID, @Tree2ID, N'Lịch bón phân - Cây Cam 1', N'Cây Cam 1 cần được bón phân NPK 16-16-8. Lượng phân khuyến nghị: 100g.', 
-                N'Fertilizing', N'Normal', N'CareReminder', N'/trees/' + CAST(@Tree2ID AS NVARCHAR(10)), 1, N'Sent', 0);
+                N'Fertilizing', N'Normal', N'CareReminder', N'/tree_detail/' + CAST(@Tree2ID AS NVARCHAR(10)), 1, N'Sent', 0);
         PRINT '  - Inserted: Notification - Nhắc bón phân'
     END
 END
@@ -1758,7 +1758,7 @@ BEGIN
         BEGIN
             INSERT INTO [dbo].[Notifications] ([UserID], [TreeID], [Title], [Message], [NotificationType], [Priority], [Category], [ActionUrl], [RequiresAction], [Status], [IsRead])
             VALUES (@Farmer2ID, @Tree4ID, N'Kiểm tra sức khỏe định kỳ', N'Đã 30 ngày kể từ lần kiểm tra sức khỏe cuối. Hãy chụp ảnh và cập nhật tình trạng cây.', 
-                    N'HealthCheck', N'Normal', N'CareReminder', N'/trees/' + CAST(@Tree4ID AS NVARCHAR(10)) + '/health', 1, N'Sent', 0);
+                    N'HealthCheck', N'Normal', N'CareReminder', N'/tree_detail/' + CAST(@Tree4ID AS NVARCHAR(10)) + '/health', 1, N'Sent', 0);
             PRINT '  - Inserted: Notification - Kiểm tra sức khỏe'
         END
     END
@@ -2022,8 +2022,9 @@ PRINT '  - Farmer 2: farmer2@mammoi.com / Farmer2@123'
 PRINT '  - Farmer 3: farmer3@mammoi.com / Farmer3@123'
 PRINT ''
 GO
-
--- {
---   "email": "systemadmin@mammoi.com",
---   "password": "SystemAdmin@123"
--- }
+-- ===== AICONSULTATIONS =====
+PRINT 'Inserting AIConsultations...'
+INSERT INTO [dbo].[AIConsultations] ([UserID], [TreeID], [PromptInput], [CreatedAt])
+VALUES (3, 1, N'Cây xoài của tôi bị vàng lá, tôi nên làm gì?', '2025-01-15 10:30:00');
+PRINT '  - Inserted 1 AI consultation record'
+GO

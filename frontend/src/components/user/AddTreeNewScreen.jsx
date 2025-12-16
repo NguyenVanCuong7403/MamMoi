@@ -1601,6 +1601,13 @@ export default function AddTreeNewScreen() {
         e.plantDate = "Ngày trồng không được chọn trong tương lai.";
       }
     }
+    // Kiểm tra tuổi trước khi trồng
+    if (preAge) {
+      const ageNum = parseInt(preAge, 10);
+      if (ageNum > 240) {
+        e.preAge = "Tuổi trước khi trồng không được vượt quá 240 tháng.";
+      }
+    }
     if (!gardenSoilId) e.soil = REQUIRED_MSG.soil;
     if (!phaseOverride) e.phaseOverride = REQUIRED_MSG.phaseOverride;
     // Kiểm tra xem loại cây có giai đoạn chưa
@@ -1639,6 +1646,8 @@ export default function AddTreeNewScreen() {
     const e = validateBasic();
     if (Object.keys(e).length) {
       setErrors(e);
+      // Scroll to top to show errors
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
     if (!currentGarden?.id) {
@@ -1962,11 +1971,10 @@ export default function AddTreeNewScreen() {
                           onKeyDown={handleTextInputKeyDown}
                           className={`rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400
     focus:ring-emerald-500/40 focus:border-emerald-500
-    ${
-      errors.code
-        ? "border-red-500 focus:border-red-500 focus:ring-red-500/40"
-        : ""
-    }`}
+    ${errors.code
+                              ? "border-red-500 focus:border-red-500 focus:ring-red-500/40"
+                              : ""
+                            }`}
                         />
                       </div>
                       {errors.code && (
@@ -2015,8 +2023,8 @@ export default function AddTreeNewScreen() {
                           onChange={(val) => {
                             const opts = treeTypeId
                               ? (varietiesByType[String(treeTypeId)] || []).map(
-                                  (v) => ({ value: v.value, label: v.label })
-                                )
+                                (v) => ({ value: v.value, label: v.label })
+                              )
                               : [];
 
                             // if the select returns an object like { value, label }
@@ -2051,8 +2059,8 @@ export default function AddTreeNewScreen() {
                           options={
                             treeTypeId
                               ? (varietiesByType[String(treeTypeId)] || []).map(
-                                  (v) => ({ value: v.value, label: v.label })
-                                )
+                                (v) => ({ value: v.value, label: v.label })
+                              )
                               : []
                           }
                           placeholder={
@@ -2076,16 +2084,31 @@ export default function AddTreeNewScreen() {
                         <Input
                           type="number"
                           min={0}
+                          max={240}
                           value={preAge}
-                          onChange={(e) => setPreAge(e.target.value)}
+                          onChange={(e) => {
+                            setPreAge(e.target.value);
+                            // Clear error when user changes value
+                            if (errors.preAge) {
+                              setErrors((prev) => ({ ...prev, preAge: undefined }));
+                            }
+                          }}
                           onKeyDown={handleTextInputKeyDown} // ✅ THÊM
-                          className="rounded-xl h-11 pr-12 w-full min-w-0 bg-white border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500"
+                          className={
+                            "rounded-xl h-11 pr-12 w-full min-w-0 bg-white " +
+                            (errors.preAge
+                              ? "border-red-500 focus:ring-red-500/40 focus:border-red-500"
+                              : "border-neutral-300 focus:ring-emerald-500/40 focus:border-emerald-500")
+                          }
                         />
 
                         <span className="absolute right-3 top-2.5 text-sm text-neutral-600 pointer-events-none">
                           tháng
                         </span>
                       </div>
+                      {errors.preAge && (
+                        <p className="text-xs text-red-500">{errors.preAge}</p>
+                      )}
                     </div>
 
                     {/* 5. Ngày trồng */}
@@ -2142,6 +2165,7 @@ export default function AddTreeNewScreen() {
                             }
                           }}
                           onKeyDown={handleTextInputKeyDown}
+                          maxLength={100}
                           placeholder="VD: lá xanh tốt, vàng nhẹ, sâu…"
                           className="rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
                         />
@@ -2167,6 +2191,7 @@ export default function AddTreeNewScreen() {
                             }
                           }}
                           onKeyDown={handleTextInputKeyDown}
+                          maxLength={100}
                           placeholder="Tình trạng cành, ..."
                           className="rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate"
                         />
@@ -2194,7 +2219,7 @@ export default function AddTreeNewScreen() {
                                 ? selected.customLabel
                                   ? `${selected.customLabel} - ${selected.soilName}`
                                   : selected.soilName ||
-                                    `Đất #${selected.gardenSoilId}`
+                                  `Đất #${selected.gardenSoilId}`
                                 : ""
                             );
                           }}
@@ -2249,36 +2274,34 @@ export default function AddTreeNewScreen() {
                             {!treeTypeId
                               ? "— Chọn loại cây trước —"
                               : stagesByType.length === 0
-                              ? "— Loại cây này chưa có giai đoạn —"
-                              : "— Hãy chọn giai đoạn —"}
+                                ? "— Loại cây này chưa có giai đoạn —"
+                                : "— Hãy chọn giai đoạn —"}
                           </option>
                           {stagesByType.length > 0
                             ? stagesByType
-                                .sort(
-                                  (a, b) =>
-                                    (a.stageOrder || 0) - (b.stageOrder || 0)
-                                )
-                                .map((stage, index) => {
-                                  // Map stage theo index trong PHASES5
-                                  const phaseName =
-                                    index < PHASES5.length
-                                      ? PHASES5[index]
-                                      : stage.stageName ||
-                                        `Giai đoạn ${stage.stageOrder}`;
-                                  return (
-                                    <option
-                                      key={stage.stageId}
-                                      value={phaseName}
-                                    >
-                                      {phaseName}
-                                    </option>
-                                  );
-                                })
+                              .sort(
+                                (a, b) =>
+                                  (a.stageOrder || 0) - (b.stageOrder || 0)
+                              )
+                              .map((stage) => {
+                                // Use the real stage name from database
+                                const phaseName =
+                                  stage.stageName ||
+                                  `Giai đoạn ${stage.stageOrder || ''}`;
+                                return (
+                                  <option
+                                    key={stage.stageId}
+                                    value={phaseName}
+                                  >
+                                    {phaseName}
+                                  </option>
+                                );
+                              })
                             : PHASES5.map((p) => (
-                                <option key={p} value={p}>
-                                  {p}
-                                </option>
-                              ))}
+                              <option key={p} value={p}>
+                                {p}
+                              </option>
+                            ))}
                         </select>
                       </div>
                       {errors.phaseOverride && (
@@ -2309,11 +2332,11 @@ export default function AddTreeNewScreen() {
                           }}
                           onKeyDown={handleTextInputKeyDown}
                           disabled={!canEditFlower}
+                          maxLength={100}
                           placeholder="Mô tả tình trạng, tỉ lệ ra hoa, ..."
                           className={`rounded-xl h-11 w-full min-w-0 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
-      border-neutral-300 ${
-        !canEditFlower ? "opacity-60 cursor-not-allowed" : ""
-      }`}
+      border-neutral-300 ${!canEditFlower ? "opacity-60 cursor-not-allowed" : ""
+                            }`}
                         />
                       </div>
                     </div>
@@ -2339,11 +2362,11 @@ export default function AddTreeNewScreen() {
                           }}
                           onKeyDown={handleTextInputKeyDown}
                           disabled={!canEditFruit}
+                          maxLength={100}
                           placeholder="Số lượng, kích thước, tình trạng, ..."
                           className={`rounded-xl h-11 w-full min-w-0 bg-white placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 truncate
-      border-neutral-300 ${
-        !canEditFruit ? "opacity-60 cursor-not-allowed" : ""
-      }`}
+      border-neutral-300 ${!canEditFruit ? "opacity-60 cursor-not-allowed" : ""
+                            }`}
                         />
                       </div>
                     </div>
@@ -2861,8 +2884,8 @@ function StepDot({ active, done, label }) {
           (done
             ? "bg-emerald-600 border-emerald-600 text-white"
             : active
-            ? "bg-emerald-50 border-emerald-300 text-emerald-700"
-            : "bg-white/70 border-white/60 text-neutral-500")
+              ? "bg-emerald-50 border-emerald-300 text-emerald-700"
+              : "bg-white/70 border-white/60 text-neutral-500")
         }
       >
         <Sprout
@@ -2878,8 +2901,8 @@ function StepDot({ active, done, label }) {
           (done
             ? "text-white"
             : active
-            ? "text-emerald-100"
-            : "text-emerald-200")
+              ? "text-emerald-100"
+              : "text-emerald-200")
         }
       >
         {label}

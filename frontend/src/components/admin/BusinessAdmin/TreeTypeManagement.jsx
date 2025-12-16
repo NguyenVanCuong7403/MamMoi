@@ -1671,14 +1671,43 @@ export default function TreeTypeManagement() {
   };
 
   const handleToggleStatus = async (tree) => {
+    // Only send IsActive to avoid backend issues with other fields
     const updated = await updateTreeType(tree.TreeTypeID, {
       IsActive: !tree.IsActive,
     });
-    setTrees((prev) =>
-      prev.map((item) =>
-        item.TreeTypeID === updated.TreeTypeID ? updated : item
-      )
-    );
+
+    // Fetch varieties again to ensure count is accurate
+    try {
+      const varietiesResponse =
+        await AdminTreeRepository.getVarietiesByTreeTypeId(tree.TreeTypeID);
+      const varieties = Array.isArray(varietiesResponse.data)
+        ? varietiesResponse.data
+        : Array.isArray(varietiesResponse)
+        ? varietiesResponse
+        : [];
+
+      const updatedWithVarieties = {
+        ...updated,
+        Varieties: varieties.map(mapVarietyFromApi),
+      };
+
+      setTrees((prev) =>
+        prev.map((item) =>
+          item.TreeTypeID === updatedWithVarieties.TreeTypeID
+            ? updatedWithVarieties
+            : item
+        )
+      );
+    } catch (error) {
+      console.warn("Failed to fetch varieties after status toggle:", error);
+      // If fetching varieties fails, still update with what we have
+      setTrees((prev) =>
+        prev.map((item) =>
+          item.TreeTypeID === updated.TreeTypeID ? updated : item
+        )
+      );
+    }
+
     // Dispatch event để PlantDetail đồng bộ ảnh
     window.dispatchEvent(
       new CustomEvent("mm:treetype:updated", {
@@ -2175,22 +2204,33 @@ export default function TreeTypeManagement() {
                       render={({ field, fieldState }) => (
                         <FormItem>
                           <FormLabel>Loại đất phù hợp</FormLabel>
-                          <FormControl>
-                            <SearchableSelect
-                              value={field.value}
-                              onChange={field.onChange}
-                              options={soils.map((s) => ({
-                                value: s.SoilMasterID,
-                                label: s.SoilName,
-                              }))}
-                              placeholder="Chọn loại đất"
-                              error={
-                                form.formState.isSubmitted && fieldState.error
-                                  ? fieldState.error.message
-                                  : undefined
-                              }
-                            />
-                          </FormControl>
+                          <Select
+                            onValueChange={field.onChange}
+                            value={field.value}
+                          >
+                            <FormControl>
+                              <SelectTrigger
+                                className={cn(
+                                  "h-12 w-full",
+                                  form.formState.isSubmitted &&
+                                    fieldState.error &&
+                                    "border-red-500 focus-visible:ring-red-500"
+                                )}
+                              >
+                                <SelectValue placeholder="Chọn loại đất" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {soils.map((soil) => (
+                                <SelectItem
+                                  key={soil.SoilMasterID}
+                                  value={soil.SoilMasterID}
+                                >
+                                  {soil.SoilName}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -2324,23 +2364,41 @@ export default function TreeTypeManagement() {
                               {fieldName === "WindTolerance" &&
                                 "Khả năng chịu gió mạnh"}
                             </FormLabel>
-                            <FormControl>
-                              <SearchableSelect
-                                value={field.value || ""}
-                                onChange={field.onChange}
-                                options={toleranceLevels.map((opt) => ({
-                                  value: opt.value,
-                                  label: opt.label,
-                                }))}
-                                placeholder="Chọn mức độ"
-                                error={
-                                  form.formState.isSubmitted &&
-                                  form.formState.errors[fieldName]
-                                    ? form.formState.errors[fieldName].message
-                                    : undefined
-                                }
-                              />
-                            </FormControl>
+                            <Select
+                              onValueChange={field.onChange}
+                              value={field.value || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger
+                                  className={cn(
+                                    "h-12",
+                                    field.value &&
+                                      toleranceLevels.find(
+                                        (t) => t.value === field.value
+                                      )?.color,
+                                    form.formState.isSubmitted &&
+                                      form.formState.errors[fieldName] &&
+                                      "border-red-500 focus-visible:ring-red-500"
+                                  )}
+                                >
+                                  <SelectValue placeholder="Chọn mức độ" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {toleranceLevels.map((option) => (
+                                  <SelectItem
+                                    key={option.value}
+                                    value={option.value}
+                                    className={cn(
+                                      "focus:bg-opacity-50",
+                                      option.color
+                                    )}
+                                  >
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -2603,9 +2661,9 @@ export default function TreeTypeManagement() {
                                               )}
                                             </div>
                                             <div>
-                                              <SearchableSelect
+                                              <Select
                                                 value={pest.severity || ""}
-                                                onChange={(value) => {
+                                                onValueChange={(value) => {
                                                   const currentValue =
                                                     Array.isArray(field.value)
                                                       ? field.value
@@ -2619,22 +2677,43 @@ export default function TreeTypeManagement() {
                                                   };
                                                   field.onChange(newPests);
                                                 }}
-                                                options={[
-                                                  {
-                                                    value: "High",
-                                                    label: "Cao",
-                                                  },
-                                                  {
-                                                    value: "Medium",
-                                                    label: "Trung bình",
-                                                  },
-                                                  {
-                                                    value: "Low",
-                                                    label: "Thấp",
-                                                  },
-                                                ]}
-                                                placeholder="Chọn mức độ"
-                                              />
+                                              >
+                                                <SelectTrigger
+                                                  className={cn(
+                                                    "h-9",
+                                                    severityError &&
+                                                      "border-red-500 focus-visible:ring-red-500",
+                                                    severityColor &&
+                                                      cn(
+                                                        severityColor.bg,
+                                                        severityColor.text,
+                                                        severityColor.border
+                                                      )
+                                                  )}
+                                                >
+                                                  <SelectValue placeholder="Chọn mức độ" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                  <SelectItem
+                                                    value="High"
+                                                    className="text-red-700 focus:bg-red-50"
+                                                  >
+                                                    Cao
+                                                  </SelectItem>
+                                                  <SelectItem
+                                                    value="Medium"
+                                                    className="text-orange-700 focus:bg-orange-50"
+                                                  >
+                                                    Trung bình
+                                                  </SelectItem>
+                                                  <SelectItem
+                                                    value="Low"
+                                                    className="text-yellow-700 focus:bg-yellow-50"
+                                                  >
+                                                    Thấp
+                                                  </SelectItem>
+                                                </SelectContent>
+                                              </Select>
                                               {severityError && (
                                                 <p className="text-xs text-red-600 mt-1">
                                                   {severityError.message}

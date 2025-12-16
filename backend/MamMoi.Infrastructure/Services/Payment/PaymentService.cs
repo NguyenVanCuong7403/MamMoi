@@ -49,6 +49,9 @@ public class PaymentService : IPaymentService
     /// </summary>
     public async Task<PaymentHistoryPagedDto> GetPaymentHistoryAsync(int userId, int page = 1, int pageSize = 10)
     {
+        // Check and expire old pending payments first
+        await CheckAndExpirePendingPaymentsAsync(userId);
+
         // Validate pagination parameters
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 10;
@@ -88,6 +91,9 @@ public class PaymentService : IPaymentService
     /// </summary>
     public async Task<List<PaymentHistoryDto>> GetAllPaymentHistoryAsync(int userId)
     {
+        // First, check and update any expired pending payments
+        await CheckAndExpirePendingPaymentsAsync(userId);
+
         var payments = await _context.Payments
             .Where(p => p.UserId == userId)
             .Include(p => p.Subscription)
@@ -98,6 +104,51 @@ public class PaymentService : IPaymentService
         return payments
             .Select(MapToPaymentHistoryDto)
             .ToList();
+    }
+
+    /// <summary>
+    /// Check and expire pending payments that are older than 15 minutes
+    /// </summary>
+    private async Task CheckAndExpirePendingPaymentsAsync(int userId)
+    {
+        try
+        {
+            var expirationTime = DateTime.UtcNow.AddMinutes(-15);
+
+            // Find all pending payments older than 15 minutes
+            var expiredPayments = await _context.Payments
+                .Include(p => p.Subscription)
+                .Where(p => p.UserId == userId 
+                    && p.TransactionStatus == "Pending" 
+                    && p.CreatedAt < expirationTime)
+                .ToListAsync();
+
+            if (expiredPayments.Any())
+            {
+                _logger.LogInformation("Found {Count} expired pending payments for user {UserId}", 
+                    expiredPayments.Count, userId);
+
+                foreach (var payment in expiredPayments)
+                {
+                    payment.TransactionStatus = "Failed";
+                    
+                    if (payment.Subscription != null)
+                    {
+                        payment.Subscription.Status = "Cancelled";
+                    }
+
+                    _logger.LogInformation("Expired payment {OrderCode} marked as Failed", 
+                        payment.InvoiceNumber);
+                }
+
+                await _context.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking expired payments for user {UserId}", userId);
+            // Don't throw - continue with returning payment history even if expiration check fails
+        }
     }
 
     /// <summary>
@@ -128,6 +179,9 @@ public class PaymentService : IPaymentService
         int page = 1,
         int pageSize = 10)
     {
+        // Check and expire old pending payments first
+        await CheckAndExpirePendingPaymentsAsync(userId);
+
         // Validate pagination
         if (page < 1) page = 1;
         if (pageSize < 1) pageSize = 10;

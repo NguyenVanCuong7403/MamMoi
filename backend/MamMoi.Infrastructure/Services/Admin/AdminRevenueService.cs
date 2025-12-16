@@ -220,6 +220,9 @@ public class AdminRevenueService : IAdminRevenueService
         int? userId = null,
         string? transactionStatus = null)
     {
+        // Check and expire old pending payments first
+        await CheckAndExpireAllPendingPaymentsAsync();
+
         var query = _dbContext.Payments
             .Include(p => p.User)
             .Include(p => p.Subscription)
@@ -270,6 +273,50 @@ public class AdminRevenueService : IAdminRevenueService
             .ToListAsync();
 
         return (payments, totalCount);
+    }
+
+    /// <summary>
+    /// Check and expire all pending payments that are older than 15 minutes (for admin endpoints)
+    /// </summary>
+    private async Task CheckAndExpireAllPendingPaymentsAsync()
+    {
+        try
+        {
+            var expirationTime = DateTime.UtcNow.AddMinutes(-15);
+
+            // Find all pending payments older than 15 minutes across all users
+            var expiredPayments = await _dbContext.Payments
+                .Include(p => p.Subscription)
+                .Where(p => p.TransactionStatus == "Pending" 
+                    && p.CreatedAt < expirationTime)
+                .ToListAsync();
+
+            if (expiredPayments.Any())
+            {
+                _logger.LogInformation("Admin: Found {Count} expired pending payments", 
+                    expiredPayments.Count);
+
+                foreach (var payment in expiredPayments)
+                {
+                    payment.TransactionStatus = "Failed";
+                    
+                    if (payment.Subscription != null)
+                    {
+                        payment.Subscription.Status = "Cancelled";
+                    }
+
+                    _logger.LogInformation("Admin: Expired payment {OrderCode} marked as Failed", 
+                        payment.InvoiceNumber);
+                }
+
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking expired payments in admin view");
+            // Don't throw - continue with returning payment list even if expiration check fails
+        }
     }
 }
 

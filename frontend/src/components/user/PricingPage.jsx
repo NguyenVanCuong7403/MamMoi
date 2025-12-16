@@ -71,7 +71,7 @@ export default function PricingPage() {
                 if (Array.isArray(parsed) && parsed.length > 0) {
                   features.push(...parsed);
                 }
-              } catch {}
+              } catch { }
             }
             // Handle newline-separated string
             if (features.length === 0) {
@@ -131,7 +131,39 @@ export default function PricingPage() {
     setExpandedFaq(expandedFaq === index ? null : index);
   };
 
+  // Helper function to get plan tier (higher number = higher tier)
+  const getPlanTier = (plan) => {
+    // Determine tier based on maxGardens and maxTreesPerGarden
+    if (!plan.maxGardens && !plan.maxTreesPerGarden) {
+      return 3; // Unlimited plan (highest tier)
+    } else if (plan.maxGardens === 5) {
+      return 2; // Medium tier (5 gardens)
+    } else if (plan.maxGardens === 1) {
+      return 1; // Lowest tier (1 garden)
+    }
+    // Fallback: use maxGardens value
+    return plan.maxGardens || 0;
+  };
+
+  // Helper function to check if a plan should be disabled
+  const isPlanDisabled = (plan) => {
+    if (!currentSubscription) return false;
+
+    const currentPlanTier = getPlanTier(
+      plans.find((p) => p.id === currentSubscription.planId) || {}
+    );
+    const planTier = getPlanTier(plan);
+
+    // Disable if it's the current plan or a lower tier
+    return planTier <= currentPlanTier;
+  };
+
   const handleSelectPlan = (plan) => {
+    // Check if plan is disabled
+    if (isPlanDisabled(plan)) {
+      return; // Do nothing if plan is disabled
+    }
+
     // Navigate to checkout with plan ID
     // PricingPage shows monthlyPrice as the main price
     navigate("/checkout", {
@@ -312,23 +344,23 @@ export default function PricingPage() {
           <div className="mm-fluid-shell grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
             {loading
               ? // Loading skeleton
-                [1, 2, 3].map((i) => (
-                  <Card key={i} className="bg-white animate-pulse">
-                    <CardContent className="p-6">
-                      <div className="h-6 bg-gray-200 rounded mb-4 w-1/2"></div>
-                      <div className="h-10 bg-gray-200 rounded mb-6 w-3/4"></div>
-                      <div className="space-y-3 mb-6">
-                        {[1, 2, 3, 4].map((j) => (
-                          <div
-                            key={j}
-                            className="h-4 bg-gray-200 rounded"
-                          ></div>
-                        ))}
-                      </div>
-                      <div className="h-10 bg-gray-200 rounded"></div>
-                    </CardContent>
-                  </Card>
-                ))
+              [1, 2, 3].map((i) => (
+                <Card key={i} className="bg-white animate-pulse">
+                  <CardContent className="p-6">
+                    <div className="h-6 bg-gray-200 rounded mb-4 w-1/2"></div>
+                    <div className="h-10 bg-gray-200 rounded mb-6 w-3/4"></div>
+                    <div className="space-y-3 mb-6">
+                      {[1, 2, 3, 4].map((j) => (
+                        <div
+                          key={j}
+                          className="h-4 bg-gray-200 rounded"
+                        ></div>
+                      ))}
+                    </div>
+                    <div className="h-10 bg-gray-200 rounded"></div>
+                  </CardContent>
+                </Card>
+              ))
               : plans.map((plan, index) => {
                   const currentIndex =
                     currentSubscription && plans
@@ -455,10 +487,80 @@ export default function PricingPage() {
                             Giá đã bao gồm thuế nếu có.
                           </p>
                         </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+
+                        <div className="mb-6">
+                          <div className="flex items-baseline flex-wrap">
+                            <span className="text-[clamp(28px,4vw,36px)] font-bold text-gray-900 mm-text-wrap-safe break-words">
+                              {formatPrice(plan.monthlyPrice)}
+                            </span>
+                            <span className="text-[clamp(12px,1.5vw,14px)] text-gray-600 ml-1 mm-text-wrap-safe break-words">
+                              ₫/tháng
+                            </span>
+                          </div>
+                          <p className="text-[clamp(12px,1.5vw,14px)] text-gray-500 mt-1 mm-text-wrap-safe break-words">
+                            ({formatPrice(plan.yearlyPrice)}₫/năm)
+                          </p>
+                        </div>
+
+                        <ul className="space-y-3 mb-6">
+                          {plan.features.length > 0 ? (
+                            plan.features.map((feature, fIndex) => (
+                              <li key={fIndex} className="flex items-start gap-2">
+                                <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
+                                  {feature}
+                                </span>
+                              </li>
+                            ))
+                          ) : (
+                            <>
+                              <li className="flex items-start gap-2">
+                                <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
+                                  {plan.maxGardens
+                                    ? `Tối đa ${plan.maxGardens} vườn`
+                                    : "Không giới hạn vườn"}
+                                </span>
+                              </li>
+                              <li className="flex items-start gap-2">
+                                <Check className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
+                                <span className="text-[clamp(12px,1.5vw,14px)] text-gray-700 mm-text-wrap-safe break-words">
+                                  {plan.maxTreesPerGarden
+                                    ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
+                                    : "Không giới hạn cây"}
+                                </span>
+                              </li>
+                            </>
+                          )}
+                        </ul>
+                      </div>
+
+                      <div className="mt-auto">
+                        <Button
+                          className={`w-full ${plan.popular
+                            ? "bg-gray-900 hover:bg-gray-800"
+                            : "bg-gray-900 hover:bg-gray-800"
+                            } ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                          onClick={() => handleSelectPlan(plan)}
+                          disabled={isDisabled}
+                        >
+                          {isCurrentPlan
+                            ? "Gói hiện tại"
+                            : isDisabled
+                              ? "Không khả dụng"
+                              : plan.buttonText}
+                        </Button>
+
+                        <p className="text-xs text-gray-500 text-center mt-3">
+                          {isDisabled && !isCurrentPlan
+                            ? "Bạn chỉ có thể nâng cấp lên gói cao hơn."
+                            : "Giá đã bao gồm thuế nếu có."}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
           </div>
         </div>
       </div>
@@ -514,8 +616,77 @@ export default function PricingPage() {
                   Liên hệ ngay
                 </Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+            <p className="mm-fluid-text text-xs text-gray-500 mt-4">
+              Bằng việc đăng ký bạn đồng ý với Điều khoản & Chính sách bảo mật.
+            </p>
+          </div>
+
+          {/* Promo Box */}
+          <div className="mm-fluid-shell max-w-3xl mx-auto mt-8">
+            <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Sparkles className="w-5 h-5 text-emerald-600" />
+                      <span className="font-semibold text-emerald-900">
+                        Gợi ý
+                      </span>
+                    </div>
+                    <p className="mm-fluid-text text-emerald-800">
+                      {plans.length > 0
+                        ? `Gói ${plans[plans.length - 1]?.name} rất chi tiết`
+                        : "Gói Farm+ rất chi tiết"}
+                    </p>
+                  </div>
+                  <Button variant="link" className="text-emerald-700">
+                    Tư vấn nhanh →
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+
+      {/* FAQ Section */}
+      <div className="mm-fluid-shell container mx-auto px-4 py-16">
+        <div className="mm-fluid-shell max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">
+              Câu hỏi thường gặp
+            </h2>
+            <p className="mm-fluid-text text-gray-600">
+              Nếu không thấy câu trả lời, hãy nhắn chúng tôi qua chat.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <Card key={index} className="overflow-hidden">
+                <CardContent className="p-0">
+                  <button
+                    onClick={() => toggleFaq(index)}
+                    className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors"
+                  >
+                    <span className="font-medium text-gray-900">
+                      {faq.question}
+                    </span>
+                    <ChevronDown
+                      className={`w-5 h-5 text-gray-500 transition-transform ${expandedFaq === index ? "transform rotate-180" : ""
+                        }`}
+                    />
+                  </button>
+                  {expandedFaq === index && (
+                    <div className="px-6 pb-6 text-gray-600">
+                      <p className="mm-fluid-text">{faq.answer}</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         </div>
       </div>
     </div>

@@ -40,6 +40,7 @@ import PlantGallery from "./components/user/PlantGallery";
 import PlantDetail from "./components/user/PlantDetail";
 import LogoutGuard from "./guards/LogoutGuard";
 import GuestGuard from "./guards/GuestGuard";
+import NotFound from "./components/NotFound";
 
 export default function RouteManager({ authTab }) {
   return (
@@ -326,7 +327,7 @@ export default function RouteManager({ authTab }) {
           }
         />
         {/* 404 */}
-        <Route path="*" element={<h2>404 - Page Not Found</h2>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );
