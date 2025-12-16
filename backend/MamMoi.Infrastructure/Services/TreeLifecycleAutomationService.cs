@@ -60,7 +60,11 @@ public class TreeLifecycleAutomationService : ITreeLifecycleAutomationService
 
                 var ageMonths = CalculateAgeInMonths(plantDate.Value, today);
                 var extraMonths = Math.Max(0, tree.preMonths ?? 0);
-                var totalAge = ageMonths + extraMonths;
+                var realAge = ageMonths + extraMonths;
+
+                // If a virtual age is set (manual override), treat totalAge as the greater of realAge and virtualAge.
+                var virtualAge = Math.Max(0, tree.VirtualAgeMonths ?? 0);
+                var totalAge = Math.Max(realAge, virtualAge);
 
                 var expectedStage = ResolveStageForAge(stages, totalAge);
                 if (expectedStage is null || expectedStage.StageId == tree.StageId)
@@ -107,27 +111,27 @@ public class TreeLifecycleAutomationService : ITreeLifecycleAutomationService
 
         // Sort stages by StageOrder to ensure correct processing order
         var sortedStages = stages.OrderBy(s => s.StageOrder).ToList();
-        
+
         TreeGrowthStage? fallback = null;
-        
+
         foreach (var stage in sortedStages)
         {
             var min = stage.MinAgeInMonths ?? int.MinValue;
             var max = stage.MaxAgeInMonths ?? int.MaxValue;
-            
+
             // If this is the last stage (no MaxAgeInMonths or highest order), use it as fallback
             if (stage.MaxAgeInMonths == null)
             {
                 fallback = stage;
             }
-            
+
             // Check if age falls within this stage's range
             // For inclusive ranges: age >= min AND (age < max OR max is null)
             if (totalAgeMonths >= min && (max == int.MaxValue || totalAgeMonths < max))
             {
                 return stage;
             }
-            
+
             // Keep track of the last stage with a valid range as fallback
             if (max != int.MaxValue)
             {
