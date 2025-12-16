@@ -28,7 +28,8 @@ const fmtDate = (d) => {
 const monthsSince = (from) => {
   const s = new Date(from);
   const e = new Date();
-  let m = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+  let m =
+    (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
   const dayDelta = e.getDate() - s.getDate();
   if (dayDelta >= 15) m += 1;
   if (dayDelta <= -15) m -= 1;
@@ -41,14 +42,22 @@ const safeNormal = (v, fallback = "Bình thường") => {
   return s ? s : fallback;
 };
 
-const KV = ({ icon: Icon, label, value }) => (
+const KV = ({ icon: Icon, label, value, valueClass = "" }) => (
   <div className="flex items-start gap-3">
     <div className="mt-1 rounded-xl bg-emerald-600/10 p-2 text-emerald-600">
       <Icon size={18} />
     </div>
     <div className="min-w-0">
-      <div className="text-[13px] uppercase tracking-wide text-emerald-300/80">{label}</div>
-      <div className="truncate text-lg font-semibold text-emerald-50">{value}</div>
+      <div className="text-[13px] uppercase tracking-wide text-emerald-300/80">
+        {label}
+      </div>
+      <div
+        className={`truncate text-lg font-semibold ${
+          valueClass || "text-emerald-50"
+        }`}
+      >
+        {value}
+      </div>
     </div>
   </div>
 );
@@ -60,7 +69,9 @@ const Pill = ({ icon: Icon, children, tone = "neutral" }) => {
     warn: "bg-amber-600/15 text-amber-100 ring-1 ring-amber-500/30",
   };
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm ${tones[tone]}`}>
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm ${tones[tone]}`}
+    >
       {Icon ? <Icon size={16} className="opacity-90" /> : null}
       {children}
     </span>
@@ -68,10 +79,7 @@ const Pill = ({ icon: Icon, children, tone = "neutral" }) => {
 };
 
 /* ---------------------- component ---------------------- */
-export default function TreeInfoPanel({
-  data,
-  className = "",
-}) {
+export default function TreeInfoPanel({ data, className = "" }) {
   // Demo cứng nếu chưa truyền từ backend
   const demo = {
     species: "Xoài",
@@ -87,7 +95,7 @@ export default function TreeInfoPanel({
       leaf: "Lá bánh tẻ xanh; rễ trắng khoẻ; gốc sạch",
       branch: "Bình thường",
       flower: "", // trống -> Bình thường
-      fruit: "",  // trống -> Bình thường
+      fruit: "", // trống -> Bình thường
     },
 
     // thẻ stage (tùy ý)
@@ -95,7 +103,8 @@ export default function TreeInfoPanel({
   };
 
   const t = { ...(data || demo) };
-  const totalAge = (Number(t.prePlantAgeMonths) || 0) + monthsSince(t.plantDate);
+  const totalAge =
+    (Number(t.prePlantAgeMonths) || 0) + monthsSince(t.plantDate);
 
   return (
     <section
@@ -111,13 +120,19 @@ export default function TreeInfoPanel({
             <TreePine size={22} />
           </div>
           <div>
-            <h2 className="text-2xl font-extrabold leading-tight text-emerald-50">Thông tin cây</h2>
-            <div className="text-sm text-emerald-200/70">Tổng quan & trạng thái nhanh</div>
+            <h2 className="text-2xl font-extrabold leading-tight text-emerald-50">
+              Thông tin cây
+            </h2>
+            <div className="text-sm text-emerald-200/70">
+              Tổng quan & trạng thái nhanh
+            </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <Pill icon={BadgeCheck} tone="ok">{t.stage || "Đang chăm sóc"}</Pill>
+          <Pill icon={BadgeCheck} tone="ok">
+            {t.stage || "Đang chăm sóc"}
+          </Pill>
           <button
             type="button"
             className="rounded-xl bg-emerald-600/80 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-400/60"
@@ -134,11 +149,64 @@ export default function TreeInfoPanel({
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <KV icon={TreePine} label="Cây" value={safeNormal(t.species)} />
             <KV icon={Hash} label="Mã cây" value={`#${safeNormal(t.code)}`} />
-            <KV icon={Sprout} label="Giống/Variety" value={safeNormal(t.variety)} />
-            <KV icon={CalendarIcon} label="Ngày trồng" value={fmtDate(t.plantDate)} />
-            <KV icon={Ruler} label="Tuổi trước khi trồng" value={`${Number(t.prePlantAgeMonths) || 0} tháng`} />
+            <KV
+              icon={Sprout}
+              label="Giống/Variety"
+              value={safeNormal(t.variety)}
+            />
+            <KV
+              icon={CalendarIcon}
+              label="Ngày trồng"
+              value={fmtDate(t.plantDate)}
+            />
+            <KV
+              icon={Ruler}
+              label="Tuổi trước khi trồng"
+              value={`${Number(
+                t.preMonths ?? t.preNurseryAgeMonths ?? t.prePlantAgeMonths ?? 0
+              )} tháng`}
+            />
             <KV icon={Ruler} label="Tổng tuổi" value={`${totalAge} tháng`} />
-            <KV icon={BadgeCheck} label="Loại đất" value={safeNormal(t.soilType)} />
+            {/* Tuổi thực tế / Tuổi dự kiến: prefer preMonths for actual and virtualAgeMonths for expected */}
+            {(() => {
+              // Tuổi thực tế: hiện thực = `totalAge` (tuổi trước khi trồng + tháng kể từ ngày trồng)
+              const realToShow = Number.isFinite(totalAge) ? totalAge : NaN;
+
+              // Tuổi dự kiến: ưu tiên `virtualAgeMonths` từ server; nếu không có thì fallback về `totalAge`.
+              const virtual =
+                typeof t.virtualAgeMonths === "number"
+                  ? t.virtualAgeMonths
+                  : typeof t.virtual_age_months === "number"
+                  ? t.virtual_age_months
+                  : null;
+              const expected = virtual ?? totalAge;
+
+              return (
+                <>
+                  <KV
+                    icon={CalendarIcon}
+                    label="Tuổi thực tế"
+                    value={
+                      Number.isFinite(realToShow) ? `${realToShow} tháng` : `—`
+                    }
+                    valueClass="!text-slate-400"
+                  />
+                  <KV
+                    icon={CalendarIcon}
+                    label="Tuổi dự kiến"
+                    value={
+                      Number.isFinite(expected) ? `${expected} tháng` : `—`
+                    }
+                    valueClass="!text-slate-400"
+                  />
+                </>
+              );
+            })()}
+            <KV
+              icon={BadgeCheck}
+              label="Loại đất"
+              value={safeNormal(t.soilType)}
+            />
           </div>
         </div>
 
@@ -146,7 +214,9 @@ export default function TreeInfoPanel({
         <div className="col-span-12 lg:col-span-4">
           <div className="h-full rounded-2xl border border-white/10 bg-slate-900/40 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <div className="text-sm font-semibold text-slate-200">Ảnh cây</div>
+              <div className="text-sm font-semibold text-slate-200">
+                Ảnh cây
+              </div>
               <div className="flex items-center gap-2">
                 <button className="rounded-lg bg-slate-800/70 px-3 py-1.5 text-xs text-slate-200 ring-1 ring-white/10 hover:bg-slate-800">
                   Chọn ảnh (tải lên)
@@ -159,7 +229,11 @@ export default function TreeInfoPanel({
 
             <div className="flex h-56 items-center justify-center overflow-hidden rounded-xl bg-slate-800/60 ring-1 ring-white/10">
               {t.photoUrl ? (
-                <img src={t.photoUrl} alt="tree" className="h-full w-full object-cover" />
+                <img
+                  src={t.photoUrl}
+                  alt="tree"
+                  className="h-full w-full object-cover"
+                />
               ) : (
                 <div className="flex flex-col items-center gap-2 text-slate-300">
                   <ImageIcon />
@@ -174,7 +248,9 @@ export default function TreeInfoPanel({
       {/* Status section */}
       <div className="mt-8 rounded-2xl border border-white/10 bg-slate-900/40 p-5">
         <div className="mb-4 flex items-center justify-between">
-          <div className="text-lg font-bold text-emerald-50">Tình trạng hiện tại</div>
+          <div className="text-lg font-bold text-emerald-50">
+            Tình trạng hiện tại
+          </div>
           <button className="rounded-xl bg-slate-800/70 px-4 py-2 text-sm text-slate-100 ring-1 ring-white/10 hover:bg-slate-800">
             Cập nhật
           </button>

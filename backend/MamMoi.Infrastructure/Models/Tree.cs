@@ -24,6 +24,9 @@ public partial class Tree
     public bool? IsFruiting { get; set; }
 
     public int? preMonths { get; set; }
+    // Virtual age in months used as a minimum "expected" age for lifecycle calculations
+    // This is set when a user manually overrides a tree's stage so we don't modify the real age.
+    public int? VirtualAgeMonths { get; set; }
 
     public DateOnly? ExpectedHarvestDate { get; set; }
 

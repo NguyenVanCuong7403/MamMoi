@@ -85,6 +85,7 @@ import {
 } from "@/components/ui/dialog";
 import AdminTreeRepository from "@/API/repositories/AdminTreeRepository";
 import AdminSoilMasterRepository from "@/API/repositories/AdminSoilMasterRepository";
+import AdminGrowthStageRepository from "@/API/repositories/AdminGrowthStageRepository";
 
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
@@ -1103,6 +1104,11 @@ export default function TreeTypeManagement() {
   const [imageFile, setImageFile] = useState(null);
   const [newlyCreatedTreeTypeId, setNewlyCreatedTreeTypeId] = useState(null);
   const [showCreateSuccessDialog, setShowCreateSuccessDialog] = useState(false);
+  // Status toggle confirmation / validation
+  const [statusToggleTarget, setStatusToggleTarget] = useState(null);
+  const [statusToggleConfirmOpen, setStatusToggleConfirmOpen] = useState(false);
+  const [statusToggleSaving, setStatusToggleSaving] = useState(false);
+  const [statusToggleValidation, setStatusToggleValidation] = useState(null);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -1670,54 +1676,120 @@ export default function TreeTypeManagement() {
     }
   };
 
+  // Prepare toggle: validate required preconditions before showing confirmation
   const handleToggleStatus = async (tree) => {
-    // Only send IsActive to avoid backend issues with other fields
-    const updated = await updateTreeType(tree.TreeTypeID, {
-      IsActive: !tree.IsActive,
-    });
+    if (!tree) return;
+    // Reset previous validation
+    setStatusToggleValidation(null);
 
-    // Fetch varieties again to ensure count is accurate
-    try {
-      const varietiesResponse =
-        await AdminTreeRepository.getVarietiesByTreeTypeId(tree.TreeTypeID);
-      const varieties = Array.isArray(varietiesResponse.data)
-        ? varietiesResponse.data
-        : Array.isArray(varietiesResponse)
-        ? varietiesResponse
-        : [];
+    const wantsToActivate = !tree.IsActive;
 
-      const updatedWithVarieties = {
-        ...updated,
-        Varieties: varieties.map(mapVarietyFromApi),
-      };
+    // If trying to activate, ensure there is at least one variety and at least one growth stage
+    if (wantsToActivate) {
+      // Check varieties
+      const hasVarieties =
+        Array.isArray(tree.Varieties) && tree.Varieties.length > 0;
+      if (!hasVarieties) {
+        setStatusToggleValidation({
+          message:
+            "Loại cây chưa có giống. Vui lòng tạo hoặc gán ít nhất một giống trước khi kích hoạt.",
+          action: "variety",
+          tree,
+        });
+        return;
+      }
 
-      setTrees((prev) =>
-        prev.map((item) =>
-          item.TreeTypeID === updatedWithVarieties.TreeTypeID
-            ? updatedWithVarieties
-            : item
-        )
-      );
-    } catch (error) {
-      console.warn("Failed to fetch varieties after status toggle:", error);
-      // If fetching varieties fails, still update with what we have
-      setTrees((prev) =>
-        prev.map((item) =>
-          item.TreeTypeID === updated.TreeTypeID ? updated : item
-        )
-      );
+      // Check growth stages via API
+      try {
+        const stages = await AdminGrowthStageRepository.getStagesByTreeTypeId(
+          tree.TreeTypeID
+        );
+        const hasStages = Array.isArray(stages) && stages.length > 0;
+        if (!hasStages) {
+          setStatusToggleValidation({
+            message:
+              "Loại cây chưa có quy trình/giai đoạn phát triển. Vui lòng tạo giai đoạn trước khi kích hoạt.",
+            action: "lifecycle",
+            tree,
+          });
+          return;
+        }
+      } catch (err) {
+        console.warn("Failed to check growth stages:", err);
+        setStatusToggleValidation({
+          message:
+            "Không thể kiểm tra giai đoạn phát triển. Vui lòng thử lại sau.",
+          action: null,
+          tree,
+        });
+        return;
+      }
     }
 
-    // Dispatch event để PlantDetail đồng bộ ảnh
-    window.dispatchEvent(
-      new CustomEvent("mm:treetype:updated", {
-        detail: {
-          treeTypeId: updated.TreeTypeID,
-          treeTypeID: updated.TreeTypeID,
-          imageUrl: updated.ImageUrl,
-        },
-      })
-    );
+    // Passed validation — open confirm dialog
+    setStatusToggleTarget(tree);
+    setStatusToggleConfirmOpen(true);
+  };
+
+  const handleConfirmToggleStatus = async () => {
+    if (!statusToggleTarget) return;
+    setStatusToggleSaving(true);
+    try {
+      const tree = statusToggleTarget;
+      const updated = await updateTreeType(tree.TreeTypeID, {
+        IsActive: !tree.IsActive,
+      });
+
+      // Fetch varieties again to ensure count is accurate
+      try {
+        const varietiesResponse =
+          await AdminTreeRepository.getVarietiesByTreeTypeId(tree.TreeTypeID);
+        const varieties = Array.isArray(varietiesResponse.data)
+          ? varietiesResponse.data
+          : Array.isArray(varietiesResponse)
+          ? varietiesResponse
+          : [];
+
+        const updatedWithVarieties = {
+          ...updated,
+          Varieties: varieties.map(mapVarietyFromApi),
+        };
+
+        setTrees((prev) =>
+          prev.map((item) =>
+            item.TreeTypeID === updatedWithVarieties.TreeTypeID
+              ? updatedWithVarieties
+              : item
+          )
+        );
+      } catch (error) {
+        console.warn("Failed to fetch varieties after status toggle:", error);
+        // If fetching varieties fails, still update with what we have
+        setTrees((prev) =>
+          prev.map((item) =>
+            item.TreeTypeID === updated.TreeTypeID ? updated : item
+          )
+        );
+      }
+
+      // Dispatch event để PlantDetail đồng bộ ảnh
+      window.dispatchEvent(
+        new CustomEvent("mm:treetype:updated", {
+          detail: {
+            treeTypeId: updated.TreeTypeID,
+            treeTypeID: updated.TreeTypeID,
+            imageUrl: updated.ImageUrl,
+          },
+        })
+      );
+
+      setStatusToggleConfirmOpen(false);
+      setStatusToggleTarget(null);
+    } catch (err) {
+      console.error("Error toggling status:", err);
+    } finally {
+      setStatusToggleSaving(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -3988,6 +4060,98 @@ export default function TreeTypeManagement() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+
+            <AlertDialog
+              open={Boolean(statusToggleValidation)}
+              onOpenChange={(open) => {
+                if (!open) setStatusToggleValidation(null);
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Không thể thay đổi trạng thái
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {statusToggleValidation?.message}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel
+                    onClick={() => setStatusToggleValidation(null)}
+                  >
+                    Đóng
+                  </AlertDialogCancel>
+                  {statusToggleValidation?.action === "variety" && (
+                    <AlertDialogAction
+                      onClick={() => {
+                        const t = statusToggleValidation?.tree;
+                        setStatusToggleValidation(null);
+                        if (t)
+                          navigate(
+                            `/admin/business/tree-varieties?treeTypeId=${t.TreeTypeID}`
+                          );
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-500"
+                    >
+                      Quản lý giống
+                    </AlertDialogAction>
+                  )}
+                  {statusToggleValidation?.action === "lifecycle" && (
+                    <AlertDialogAction
+                      onClick={() => {
+                        const t = statusToggleValidation?.tree;
+                        setStatusToggleValidation(null);
+                        if (t)
+                          navigate(
+                            `/admin/business/lifecycle?treeTypeId=${t.TreeTypeID}`
+                          );
+                      }}
+                      className="bg-emerald-600 hover:bg-emerald-500"
+                    >
+                      Tạo quy trình phát triển
+                    </AlertDialogAction>
+                  )}
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog
+              open={statusToggleConfirmOpen}
+              onOpenChange={(open) => {
+                if (!open && !statusToggleSaving) {
+                  setStatusToggleConfirmOpen(false);
+                  setStatusToggleTarget(null);
+                }
+              }}
+            >
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {statusToggleTarget?.IsActive
+                      ? "Xác nhận huỷ kích hoạt"
+                      : "Xác nhận kích hoạt"}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {statusToggleTarget?.IsActive
+                      ? `Bạn có chắc muốn huỷ kích hoạt loại cây "${statusToggleTarget?.TreeTypeName}"?`
+                      : `Bạn có chắc muốn kích hoạt loại cây "${statusToggleTarget?.TreeTypeName}"?`}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={statusToggleSaving}>
+                    Huỷ
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleConfirmToggleStatus}
+                    className="bg-emerald-600 hover:bg-emerald-500"
+                    disabled={statusToggleSaving}
+                  >
+                    {statusToggleSaving ? "Đang xử lý..." : "Xác nhận"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
             <AlertDialog
               open={Boolean(deleteTarget)}

@@ -10,7 +10,7 @@ namespace MamMoi.Infrastructure.Services
     {
         private readonly MamMoiDbContext _db;
         private readonly ISubscriptionPlanService _subscriptionPlanService;
-        
+
         public TreeCommandService(MamMoiDbContext db, ISubscriptionPlanService subscriptionPlanService)
         {
             _db = db;
@@ -111,16 +111,21 @@ namespace MamMoi.Infrastructure.Services
             {
                 if (req.TreeName != null && req.TreeName != tree.TreeName)
                     throw new InvalidOperationException($"Không thể chỉnh sửa tên cây sau {LOCK_DAYS} ngày kể từ ngày tạo cây.");
-                
+
                 if (req.TreeCode != null && req.TreeCode != tree.TreeCode)
                     throw new InvalidOperationException($"Không thể chỉnh sửa mã cây sau {LOCK_DAYS} ngày kể từ ngày tạo cây.");
-                
+
                 if (req.PlantDate.HasValue && req.PlantDate != tree.PlantDate)
                     throw new InvalidOperationException($"Không thể chỉnh sửa ngày trồng sau {LOCK_DAYS} ngày kể từ ngày tạo cây.");
-                
+
                 if (req.preMonths.HasValue && req.preMonths != tree.preMonths)
                     throw new InvalidOperationException($"Không thể chỉnh sửa tuổi trước khi trồng sau {LOCK_DAYS} ngày kể từ ngày tạo cây.");
             }
+
+            // Track if age-related fields changed (for auto lifecycle sync)
+            bool ageChanged = false;
+            var oldPlantDate = tree.PlantDate;
+            var oldPreMonths = tree.preMonths;
 
             if (req.StageId.HasValue && req.StageId.Value != tree.StageId)
             {
@@ -143,6 +148,28 @@ namespace MamMoi.Infrastructure.Services
 
                     // 5) Gán StageId thực vào entity
                     tree.StageId = realStageId;
+
+                    // Khi cập nhật stage thủ công, đặt VirtualAgeMonths = MinAgeInMonths của stage (nếu có)
+                    var targetStage = await _db.TreeGrowthStages
+                        .FirstOrDefaultAsync(s => s.StageId == realStageId && s.TreeTypeId == tree.TreeTypeId, ct);
+                    if (targetStage != null)
+                    {
+                        int? minAge = targetStage.MinAgeInMonths;
+                        // If the specific stage has no MinAge, try to find the minimum MinAge among stages
+                        if (!minAge.HasValue)
+                        {
+                            minAge = await _db.TreeGrowthStages
+                                .Where(s => s.TreeTypeId == tree.TreeTypeId && s.StageOrder == targetStage.StageOrder && s.MinAgeInMonths.HasValue)
+                                .MinAsync(s => (int?)s.MinAgeInMonths, ct);
+                        }
+
+                        if (minAge.HasValue)
+                        {
+                            tree.VirtualAgeMonths = minAge.Value;
+                            // Đánh dấu ageChanged để trigger auto-sync lifecycle ở phần sau
+                            ageChanged = true;
+                        }
+                    }
                 }
             }
 
@@ -156,10 +183,6 @@ namespace MamMoi.Infrastructure.Services
                 tree.GardenSoilId = req.GardenSoilId;
             }
 
-            // Track if age-related fields changed (for auto lifecycle sync)
-            bool ageChanged = false;
-            var oldPlantDate = tree.PlantDate;
-            var oldPreMonths = tree.preMonths;
 
             tree.TreeName = req.TreeName ?? tree.TreeName;
             tree.TreeCode = req.TreeCode ?? tree.TreeCode;
@@ -281,7 +304,9 @@ namespace MamMoi.Infrastructure.Services
             // Calculate total age
             var ageMonths = CalculateAgeInMonths(tree.PlantDate.Value, today);
             var extraMonths = Math.Max(0, tree.preMonths ?? 0);
-            var totalAge = ageMonths + extraMonths;
+            var realAge = ageMonths + extraMonths;
+            var virtualAge = Math.Max(0, tree.VirtualAgeMonths ?? 0);
+            var totalAge = Math.Max(realAge, virtualAge);
 
             // Find the appropriate stage based on age
             var expectedStage = ResolveStageForAge(stages, totalAge);
@@ -371,7 +396,7 @@ namespace MamMoi.Infrastructure.Services
                 .FirstOrDefaultAsync(t => t.TreeId == treeId, ct);
 
             if (tree == null) return null;
-            if (!await IsGardenOwner(userId, tree.GardenId, ct)) 
+            if (!await IsGardenOwner(userId, tree.GardenId, ct))
                 throw new UnauthorizedAccessException("User is not garden owner.");
 
             // Logging chi tiết để debug việc cập nhật lifecycle
@@ -427,6 +452,43 @@ namespace MamMoi.Infrastructure.Services
                 tree.LifecycleAutoDisabledAt = req.AutoSyncEnabled.Value ? null : now;
             }
 
+            // Manage VirtualAgeMonths: when auto-sync is re-enabled, clear manual virtual age.
+            // When user manually updates stage (via StageId or PhaseId) and auto-sync remains disabled,
+            // set VirtualAgeMonths to the stage's minimum age (if available) or to explicitly provided value.
+            if (req.AutoSyncEnabled.HasValue && req.AutoSyncEnabled.Value)
+            {
+                // Auto-sync enabled -> remove any manual virtual age overrides
+                tree.VirtualAgeMonths = null;
+            }
+            else
+            {
+                // If user provided a stage/phase explicitly, update the virtual age accordingly
+                if (req.StageId.HasValue || !string.IsNullOrWhiteSpace(req.PhaseId))
+                {
+                    int? minAge = targetStage.MinAgeInMonths;
+                    if (!minAge.HasValue)
+                    {
+                        minAge = await _db.TreeGrowthStages
+                            .Where(s => s.TreeTypeId == tree.TreeTypeId && s.StageOrder == targetStage.StageOrder && s.MinAgeInMonths.HasValue)
+                            .MinAsync(s => (int?)s.MinAgeInMonths, ct);
+                    }
+
+                    if (minAge.HasValue)
+                    {
+                        tree.VirtualAgeMonths = minAge.Value;
+                    }
+                    else if (req is { } && ((dynamic)req).VirtualAgeMonths is int v)
+                    {
+                        tree.VirtualAgeMonths = v;
+                    }
+                }
+                else if (req is { } && ((dynamic)req).VirtualAgeMonths is int provided)
+                {
+                    // User explicitly provided VirtualAgeMonths without changing stage
+                    tree.VirtualAgeMonths = provided;
+                }
+            }
+
             await _db.SaveChangesAsync(ct);
 
             // Log activity
@@ -469,7 +531,8 @@ namespace MamMoi.Infrastructure.Services
                 phase1Completed,
                 finalCycleCount,
                 tree.LifecycleAutoEnabled,
-                tree.LifecycleAutoDisabledAt
+                tree.LifecycleAutoDisabledAt,
+                tree.VirtualAgeMonths
             );
         }
 

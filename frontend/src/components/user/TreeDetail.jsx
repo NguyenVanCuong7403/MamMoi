@@ -3037,7 +3037,7 @@ function TopHeader({
             />
 
             {/* Quick stats – chữ to, dễ đọc */}
-            <div className="mt-3 grid sm:grid-cols-3 gap-3">
+            <div className="mt-3 grid sm:grid-cols-4 gap-3">
               <div className="rounded-2xl border px-4 py-3 bg-white">
                 <div className="text-xs text-neutral-600">
                   Tuổi từ lúc trồng
@@ -3058,6 +3058,22 @@ function TopHeader({
                 <div className="text-xs text-neutral-600">Tổng tuổi</div>
                 <div className="text-xl md:text-2xl font-semibold">
                   {totalAge} tháng
+                </div>
+              </div>
+              <div className="rounded-2xl border px-4 py-3 bg-white">
+                <div className="text-xs text-neutral-600">
+                  Tuổi thực tế / Tuổi dự kiến
+                </div>
+                <div className="text-sm text-neutral-500">
+                  Thực tế: {meta?.realAgeMonths ?? ageAfterPlant + preAge} tháng
+                </div>
+                <div className="text-xl md:text-2xl font-semibold">
+                  Dự kiến:{" "}
+                  {typeof meta?.virtualAgeMonths === "number"
+                    ? `${meta.virtualAgeMonths} tháng`
+                    : typeof meta?.virtual_age_months === "number"
+                    ? `${meta.virtual_age_months} tháng`
+                    : "—"}
                 </div>
               </div>
             </div>
@@ -3284,8 +3300,17 @@ function mapDtoToTree(dto) {
     return `${yyyy}-${mm}-${dd}`;
   };
 
-  const plantedAt = toDateInput(dto.plantDate);
-  const expectedHarvestDate = toDateInput(dto.expectedHarvestDate);
+  // Accept multiple possible field names coming from different backend versions
+  const rawPlantDate =
+    dto.plantDate ?? dto.plantedAt ?? dto.plant_date ?? dto.planted_at ?? "";
+  const plantedAt = toDateInput(rawPlantDate);
+
+  const rawExpectedHarvest =
+    dto.expectedHarvestDate ??
+    dto.expectedHarvestAt ??
+    dto.expected_harvest_date ??
+    "";
+  const expectedHarvestDate = toDateInput(rawExpectedHarvest);
 
   const phaseId = mapStageNameToPhaseId(dto.stageName);
 
@@ -3331,6 +3356,40 @@ function mapDtoToTree(dto) {
     // Tuổi cây (preMonths)
     preMonths: dto.preMonths ?? dto.preNurseryAgeMonths ?? 0,
     preNurseryAgeMonths: dto.preMonths ?? dto.preNurseryAgeMonths ?? 0,
+    // Virtual age (manual override) from backend (prefer explicit server value)
+    virtualAgeMonths:
+      typeof dto.virtualAgeMonths === "number"
+        ? dto.virtualAgeMonths
+        : typeof dto.virtual_age_months === "number"
+        ? dto.virtual_age_months
+        : null,
+    // Real age: prefer server-provided explicit value if present,
+    // otherwise compute from planted date + preMonths.
+    realAgeMonths:
+      typeof dto.realAgeMonths === "number"
+        ? dto.realAgeMonths
+        : typeof dto.real_age_months === "number"
+        ? dto.real_age_months
+        : plantedAt
+        ? monthsBetween(plantedAt) +
+          (dto.preMonths ?? dto.preNurseryAgeMonths ?? 0)
+        : 0,
+    // Expected age presented to lifecycle logic (max of realAge and virtualAge)
+    expectedAgeMonths: Math.max(
+      typeof dto.realAgeMonths === "number"
+        ? dto.realAgeMonths
+        : typeof dto.real_age_months === "number"
+        ? dto.real_age_months
+        : plantedAt
+        ? monthsBetween(plantedAt) +
+          (dto.preMonths ?? dto.preNurseryAgeMonths ?? 0)
+        : 0,
+      typeof dto.virtualAgeMonths === "number"
+        ? dto.virtualAgeMonths
+        : typeof dto.virtual_age_months === "number"
+        ? dto.virtual_age_months
+        : 0
+    ),
 
     // lifecycle cho vòng tròn giai đoạn
     lifecycle: {
@@ -3373,6 +3432,7 @@ export default function TreeDetail() {
   // Ref for AI refresh function (defined later but used in persistTreePatch)
   const refreshAiRecommendationsRef = React.useRef(null);
   const [stageTheme, setStageTheme] = useState(null);
+  const [treeTypeStages, setTreeTypeStages] = useState(null);
   const stageTypeLoadedRef = useRef(null);
 
   const loadTreeTypeStages = React.useCallback(
@@ -3390,6 +3450,7 @@ export default function TreeDetail() {
         const list = response?.data ?? response ?? [];
         stageTypeLoadedRef.current = treeTypeId;
         setStageTheme(buildPhaseThemeFromStages(list));
+        setTreeTypeStages(Array.isArray(list) ? list : []);
       } catch (error) {
         console.warn("Failed to load tree type stages", error);
         stageTypeLoadedRef.current = treeTypeId;
@@ -3704,6 +3765,69 @@ export default function TreeDetail() {
                 ...prev,
                 stageId: lifecycleDto.stageId,
               }));
+            }
+
+            // Compute virtualAgeMonths = min age of the current stage (if available)
+            try {
+              let computedVirtual = null;
+              const stageIdFromLifecycle =
+                lifecycleDto.stageId ?? lifecycleDto.stage_id ?? null;
+
+              if (stageIdFromLifecycle && Array.isArray(treeTypeStages)) {
+                const found = treeTypeStages.find((s) => {
+                  const sid = s?.stageId ?? s?.stage_id ?? s?.id ?? s?.StageId;
+                  return String(sid) === String(stageIdFromLifecycle);
+                });
+                if (found) {
+                  const minVal =
+                    found.minAgeInMonths ??
+                    found.min_age_months ??
+                    found.min_age ??
+                    null;
+                  if (minVal != null && !Number.isNaN(Number(minVal))) {
+                    computedVirtual = Number(minVal);
+                  }
+                }
+              }
+
+              // Fallback: use phase -> pick minimum minAge among stages in that phase
+              if (
+                computedVirtual == null &&
+                lifecycleDto.phaseId &&
+                Array.isArray(treeTypeStages)
+              ) {
+                const phaseId = normalizePhaseId(lifecycleDto.phaseId);
+                const candidates = treeTypeStages.filter((s) => {
+                  const p =
+                    s?.phaseId ?? s?.phase ?? s?.canonicalPhaseId ?? null;
+                  return p && normalizePhaseId(p) === phaseId;
+                });
+                const mins = candidates
+                  .map((s) =>
+                    Number(
+                      s?.minAgeInMonths ??
+                        s?.min_age_months ??
+                        s?.min_age ??
+                        NaN
+                    )
+                  )
+                  .filter((n) => Number.isFinite(n));
+                if (mins.length) {
+                  computedVirtual = Math.min(...mins);
+                }
+              }
+
+              if (computedVirtual != null) {
+                setApiTree((prev) =>
+                  prev ? { ...prev, virtualAgeMonths: computedVirtual } : prev
+                );
+              }
+            } catch (err) {
+              // non-fatal
+              console.warn(
+                "Failed to compute virtualAgeMonths from lifecycle/stages",
+                err
+              );
             }
           }
         } catch (lifecycleErr) {
@@ -4275,6 +4399,22 @@ export default function TreeDetail() {
       stageId: baseTree.stageId ?? prev.stageId ?? null,
       userId: baseTree.userId ?? prev.userId ?? null,
       treeTypeId: baseTree.treeTypeId ?? prev.treeTypeId ?? null,
+      // Pass through server-provided age overrides so UI fields can read them
+      virtualAgeMonths:
+        baseTree.virtualAgeMonths ??
+        baseTree.virtual_age_months ??
+        prev.virtualAgeMonths ??
+        null,
+      expectedAgeMonths:
+        baseTree.expectedAgeMonths ??
+        baseTree.expected_age_months ??
+        prev.expectedAgeMonths ??
+        null,
+      realAgeMonths:
+        baseTree.realAgeMonths ??
+        baseTree.real_age_months ??
+        prev.realAgeMonths ??
+        null,
     }));
   }, [
     baseTree?.updatedAt,
@@ -6404,6 +6544,23 @@ export default function TreeDetail() {
                       value={`${totalAge} tháng`}
                       editable={false}
                     />
+
+                    {/* Tuổi dự kiến / virtual */}
+                    <Field
+                      label={
+                        <span className="text-slate-300">Tuổi dự kiến:</span>
+                      }
+                      value={
+                        <span className="text-slate-300">
+                          {typeof meta?.virtualAgeMonths === "number"
+                            ? `${meta.virtualAgeMonths} tháng`
+                            : typeof meta?.virtual_age_months === "number"
+                            ? `${meta.virtual_age_months} tháng`
+                            : "—"}
+                        </span>
+                      }
+                      editable={false}
+                    />
                   </div>
 
                   {/* RIGHT: Ảnh & Preview (nằm cùng card) */}
@@ -7216,7 +7373,7 @@ export default function TreeDetail() {
       {/* Modal xác nhận thay đổi */}
       {confirmModal.open && (
         <div
-          className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center p-4"
+          className="fixed inset-0 z-[10001] bg-black/60 flex items-center justify-center p-4"
           onClick={(e) => {
             e.stopPropagation();
           }}

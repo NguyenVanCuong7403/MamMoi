@@ -164,7 +164,8 @@ public class TreeQueryService : ITreeQueryService
     t.LeafStatus,
     t.BranchStatus,
     t.FlowerStatus,
-    t.FruitStatus
+    t.FruitStatus,
+    t.VirtualAgeMonths
 ))
             .FirstOrDefaultAsync(ct);
     }
@@ -184,7 +185,8 @@ public class TreeQueryService : ITreeQueryService
                 StageName = t.Stage.StageName,
                 t.LifecycleAutoEnabled,
                 t.LifecycleAutoDisabledAt,
-                t.CycleCount
+                t.CycleCount,
+                t.VirtualAgeMonths
             })
             .FirstOrDefaultAsync(ct);
 
@@ -221,7 +223,8 @@ public class TreeQueryService : ITreeQueryService
             phase1Completed,
             cycleCount,
             tree.LifecycleAutoEnabled,
-            tree.LifecycleAutoDisabledAt
+            tree.LifecycleAutoDisabledAt,
+            tree.VirtualAgeMonths
         );
     }
 }
