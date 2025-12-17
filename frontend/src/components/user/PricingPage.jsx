@@ -799,7 +799,7 @@ export default function PricingPage() {
 
                         {/* Popular Badge */}
                         {plan.popular && !isLowerOrCurrent && (
-                          <div className="absolute -top-5 left-1/2 -translate-x-1/2 z-30">
+                          <div className="absolute -top-14 left-1/2 -translate-x-1/2 z-30">
                             <div className="relative">
                               <div className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500 text-white text-sm font-bold rounded-full shadow-lg shadow-emerald-500/50 animate-pulse-glow">
                                 <Star className="w-4 h-4 fill-white" />
