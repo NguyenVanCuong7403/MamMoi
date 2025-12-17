@@ -11,7 +11,7 @@ export const normalize = (s = "") =>
 
 /* ======= Fallback tỉnh/thành 2025 (34 đơn vị) ======= */
 const PROVINCES_2025 = [
-  { code: "01", type: "Thành phố", name: "Hà Nội", full_name: "Hà Nội" },
+  { code: "01", type: "Thành phố", name: "Hà Nội", full_name: "Thành phố Hà Nội" },
   { code: "04", type: "Tỉnh", name: "Cao Bằng", full_name: "Tỉnh Cao Bằng" },
   { code: "08", type: "Tỉnh", name: "Tuyên Quang", full_name: "Tỉnh Tuyên Quang" },
   { code: "11", type: "Tỉnh", name: "Điện Biên", full_name: "Tỉnh Điện Biên" },
@@ -52,12 +52,12 @@ const arr = (x) =>
   Array.isArray(x)
     ? x
     : Array.isArray(x?.data)
-    ? x.data
-    : Array.isArray(x?.results)
-    ? x.results
-    : Array.isArray(x?.provinces)
-    ? x.provinces
-    : [];
+      ? x.data
+      : Array.isArray(x?.results)
+        ? x.results
+        : Array.isArray(x?.provinces)
+          ? x.provinces
+          : [];
 
 const ensureCode = (e = {}) => ({ ...e, code: String(e.code ?? e.id ?? e.value ?? "") });
 
@@ -285,7 +285,7 @@ export function useVnAdmin() {
             return;
           }
         }
-      } catch {}
+      } catch { }
 
       /* --- 2) Thử OpenAPI v2 phẳng (nếu server đã cập nhật) --- */
       try {
@@ -301,7 +301,7 @@ export function useVnAdmin() {
             return;
           }
         }
-      } catch {}
+      } catch { }
 
       /* --- 3) Thử OpenAPI depth=3 rồi làm phẳng về 2 cấp --- */
       try {
@@ -316,7 +316,7 @@ export function useVnAdmin() {
             return;
           }
         }
-      } catch {}
+      } catch { }
 
       /* --- 4) Fallback v1 rồi làm phẳng về 2 cấp --- */
       try {
@@ -335,7 +335,7 @@ export function useVnAdmin() {
             return;
           }
         }
-      } catch {}
+      } catch { }
 
       /* --- 5) Fallback cuối: chỉ tỉnh/thành nhúng sẵn --- */
       if (PROVINCES_2025.length) {
