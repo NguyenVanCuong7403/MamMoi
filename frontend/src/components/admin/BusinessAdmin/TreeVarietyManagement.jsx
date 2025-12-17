@@ -93,6 +93,7 @@ export default function TreeVarietyManagement() {
     varietyName: "",
     varietyDescription: "",
   });
+  const [varietyNameError, setVarietyNameError] = useState("");
   const [actionNotice, setActionNotice] = useState(null);
 
   // Fetch tree types for dropdown (including inactive ones to allow adding varieties)
@@ -102,7 +103,7 @@ export default function TreeVarietyManagement() {
         1,
         100,
         null,
-        null // Don't filter by isActive to include inactive tree types
+        null, // Don't filter by isActive to include inactive tree types
       );
       if (response.success && response.data) {
         setTreeTypes(response.data);
@@ -110,6 +111,32 @@ export default function TreeVarietyManagement() {
     } catch (err) {
       console.error("Error fetching tree types:", err);
     }
+  };
+
+  // Validate variety name doesn't start with or contain tree type name
+  const validateVarietyName = (varietyName, treeTypeId) => {
+    if (!varietyName || !treeTypeId) return "";
+
+    const selectedTreeType = treeTypes.find(
+      (t) => t.treeTypeId.toString() === treeTypeId.toString(),
+    );
+
+    if (!selectedTreeType) return "";
+
+    const treeTypeName = selectedTreeType.treeTypeName.trim().toLowerCase();
+    const varietyNameLower = varietyName.trim().toLowerCase();
+
+    // Check if variety name starts with tree type name
+    if (varietyNameLower.startsWith(treeTypeName)) {
+      return `Tên giống cây không được bắt đầu bằng "${selectedTreeType.treeTypeName}"`;
+    }
+
+    // Check if variety name contains tree type name
+    if (varietyNameLower.includes(treeTypeName)) {
+      return `Tên giống cây không được chứa "${selectedTreeType.treeTypeName}"`;
+    }
+
+    return "";
   };
 
   // Fetch varieties from API
@@ -122,7 +149,7 @@ export default function TreeVarietyManagement() {
         page,
         PAGE_SIZE,
         searchTerm || null,
-        treeTypeFilter ? parseInt(treeTypeFilter) : null
+        treeTypeFilter ? parseInt(treeTypeFilter) : null,
       );
 
       if (response.success) {
@@ -162,7 +189,30 @@ export default function TreeVarietyManagement() {
         varietyDescription: formData.varietyDescription.trim() || null,
       };
 
-      await AdminTreeRepository.createTreeVariety(payload);
+      // Validate payload to avoid sending invalid/empty treeTypeId
+      if (!payload.treeTypeId || Number.isNaN(payload.treeTypeId)) {
+        const msg = "Loại cây không hợp lệ. Vui lòng chọn lại loại cây.";
+        console.warn("Invalid createTreeVariety payload:", payload);
+        setActionNotice({ message: msg, tone: "error" });
+        return;
+      }
+
+      // Validate variety name doesn't contain tree type name
+      const validationError = validateVarietyName(
+        payload.varietyName,
+        payload.treeTypeId,
+      );
+      if (validationError) {
+        setVarietyNameError(validationError);
+        setActionNotice({ message: validationError, tone: "error" });
+        return;
+      }
+
+      // Log payload for debugging — helps trace incorrect values (e.g. 1000)
+      console.debug("Creating tree variety with payload:", payload);
+
+      const created = await AdminTreeRepository.createTreeVariety(payload);
+      console.debug("createTreeVariety response:", created);
       setActionNotice({
         message: "Đã tạo giống cây mới thành công!",
         tone: "success",
@@ -191,9 +241,22 @@ export default function TreeVarietyManagement() {
       if (formData.varietyDescription !== undefined)
         payload.varietyDescription = formData.varietyDescription.trim() || null;
 
+      // Validate variety name doesn't contain tree type name
+      if (payload.varietyName && payload.treeTypeId) {
+        const validationError = validateVarietyName(
+          payload.varietyName,
+          payload.treeTypeId,
+        );
+        if (validationError) {
+          setVarietyNameError(validationError);
+          setActionNotice({ message: validationError, tone: "error" });
+          return;
+        }
+      }
+
       await AdminTreeRepository.updateTreeVariety(
         selectedVariety.varietyId,
-        payload
+        payload,
       );
       setActionNotice({
         message: "Đã cập nhật giống cây thành công!",
@@ -238,21 +301,24 @@ export default function TreeVarietyManagement() {
       varietyName: "",
       varietyDescription: "",
     });
+    setVarietyNameError("");
     setSelectedVariety(null);
   };
 
   const openCreateDialog = () => {
     resetForm();
+    setVarietyNameError("");
     setIsCreateDialogOpen(true);
   };
 
   const openEditDialog = (variety) => {
     setSelectedVariety(variety);
     setFormData({
-      treeTypeId: variety.treeTypeId?.toString() || "",
-      varietyName: variety.varietyName || "",
+      treeTypeId: variety.treeTypeId.toString(),
+      varietyName: variety.varietyName,
       varietyDescription: variety.varietyDescription || "",
     });
+    setVarietyNameError("");
     setIsEditDialogOpen(true);
   };
 
@@ -323,7 +389,7 @@ export default function TreeVarietyManagement() {
                   "rounded-2xl border px-4 py-3 text-sm font-semibold shadow-sm",
                   actionNotice.tone === "error"
                     ? "border-rose-200 bg-rose-50 text-rose-800"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-800",
                 )}
               >
                 {actionNotice.message}
@@ -396,7 +462,7 @@ export default function TreeVarietyManagement() {
                       <Table>
                         <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
                           <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
-                            <TableHead>ID</TableHead>
+                            <TableHead>STT</TableHead>
                             <TableHead>Tên giống cây</TableHead>
                             <TableHead>Loại cây</TableHead>
                             <TableHead>Mô tả</TableHead>
@@ -417,13 +483,13 @@ export default function TreeVarietyManagement() {
                               </TableCell>
                             </TableRow>
                           ) : (
-                            varieties.map((variety) => (
+                            varieties.map((variety, index) => (
                               <TableRow
                                 key={variety.varietyId}
                                 className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
                               >
                                 <TableCell className="font-semibold text-slate-900">
-                                  #{variety.varietyId}
+                                  {(page - 1) * PAGE_SIZE + index + 1}
                                 </TableCell>
                                 <TableCell className="text-slate-800 font-medium">
                                   {variety.varietyName}
@@ -485,7 +551,7 @@ export default function TreeVarietyManagement() {
                           </PaginationItem>
                           {Array.from(
                             { length: totalPages },
-                            (_, i) => i + 1
+                            (_, i) => i + 1,
                           ).map((p) => (
                             <PaginationItem key={p}>
                               <PaginationLink
@@ -506,7 +572,7 @@ export default function TreeVarietyManagement() {
                               onClick={(e) => {
                                 e.preventDefault();
                                 setPage((prev) =>
-                                  Math.min(totalPages, prev + 1)
+                                  Math.min(totalPages, prev + 1),
                                 );
                               }}
                               className={
@@ -543,9 +609,17 @@ export default function TreeVarietyManagement() {
               </label>
               <SearchableSelect
                 value={formData.treeTypeId}
-                onChange={(value) =>
-                  setFormData({ ...formData, treeTypeId: value })
-                }
+                onChange={(value) => {
+                  setFormData({ ...formData, treeTypeId: value });
+                  // Revalidate variety name when tree type changes
+                  if (formData.varietyName) {
+                    const error = validateVarietyName(
+                      formData.varietyName,
+                      value,
+                    );
+                    setVarietyNameError(error);
+                  }
+                }}
                 options={treeTypes.map((t) => ({
                   value: t.treeTypeId.toString(),
                   label: t.treeTypeName,
@@ -559,12 +633,26 @@ export default function TreeVarietyManagement() {
               </label>
               <Input
                 value={formData.varietyName}
-                onChange={(e) =>
-                  setFormData({ ...formData, varietyName: e.target.value })
-                }
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  setFormData({ ...formData, varietyName: newValue });
+                  // Validate on change
+                  if (newValue && formData.treeTypeId) {
+                    const error = validateVarietyName(
+                      newValue,
+                      formData.treeTypeId,
+                    );
+                    setVarietyNameError(error);
+                  } else {
+                    setVarietyNameError("");
+                  }
+                }}
                 placeholder="Ví dụ: Cát Hòa Lộc A"
-                className="mt-1"
+                className={cn("mt-1", varietyNameError && "border-rose-500")}
               />
+              {varietyNameError && (
+                <p className="mt-1 text-sm text-rose-600">{varietyNameError}</p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700">
@@ -594,7 +682,11 @@ export default function TreeVarietyManagement() {
             <Button
               className="bg-emerald-600 text-white hover:bg-emerald-700"
               onClick={handleCreate}
-              disabled={!formData.treeTypeId || !formData.varietyName}
+              disabled={
+                !formData.treeTypeId ||
+                !formData.varietyName ||
+                !!varietyNameError
+              }
             >
               Tạo mới
             </Button>
@@ -616,9 +708,17 @@ export default function TreeVarietyManagement() {
               </label>
               <SearchableSelect
                 value={formData.treeTypeId}
-                onChange={(value) =>
-                  setFormData({ ...formData, treeTypeId: value })
-                }
+                onChange={(value) => {
+                  setFormData({ ...formData, treeTypeId: value });
+                  // Revalidate variety name when tree type changes
+                  if (formData.varietyName) {
+                    const error = validateVarietyName(
+                      formData.varietyName,
+                      value,
+                    );
+                    setVarietyNameError(error);
+                  }
+                }}
                 options={treeTypes.map((t) => ({
                   value: t.treeTypeId.toString(),
                   label: t.treeTypeName,
@@ -628,15 +728,30 @@ export default function TreeVarietyManagement() {
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700">
-                Tên giống cây
+                Tên giống cây *
               </label>
               <Input
                 value={formData.varietyName}
-                onChange={(e) =>
-                  setFormData({ ...formData, varietyName: e.target.value })
-                }
-                className="mt-1"
+                onChange={(e) => {
+                  const newValue = e.target.value;
+                  setFormData({ ...formData, varietyName: newValue });
+                  // Validate on change
+                  if (newValue && formData.treeTypeId) {
+                    const error = validateVarietyName(
+                      newValue,
+                      formData.treeTypeId,
+                    );
+                    setVarietyNameError(error);
+                  } else {
+                    setVarietyNameError("");
+                  }
+                }}
+                placeholder="Ví dụ: Cát Hòa Lộc A"
+                className={cn("mt-1", varietyNameError && "border-rose-500")}
               />
+              {varietyNameError && (
+                <p className="mt-1 text-sm text-rose-600">{varietyNameError}</p>
+              )}
             </div>
             <div>
               <label className="text-sm font-medium text-slate-700">
@@ -662,6 +777,11 @@ export default function TreeVarietyManagement() {
             <Button
               className="bg-emerald-600 text-white hover:bg-emerald-700"
               onClick={handleEdit}
+              disabled={
+                !formData.treeTypeId ||
+                !formData.varietyName ||
+                !!varietyNameError
+              }
             >
               Lưu thay đổi
             </Button>

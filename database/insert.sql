@@ -444,18 +444,18 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Xoài 1' AND [GardenID] = @Garden1IDForTrees)
     BEGIN
         INSERT INTO [dbo].[Trees] ([GardenID], [UserID], [TreeTypeID], [StageID], [TreeCode], [TreeName], [PlantDate], [Location],
-                                   [GardenSoilID], [IsActive], [IsFruiting], [ExpectedHarvestDate], [Notes], [CycleCount])
+                       [GardenSoilID], [IsActive], [IsFruiting], [ExpectedHarvestDate], [Notes], [VirtualAgeMonths], [CycleCount])
         VALUES (@Garden1IDForTrees, @Farmer1IDForTrees, @TreeTypeFruitIDForTrees, @Stage1ID, N'TREE001', N'Cây Xoài 1', '2024-01-15', N'Góc trái vườn',
-                @GardenSoil1ID, 1, 0, '2025-06-15', N'Cây mới trồng, cần chăm sóc kỹ', 0);
+            @GardenSoil1ID, 1, 0, '2025-06-15', N'Cây mới trồng, cần chăm sóc kỹ', NULL, 0);
         PRINT '  - Inserted: Cây Xoài 1'
     END
     
     IF NOT EXISTS (SELECT 1 FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Cam 1' AND [GardenID] = @Garden1IDForTrees)
     BEGIN
         INSERT INTO [dbo].[Trees] ([GardenID], [UserID], [TreeTypeID], [StageID], [TreeCode], [TreeName], [PlantDate], [Location],
-                                   [GardenSoilID], [IsActive], [IsFruiting], [ExpectedHarvestDate], [Notes], [CycleCount])
+                       [GardenSoilID], [IsActive], [IsFruiting], [ExpectedHarvestDate], [Notes], [VirtualAgeMonths], [CycleCount])
         VALUES (@Garden1IDForTrees, @Farmer1IDForTrees, @TreeTypeFruitIDForTrees, @Stage2ID, N'TREE002', N'Cây Cam 1', '2023-06-20', N'Góc phải vườn',
-                @GardenSoil1ID, 1, 0, '2024-12-20', N'Cây đang phát triển tốt', 1);
+            @GardenSoil1ID, 1, 0, '2024-12-20', N'Cây đang phát triển tốt', NULL, 1);
         PRINT '  - Inserted: Cây Cam 1'
     END
 END
@@ -471,9 +471,9 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Ổi 1' AND [GardenID] = @Garden2ID)
     BEGIN
         INSERT INTO [dbo].[Trees] ([GardenID], [UserID], [TreeTypeID], [StageID], [TreeCode], [TreeName], [PlantDate], [Location],
-                                   [GardenSoilID], [IsActive], [IsFruiting], [ExpectedHarvestDate], [Notes], [CycleCount])
+                       [GardenSoilID], [IsActive], [IsFruiting], [ExpectedHarvestDate], [Notes], [VirtualAgeMonths], [CycleCount])
         VALUES (@Garden2ID, @Farmer1IDForTrees2, @TreeTypeFruitIDForTrees2, @Stage2IDForTrees, N'TREE003', N'Cây Ổi 1', '2023-09-10', N'Giữa vườn',
-                NULL, 1, 1, '2024-09-10', N'Cây đã bắt đầu ra quả', 2);
+            NULL, 1, 1, '2024-09-10', N'Cây đã bắt đầu ra quả', NULL, 2);
         PRINT '  - Inserted: Cây Ổi 1'
     END
 END
@@ -489,18 +489,18 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Cao Su 1' AND [GardenID] = @Garden3ID)
     BEGIN
         INSERT INTO [dbo].[Trees] ([GardenID], [UserID], [TreeTypeID], [StageID], [TreeCode], [TreeName], [PlantDate], [Location],
-                                   [GardenSoilID], [IsActive], [IsFruiting], [ExpectedHarvestDate], [Notes], [CycleCount])
+                       [GardenSoilID], [IsActive], [IsFruiting], [ExpectedHarvestDate], [Notes], [VirtualAgeMonths], [CycleCount])
         VALUES (@Garden3ID, @Farmer2IDForTrees, @TreeTypeIndustrialIDForTrees, @Stage2IDForTrees2, N'TREE004', N'Cây Cao Su 1', '2022-05-15', N'Khu A1',
-                NULL, 1, 0, NULL, N'Cây cao su đang phát triển tốt', 3);
+            NULL, 1, 0, NULL, N'Cây cao su đang phát triển tốt', NULL, 3);
         PRINT '  - Inserted: Cây Cao Su 1'
     END
     
     IF NOT EXISTS (SELECT 1 FROM [dbo].[Trees] WHERE [TreeName] = N'Cây Cà Phê 1' AND [GardenID] = @Garden3ID)
     BEGIN
         INSERT INTO [dbo].[Trees] ([GardenID], [UserID], [TreeTypeID], [StageID], [TreeCode], [TreeName], [PlantDate], [Location],
-                                   [GardenSoilID], [IsActive], [IsFruiting], [ExpectedHarvestDate], [Notes], [CycleCount])
+                       [GardenSoilID], [IsActive], [IsFruiting], [ExpectedHarvestDate], [Notes], [VirtualAgeMonths], [CycleCount])
         VALUES (@Garden3ID, @Farmer2IDForTrees, @TreeTypeIndustrialIDForTrees, @Stage2IDForTrees2, N'TREE005', N'Cây Cà Phê 1', '2023-03-20', N'Khu B2',
-                NULL, 1, 0, '2025-03-20', N'Cây cà phê mới trồng', 0);
+            NULL, 1, 0, '2025-03-20', N'Cây cà phê mới trồng', NULL, 0);
         PRINT '  - Inserted: Cây Cà Phê 1'
     END
 END
