@@ -71,6 +71,7 @@ public class AdminSupportRequestService : IAdminSupportRequestService
                 UserFullName = sr.User.FullName,
                 UserEmail = sr.User.Email,
                 Subject = sr.Subject,
+                Description = sr.Description,
                 Category = sr.Category,
                 Priority = sr.Priority,
                 Status = sr.Status,
@@ -78,7 +79,8 @@ public class AdminSupportRequestService : IAdminSupportRequestService
                 ResolvedAt = sr.ResolvedAt,
                 TicketNumber = sr.TicketNumber,
                 ResponseCount = sr.ResponseCount,
-                SatisfactionRating = sr.SatisfactionRating
+                SatisfactionRating = sr.SatisfactionRating,
+                AttachmentUrls = sr.AttachmentUrls
             })
             .ToListAsync();
 

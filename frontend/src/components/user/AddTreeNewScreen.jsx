@@ -1918,14 +1918,25 @@ export default function AddTreeNewScreen() {
               <div className="lg:col-span-8 space-y-6 min-w-0">
                 <Card className="relative z-20 rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5 overflow-visible mm-hover-card">
                   <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-2 break-words">
-                      <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
-                        <Sprout className="w-4 h-4" />
-                      </span>
-                      <span className="break-words min-w-0">
-                        Thông tin cơ bản
-                      </span>
-                    </CardTitle>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <CardTitle className="flex items-center gap-2 break-words">
+                        <span className="inline-grid place-items-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 shrink-0">
+                          <Sprout className="w-4 h-4" />
+                        </span>
+                        <span className="break-words min-w-0">
+                          Thông tin cơ bản
+                        </span>
+                      </CardTitle>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={resetAll}
+                        className="rounded-xl bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 hover:border-rose-300 shrink-0"
+                      >
+                        <span className="whitespace-nowrap">Xóa nội dung</span>
+                      </Button>
+                    </div>
                   </CardHeader>
 
                   {/* Balanced grid: 12 cols */}
@@ -1936,7 +1947,7 @@ export default function AddTreeNewScreen() {
                         htmlFor="code"
                         className="text-neutral-700 break-words"
                       >
-                        Mã cây
+                        Mã cây <span className="text-red-500">*</span>
                       </Label>
                       <div className="relative min-w-0">
                         <Input
@@ -1987,7 +1998,7 @@ export default function AddTreeNewScreen() {
                     {/* 2. Loại cây */}
                     <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
                       <Label className="text-neutral-700 break-words">
-                        Loại cây
+                        Loại cây <span className="text-red-500">*</span>
                       </Label>
                       <div className="min-w-0">
                         <SearchableSelect
@@ -2015,7 +2026,7 @@ export default function AddTreeNewScreen() {
                     {/* 3. Giống */}
                     <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
                       <Label className="text-neutral-700 break-words">
-                        Giống
+                        Giống <span className="text-red-500">*</span>
                       </Label>
                       <div className="min-w-0">
                         <SearchableSelect
@@ -2113,7 +2124,7 @@ export default function AddTreeNewScreen() {
 
                     {/* 5. Ngày trồng */}
                     <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
-                      <Label className="text-neutral-700">Ngày trồng</Label>
+                      <Label className="text-neutral-700">Ngày trồng <span className="text-red-500">*</span></Label>
                       <DateInput
                         value={plantDate}
                         onChange={(val) => {
@@ -2201,7 +2212,7 @@ export default function AddTreeNewScreen() {
                     {/* 8. Loại đất */}
                     <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
                       <Label className="text-neutral-700 break-words">
-                        Loại đất
+                        Loại đất <span className="text-red-500">*</span>
                       </Label>
                       <div className="min-w-0">
                         <SearchableSelect
@@ -2246,7 +2257,7 @@ export default function AddTreeNewScreen() {
                     {/* 9. Giai đoạn */}
                     <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
                       <Label className="text-neutral-700 break-words">
-                        Giai đoạn
+                        Giai đoạn <span className="text-red-500">*</span>
                       </Label>
                       <div className="relative min-w-0">
                         <select
@@ -2456,14 +2467,6 @@ export default function AddTreeNewScreen() {
                       <CheckCircle2 className="w-4 h-4 mr-1 shrink-0" />
                       <span className="whitespace-nowrap">Tạo cây</span>
                     </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={resetAll}
-                      className="rounded-xl bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100 shrink-0"
-                    >
-                      <span className="whitespace-nowrap">Xóa nội dung</span>
-                    </Button>
                   </div>
                 </div>
               </div>
@@ -2642,14 +2645,6 @@ export default function AddTreeNewScreen() {
                     >
                       <CheckCircle2 className="w-4 h-4 mr-1 shrink-0" />
                       <span className="whitespace-nowrap">Tạo cây</span>
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={resetAll}
-                      className="rounded-xl bg-white text-slate-900 border border-neutral-300 hover:bg-neutral-100 w-full sm:w-auto"
-                    >
-                      <span className="whitespace-nowrap">Xóa nội dung</span>
                     </Button>
                   </div>
                 </div>

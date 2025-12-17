@@ -1799,8 +1799,14 @@ public class AdminController : ControllerBase
                     "cancelled" => "rejected",
                     _ => r.Status?.ToLower() ?? "in_progress"
                 },
-                content = r.Subject, // Can be extended with Description
-                evidence = new List<object>() // Can be populated from AttachmentUrls if needed
+                content = r.Description ?? r.Subject,
+                attachmentUrls = r.AttachmentUrls, // Include attachment URLs
+                evidence = string.IsNullOrEmpty(r.AttachmentUrls)
+                    ? new List<object>()
+                    : r.AttachmentUrls.Split(';', StringSplitOptions.RemoveEmptyEntries)
+                        .Select(url => new { url = url.Trim(), caption = "Hình ảnh đính kèm" })
+                        .Cast<object>()
+                        .ToList()
             }).ToList();
 
             return Ok(new

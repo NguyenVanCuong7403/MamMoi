@@ -26,21 +26,67 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import SubscriptionPlanRepository from "@/API/repositories/SubscriptionPlanRepository";
 
-// CSS animations as inline styles
+// CSS animations and Design Tokens
 const animationStyles = `
+  /* ============ DESIGN TOKENS - FLUID TYPOGRAPHY ============ */
+  :root {
+    /* Typography - Fluid scaling from 320px to 1920px viewport */
+    --font-hero: clamp(1.375rem, 2.5vw + 0.5rem, 3rem);
+    --font-h2: clamp(1.125rem, 1.8vw + 0.4rem, 2rem);
+    --font-h3: clamp(0.8125rem, 1vw + 0.3rem, 1.125rem);
+    --font-body: clamp(0.8125rem, 0.6vw + 0.5rem, 1rem);
+    --font-small: clamp(0.6875rem, 0.5vw + 0.4rem, 0.8125rem);
+    --font-caption: clamp(0.625rem, 0.4vw + 0.35rem, 0.75rem);
+    --font-tiny: clamp(0.5625rem, 0.35vw + 0.3rem, 0.6875rem);
+    
+    /* Line-heights */
+    --lh-tight: 1.2;
+    --lh-snug: 1.35;
+    --lh-normal: 1.5;
+    --lh-relaxed: 1.65;
+    
+    /* Spacing - Fluid */
+    --space-xs: clamp(0.125rem, 0.3vw, 0.375rem);
+    --space-sm: clamp(0.25rem, 0.5vw, 0.625rem);
+    --space-md: clamp(0.5rem, 1vw, 1rem);
+    --space-lg: clamp(0.75rem, 1.5vw, 1.5rem);
+    --space-xl: clamp(1rem, 2vw, 2rem);
+    --space-2xl: clamp(1.5rem, 3vw, 3rem);
+    --space-section: clamp(1.5rem, 4vw, 4rem);
+    
+    /* Container max-widths */
+    --container-sm: min(95vw, 540px);
+    --container-md: min(92vw, 720px);
+    --container-lg: min(90vw, 960px);
+    --container-xl: min(88vw, 1140px);
+    
+    /* Border radius - Fluid */
+    --radius-sm: clamp(0.25rem, 0.4vw, 0.5rem);
+    --radius-md: clamp(0.375rem, 0.6vw, 0.75rem);
+    --radius-lg: clamp(0.5rem, 1vw, 1rem);
+    --radius-xl: clamp(0.75rem, 1.5vw, 1.5rem);
+    
+    /* Icon sizes - Fluid */
+    --icon-xs: clamp(0.75rem, 0.8vw + 0.4rem, 1.125rem);
+    --icon-sm: clamp(0.875rem, 1vw + 0.4rem, 1.25rem);
+    --icon-md: clamp(1rem, 1.2vw + 0.5rem, 1.5rem);
+    --icon-lg: clamp(1.25rem, 1.5vw + 0.5rem, 2rem);
+  }
+
+  /* ============ ANIMATIONS ============ */
   @keyframes float {
     0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(-20px) rotate(5deg); }
+    50% { transform: translateY(-10px) rotate(2deg); }
   }
   
   @keyframes float-reverse {
     0%, 100% { transform: translateY(0px) rotate(0deg); }
-    50% { transform: translateY(20px) rotate(-5deg); }
+    50% { transform: translateY(10px) rotate(-2deg); }
   }
   
   @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
-    50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.8), 0 0 60px rgba(16, 185, 129, 0.4); }
+    0%, 100% { box-shadow: 0 0 10px rgba(16, 185, 129, 0.25); }
+    50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.5); }
   }
   
   @keyframes shimmer {
@@ -55,22 +101,17 @@ const animationStyles = `
   
   @keyframes bounce-soft {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    50% { transform: translateY(-4px); }
   }
   
   @keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(30px); }
+    from { opacity: 0; transform: translateY(15px); }
     to { opacity: 1; transform: translateY(0); }
-  }
-  
-  @keyframes rotate-slow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
   }
   
   @keyframes scale-pulse {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.05); }
+    50% { transform: scale(1.02); }
   }
   
   .animate-float { animation: float 6s ease-in-out infinite; }
@@ -78,7 +119,7 @@ const animationStyles = `
   .animate-float-slow { animation: float 8s ease-in-out infinite; }
   .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
   .animate-shimmer { 
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
   }
@@ -87,23 +128,22 @@ const animationStyles = `
     animation: gradient-shift 3s ease infinite;
   }
   .animate-bounce-soft { animation: bounce-soft 2s ease-in-out infinite; }
-  .animate-fade-in-up { animation: fade-in-up 0.6s ease-out forwards; }
-  .animate-rotate-slow { animation: rotate-slow 20s linear infinite; }
+  .animate-fade-in-up { animation: fade-in-up 0.4s ease-out forwards; }
   .animate-scale-pulse { animation: scale-pulse 3s ease-in-out infinite; }
   
   .delay-100 { animation-delay: 0.1s; }
   .delay-200 { animation-delay: 0.2s; }
   .delay-300 { animation-delay: 0.3s; }
-  .delay-400 { animation-delay: 0.4s; }
-  .delay-500 { animation-delay: 0.5s; }
   
   .card-3d {
     transform-style: preserve-3d;
     perspective: 1000px;
   }
   
-  .card-3d:hover {
-    transform: rotateY(-5deg) rotateX(5deg) translateY(-10px);
+  @media (min-width: 1024px) {
+    .card-3d:hover {
+      transform: rotateY(-2deg) rotateX(2deg) translateY(-3px);
+    }
   }
   
   .shine-effect::before {
@@ -113,12 +153,7 @@ const animationStyles = `
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.2),
-      transparent
-    );
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
     transition: left 0.5s;
   }
   
@@ -126,25 +161,84 @@ const animationStyles = `
     left: 100%;
   }
   
-  /* Fluid typography for prices */
-  .price-text {
-    font-size: clamp(1.5rem, 4vw, 3.5rem);
-    line-height: 1.1;
-    word-break: break-word;
-  }
+  /* ============ MOBILE FIRST RESPONSIVE ============ */
   
-  /* Pricing card min-width */
+  /* Base: Mobile (< 480px) */
   .pricing-card {
-    min-width: 280px;
+    min-width: 0;
+    width: 100%;
   }
   
-  @media (min-width: 768px) {
+  /* Hide decorative elements on small screens */
+  @media (max-width: 639px) {
+    .floating-decoration {
+      display: none !important;
+    }
+    .bg-orb {
+      opacity: 0.3 !important;
+      width: 100px !important;
+      height: 100px !important;
+    }
+  }
+  
+  /* Small Mobile: 480px - 639px */
+  @media (min-width: 480px) and (max-width: 639px) {
+    .bg-orb {
+      opacity: 0.4 !important;
+    }
+  }
+  
+  /* Small tablet: 640px - 767px */
+  @media (min-width: 640px) and (max-width: 767px) {
+    .pricing-card {
+      max-width: 320px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .bg-orb {
+      width: 120px !important;
+      height: 120px !important;
+    }
+  }
+  
+  /* Tablet: 768px - 1023px */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .pricing-card {
+      min-width: 0;
+    }
+    .bg-orb {
+      width: 150px !important;
+      height: 150px !important;
+    }
+  }
+  
+  /* Small laptop: 1024px - 1279px */
+  @media (min-width: 1024px) and (max-width: 1279px) {
+    .pricing-card {
+      min-width: 0;
+    }
+    .bg-orb {
+      width: 180px !important;
+      height: 180px !important;
+    }
+  }
+  
+  /* Medium laptop: 1280px - 1439px */
+  @media (min-width: 1280px) and (max-width: 1439px) {
+    .pricing-card {
+      min-width: 280px;
+    }
+  }
+  
+  /* Large screens: >= 1440px */
+  @media (min-width: 1440px) {
     .pricing-card {
       min-width: 320px;
     }
   }
   
-  @media (min-width: 1280px) {
+  /* Extra large: >= 1920px */
+  @media (min-width: 1920px) {
     .pricing-card {
       min-width: 360px;
     }
@@ -458,82 +552,46 @@ export default function PricingPage() {
       <div className="mm-fluid-page min-h-screen overflow-hidden">
         {/* Hero Section - Using Mầm Mới Brand Colors */}
         <div
-          className="relative overflow-hidden min-h-[60vh] flex items-center"
+          className="relative overflow-hidden min-h-[40vh] sm:min-h-[45vh] md:min-h-[50vh] lg:min-h-[55vh] xl:min-h-[60vh] flex items-center"
           style={{ background: 'linear-gradient(135deg, #1F302F 0%, #2a4a48 50%, #1F302F 100%)' }}
         >
-          {/* Animated Background Orbs - Brand Colors */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-10 left-10 w-72 h-72 rounded-full blur-3xl animate-float" style={{ background: 'radial-gradient(circle, rgba(209,223,182,0.3) 0%, transparent 70%)' }} />
-            <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full blur-3xl animate-float-reverse" style={{ background: 'radial-gradient(circle, rgba(255,255,165,0.25) 0%, transparent 70%)' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-3xl animate-scale-pulse" style={{ background: 'radial-gradient(circle, rgba(251,255,223,0.1) 0%, transparent 60%)' }} />
+          {/* Animated Background Orbs - Hidden on mobile, smaller on tablet */}
+          <div className="absolute inset-0 overflow-hidden hidden sm:block">
+            <div className="absolute top-10 left-10 w-32 md:w-48 lg:w-56 xl:w-72 h-32 md:h-48 lg:h-56 xl:h-72 rounded-full blur-3xl animate-float opacity-40" style={{ background: 'radial-gradient(circle, rgba(209,223,182,0.25) 0%, transparent 70%)' }} />
+            <div className="absolute bottom-10 right-10 w-40 md:w-56 lg:w-72 xl:w-96 h-40 md:h-56 lg:h-72 xl:h-96 rounded-full blur-3xl animate-float-reverse opacity-35" style={{ background: 'radial-gradient(circle, rgba(255,255,165,0.2) 0%, transparent 70%)' }} />
           </div>
 
-          {/* Floating Nature Icons - Plants, Water, Fruits */}
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {/* Floating Nature Icons - Hidden on tablet and below */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none hidden lg:block">
             {/* Leaf icon - top left */}
-            <div className="absolute top-16 left-[8%] animate-float opacity-40">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D1DFB6" strokeWidth="1.5">
+            <div className="absolute top-16 left-[8%] animate-float opacity-30">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#D1DFB6" strokeWidth="1.5">
                 <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
                 <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
               </svg>
             </div>
 
             {/* Water drop - top right */}
-            <div className="absolute top-24 right-[12%] animate-float-reverse opacity-35">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#FBFFDF" strokeWidth="1.5">
+            <div className="absolute top-24 right-[12%] animate-float-reverse opacity-25">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FBFFDF" strokeWidth="1.5">
                 <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z" />
               </svg>
             </div>
 
-            {/* Apple/Fruit - middle left */}
-            <div className="absolute top-[45%] left-[5%] animate-float-slow opacity-30">
-              <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#FFFFA5" strokeWidth="1.5">
-                <path d="M12 20.94c1.5 0 2.75 1.06 4 1.06 3 0 6-8 6-12.22A4.91 4.91 0 0 0 17 5c-2.22 0-4 1.44-5 2-1-.56-2.78-2-5-2a4.9 4.9 0 0 0-5 4.78C2 14 5 22 8 22c1.25 0 2.5-1.06 4-1.06Z" />
-                <path d="M10 2c1 .5 2 2 2 5" />
-              </svg>
-            </div>
-
             {/* Sprout/Seedling - bottom left */}
-            <div className="absolute bottom-28 left-[18%] animate-bounce-soft opacity-40">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#D1DFB6" strokeWidth="1.5">
+            <div className="absolute bottom-28 left-[18%] animate-bounce-soft opacity-30">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D1DFB6" strokeWidth="1.5">
                 <path d="M7 20h10" />
                 <path d="M10 20c5.5-2.5.8-6.4 3-10" />
                 <path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8Z" />
-                <path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2Z" />
-              </svg>
-            </div>
-
-            {/* Sun - top center-right */}
-            <div className="absolute top-32 right-[28%] animate-scale-pulse opacity-25">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#FFFFA5" strokeWidth="1.5">
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" />
               </svg>
             </div>
 
             {/* Small leaf - bottom right */}
-            <div className="absolute bottom-20 right-[22%] animate-float opacity-35">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#D1DFB6" strokeWidth="1.5">
+            <div className="absolute bottom-20 right-[22%] animate-float opacity-25">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D1DFB6" strokeWidth="1.5">
                 <path d="M6.5 12C6.5 12 10 6 18.5 2.5c0 0-1.5 9.5-7 12.5-3 1.7-6.5 1-6.5 1" />
                 <path d="M6.5 16.5c.5-2 1.5-3.5 3.5-5" />
-              </svg>
-            </div>
-
-            {/* Water drops cluster - middle right */}
-            <div className="absolute top-[55%] right-[8%] animate-float-reverse opacity-30">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FBFFDF" strokeWidth="1.5">
-                <path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.8 4.05 4 4.05z" />
-                <path d="M12.56 14.25c1.24 0 2.24-1.02 2.24-2.28 0-.65-.32-1.27-.96-1.79s-1.13-1.07-1.28-1.68c-.15.61-.57 1.16-1.28 1.68s-.96 1.14-.96 1.79c0 1.26 1 2.28 2.24 2.28z" />
-                <path d="M19 14.25c1.24 0 2.24-1.02 2.24-2.28 0-.65-.32-1.27-.96-1.79S19.15 9.11 19 8.5c-.15.61-.57 1.16-1.28 1.68s-.96 1.14-.96 1.79c0 1.26 1 2.28 2.24 2.28z" />
-              </svg>
-            </div>
-
-            {/* Tree/Plant - far left */}
-            <div className="absolute top-[30%] left-[2%] animate-float opacity-25">
-              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#D1DFB6" strokeWidth="1.5">
-                <path d="M12 22v-7l-2-2" />
-                <path d="M17 8v.8A6 6 0 0 1 13.8 20v0H10v0A6.5 6.5 0 0 1 7 8h0a5 5 0 0 1 10 0Z" />
-                <path d="m14 14-2 2" />
               </svg>
             </div>
           </div>
@@ -545,21 +603,19 @@ export default function PricingPage() {
           }} />
 
           {/* Hero Content */}
-          <div className="relative z-10 container mx-auto px-4 py-20">
-            <div className="max-w-4xl mx-auto text-center">
+          <div className="relative z-10 container mx-auto" style={{ padding: 'var(--space-section) var(--space-md)' }}>
+            <div style={{ maxWidth: 'var(--container-lg)', margin: '0 auto', textAlign: 'center' }}>
               {/* Animated Badge */}
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/15 backdrop-blur-md rounded-full border border-white/30 mb-8 animate-bounce-soft">
-                <div className="relative">
-                  <Sparkles className="w-5 h-5 text-yellow-300" />
-                  <div className="absolute inset-0 animate-ping">
-                    <Sparkles className="w-5 h-5 text-yellow-300 opacity-50" />
-                  </div>
-                </div>
-                <span className="text-white font-semibold">Công nghệ AI tiên tiến nhất</span>
+              <div
+                className="inline-flex items-center bg-white/15 backdrop-blur-md rounded-full border border-white/25 animate-bounce-soft"
+                style={{ gap: 'var(--space-sm)', padding: 'var(--space-sm) var(--space-md)', marginBottom: 'var(--space-lg)' }}
+              >
+                <Sparkles style={{ width: 'var(--icon-sm)', height: 'var(--icon-sm)' }} className="text-yellow-300" />
+                <span className="text-white font-semibold" style={{ fontSize: 'var(--font-small)' }}>Công nghệ AI tiên tiến nhất</span>
               </div>
 
-              <h1 className="text-4xl md:text-6xl lg:text-7xl font-black leading-tight mb-8">
-                <span style={{ color: '#FBFFDF' }} className="drop-shadow-lg">Chăm Vườn </span>
+              <h1 className="font-black drop-shadow-lg" style={{ fontSize: 'var(--font-hero)', lineHeight: 'var(--lh-tight)', marginBottom: 'var(--space-lg)' }}>
+                <span style={{ color: '#FBFFDF' }}>Chăm Vườn </span>
                 <span className="relative inline-block">
                   <span className="text-transparent bg-clip-text animate-gradient" style={{ backgroundImage: 'linear-gradient(to right, #FFFFA5, #D1DFB6, #FFFFA5)' }}>
                     Thông Minh
@@ -571,13 +627,13 @@ export default function PricingPage() {
                 </span>
               </h1>
 
-              <p className="text-xl md:text-2xl mb-10 max-w-3xl mx-auto leading-relaxed text-white/90 font-light">
+              <p className="text-white/85 font-light" style={{ fontSize: 'var(--font-body)', lineHeight: 'var(--lh-relaxed)', maxWidth: 'var(--container-md)', margin: '0 auto', marginBottom: 'var(--space-xl)', padding: '0 var(--space-sm)' }}>
                 Quản lý vườn cây chuyên nghiệp với trợ lý AI thông minh,
                 cảnh báo thời tiết real-time và nhật ký số hoàn chỉnh
               </p>
 
               {/* Trust Badges with Animation */}
-              <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
+              <div className="flex flex-wrap items-center justify-center" style={{ gap: 'var(--space-sm)', marginBottom: 'var(--space-xl)', padding: '0 var(--space-sm)' }}>
                 {[
                   { icon: Gift, text: "Dùng thử miễn phí 1 tháng", color: "text-yellow-300" },
                   { icon: Shield, text: "Bảo mật dữ liệu 100%", color: "text-blue-300" },
@@ -585,11 +641,11 @@ export default function PricingPage() {
                 ].map((badge, i) => (
                   <div
                     key={i}
-                    className={`flex items-center gap-2 px-4 py-2.5 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 hover:bg-white/20 transition-all duration-300 hover:scale-105 animate-fade-in-up`}
-                    style={{ animationDelay: `${i * 0.1}s` }}
+                    className="flex items-center bg-white/10 backdrop-blur-sm rounded-full border border-white/20 hover:bg-white/20 transition-all duration-300"
+                    style={{ gap: 'var(--space-xs)', padding: 'var(--space-xs) var(--space-md)' }}
                   >
-                    <badge.icon className={`w-5 h-5 ${badge.color}`} />
-                    <span className="text-white/90 text-sm font-medium">{badge.text}</span>
+                    <badge.icon className={badge.color} style={{ width: 'var(--icon-xs)', height: 'var(--icon-xs)' }} />
+                    <span className="text-white/90 font-medium" style={{ fontSize: 'var(--font-caption)' }}>{badge.text}</span>
                   </div>
                 ))}
               </div>
@@ -597,7 +653,7 @@ export default function PricingPage() {
               {/* CTA Button with Brand Colors */}
               <Button
                 size="lg"
-                className="relative font-bold px-10 py-7 text-lg rounded-2xl shadow-2xl hover:scale-110 transition-all duration-500 group overflow-hidden"
+                className="relative font-bold px-6 py-4 md:px-8 md:py-5 lg:px-10 lg:py-7 text-sm md:text-base lg:text-lg rounded-xl md:rounded-2xl shadow-2xl hover:scale-105 md:hover:scale-110 transition-all duration-500 group overflow-hidden"
                 style={{
                   background: '#FFFFA5',
                   color: '#1F302F',
@@ -607,7 +663,7 @@ export default function PricingPage() {
               >
                 <span className="relative z-10 flex items-center gap-2">
                   Xem bảng giá ngay
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover:translate-x-1 transition-transform" />
                 </span>
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity" style={{ background: 'linear-gradient(to right, #D1DFB6, #FBFFDF)' }} />
               </Button>
@@ -622,7 +678,7 @@ export default function PricingPage() {
         <div
           id="pricing"
           ref={pricingRef}
-          className="relative py-24 overflow-hidden"
+          className="relative py-12 md:py-16 lg:py-20 xl:py-24 overflow-hidden"
           style={{
             background: 'linear-gradient(180deg, #1F302F 0%, #243833 30%, #2a4a48 50%, #243833 70%, #1F302F 100%)'
           }}
@@ -646,16 +702,19 @@ export default function PricingPage() {
             backgroundSize: '40px 40px'
           }} />
 
-          <div className="relative z-10 container mx-auto px-4">
-            <div className="max-w-7xl mx-auto">
+          <div className="relative z-10 container mx-auto" style={{ padding: '0 var(--space-md)' }}>
+            <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
               {/* Section Header - Brand Colors */}
-              <div className="text-center mb-20" data-animate id="pricing-header">
-                <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full border mb-6 animate-bounce-soft" style={{ background: 'rgba(209,223,182,0.15)', borderColor: 'rgba(209,223,182,0.3)' }}>
-                  <Crown className="w-5 h-5" style={{ color: '#FFFFA5' }} />
-                  <span style={{ color: '#D1DFB6' }} className="font-semibold">Lựa chọn linh hoạt cho mọi quy mô</span>
+              <div className="text-center" style={{ marginBottom: 'var(--space-section)' }} data-animate id="pricing-header">
+                <div
+                  className="inline-flex items-center rounded-full border animate-bounce-soft"
+                  style={{ gap: 'var(--space-xs)', padding: 'var(--space-xs) var(--space-md)', marginBottom: 'var(--space-md)', background: 'rgba(209,223,182,0.15)', borderColor: 'rgba(209,223,182,0.25)' }}
+                >
+                  <Crown style={{ width: 'var(--icon-sm)', height: 'var(--icon-sm)', color: '#FFFFA5' }} />
+                  <span style={{ color: '#D1DFB6', fontSize: 'var(--font-caption)' }} className="font-semibold">Lựa chọn linh hoạt cho mọi quy mô</span>
                 </div>
 
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
+                <h2 className="font-black" style={{ fontSize: 'var(--font-h2)', lineHeight: 'var(--lh-tight)', marginBottom: 'var(--space-sm)' }}>
                   <span style={{ color: '#FBFFDF' }}>Chọn Gói </span>
                   <span className="animate-gradient" style={{ color: '#FFFFA5' }}>
                     Phù Hợp
@@ -663,19 +722,19 @@ export default function PricingPage() {
                   <span style={{ color: '#FBFFDF' }}> Với Bạn</span>
                 </h2>
 
-                <p style={{ color: 'rgba(209,223,182,0.8)' }} className="text-xl max-w-2xl mx-auto">
+                <p style={{ color: 'rgba(209,223,182,0.75)', fontSize: 'var(--font-body)', maxWidth: 'var(--container-md)', margin: '0 auto', lineHeight: 'var(--lh-relaxed)' }}>
                   Từ vườn nhỏ gia đình đến trang trại lớn, Mầm Mới có giải pháp tối ưu dành riêng cho bạn
                 </p>
               </div>
 
               {/* ============ PRICING CARDS ============ */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10 xl:gap-12 mb-20 px-4 md:px-0">
-                <style>{`
-                  .pricing-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
-                  }
-                `}</style>
+              <div
+                className="grid grid-cols-1 md:grid-cols-3"
+                style={{
+                  gap: 'var(--space-xl)',
+                  marginBottom: 'var(--space-section)'
+                }}
+              >
                 {loading ? (
                   [1, 2, 3].map((i) => (
                     <div key={i} className="relative rounded-3xl overflow-hidden animate-pulse">
@@ -779,83 +838,86 @@ export default function PricingPage() {
                           )}
 
                           {/* Animated Border Gradient */}
-                          <div className={`absolute -inset-[2px] bg-gradient-to-br ${plan.style?.borderGradient} rounded-[32px] opacity-100 group-hover:opacity-100 transition-opacity duration-500 animate-gradient`} />
+                          <div className={`absolute -inset-[2px] bg-gradient-to-br ${plan.style?.borderGradient} rounded-[--radius-xl] opacity-100 group-hover:opacity-100 transition-opacity duration-500 animate-gradient`} />
 
-                          {/* Card Inner - BIGGER */}
-                          <div className={`relative h-full rounded-[30px] bg-gradient-to-br ${plan.style?.cardBg} backdrop-blur-xl p-10 lg:p-12 flex flex-col overflow-hidden shine-effect`}>
+                          {/* Card Inner - Fluid Responsive */}
+                          <div
+                            className={`relative h-full bg-gradient-to-br ${plan.style?.cardBg} backdrop-blur-xl flex flex-col overflow-hidden shine-effect`}
+                            style={{ padding: 'var(--space-lg)', borderRadius: 'var(--radius-xl)' }}
+                          >
                             {/* Shimmer Effect Overlay */}
                             <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
                               <div className="absolute inset-0 animate-shimmer" />
                             </div>
 
                             {/* Plan Icon with Glow */}
-                            <div className="relative mb-6">
+                            <div style={{ marginBottom: 'var(--space-md)' }}>
                               <div
-                                className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br ${plan.style?.iconBg} shadow-lg group-hover:scale-110 transition-transform duration-300`}
-                                style={{ boxShadow: `0 10px 40px ${plan.style?.glowColor}` }}
+                                className={`inline-flex items-center justify-center bg-gradient-to-br ${plan.style?.iconBg} shadow-lg group-hover:scale-105 transition-transform duration-300`}
+                                style={{ width: 'var(--icon-lg)', height: 'var(--icon-lg)', borderRadius: 'var(--radius-md)', boxShadow: `0 8px 24px ${plan.style?.glowColor}` }}
                               >
-                                <PlanIcon className="w-8 h-8 text-white" />
+                                <PlanIcon className="text-white" style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
                               </div>
                             </div>
 
                             {/* Plan Name */}
-                            <h3 className={`text-2xl lg:text-3xl font-bold mb-2 text-transparent bg-clip-text bg-gradient-to-r ${plan.style?.textGradient}`}>
+                            <h3
+                              className={`font-bold text-transparent bg-clip-text bg-gradient-to-r ${plan.style?.textGradient}`}
+                              style={{ fontSize: 'var(--font-h3)', lineHeight: 'var(--lh-snug)', marginBottom: 'var(--space-xs)' }}
+                            >
                               {plan.name}
                             </h3>
-                            <p className="text-gray-400 text-sm mb-6">
+                            <p style={{ fontSize: 'var(--font-caption)', marginBottom: 'var(--space-md)', color: 'rgba(255,255,255,0.85)' }}>
                               {plan.features[0]}
                             </p>
 
-                            {/* Price with Animation - RESPONSIVE */}
-                            <div className="mb-6 lg:mb-8">
-                              <div className="flex flex-wrap items-baseline gap-1">
+                            {/* Price with Animation */}
+                            <div style={{ marginBottom: 'var(--space-lg)' }}>
+                              <div className="flex flex-wrap items-baseline" style={{ gap: 'var(--space-xs)' }}>
                                 <span
-                                  className={`font-black text-transparent bg-clip-text bg-gradient-to-r ${plan.style?.textGradient} group-hover:scale-105 transition-transform duration-300`}
-                                  style={{
-                                    fontSize: 'clamp(1.75rem, 5vw, 3rem)',
-                                    lineHeight: '1.2',
-                                    wordBreak: 'break-word'
-                                  }}
+                                  className={`font-black text-transparent bg-clip-text bg-gradient-to-r ${plan.style?.textGradient}`}
+                                  style={{ fontSize: 'var(--font-2xl)', lineHeight: 'var(--lh-tight)' }}
                                 >
                                   {formatPrice(plan.monthlyPrice)}đ
                                 </span>
-                                <span className="text-gray-500 text-base lg:text-lg">/tháng</span>
+                                <span style={{ fontSize: 'var(--font-small)', color: 'rgba(255,255,255,0.7)' }}>/tháng</span>
                               </div>
                             </div>
 
                             {/* Features List */}
-                            <div className="flex-1 mb-8">
-                              <ul className="space-y-4">
+                            <div className="flex-1" style={{ marginBottom: 'var(--space-lg)' }}>
+                              <ul style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
                                 {plan.features && plan.features.length > 0 ? (
                                   plan.features.map((feature, fIndex) => (
-                                    <li key={fIndex} className="flex items-start gap-3 group/item">
+                                    <li key={fIndex} className="flex items-start group/item" style={{ gap: 'var(--space-sm)' }}>
                                       <div
-                                        className={`flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br ${plan.style?.gradient} flex items-center justify-center group-hover/item:scale-110 transition-transform`}
+                                        className={`flex-shrink-0 rounded-full bg-gradient-to-br ${plan.style?.gradient} flex items-center justify-center group-hover/item:scale-105 transition-transform`}
+                                        style={{ width: 'var(--icon-sm)', height: 'var(--icon-sm)' }}
                                       >
-                                        <Check className="w-3.5 h-3.5 text-white" />
+                                        <Check className="text-white" style={{ width: 'var(--icon-xs)', height: 'var(--icon-xs)' }} />
                                       </div>
-                                      <span className="text-gray-300 text-sm group-hover/item:text-white transition-colors">
+                                      <span className="group-hover/item:text-white transition-colors" style={{ fontSize: 'var(--font-caption)', lineHeight: 'var(--lh-normal)', color: 'rgba(255,255,255,0.9)' }}>
                                         {feature}
                                       </span>
                                     </li>
                                   ))
                                 ) : (
                                   <>
-                                    <li className="flex items-start gap-3">
-                                      <div className={`flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br ${plan.style?.gradient} flex items-center justify-center`}>
-                                        <Check className="w-3.5 h-3.5 text-white" />
+                                    <li className="flex items-start gap-2 md:gap-3">
+                                      <div className={`flex-shrink-0 w-5 h-5 md:w-6 md:h-6 rounded-full bg-gradient-to-br ${plan.style?.gradient} flex items-center justify-center`}>
+                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-white" />
                                       </div>
-                                      <span className="text-gray-300 text-sm">
+                                      <span className="text-gray-300 text-xs md:text-sm">
                                         {plan.maxGardens
                                           ? `Tối đa ${plan.maxGardens} vườn`
                                           : "Không giới hạn vườn"}
                                       </span>
                                     </li>
-                                    <li className="flex items-start gap-3">
-                                      <div className={`flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br ${plan.style?.gradient} flex items-center justify-center`}>
-                                        <Check className="w-3.5 h-3.5 text-white" />
+                                    <li className="flex items-start gap-2 md:gap-3">
+                                      <div className={`flex-shrink-0 w-5 h-5 md:w-6 md:h-6 rounded-full bg-gradient-to-br ${plan.style?.gradient} flex items-center justify-center`}>
+                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-white" />
                                       </div>
-                                      <span className="text-gray-300 text-sm">
+                                      <span className="text-gray-300 text-xs md:text-sm">
                                         {plan.maxTreesPerGarden
                                           ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
                                           : "Không giới hạn cây"}
@@ -869,7 +931,7 @@ export default function PricingPage() {
                             {/* CTA Button */}
                             <div className="relative">
                               <Button
-                                className={`w-full py-7 text-lg font-bold rounded-xl transition-all duration-300 relative overflow-hidden group/btn ${plan.popular
+                                className={`w-full py-4 md:py-5 lg:py-6 xl:py-7 text-xs md:text-sm lg:text-base xl:text-lg font-bold rounded-lg md:rounded-xl transition-all duration-300 relative overflow-hidden group/btn ${plan.popular
                                   ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:via-teal-400 hover:to-cyan-400 text-white shadow-xl shadow-emerald-500/40'
                                   : `bg-gradient-to-r ${plan.style?.gradient} text-white shadow-lg`
                                   } ${isLowerOrCurrent ? 'opacity-50 cursor-not-allowed' : 'hover:scale-[1.02] hover:shadow-2xl'}`}
@@ -877,16 +939,16 @@ export default function PricingPage() {
                                 onClick={() => handleSelectPlan(plan)}
                                 disabled={isLowerOrCurrent}
                               >
-                                <span className="relative z-10 flex items-center justify-center gap-2">
+                                <span className="relative z-10 flex items-center justify-center gap-1.5 md:gap-2">
                                   {isCurrentPlan ? (
                                     <>
-                                      <CheckCircle2 className="w-5 h-5" />
+                                      <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" />
                                       Đang sử dụng
                                     </>
                                   ) : (
                                     <>
                                       {plan.buttonText}
-                                      <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
+                                      <ArrowRight className="w-4 h-4 md:w-5 md:h-5 group-hover/btn:translate-x-1 transition-transform" />
                                     </>
                                   )}
                                 </span>
@@ -896,9 +958,9 @@ export default function PricingPage() {
                               </Button>
 
                               {!isLowerOrCurrent && (
-                                <p className="text-xs text-gray-500 text-center mt-4">
+                                <span style={{ fontSize: 'var(--font-small)', color: 'rgba(255,255,255,0.7)' }}>
                                   ✓ Giá đã bao gồm VAT • Kích hoạt ngay
-                                </p>
+                                </span>
                               )}
                             </div>
                           </div>
@@ -910,16 +972,16 @@ export default function PricingPage() {
               </div>
 
               {/* Trust Section */}
-              <div className="flex flex-wrap items-center justify-center gap-8 pt-12 border-t border-white/10">
+              <div className="flex flex-wrap items-center justify-center gap-3 md:gap-5 lg:gap-6 xl:gap-8 pt-6 md:pt-8 lg:pt-10 xl:pt-12 border-t border-white/10">
                 {[
                   { icon: Shield, text: "Thanh toán an toàn", color: "text-emerald-400" },
                   { icon: BadgeCheck, text: "Hủy bất cứ lúc nào", color: "text-blue-400" },
                   { icon: Zap, text: "Kích hoạt tức thì", color: "text-amber-400" },
                   { icon: Rocket, text: "Nâng cấp dễ dàng", color: "text-purple-400" },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors group">
-                    <item.icon className={`w-5 h-5 ${item.color} group-hover:scale-110 transition-transform`} />
-                    <span className="text-sm">{item.text}</span>
+                  <div key={i} className="flex items-center gap-1.5 md:gap-2 text-gray-400 hover:text-white transition-colors group">
+                    <item.icon className={`w-4 h-4 md:w-5 md:h-5 ${item.color} group-hover:scale-110 transition-transform`} />
+                    <span className="text-xs md:text-sm">{item.text}</span>
                   </div>
                 ))}
               </div>
@@ -927,67 +989,66 @@ export default function PricingPage() {
           </div>
         </div>
 
-        {/* Benefits Section - Premium Design */}
-        <div className="relative z-10 py-24 overflow-hidden" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f8faf5 100%)' }}>
-          {/* Background Effects */}
-          <div className="absolute inset-0">
-            <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(90deg, transparent, #D1DFB6, #FFFFA5, #D1DFB6, transparent)' }} />
-            <div className="absolute top-20 left-[5%] w-80 h-80 rounded-full blur-3xl animate-float opacity-60" style={{ background: 'radial-gradient(circle, rgba(255,200,100,0.3) 0%, transparent 70%)' }} />
-            <div className="absolute bottom-20 right-[5%] w-96 h-96 rounded-full blur-3xl animate-float-reverse opacity-50" style={{ background: 'radial-gradient(circle, rgba(100,200,180,0.25) 0%, transparent 70%)' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-3xl opacity-20" style={{ background: 'radial-gradient(circle, rgba(209,223,182,0.5) 0%, transparent 60%)' }} />
+        {/* Benefits Section - Light Gradient */}
+        <div className="relative z-10 overflow-hidden" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #f8faf5 100%)', padding: 'var(--space-section) 0' }}>
+          {/* Background Effects - Hidden on small screens */}
+          <div className="absolute inset-0 hidden md:block">
+            <div className="absolute top-0 left-0 w-full h-0.5" style={{ background: 'linear-gradient(90deg, transparent, #D1DFB6, #FFFFA5, #D1DFB6, transparent)' }} />
           </div>
 
-          <div className="relative container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
+          <div className="relative container mx-auto" style={{ padding: '0 var(--space-md)' }}>
+            <div style={{ maxWidth: 'var(--container-xl)', margin: '0 auto' }}>
               {/* Section Header */}
-              <div className="text-center mb-16">
-                <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full border mb-6 backdrop-blur-sm" style={{ background: 'linear-gradient(135deg, rgba(255,200,100,0.15) 0%, rgba(100,200,180,0.1) 100%)', borderColor: 'rgba(31,48,47,0.1)' }}>
-                  <TrendingUp className="w-5 h-5" style={{ color: '#e67e22' }} />
-                  <span style={{ color: '#1F302F' }} className="font-semibold">Lợi ích nổi bật</span>
+              <div className="text-center" style={{ marginBottom: 'var(--space-xl)' }}>
+                <div
+                  className="inline-flex items-center rounded-full border backdrop-blur-sm"
+                  style={{ gap: 'var(--space-xs)', padding: 'var(--space-xs) var(--space-md)', marginBottom: 'var(--space-md)', background: 'linear-gradient(135deg, rgba(255,200,100,0.12) 0%, rgba(100,200,180,0.08) 100%)', borderColor: 'rgba(31,48,47,0.08)' }}
+                >
+                  <TrendingUp style={{ width: 'var(--icon-xs)', height: 'var(--icon-xs)', color: '#e67e22' }} />
+                  <span style={{ color: '#1F302F', fontSize: 'var(--font-caption)' }} className="font-semibold">Lợi ích nổi bật</span>
                 </div>
 
-                <h2 className="text-3xl md:text-5xl font-black mb-6">
+                <h2 className="font-black" style={{ fontSize: 'var(--font-h2)', lineHeight: 'var(--lh-tight)', marginBottom: 'var(--space-sm)' }}>
                   <span style={{ color: '#1F302F' }}>Tại Sao Chọn </span>
                   <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #e67e22 0%, #f39c12 50%, #27ae60 100%)' }}>Mầm Mới?</span>
                 </h2>
 
-                <p style={{ color: 'rgba(31,48,47,0.7)' }} className="text-lg max-w-2xl mx-auto">
-                  Công nghệ AI tiên tiến giúp bạn chăm vườn hiệu quả và chuyên nghiệp hơn
+                <p style={{ color: 'rgba(31,48,47,0.65)', fontSize: 'var(--font-small)', maxWidth: 'var(--container-sm)', margin: '0 auto' }}>
+                  Công nghệ AI tiên tiến giúp bạn chăm vườn hiệu quả hơn
                 </p>
               </div>
 
-              {/* Benefits Grid - Colorful Cards */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Benefits Grid */}
+              <div className="grid grid-cols-2 lg:grid-cols-4" style={{ gap: 'var(--space-sm)' }}>
                 {benefits.map((benefit, index) => {
-                  // Varied accent colors for each card
                   const accentColors = [
-                    { bg: 'linear-gradient(135deg, #e67e22 0%, #f39c12 100%)', glow: 'rgba(230,126,34,0.3)' },
-                    { bg: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)', glow: 'rgba(39,174,96,0.3)' },
-                    { bg: 'linear-gradient(135deg, #3498db 0%, #5dade2 100%)', glow: 'rgba(52,152,219,0.3)' },
-                    { bg: 'linear-gradient(135deg, #9b59b6 0%, #a569bd 100%)', glow: 'rgba(155,89,182,0.3)' },
+                    { bg: 'linear-gradient(135deg, #e67e22 0%, #f39c12 100%)' },
+                    { bg: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)' },
+                    { bg: 'linear-gradient(135deg, #3498db 0%, #5dade2 100%)' },
+                    { bg: 'linear-gradient(135deg, #9b59b6 0%, #a569bd 100%)' },
                   ];
                   const accent = accentColors[index % accentColors.length];
 
                   return (
                     <div
                       key={index}
-                      className="group relative p-6 rounded-3xl bg-white border shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105 hover:-translate-y-3"
-                      style={{ borderColor: 'rgba(0,0,0,0.06)' }}
+                      className="group relative bg-white border shadow-sm hover:shadow-md transition-all duration-200"
+                      style={{ padding: 'var(--space-md)', borderRadius: 'var(--radius-lg)', borderColor: 'rgba(0,0,0,0.04)' }}
                     >
-                      {/* Glow on Hover */}
-                      <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 blur-xl" style={{ background: accent.glow }} />
-
                       {/* Card top accent line */}
-                      <div className="absolute top-0 left-6 right-6 h-1 rounded-b-full opacity-80" style={{ background: accent.bg }} />
+                      <div className="absolute top-0 left-2 right-2 h-0.5 rounded-b-full opacity-75" style={{ background: accent.bg }} />
 
-                      <div className="relative pt-2">
-                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-5 shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300" style={{ background: accent.bg }}>
-                          <benefit.icon className="w-8 h-8 text-white" />
+                      <div className="relative" style={{ paddingTop: 'var(--space-xs)' }}>
+                        <div
+                          className="inline-flex items-center justify-center shadow-sm"
+                          style={{ width: 'var(--icon-lg)', height: 'var(--icon-lg)', background: accent.bg, borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-sm)' }}
+                        >
+                          <benefit.icon className="text-white" style={{ width: 'var(--icon-sm)', height: 'var(--icon-sm)' }} />
                         </div>
-                        <h3 className="font-bold text-xl mb-3" style={{ color: '#1F302F' }}>
+                        <h3 className="font-semibold" style={{ color: '#1F302F', fontSize: 'var(--font-small)', lineHeight: 'var(--lh-snug)', marginBottom: 'var(--space-xs)' }}>
                           {benefit.title}
                         </h3>
-                        <p className="text-sm leading-relaxed" style={{ color: 'rgba(31,48,47,0.65)' }}>
+                        <p style={{ color: 'rgba(31,48,47,0.55)', fontSize: 'var(--font-caption)', lineHeight: 'var(--lh-normal)' }}>
                           {benefit.description}
                         </p>
                       </div>
@@ -1000,38 +1061,37 @@ export default function PricingPage() {
         </div>
 
         {/* Features Section - Dark Premium */}
-        <div className="relative z-10 py-24 overflow-hidden" style={{ background: 'linear-gradient(180deg, #1F302F 0%, #243833 50%, #1a2a28 100%)' }}>
-          {/* Background Decorations */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(90deg, transparent, #FFFFA5, #D1DFB6, #FFFFA5, transparent)' }} />
-            <div className="absolute top-20 right-[10%] w-72 h-72 rounded-full blur-3xl animate-float opacity-40" style={{ background: 'radial-gradient(circle, rgba(255,200,100,0.4) 0%, transparent 70%)' }} />
-            <div className="absolute bottom-20 left-[10%] w-80 h-80 rounded-full blur-3xl animate-float-reverse opacity-30" style={{ background: 'radial-gradient(circle, rgba(100,200,180,0.4) 0%, transparent 70%)' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-3xl opacity-15" style={{ background: 'radial-gradient(circle, rgba(255,255,165,0.5) 0%, transparent 60%)' }} />
+        <div className="relative z-10 overflow-hidden" style={{ background: 'linear-gradient(180deg, #1F302F 0%, #243833 50%, #1a2a28 100%)', padding: 'var(--space-section) 0' }}>
+          {/* Background Decorations - Hidden on mobile */}
+          <div className="absolute inset-0 overflow-hidden hidden md:block">
+            <div className="absolute top-0 left-0 w-full h-0.5" style={{ background: 'linear-gradient(90deg, transparent, #FFFFA5, #D1DFB6, #FFFFA5, transparent)' }} />
           </div>
 
-          <div className="relative container mx-auto px-4">
-            <div className="max-w-6xl mx-auto">
+          <div className="relative container mx-auto" style={{ padding: '0 var(--space-md)' }}>
+            <div style={{ maxWidth: 'var(--container-xl)', margin: '0 auto' }}>
               {/* Section Header */}
-              <div className="text-center mb-16">
-                <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full border mb-6 backdrop-blur-sm" style={{ background: 'rgba(255,255,165,0.1)', borderColor: 'rgba(255,255,165,0.3)' }}>
-                  <Sparkles className="w-5 h-5" style={{ color: '#FFFFA5' }} />
-                  <span style={{ color: '#D1DFB6' }} className="font-semibold">Tính năng mạnh mẽ</span>
+              <div className="text-center" style={{ marginBottom: 'var(--space-xl)' }}>
+                <div
+                  className="inline-flex items-center rounded-full border backdrop-blur-sm"
+                  style={{ gap: 'var(--space-xs)', padding: 'var(--space-xs) var(--space-md)', marginBottom: 'var(--space-md)', background: 'rgba(255,255,165,0.08)', borderColor: 'rgba(255,255,165,0.2)' }}
+                >
+                  <Sparkles style={{ width: 'var(--icon-xs)', height: 'var(--icon-xs)', color: '#FFFFA5' }} />
+                  <span style={{ color: '#D1DFB6', fontSize: 'var(--font-caption)' }} className="font-semibold">Tính năng mạnh mẽ</span>
                 </div>
 
-                <h2 className="text-3xl md:text-5xl font-black mb-6">
+                <h2 className="font-black" style={{ fontSize: 'var(--font-h2)', lineHeight: 'var(--lh-tight)', marginBottom: 'var(--space-sm)' }}>
                   <span style={{ color: '#FBFFDF' }}>Tính Năng </span>
                   <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #FFFFA5 0%, #f39c12 50%, #e67e22 100%)' }}>Nổi Bật</span>
                 </h2>
 
-                <p style={{ color: 'rgba(209,223,182,0.8)' }} className="text-lg max-w-2xl mx-auto">
-                  Công nghệ hiện đại giúp bạn chăm vườn dễ dàng và hiệu quả hơn mỗi ngày
+                <p style={{ color: 'rgba(209,223,182,0.7)', fontSize: 'var(--font-small)', maxWidth: 'var(--container-sm)', margin: '0 auto' }}>
+                  Công nghệ hiện đại giúp bạn chăm vườn dễ dàng và hiệu quả hơn
                 </p>
               </div>
 
-              {/* Features Grid - Colorful */}
-              <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+              {/* Features Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2" style={{ gap: 'var(--space-sm)' }}>
                 {features.map((feature, index) => {
-                  // Varied accent colors for each feature
                   const featureColors = [
                     { bg: 'linear-gradient(135deg, #e67e22 0%, #f39c12 100%)', badge: '#e67e22' },
                     { bg: 'linear-gradient(135deg, #27ae60 0%, #2ecc71 100%)', badge: '#27ae60' },
@@ -1043,36 +1103,42 @@ export default function PricingPage() {
                   return (
                     <div
                       key={index}
-                      className="group relative flex gap-5 p-8 rounded-3xl border shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-[1.02] hover:-translate-y-2 overflow-hidden backdrop-blur-sm"
+                      className="group relative flex items-start border shadow-md hover:shadow-lg transition-all duration-200 backdrop-blur-sm"
                       style={{
-                        background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)',
-                        borderColor: 'rgba(209,223,182,0.15)'
+                        gap: 'var(--space-md)',
+                        padding: 'var(--space-lg)',
+                        borderRadius: 'var(--radius-lg)',
+                        background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+                        borderColor: 'rgba(209,223,182,0.1)'
                       }}
                     >
-                      {/* Glow on Hover */}
-                      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{ background: `linear-gradient(135deg, ${accent.badge}20 0%, transparent 100%)` }} />
-
                       {/* Side accent */}
-                      <div className="absolute left-0 top-8 bottom-8 w-1 rounded-r-full" style={{ background: accent.bg }} />
+                      <div className="absolute left-0 top-3 bottom-3 w-0.5 rounded-r-full" style={{ background: accent.bg }} />
 
                       {/* Feature Icon */}
-                      <div className="relative flex-shrink-0">
-                        <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300" style={{ background: accent.bg }}>
-                          <feature.icon className="w-8 h-8 text-white" />
+                      <div className="flex-shrink-0" style={{ paddingLeft: 'var(--space-xs)' }}>
+                        <div
+                          className="flex items-center justify-center shadow-sm"
+                          style={{ width: 'var(--icon-lg)', height: 'var(--icon-lg)', background: accent.bg, borderRadius: 'var(--radius-md)' }}
+                        >
+                          <feature.icon className="text-white" style={{ width: 'var(--icon-sm)', height: 'var(--icon-sm)' }} />
                         </div>
                       </div>
 
                       {/* Feature Content */}
-                      <div className="relative flex-1">
-                        <h3 className="text-xl font-bold mb-2" style={{ color: '#FBFFDF' }}>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold" style={{ color: '#FBFFDF', fontSize: 'var(--font-h3)', lineHeight: 'var(--lh-snug)', marginBottom: 'var(--space-xs)' }}>
                           {feature.title}
                         </h3>
-                        <p className="leading-relaxed mb-4" style={{ color: 'rgba(209,223,182,0.75)' }}>
+                        <p style={{ color: 'rgba(209,223,182,0.65)', fontSize: 'var(--font-caption)', lineHeight: 'var(--lh-normal)', marginBottom: 'var(--space-sm)' }}>
                           {feature.description}
                         </p>
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full shadow-lg" style={{ background: accent.bg }}>
-                          <Zap className="w-4 h-4 text-white" />
-                          <span className="text-sm font-semibold text-white">{feature.highlight}</span>
+                        <div
+                          className="inline-flex items-center rounded-full shadow-sm"
+                          style={{ gap: 'var(--space-xs)', padding: 'var(--space-xs) var(--space-md)', background: accent.bg }}
+                        >
+                          <Zap className="text-white" style={{ width: 'var(--icon-xs)', height: 'var(--icon-xs)' }} />
+                          <span className="font-semibold text-white" style={{ fontSize: 'var(--font-tiny)' }}>{feature.highlight}</span>
                         </div>
                       </div>
                     </div>
@@ -1084,38 +1150,38 @@ export default function PricingPage() {
         </div>
 
         {/* FAQ Section - Light & Warm */}
-        <div className="relative z-10 py-24 overflow-hidden" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #fef9e7 50%, #fdf6e3 100%)' }}>
+        <div className="relative z-10 py-12 md:py-16 lg:py-20 xl:py-24 overflow-hidden" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #fef9e7 50%, #fdf6e3 100%)' }}>
           {/* Background */}
           <div className="absolute inset-0">
             <div className="absolute top-0 left-0 w-full h-1" style={{ background: 'linear-gradient(90deg, transparent, #e67e22, #f39c12, #e67e22, transparent)' }} />
-            <div className="absolute top-20 right-[15%] w-64 h-64 rounded-full blur-3xl animate-float opacity-50" style={{ background: 'radial-gradient(circle, rgba(230,126,34,0.2) 0%, transparent 70%)' }} />
-            <div className="absolute bottom-20 left-[15%] w-72 h-72 rounded-full blur-3xl animate-float-reverse opacity-40" style={{ background: 'radial-gradient(circle, rgba(39,174,96,0.2) 0%, transparent 70%)' }} />
+            <div className="absolute top-20 right-[15%] w-40 md:w-52 lg:w-64 h-40 md:h-52 lg:h-64 rounded-full blur-3xl animate-float opacity-50" style={{ background: 'radial-gradient(circle, rgba(230,126,34,0.2) 0%, transparent 70%)' }} />
+            <div className="absolute bottom-20 left-[15%] w-48 md:w-60 lg:w-72 h-48 md:h-60 lg:h-72 rounded-full blur-3xl animate-float-reverse opacity-40" style={{ background: 'radial-gradient(circle, rgba(39,174,96,0.2) 0%, transparent 70%)' }} />
           </div>
 
           <div className="relative container mx-auto px-4">
             <div className="max-w-3xl mx-auto">
               {/* Section Header */}
-              <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-2 px-6 py-3 rounded-full border mb-6" style={{ background: 'linear-gradient(135deg, rgba(230,126,34,0.1) 0%, rgba(243,156,18,0.1) 100%)', borderColor: 'rgba(230,126,34,0.2)' }}>
-                  <Book className="w-5 h-5" style={{ color: '#e67e22' }} />
-                  <span style={{ color: '#1F302F' }} className="font-semibold">Câu hỏi thường gặp</span>
+              <div className="text-center mb-6 md:mb-8 lg:mb-10 xl:mb-12">
+                <div className="inline-flex items-center gap-2 px-4 py-2 md:px-5 md:py-2.5 lg:px-6 lg:py-3 rounded-full border mb-4 md:mb-5 lg:mb-6" style={{ background: 'linear-gradient(135deg, rgba(230,126,34,0.1) 0%, rgba(243,156,18,0.1) 100%)', borderColor: 'rgba(230,126,34,0.2)' }}>
+                  <Book className="w-4 h-4 md:w-5 md:h-5" style={{ color: '#e67e22' }} />
+                  <span style={{ color: '#1F302F' }} className="font-semibold text-xs md:text-sm lg:text-base">Câu hỏi thường gặp</span>
                 </div>
 
-                <h2 className="text-3xl md:text-4xl font-black mb-4" style={{ color: '#1F302F' }}>
+                <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black mb-2 md:mb-3 lg:mb-4" style={{ color: '#1F302F' }}>
                   Giải Đáp <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg, #e67e22 0%, #f39c12 100%)' }}>Thắc Mắc</span>
                 </h2>
 
-                <p style={{ color: 'rgba(31,48,47,0.7)' }}>
+                <p style={{ color: 'rgba(31,48,47,0.7)' }} className="text-sm md:text-base">
                   Những câu hỏi phổ biến về Mầm Mới
                 </p>
               </div>
 
               {/* FAQ Accordion */}
-              <div className="space-y-4">
+              <div className="space-y-2 md:space-y-3 lg:space-y-4">
                 {faqs.map((faq, index) => (
                   <div
                     key={index}
-                    className={`group rounded-2xl border transition-all duration-300 overflow-hidden shadow-lg hover:shadow-xl ${expandedFaq === index
+                    className={`group rounded-xl md:rounded-2xl border transition-all duration-300 overflow-hidden shadow-md md:shadow-lg hover:shadow-xl ${expandedFaq === index
                       ? 'border-orange-200'
                       : 'border-gray-100 hover:border-orange-100'
                       }`}
@@ -1123,26 +1189,26 @@ export default function PricingPage() {
                   >
                     <button
                       onClick={() => toggleFaq(index)}
-                      className="w-full flex items-center justify-between p-6 text-left transition-colors"
+                      className="w-full flex items-center justify-between p-4 md:p-5 lg:p-6 text-left transition-colors"
                     >
-                      <span className={`font-semibold pr-4 transition-colors ${expandedFaq === index ? 'text-[#1F302F]' : 'text-[#1F302F] group-hover:text-[#e67e22]'
+                      <span className={`font-semibold pr-3 md:pr-4 text-sm md:text-base transition-colors ${expandedFaq === index ? 'text-[#1F302F]' : 'text-[#1F302F] group-hover:text-[#e67e22]'
                         }`}>
                         {faq.question}
                       </span>
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${expandedFaq === index
+                      <div className={`flex-shrink-0 w-8 h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 rounded-full flex items-center justify-center transition-all duration-300 ${expandedFaq === index
                         ? 'rotate-180'
                         : ''
                         }`}
                         style={{ background: expandedFaq === index ? 'linear-gradient(135deg, #e67e22 0%, #f39c12 100%)' : 'rgba(230,126,34,0.1)' }}
                       >
-                        <ChevronDown className={`w-5 h-5 transition-colors ${expandedFaq === index ? 'text-white' : 'text-[#e67e22]'
+                        <ChevronDown className={`w-4 h-4 md:w-5 md:h-5 transition-colors ${expandedFaq === index ? 'text-white' : 'text-[#e67e22]'
                           }`} />
                       </div>
                     </button>
 
                     <div className={`overflow-hidden transition-all duration-500 ${expandedFaq === index ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
                       }`}>
-                      <div className="px-6 pb-6 leading-relaxed border-t pt-4" style={{ color: 'rgba(31,48,47,0.7)', borderColor: 'rgba(230,126,34,0.15)' }}>
+                      <div className="px-4 pb-4 md:px-5 md:pb-5 lg:px-6 lg:pb-6 leading-relaxed border-t pt-3 md:pt-4 text-sm md:text-base" style={{ color: 'rgba(31,48,47,0.7)', borderColor: 'rgba(230,126,34,0.15)' }}>
                         {faq.answer}
                       </div>
                     </div>
@@ -1151,25 +1217,25 @@ export default function PricingPage() {
               </div>
 
               {/* Contact CTA */}
-              <div className="mt-16 text-center p-10 rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-2xl shadow-purple-500/30 relative overflow-hidden">
+              <div className="mt-8 md:mt-10 lg:mt-12 xl:mt-16 text-center p-5 md:p-6 lg:p-8 xl:p-10 rounded-xl md:rounded-2xl lg:rounded-3xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-lg md:shadow-xl lg:shadow-2xl shadow-purple-500/30 relative overflow-hidden">
                 {/* Animated Background */}
                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4xKSIvPjwvc3ZnPg==')] opacity-30" />
 
                 <div className="relative">
-                  <h3 className="text-2xl md:text-3xl font-bold text-white mb-3">
+                  <h3 className="text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold text-white mb-2 md:mb-3">
                     Vẫn còn thắc mắc?
                   </h3>
-                  <p className="text-white/80 mb-6 text-lg">
+                  <p className="text-white/80 mb-4 md:mb-5 lg:mb-6 text-sm md:text-base lg:text-lg">
                     Đội ngũ hỗ trợ của chúng tôi sẵn sàng giúp đỡ bạn 24/7
                   </p>
                   <Button
-                    className="bg-white text-purple-700 hover:bg-white/90 font-bold px-8 py-6 text-lg rounded-xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                    className="bg-white text-purple-700 hover:bg-white/90 font-bold px-5 py-3 md:px-6 md:py-4 lg:px-8 lg:py-6 text-sm md:text-base lg:text-lg rounded-lg md:rounded-xl shadow-lg md:shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
                     size="lg"
                     onClick={() => navigate("/report")}
                   >
-                    <span className="flex items-center gap-2">
+                    <span className="flex items-center gap-1.5 md:gap-2">
                       Liên hệ hỗ trợ ngay
-                      <ArrowRight className="w-5 h-5" />
+                      <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
                     </span>
                   </Button>
                 </div>
@@ -1177,7 +1243,7 @@ export default function PricingPage() {
             </div>
           </div>
         </div>
-      </div>
+      </div >
     </>
   );
 }

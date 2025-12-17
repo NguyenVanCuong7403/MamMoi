@@ -5,6 +5,7 @@ import AdminLayout from "@/components/admin/layout/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import SupportRequestRepository from "@/API/repositories/SupportRequestRepository";
+import { API_BASE } from "@/API/ApiClient";
 
 export default function AdminSupportRequestDetail() {
   const { id } = useParams();
@@ -79,6 +80,26 @@ export default function AdminSupportRequestDetail() {
                 </div>
               </div>
 
+              {(request.attachmentUrls || request.AttachmentUrls) && (
+                <div>
+                  <Label>Ảnh chứng minh</Label>
+                  <div className="mt-2">
+                    <img
+                      src={`${API_BASE}${request.attachmentUrls || request.AttachmentUrls}`}
+                      alt="Attachment"
+                      className="max-w-full h-auto rounded-lg border border-gray-200"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <p className="text-gray-500 text-sm" style={{ display: 'none' }}>
+                      Không thể tải hình ảnh
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {request.resolution && (
                 <div>
                   <Label>Giải pháp</Label>
@@ -108,11 +129,10 @@ export default function AdminSupportRequestDetail() {
                     {[1, 2, 3, 4, 5].map((s) => (
                       <Star
                         key={s}
-                        className={`w-5 h-5 ${
-                          s <= request.satisfactionRating
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "text-gray-300"
-                        }`}
+                        className={`w-5 h-5 ${s <= request.satisfactionRating
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "text-gray-300"
+                          }`}
                       />
                     ))}
                     <span>({request.satisfactionRating}/5)</span>

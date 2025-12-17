@@ -531,20 +531,19 @@ function AvatarPicker({ src, size = 80, title = "", onChange, onFileSelect }) {
         onChange={handleFile}
       />
       <div
-        className={`relative rounded-full overflow-hidden ring-2 ring-white bg-neutral-100 grid place-items-center text-neutral-500 ${
-          onChange && !uploading
-            ? "cursor-pointer transition-all hover:ring-4 hover:ring-emerald-300"
-            : ""
-        } ${uploading ? "opacity-70" : ""}`}
+        className={`relative rounded-full overflow-hidden ring-2 ring-white bg-neutral-100 grid place-items-center text-neutral-500 ${onChange && !uploading
+          ? "cursor-pointer transition-all hover:ring-4 hover:ring-emerald-300"
+          : ""
+          } ${uploading ? "opacity-70" : ""}`}
         style={{ width: size, height: size }}
         title={
           uploading
             ? "Đang tải lên..."
             : onChange
-            ? hasImg
-              ? "Click để đổi ảnh"
-              : "Click để chọn ảnh"
-            : title || "Ảnh đại diện"
+              ? hasImg
+                ? "Click để đổi ảnh"
+                : "Click để chọn ảnh"
+              : title || "Ảnh đại diện"
         }
         aria-label="Ảnh đại diện người dùng"
         onClick={handleAvatarClick}
@@ -674,13 +673,13 @@ function PasswordModal({
     typeof genPassword === "function"
       ? genPassword
       : () => {
-          const cs =
-            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@$!%*?&";
-          let s = "";
-          for (let i = 0; i < 10; i++)
-            s += cs[Math.floor(Math.random() * cs.length)];
-          return s;
-        };
+        const cs =
+          "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789@$!%*?&";
+        let s = "";
+        for (let i = 0; i < 10; i++)
+          s += cs[Math.floor(Math.random() * cs.length)];
+        return s;
+      };
 
   /* --------------- state --------------- */
   const [tab, setTab] = React.useState("forgot"); // forgot
@@ -1047,8 +1046,8 @@ function PasswordModal({
                         {!otpCode
                           ? "Nhận mã"
                           : cooldown > 0
-                          ? `Gửi lại mã (${cooldown}s)`
-                          : "Gửi lại mã OTP"}
+                            ? `Gửi lại mã (${cooldown}s)`
+                            : "Gửi lại mã OTP"}
                       </Button>
                     </div>
                   </div>
@@ -1068,9 +1067,8 @@ function PasswordModal({
                         <Input
                           type="password"
                           autoComplete="new-password"
-                          className={`${
-                            !tS.np ? INPUT_OK : eS.np ? INPUT_ERR : INPUT_OK
-                          } no-native-eye`}
+                          className={`${!tS.np ? INPUT_OK : eS.np ? INPUT_ERR : INPUT_OK
+                            } no-native-eye`}
                           value={np2}
                           onChange={(e) => setNp2(e.target.value)}
                           onBlur={() => setTS((t) => ({ ...t, np: true }))}
@@ -1094,9 +1092,8 @@ function PasswordModal({
                       <Input
                         type="password"
                         autoComplete="new-password"
-                        className={`${
-                          !tS.cf ? INPUT_OK : eS.cf ? INPUT_ERR : INPUT_OK
-                        } no-native-eye`}
+                        className={`${!tS.cf ? INPUT_OK : eS.cf ? INPUT_ERR : INPUT_OK
+                          } no-native-eye`}
                         value={cf2}
                         onChange={(e) => setCf2(e.target.value)}
                         onBlur={() => setTS((t) => ({ ...t, cf: true }))}
@@ -1311,8 +1308,8 @@ function OTPModal({
       console.error("Error sending OTP:", error);
       setErr(
         error?.response?.data?.message ||
-          error?.message ||
-          "Không thể gửi mã OTP. Vui lòng thử lại."
+        error?.message ||
+        "Không thể gửi mã OTP. Vui lòng thử lại."
       );
     } finally {
       setSending(false);
@@ -1345,8 +1342,8 @@ function OTPModal({
       console.error("Error verifying OTP:", error);
       setErr(
         error?.response?.data?.message ||
-          error?.message ||
-          "Mã OTP không chính xác. Vui lòng thử lại."
+        error?.message ||
+        "Mã OTP không chính xác. Vui lòng thử lại."
       );
     } finally {
       setVerifying(false);
@@ -1435,17 +1432,17 @@ function OTPModal({
                 !userId || !newValue
                   ? "Thiếu thông tin cần thiết"
                   : cooldown > 0
-                  ? `Chờ ${cooldown}s để gửi lại`
-                  : undefined
+                    ? `Chờ ${cooldown}s để gửi lại`
+                    : undefined
               }
             >
               {sending
                 ? "Đang gửi..."
                 : !sent
-                ? "Nhận mã"
-                : cooldown > 0
-                ? `Gửi lại mã (${cooldown}s)`
-                : "Gửi lại mã"}
+                  ? "Nhận mã"
+                  : cooldown > 0
+                    ? `Gửi lại mã (${cooldown}s)`
+                    : "Gửi lại mã"}
             </Button>
           </div>
         </div>
@@ -1772,8 +1769,8 @@ function EditGardenModal({
                   !touched.province
                     ? INPUT_OK
                     : errs.province
-                    ? INPUT_ERR
-                    : INPUT_OK
+                      ? INPUT_ERR
+                      : INPUT_OK
                 }
                 value={form.province}
                 onChange={(e) => setForm({ ...form, province: e.target.value })}
@@ -1821,8 +1818,8 @@ function EditGardenModal({
                   !touched.address
                     ? INPUT_OK
                     : errs.address
-                    ? INPUT_ERR
-                    : INPUT_OK
+                      ? INPUT_ERR
+                      : INPUT_OK
                 }
                 value={form.address}
                 onChange={(e) => setForm({ ...form, address: e.target.value })}
@@ -1910,10 +1907,10 @@ function EditStaffModal({
     !form.email.trim() && !form.phone.trim()
       ? "Cần ít nhất Email hoặc SĐT"
       : form.email && !reEmail.test(form.email)
-      ? "Email không hợp lệ"
-      : form.phone && !validVNPhone(form.phone)
-      ? "SĐT Việt Nam không hợp lệ"
-      : "";
+        ? "Email không hợp lệ"
+        : form.phone && !validVNPhone(form.phone)
+          ? "SĐT Việt Nam không hợp lệ"
+          : "";
 
   const errs = {
     name: !form.name.trim() ? "Họ tên là bắt buộc" : "",
@@ -1960,8 +1957,8 @@ function EditStaffModal({
                   !touched.contact
                     ? INPUT_OK
                     : errs.contact
-                    ? INPUT_ERR
-                    : INPUT_OK
+                      ? INPUT_ERR
+                      : INPUT_OK
                 }
                 value={form.email}
                 onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -1979,8 +1976,8 @@ function EditStaffModal({
                   !touched.contact
                     ? INPUT_OK
                     : errs.contact
-                    ? INPUT_ERR
-                    : INPUT_OK
+                      ? INPUT_ERR
+                      : INPUT_OK
                 }
                 value={form.phone}
                 onChange={(e) =>
@@ -2163,8 +2160,8 @@ function ResetStaffPwModal({ open, staff, onClose, onConfirmed }) {
   const err = !npw.trim()
     ? "Vui lòng nhập mật khẩu mới"
     : npw.trim().length < 8
-    ? "Mật khẩu tối thiểu 8 ký tự"
-    : "";
+      ? "Mật khẩu tối thiểu 8 ký tự"
+      : "";
 
   const handleSubmit = () => {
     setTouched(true);
@@ -2394,7 +2391,7 @@ async function copyCredentialsToClipboard(account, password) {
    Main
 ========================================================= */
 export default function UserProfile() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   // Check if user is admin
@@ -2812,7 +2809,7 @@ export default function UserProfile() {
     setDemoPw(np);
     try {
       localStorage.setItem(LS_DEMO_PW, np);
-    } catch {}
+    } catch { }
     // Reset form
     setCp("");
     setNp("");
@@ -2913,10 +2910,10 @@ export default function UserProfile() {
       !draft.email.trim() && !draft.phone.trim()
         ? "Cần ít nhất Email hoặc SĐT"
         : draft.email.trim() && !reEmail.test(draft.email)
-        ? "Email không hợp lệ"
-        : draft.phone.trim() && !validVNPhone(draft.phone)
-        ? "SĐT Việt Nam không hợp lệ (10 số, bắt đầu 0)"
-        : "",
+          ? "Email không hợp lệ"
+          : draft.phone.trim() && !validVNPhone(draft.phone)
+            ? "SĐT Việt Nam không hợp lệ (10 số, bắt đầu 0)"
+            : "",
   };
   const canSaveProfile = !profileErrors.fullName && !profileErrors.contact;
 
@@ -2960,10 +2957,10 @@ export default function UserProfile() {
       !newStaff.email.trim() && !newStaff.phone.trim()
         ? "Cần ít nhất Email hoặc SĐT"
         : newStaff.phone.trim() && !validVNPhone(newStaff.phone)
-        ? "SĐT Việt Nam không hợp lệ"
-        : newStaff.email.trim() && !reEmail.test(newStaff.email)
-        ? "Email không hợp lệ"
-        : "",
+          ? "SĐT Việt Nam không hợp lệ"
+          : newStaff.email.trim() && !reEmail.test(newStaff.email)
+            ? "Email không hợp lệ"
+            : "",
     tempPassword:
       !newStaff.tempPassword.trim() || newStaff.tempPassword.trim().length < 8
         ? "Mật khẩu tạm tối thiểu 8 ký tự"
@@ -3001,8 +2998,8 @@ export default function UserProfile() {
         gardenFilter === "all"
           ? true
           : gardenFilter === "active"
-          ? g.status === "Đang hoạt động"
-          : g.status !== "Đang hoạt động";
+            ? g.status === "Đang hoạt động"
+            : g.status !== "Đang hoạt động";
 
       if (!q) return byStatus;
 
@@ -3022,8 +3019,8 @@ export default function UserProfile() {
         staffGardenFilter === "all"
           ? true
           : staffGardenFilter === "__none"
-          ? !s.assigned
-          : s.assigned === staffGardenFilter;
+            ? !s.assigned
+            : s.assigned === staffGardenFilter;
 
       const byStatus =
         staffStatusFilter === "all"
@@ -3271,11 +3268,10 @@ export default function UserProfile() {
                   {s.icon}
                 </div>
                 <div
-                  className={`${
-                    s.label.includes("vườn") || s.label.includes("cây")
-                      ? "text-4xl"
-                      : "text-2xl"
-                  } font-medium text-white drop-shadow-sm`}
+                  className={`${s.label.includes("vườn") || s.label.includes("cây")
+                    ? "text-4xl"
+                    : "text-2xl"
+                    } font-medium text-white drop-shadow-sm`}
                 >
                   {s.value}
                 </div>
@@ -3305,22 +3301,20 @@ export default function UserProfile() {
                 <nav className="space-y-3 mb-10">
                   <button
                     onClick={() => setActiveMenu("account")}
-                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
-                      activeMenu === "account"
-                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                        : "text-white/90 hover:bg-slate-800/50"
-                    }`}
+                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${activeMenu === "account"
+                      ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                      : "text-white/90 hover:bg-slate-800/50"
+                      }`}
                   >
                     <UserIcon className="h-6 w-6" />
                     <span className="text-lg font-medium">Tài khoản</span>
                   </button>
                   <button
                     onClick={() => setActiveMenu("password")}
-                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
-                      activeMenu === "password"
-                        ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                        : "text-white/90 hover:bg-slate-800/50"
-                    }`}
+                    className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${activeMenu === "password"
+                      ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                      : "text-white/90 hover:bg-slate-800/50"
+                      }`}
                   >
                     <Lock className="h-6 w-6" />
                     <span className="text-lg">Mật khẩu</span>
@@ -3330,22 +3324,20 @@ export default function UserProfile() {
                     <>
                       <button
                         onClick={() => setActiveMenu("history")}
-                        className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
-                          activeMenu === "history"
-                            ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                            : "text-white/90 hover:bg-slate-800/50"
-                        }`}
+                        className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${activeMenu === "history"
+                          ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                          : "text-white/90 hover:bg-slate-800/50"
+                          }`}
                       >
                         <CreditCard className="h-6 w-6" />
                         <span className="text-lg">Lịch sử giao dịch</span>
                       </button>
                       <button
                         onClick={() => setActiveMenu("upgrade")}
-                        className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${
-                          activeMenu === "upgrade"
-                            ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
-                            : "text-white/90 hover:bg-slate-800/50"
-                        }`}
+                        className={`w-full flex items-center gap-4 px-6 py-4 rounded-xl transition-colors ${activeMenu === "upgrade"
+                          ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                          : "text-white/90 hover:bg-slate-800/50"
+                          }`}
                       >
                         <TrendingUp className="h-6 w-6" />
                         <span className="text-lg">Nâng cấp gói</span>
@@ -3369,12 +3361,13 @@ export default function UserProfile() {
                   </div>
                   <Button
                     className="w-full mt-5 rounded-xl h-12 bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 text-base font-medium shadow-lg"
-                    onClick={() => {
-                      // Logout logic here
+                    onClick={async () => {
+                      await logout();
+                      navigate("/");
                     }}
                   >
                     <LogOut className="h-5 w-5 mr-2" />
-                    <span className="text-base">Thoát</span>
+                    <span className="text-base">Đăng xuất</span>
                   </Button>
                 </div>
               </CardContent>
@@ -3483,8 +3476,8 @@ export default function UserProfile() {
                             !touchedProfile.fullName
                               ? "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
                               : profileErrors.fullName
-                              ? "h-12 w-full rounded-xl bg-slate-800/60 border border-rose-500 text-white placeholder:text-white/50 focus:ring-2 focus:ring-rose-500/40 min-w-0"
-                              : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
+                                ? "h-12 w-full rounded-xl bg-slate-800/60 border border-rose-500 text-white placeholder:text-white/50 focus:ring-2 focus:ring-rose-500/40 min-w-0"
+                                : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
                           }
                           value={draft.fullName}
                           onChange={(e) =>
@@ -3534,8 +3527,8 @@ export default function UserProfile() {
                             !touchedProfile.contact
                               ? "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
                               : profileErrors.contact
-                              ? "h-12 w-full rounded-xl bg-slate-800/60 border border-rose-500 text-white placeholder:text-white/40 focus:ring-2 focus:ring-rose-500/40 min-w-0"
-                              : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
+                                ? "h-12 w-full rounded-xl bg-slate-800/60 border border-rose-500 text-white placeholder:text-white/40 focus:ring-2 focus:ring-rose-500/40 min-w-0"
+                                : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
                           }
                           value={draft.email}
                           onChange={(e) =>
@@ -3587,8 +3580,8 @@ export default function UserProfile() {
                             !touchedProfile.contact
                               ? "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
                               : profileErrors.contact
-                              ? "h-12 w-full rounded-xl bg-slate-800/60 border border-rose-500 text-white placeholder:text-white/40 focus:ring-2 focus:ring-rose-500/40 min-w-0"
-                              : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
+                                ? "h-12 w-full rounded-xl bg-slate-800/60 border border-rose-500 text-white placeholder:text-white/40 focus:ring-2 focus:ring-rose-500/40 min-w-0"
+                                : "h-12 w-full rounded-xl bg-slate-800/60 border border-emerald-400/40 text-white placeholder:text-white/50 focus:ring-2 focus:ring-yellow-500/40 focus:border-yellow-500 min-w-0"
                           }
                           value={draft.phone}
                           onChange={(e) =>
@@ -3736,13 +3729,12 @@ export default function UserProfile() {
                               data-form-type-other="true"
                               name="current-password-disabled"
                               id="current-password-disabled"
-                              className={`h-12 w-full rounded-xl bg-slate-800/60 border ${
-                                !touchedPw.cp
-                                  ? "border-emerald-400/40"
-                                  : errorsPw.cp
+                              className={`h-12 w-full rounded-xl bg-slate-800/60 border ${!touchedPw.cp
+                                ? "border-emerald-400/40"
+                                : errorsPw.cp
                                   ? "border-rose-500 focus:ring-2 focus:ring-rose-500/40"
                                   : "border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/40"
-                              } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye`}
+                                } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye`}
                               value={cp}
                               onChange={(e) => {
                                 setCp(e.target.value);
@@ -3789,17 +3781,15 @@ export default function UserProfile() {
                               data-ignore-autofill="true"
                               data-form-type="other"
                               disabled={!cp.trim()}
-                              className={`h-12 w-full rounded-xl bg-slate-800/60 border ${
-                                !touchedPw.np
-                                  ? "border-emerald-400/40"
-                                  : errorsPw.np
+                              className={`h-12 w-full rounded-xl bg-slate-800/60 border ${!touchedPw.np
+                                ? "border-emerald-400/40"
+                                : errorsPw.np
                                   ? "border-rose-500 focus:ring-2 focus:ring-rose-500/40"
                                   : "border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/40"
-                              } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye ${
-                                !cp.trim()
+                                } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye ${!cp.trim()
                                   ? "opacity-50 cursor-not-allowed"
                                   : ""
-                              }`}
+                                }`}
                               value={np}
                               onChange={(e) => {
                                 if (!cp.trim()) {
@@ -3872,17 +3862,15 @@ export default function UserProfile() {
                               data-ignore-autofill="true"
                               data-form-type="other"
                               disabled={!cp.trim()}
-                              className={`h-12 w-full rounded-xl bg-slate-800/60 border ${
-                                !touchedPw.cf
-                                  ? "border-emerald-400/40"
-                                  : errorsPw.cf
+                              className={`h-12 w-full rounded-xl bg-slate-800/60 border ${!touchedPw.cf
+                                ? "border-emerald-400/40"
+                                : errorsPw.cf
                                   ? "border-rose-500 focus:ring-2 focus:ring-rose-500/40"
                                   : "border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/40"
-                              } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye ${
-                                !cp.trim()
+                                } text-white placeholder:text-white/40 focus:border-yellow-500 no-native-eye ${!cp.trim()
                                   ? "opacity-50 cursor-not-allowed"
                                   : ""
-                              }`}
+                                }`}
                               value={cf}
                               onChange={(e) => {
                                 if (!cp.trim()) {
@@ -4207,128 +4195,124 @@ export default function UserProfile() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         {plansLoading
                           ? // Loading skeleton
-                            [1, 2, 3].map((i) => (
-                              <div
-                                key={i}
-                                className="p-6 rounded-2xl bg-white/20 border border-white/25 animate-pulse"
-                              >
-                                <div className="h-6 bg-white/30 rounded mb-4 w-1/2"></div>
-                                <div className="h-10 bg-white/30 rounded mb-6 w-3/4"></div>
-                                <div className="space-y-3 mb-6">
-                                  {[1, 2, 3].map((j) => (
-                                    <div
-                                      key={j}
-                                      className="h-4 bg-white/30 rounded"
-                                    ></div>
-                                  ))}
-                                </div>
+                          [1, 2, 3].map((i) => (
+                            <div
+                              key={i}
+                              className="p-6 rounded-2xl bg-white/20 border border-white/25 animate-pulse"
+                            >
+                              <div className="h-6 bg-white/30 rounded mb-4 w-1/2"></div>
+                              <div className="h-10 bg-white/30 rounded mb-6 w-3/4"></div>
+                              <div className="space-y-3 mb-6">
+                                {[1, 2, 3].map((j) => (
+                                  <div
+                                    key={j}
+                                    className="h-4 bg-white/30 rounded"
+                                  ></div>
+                                ))}
                               </div>
-                            ))
+                            </div>
+                          ))
                           : subscriptionPlans.map((plan, index) => {
-                              const isPopular = index === 1;
-                              // Check if this is the current plan or a lower priority plan (lower ID)
-                              const currentPlanId =
-                                currentSubscription?.planId || 1;
-                              const isCurrentPlan =
-                                plan.planId === currentPlanId;
-                              const isLowerPlan = plan.planId < currentPlanId;
-                              const features = (() => {
-                                if (!plan.features) return [];
-                                // Handle JSON array string like "[\"item1\", \"item2\"]"
-                                if (
-                                  typeof plan.features === "string" &&
-                                  plan.features.startsWith("[")
-                                ) {
-                                  try {
-                                    return JSON.parse(plan.features);
-                                  } catch {
-                                    return [];
-                                  }
+                            const isPopular = index === 1;
+                            // Check if this is the current plan or a lower priority plan (lower ID)
+                            const currentPlanId =
+                              currentSubscription?.planId || 1;
+                            const isCurrentPlan =
+                              plan.planId === currentPlanId;
+                            const isLowerPlan = plan.planId < currentPlanId;
+                            const features = (() => {
+                              if (!plan.features) return [];
+                              // Handle JSON array string like "[\"item1\", \"item2\"]"
+                              if (
+                                typeof plan.features === "string" &&
+                                plan.features.startsWith("[")
+                              ) {
+                                try {
+                                  return JSON.parse(plan.features);
+                                } catch {
+                                  return [];
                                 }
-                                // Handle newline-separated string
-                                return plan.features
-                                  .split("\n")
-                                  .filter((f) => f.trim());
-                              })();
+                              }
+                              // Handle newline-separated string
+                              return plan.features
+                                .split("\n")
+                                .filter((f) => f.trim());
+                            })();
 
-                              return (
-                                <div
-                                  key={plan.planId}
-                                  className={`p-6 rounded-2xl transition-colors relative ${
-                                    isPopular
-                                      ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50"
-                                      : "bg-white/20 border border-white/25 hover:border-yellow-500/50"
+                            return (
+                              <div
+                                key={plan.planId}
+                                className={`p-6 rounded-2xl transition-colors relative ${isPopular
+                                  ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50"
+                                  : "bg-white/20 border border-white/25 hover:border-yellow-500/50"
                                   }`}
-                                >
-                                  {isPopular && (
-                                    <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                                      Phổ biến
-                                    </div>
-                                  )}
-                                  <div className="mb-4">
-                                    <h3 className="text-xl font-semibold text-white mb-2">
-                                      {plan.planName}
-                                    </h3>
-                                    <div className="text-3xl font-bold text-yellow-400 mb-1">
-                                      {plan.price.toLocaleString("vi-VN")}đ
-                                    </div>
-                                    <div className="text-sm text-white/80">
-                                      /tháng
-                                    </div>
+                              >
+                                {isPopular && (
+                                  <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                    Phổ biến
                                   </div>
-                                  <ul className="space-y-2 text-sm text-white/70">
-                                    {features.length > 0 ? (
-                                      features.map((feature, fIndex) => (
-                                        <li
-                                          key={fIndex}
-                                          className="flex items-center gap-2"
-                                        >
-                                          <CheckCircle2
-                                            className={`h-4 w-4 shrink-0 ${
-                                              isPopular
-                                                ? "text-yellow-400"
-                                                : "text-emerald-400"
-                                            }`}
-                                          />
-                                          <span>{feature}</span>
-                                        </li>
-                                      ))
-                                    ) : (
-                                      <>
-                                        <li className="flex items-center gap-2">
-                                          <CheckCircle2
-                                            className={`h-4 w-4 shrink-0 ${
-                                              isPopular
-                                                ? "text-yellow-400"
-                                                : "text-emerald-400"
-                                            }`}
-                                          />
-                                          <span>
-                                            {plan.maxGardens
-                                              ? `Tối đa ${plan.maxGardens} vườn`
-                                              : "Không giới hạn vườn"}
-                                          </span>
-                                        </li>
-                                        <li className="flex items-center gap-2">
-                                          <CheckCircle2
-                                            className={`h-4 w-4 shrink-0 ${
-                                              isPopular
-                                                ? "text-yellow-400"
-                                                : "text-emerald-400"
-                                            }`}
-                                          />
-                                          <span>
-                                            {plan.maxTreesPerGarden
-                                              ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
-                                              : "Không giới hạn cây"}
-                                          </span>
-                                        </li>
-                                      </>
-                                    )}
-                                  </ul>
+                                )}
+                                <div className="mb-4">
+                                  <h3 className="text-xl font-semibold text-white mb-2">
+                                    {plan.planName}
+                                  </h3>
+                                  <div className="text-3xl font-bold text-yellow-400 mb-1">
+                                    {plan.price.toLocaleString("vi-VN")}đ
+                                  </div>
+                                  <div className="text-sm text-white/80">
+                                    /tháng
+                                  </div>
                                 </div>
-                              );
-                            })}
+                                <ul className="space-y-2 text-sm text-white/70">
+                                  {features.length > 0 ? (
+                                    features.map((feature, fIndex) => (
+                                      <li
+                                        key={fIndex}
+                                        className="flex items-center gap-2"
+                                      >
+                                        <CheckCircle2
+                                          className={`h-4 w-4 shrink-0 ${isPopular
+                                            ? "text-yellow-400"
+                                            : "text-emerald-400"
+                                            }`}
+                                        />
+                                        <span>{feature}</span>
+                                      </li>
+                                    ))
+                                  ) : (
+                                    <>
+                                      <li className="flex items-center gap-2">
+                                        <CheckCircle2
+                                          className={`h-4 w-4 shrink-0 ${isPopular
+                                            ? "text-yellow-400"
+                                            : "text-emerald-400"
+                                            }`}
+                                        />
+                                        <span>
+                                          {plan.maxGardens
+                                            ? `Tối đa ${plan.maxGardens} vườn`
+                                            : "Không giới hạn vườn"}
+                                        </span>
+                                      </li>
+                                      <li className="flex items-center gap-2">
+                                        <CheckCircle2
+                                          className={`h-4 w-4 shrink-0 ${isPopular
+                                            ? "text-yellow-400"
+                                            : "text-emerald-400"
+                                            }`}
+                                        />
+                                        <span>
+                                          {plan.maxTreesPerGarden
+                                            ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
+                                            : "Không giới hạn cây"}
+                                        </span>
+                                      </li>
+                                    </>
+                                  )}
+                                </ul>
+                              </div>
+                            );
+                          })}
                       </div>
 
                       {/* Upgrade buttons at the bottom */}
@@ -4345,15 +4329,14 @@ export default function UserProfile() {
                             return (
                               <Button
                                 key={plan.planId}
-                                className={`w-full h-12 rounded-xl font-medium ${
-                                  isCurrentPlan
-                                    ? "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
-                                    : isLowerPlan
+                                className={`w-full h-12 rounded-xl font-medium ${isCurrentPlan
+                                  ? "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                  : isLowerPlan
                                     ? "bg-neutral-500/50 hover:bg-neutral-500/50 text-white/50 cursor-not-allowed"
                                     : isPopular
-                                    ? "bg-yellow-500 hover:bg-yellow-600 text-white"
-                                    : "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
-                                }`}
+                                      ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                                      : "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                  }`}
                                 disabled={shouldDisable}
                                 onClick={() =>
                                   !shouldDisable && handleUpgradePlan(plan)
@@ -4362,8 +4345,8 @@ export default function UserProfile() {
                                 {isCurrentPlan
                                   ? "Gói hiện tại"
                                   : isLowerPlan
-                                  ? "Gói thấp hơn"
-                                  : "Nâng cấp ngay"}
+                                    ? "Gói thấp hơn"
+                                    : "Nâng cấp ngay"}
                               </Button>
                             );
                           })}
@@ -4525,7 +4508,7 @@ export default function UserProfile() {
           setDemoPw(newPw);
           try {
             localStorage.setItem(LS_DEMO_PW, newPw);
-          } catch {}
+          } catch { }
         }}
       />
 
@@ -4650,7 +4633,7 @@ export default function UserProfile() {
                   )
                 )
               );
-            } catch {}
+            } catch { }
             showToast("Đã cập nhật cây", updated.code || "");
           }}
         />
@@ -4688,10 +4671,10 @@ export default function UserProfile() {
           confirm.type === "add-garden"
             ? "Xác nhận tạo vườn"
             : confirm.type === "add-staff"
-            ? "Xác nhận tạo tài khoản"
-            : confirm.type === "delete-garden"
-            ? "Xác nhận xoá vườn"
-            : "Xác nhận xoá nhân viên"
+              ? "Xác nhận tạo tài khoản"
+              : confirm.type === "delete-garden"
+                ? "Xác nhận xoá vườn"
+                : "Xác nhận xoá nhân viên"
         }
         onClose={() => setConfirm({ open: false, type: "", payload: null })}
         onConfirm={handleConfirm}
@@ -5192,13 +5175,12 @@ function EditProfileForm({
           name="full-name"
           autoComplete="name"
           aria-invalid={!!(touchedProfile.fullName && profileErrors.fullName)}
-          className={`${
-            !touchedProfile.fullName
-              ? INPUT_OK
-              : profileErrors.fullName
+          className={`${!touchedProfile.fullName
+            ? INPUT_OK
+            : profileErrors.fullName
               ? INPUT_ERR
               : INPUT_OK
-          } min-w-0`}
+            } min-w-0`}
           value={draft.fullName}
           onChange={(e) => setDraft({ ...draft, fullName: e.target.value })}
           onBlur={() => setTouchedProfile((t) => ({ ...t, fullName: true }))}
@@ -5236,13 +5218,12 @@ function EditProfileForm({
           autoComplete="off"
           readOnly={!allowEdit.email}
           aria-invalid={!!(touchedProfile.contact && profileErrors.contact)}
-          className={`${
-            !touchedProfile.contact
-              ? INPUT_OK
-              : profileErrors.contact
+          className={`${!touchedProfile.contact
+            ? INPUT_OK
+            : profileErrors.contact
               ? INPUT_ERR
               : INPUT_OK
-          } min-w-0`}
+            } min-w-0`}
           value={draft.email}
           onChange={(e) => setDraft({ ...draft, email: e.target.value })}
           onBlur={() => setTouchedProfile((t) => ({ ...t, contact: true }))}
@@ -5298,16 +5279,16 @@ function GardenModal({
         // chuỗi hiển thị để lưu ra backend
         province: province
           ? province.full_name ||
-            province.name ||
-            province.label ||
-            province.text ||
-            ""
+          province.name ||
+          province.label ||
+          province.text ||
+          ""
           : g.province,
         ward: shouldResetWard
           ? ""
           : ward
-          ? ward.full_name || ward.name || ward.label || ward.text || ""
-          : g.ward,
+            ? ward.full_name || ward.name || ward.label || ward.text || ""
+            : g.ward,
         address: address !== undefined ? address : g.address,
       };
     });
@@ -5335,8 +5316,8 @@ function GardenModal({
                 !touchedGarden.name
                   ? INPUT_OK
                   : gardenErrors.name
-                  ? INPUT_ERR
-                  : INPUT_OK
+                    ? INPUT_ERR
+                    : INPUT_OK
               }
               value={newGarden.name}
               onChange={(e) =>
@@ -5503,8 +5484,8 @@ function StaffModal({
                 !touchedStaff.name
                   ? INPUT_OK
                   : staffErrors.name
-                  ? INPUT_ERR
-                  : INPUT_OK
+                    ? INPUT_ERR
+                    : INPUT_OK
               }
               value={newStaff.name}
               onChange={(e) =>
@@ -5530,8 +5511,8 @@ function StaffModal({
                   !touchedStaff.contact
                     ? INPUT_OK
                     : staffErrors.contact
-                    ? INPUT_ERR
-                    : INPUT_OK
+                      ? INPUT_ERR
+                      : INPUT_OK
                 }
                 value={newStaff.email}
                 onChange={(e) =>
@@ -5554,8 +5535,8 @@ function StaffModal({
                   !touchedStaff.contact
                     ? INPUT_OK
                     : staffErrors.contact
-                    ? INPUT_ERR
-                    : INPUT_OK
+                      ? INPUT_ERR
+                      : INPUT_OK
                 }
                 value={newStaff.phone}
                 onChange={(e) =>
@@ -5587,8 +5568,8 @@ function StaffModal({
                     !touchedStaff.tempPassword
                       ? INPUT_OK
                       : staffErrors.tempPassword
-                      ? INPUT_ERR
-                      : INPUT_OK
+                        ? INPUT_ERR
+                        : INPUT_OK
                   }
                   value={newStaff.tempPassword}
                   onChange={(e) =>

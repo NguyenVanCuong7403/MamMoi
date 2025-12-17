@@ -167,9 +167,9 @@ function buildPhaseThemeFromStages(stages = []) {
     );
     const lineColorMeta = buildStageColorMeta(
       stage.lineColor ||
-        stage.lineColorKey ||
-        stage.lineColorHex ||
-        nodeColorMeta.hex,
+      stage.lineColorKey ||
+      stage.lineColorHex ||
+      nodeColorMeta.hex,
       nodeColorMeta.key
     );
     const iconValue = stage.icon || "";
@@ -711,7 +711,7 @@ function ComboBox({
     requestAnimationFrame(() => {
       try {
         inputRef.current?.blur();
-      } catch {}
+      } catch { }
       // nhả cờ sau 1 tick để onBlur không chạy reset
       setTimeout(() => {
         isCommittingRef.current = false;
@@ -1432,8 +1432,8 @@ function Field({
     (isEditing
       ? "p-1 rounded-full border border-rose-500 bg-rose-50 text-rose-600 scale-110"
       : "p-1 rounded-full border border-transparent text-neutral-500 " +
-        "group-hover:border-rose-400 group-hover:bg-rose-50 " +
-        "group-hover:text-rose-600 group-hover:scale-110");
+      "group-hover:border-rose-400 group-hover:bg-rose-50 " +
+      "group-hover:text-rose-600 group-hover:scale-110");
 
   const LeftTag = clickable ? "button" : "div";
 
@@ -1471,9 +1471,8 @@ function Field({
 
       {/* Cột value bên phải */}
       <div
-        className={`flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words min-w-0 ${
-          isEditing ? "overflow-visible" : "overflow-hidden"
-        }`}
+        className={`flex items-start gap-2 text-[15px] sm:text-base md:text-[17px] font-semibold leading-relaxed text-neutral-800 dark:text-neutral-50 break-words min-w-0 ${isEditing ? "overflow-visible" : "overflow-hidden"
+          }`}
       >
         {isEditing ? editor : <span className="block truncate">{value}</span>}
       </div>
@@ -1642,7 +1641,7 @@ function handleNumberedKeyDown(e, setter) {
       try {
         const newPos = pos + 1 + prefix.length;
         el.selectionStart = el.selectionEnd = newPos;
-      } catch {}
+      } catch { }
     }, 0);
     return;
   }
@@ -1688,7 +1687,7 @@ function handleNumberedKeyDown(e, setter) {
       setTimeout(() => {
         try {
           el.selectionStart = el.selectionEnd = insertPos + 1;
-        } catch {}
+        } catch { }
       }, 0);
     }
   }
@@ -3423,7 +3422,7 @@ export default function TreeDetail() {
     return () => {
       try {
         document.head.removeChild(style);
-      } catch {}
+      } catch { }
     };
   }, []);
 
@@ -3478,13 +3477,13 @@ export default function TreeDetail() {
         plantDate: partial.plantDate
           ? toDateOnlyString(partial.plantDate)
           : meta?.plantDate
-          ? toDateOnlyString(meta.plantDate)
-          : null,
+            ? toDateOnlyString(meta.plantDate)
+            : null,
         expectedHarvestDate: partial.expectedHarvestDate
           ? toDateOnlyString(partial.expectedHarvestDate)
           : meta?.expectedHarvestDate
-          ? toDateOnlyString(meta.expectedHarvestDate)
-          : null,
+            ? toDateOnlyString(meta.expectedHarvestDate)
+            : null,
 
         // int?
         stageId: partial.stageId ?? meta?.stageId ?? null,
@@ -3502,17 +3501,17 @@ export default function TreeDetail() {
           (partial.isActive === "stopped"
             ? false
             : partial.isActive === "active"
-            ? true
-            : typeof partial.isActive === "boolean"
-            ? partial.isActive
-            : null) ??
+              ? true
+              : typeof partial.isActive === "boolean"
+                ? partial.isActive
+                : null) ??
           (typeof meta?.isActive === "boolean"
             ? meta.isActive
             : meta?.status === "active"
-            ? true
-            : meta?.status === "inactive"
-            ? false
-            : null),
+              ? true
+              : meta?.status === "inactive"
+                ? false
+                : null),
 
         // các status text
         leafStatus: partial.leafStatus ?? meta?.leafStatus ?? null,
@@ -4270,25 +4269,25 @@ export default function TreeDetail() {
 
   const initialPhaseId = normalizePhaseId(
     lifecycleFromAPI?.phaseId ||
-      lifecycleFromDB.currentPhaseId ||
-      baseTree?.phenology?.currentPhase ||
-      baseTree?.phenology?.stage ||
-      baseTree?.phase
+    lifecycleFromDB.currentPhaseId ||
+    baseTree?.phenology?.currentPhase ||
+    baseTree?.phenology?.stage ||
+    baseTree?.phase
   );
 
   const initialP1Completed =
     lifecycleFromAPI?.phase1Completed != null
       ? lifecycleFromAPI.phase1Completed
       : typeof lifecycleFromDB.phase1Completed === "boolean"
-      ? lifecycleFromDB.phase1Completed
-      : initialPhaseId !== "growth_development";
+        ? lifecycleFromDB.phase1Completed
+        : initialPhaseId !== "growth_development";
 
   const initialCycleCount =
     lifecycleFromAPI?.cycleCount != null
       ? lifecycleFromAPI.cycleCount
       : Number.isFinite(lifecycleFromDB.cycleCount)
-      ? Number(lifecycleFromDB.cycleCount)
-      : 0;
+        ? Number(lifecycleFromDB.cycleCount)
+        : 0;
 
   const [currentPhaseId, setCurrentPhaseId] = useState(initialPhaseId);
   const [phase1Completed, setPhase1Completed] = useState(initialP1Completed);
@@ -4335,8 +4334,8 @@ export default function TreeDetail() {
       (baseTree.status === "active"
         ? true
         : baseTree.status === "stopped"
-        ? false
-        : true),
+          ? false
+          : true),
     notes: baseTree.notes || "",
   });
 
@@ -4360,8 +4359,8 @@ export default function TreeDetail() {
         (baseTree.status === "active"
           ? true
           : baseTree.status === "stopped"
-          ? false
-          : prev.isActive),
+            ? false
+            : prev.isActive),
       notes: baseTree.notes || "",
       treeTypeId: baseTree.treeTypeId ?? prev.treeTypeId ?? null,
     }));
@@ -4393,8 +4392,8 @@ export default function TreeDetail() {
         (baseTree.status === "active"
           ? true
           : baseTree.status === "stopped"
-          ? false
-          : prev.isActive),
+            ? false
+            : prev.isActive),
       notes: baseTree.notes || "",
       stageId: baseTree.stageId ?? prev.stageId ?? null,
       userId: baseTree.userId ?? prev.userId ?? null,
@@ -4578,7 +4577,7 @@ export default function TreeDetail() {
         const url = new URL(window.location.href);
         url.searchParams.set("treeId", nextCode);
         window.history.replaceState({}, "", url.toString());
-      } catch {}
+      } catch { }
 
       const nextMeta = {
         ...meta,
@@ -4817,8 +4816,8 @@ export default function TreeDetail() {
       const raw = Array.isArray(res?.data?.data) // trường hợp API bọc { data, count }
         ? res.data.data
         : Array.isArray(res?.data) // trường hợp trả thẳng array
-        ? res.data
-        : [];
+          ? res.data
+          : [];
 
       const mapped = raw.map(mapCareTaskFromApi).filter(Boolean);
 
@@ -4922,8 +4921,8 @@ export default function TreeDetail() {
       const details = Array.isArray(a.details)
         ? a.details
         : a.details
-        ? [String(a.details)]
-        : [];
+          ? [String(a.details)]
+          : [];
 
       return {
         type: mapTaskTypeFromApi(a.type ?? a.actionType ?? a.typeName),
@@ -5446,13 +5445,13 @@ export default function TreeDetail() {
     };
     return (
       (original.leaf || "").trim() !==
-        (dailyHealthModal.values.leaf || "").trim() ||
+      (dailyHealthModal.values.leaf || "").trim() ||
       (original.branch || "").trim() !==
-        (dailyHealthModal.values.branch || "").trim() ||
+      (dailyHealthModal.values.branch || "").trim() ||
       (original.flower || "").trim() !==
-        (dailyHealthModal.values.flower || "").trim() ||
+      (dailyHealthModal.values.flower || "").trim() ||
       (original.fruit || "").trim() !==
-        (dailyHealthModal.values.fruit || "").trim()
+      (dailyHealthModal.values.fruit || "").trim()
     );
   }, [dailyHealthModal, baseTree.phenology]);
 
@@ -5647,9 +5646,8 @@ export default function TreeDetail() {
         return false;
       if (dateFilter === "today" && !isToday(p.due)) return false;
       if (qtext) {
-        const text = `${p.title}\n${detailsToPlain(p.details)}\n${
-          p.completedNote || ""
-        }`.toLowerCase();
+        const text = `${p.title}\n${detailsToPlain(p.details)}\n${p.completedNote || ""
+          }`.toLowerCase();
         if (!text.includes(qtext)) return false;
       }
       return true;
@@ -5696,12 +5694,12 @@ export default function TreeDetail() {
         prev.map((task) =>
           task.id === id
             ? {
-                ...task,
-                completed: true,
-                status: "done",
-                completedAt: payload.completedDate,
-                completedNote: note,
-              }
+              ...task,
+              completed: true,
+              status: "done",
+              completedAt: payload.completedDate,
+              completedNote: note,
+            }
             : task
         )
       );
@@ -5775,12 +5773,12 @@ export default function TreeDetail() {
         prev.map((t) =>
           t.id === draft.forId
             ? {
-                ...t,
-                title: draft.title,
-                type: draft.type,
-                due: draft.due,
-                details: draft.details,
-              }
+              ...t,
+              title: draft.title,
+              type: draft.type,
+              due: draft.due,
+              details: draft.details,
+            }
             : t
         )
       );
@@ -6456,9 +6454,8 @@ export default function TreeDetail() {
                       editor={
                         <div className="space-y-2">
                           <ComboBox
-                            key={`soil-combobox-${
-                              DROPDOWN_OPTIONS.soils.length
-                            }-${editingField === "soil" ? "open" : "closed"}`}
+                            key={`soil-combobox-${DROPDOWN_OPTIONS.soils.length
+                              }-${editingField === "soil" ? "open" : "closed"}`}
                             value={fieldDraft}
                             onChange={(v) => {
                               setFieldDraft(v);
@@ -6649,11 +6646,10 @@ export default function TreeDetail() {
                             (editingPhenField === "fruit" && !canEditFruit)
                           }
                           className="w-full min-h-[250px] resize-none"
-                          placeholder={`Nhập tình trạng ${
-                            statusDefs
-                              .find((d) => d.key === editingPhenField)
-                              ?.label.toLowerCase() || ""
-                          }...`}
+                          placeholder={`Nhập tình trạng ${statusDefs
+                            .find((d) => d.key === editingPhenField)
+                            ?.label.toLowerCase() || ""
+                            }...`}
                         />
                       </div>
                       <div className="flex gap-2 mt-4">
@@ -6717,8 +6713,8 @@ export default function TreeDetail() {
                           canEditFlower && phen.flower && phen.flower.trim()
                             ? formatStatus(phen.flower.trim())
                             : canEditFlower
-                            ? "Cập nhật thông tin"
-                            : "Chưa đến giai đoạn"
+                              ? "Cập nhật thông tin"
+                              : "Chưa đến giai đoạn"
                         }
                         editable={canEditFlower}
                         disabled={isStopped || !canEditFlower}
@@ -6734,8 +6730,8 @@ export default function TreeDetail() {
                           canEditFruit && phen.fruit && phen.fruit.trim()
                             ? formatStatus(phen.fruit.trim())
                             : canEditFruit
-                            ? "Cập nhật thông tin"
-                            : "Chưa đến giai đoạn"
+                              ? "Cập nhật thông tin"
+                              : "Chưa đến giai đoạn"
                         }
                         editable={canEditFruit}
                         disabled={isStopped || !canEditFruit}
@@ -6790,7 +6786,7 @@ export default function TreeDetail() {
                           typeof payload.lifecycleAutoEnabled === "boolean"
                             ? payload.lifecycleAutoEnabled
                             : prev?.lifecycleAutoEnabled ??
-                              lifecycleAutoEnabled,
+                            lifecycleAutoEnabled,
                         lifecycleAutoDisabledAt:
                           payload.lifecycleAutoDisabledAt ??
                           prev?.lifecycleAutoDisabledAt ??
@@ -6813,12 +6809,17 @@ export default function TreeDetail() {
                           typeof payload.lifecycleAutoEnabled === "boolean"
                             ? payload.lifecycleAutoEnabled
                             : prev?.lifecycleAutoEnabled ??
-                              lifecycleAutoEnabled,
+                            lifecycleAutoEnabled,
                         lifecycleAutoDisabledAt:
                           payload.lifecycleAutoDisabledAt ??
                           prev?.lifecycleAutoDisabledAt ??
                           lifecycleAutoDisabledAt,
                       }));
+                    }
+
+                    // Refresh AI recommendations after stage update
+                    if (refreshAiRecommendationsRef.current) {
+                      refreshAiRecommendationsRef.current();
                     }
                   }}
                   cycleCount={cycleCount}
@@ -6857,7 +6858,7 @@ export default function TreeDetail() {
                     để tra cứu lịch sử.
                   </div>
                 ) : (
-                  <AISuggestionsList />
+                  <AISuggestionsList key={meta.stageId || currentPhaseId} />
                 )}
               </CardContent>
             </Card>
@@ -7303,8 +7304,8 @@ export default function TreeDetail() {
                   const placeholder = isDisabled
                     ? field.defaultText
                     : field.key === "flower" || field.key === "fruit"
-                    ? "Cập nhật thông tin"
-                    : field.defaultText;
+                      ? "Cập nhật thông tin"
+                      : field.defaultText;
 
                   return (
                     <div key={field.key} className="flex-shrink-0 space-y-1">
@@ -8011,108 +8012,111 @@ export default function TreeDetail() {
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* Dialog Lịch sử thay đổi tình trạng */}
-      {statusHistoryOpen && (
-        <div
-          className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setStatusHistoryOpen(false);
-            }
-          }}
-        >
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl max-h-[80vh] flex flex-col">
-            <div className="px-6 py-4 border-b flex items-center justify-between">
-              <div className="text-lg font-semibold text-black">
-                Lịch sử thay đổi tình trạng
+      {
+        statusHistoryOpen && (
+          <div
+            className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setStatusHistoryOpen(false);
+              }
+            }}
+          >
+            <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl max-h-[80vh] flex flex-col">
+              <div className="px-6 py-4 border-b flex items-center justify-between">
+                <div className="text-lg font-semibold text-black">
+                  Lịch sử thay đổi tình trạng
+                </div>
+                <button
+                  type="button"
+                  className="h-8 w-8 grid place-items-center rounded-lg hover:bg-neutral-50 text-neutral-700"
+                  onClick={() => setStatusHistoryOpen(false)}
+                >
+                  <span className="text-xl leading-none">×</span>
+                </button>
               </div>
-              <button
-                type="button"
-                className="h-8 w-8 grid place-items-center rounded-lg hover:bg-neutral-50 text-neutral-700"
-                onClick={() => setStatusHistoryOpen(false)}
-              >
-                <span className="text-xl leading-none">×</span>
-              </button>
-            </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
-              {loadingHistory ? (
-                <div className="text-center py-8 text-neutral-500">
-                  Đang tải...
-                </div>
-              ) : statusHistory.length === 0 ? (
-                <div className="text-center py-8 text-neutral-500">
-                  Chưa có lịch sử thay đổi nào
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {(() => {
-                    const latestItem = statusHistory[0];
-                    if (!latestItem) return null;
+              <div className="flex-1 overflow-y-auto p-6">
+                {loadingHistory ? (
+                  <div className="text-center py-8 text-neutral-500">
+                    Đang tải...
+                  </div>
+                ) : statusHistory.length === 0 ? (
+                  <div className="text-center py-8 text-neutral-500">
+                    Chưa có lịch sử thay đổi nào
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {(() => {
+                      const latestItem = statusHistory[0];
+                      if (!latestItem) return null;
 
-                    const fieldLabels = {
-                      leaf: "Lá",
-                      branch: "Cành",
-                      flower: "Hoa",
-                      fruit: "Quả",
-                      LeafStatus: "Lá",
-                      BranchStatus: "Cành",
-                      FlowerStatus: "Hoa",
-                      FruitStatus: "Quả",
-                    };
+                      const fieldLabels = {
+                        leaf: "Lá",
+                        branch: "Cành",
+                        flower: "Hoa",
+                        fruit: "Quả",
+                        LeafStatus: "Lá",
+                        BranchStatus: "Cành",
+                        FlowerStatus: "Hoa",
+                        FruitStatus: "Quả",
+                      };
 
-                    const fieldLabel =
-                      fieldLabels[latestItem.statusField] ||
-                      latestItem.statusField;
-                    const changedDate = latestItem.changedAt
-                      ? formatVN(String(latestItem.changedAt).slice(0, 10))
-                      : "";
+                      const fieldLabel =
+                        fieldLabels[latestItem.statusField] ||
+                        latestItem.statusField;
+                      const changedDate = latestItem.changedAt
+                        ? formatVN(String(latestItem.changedAt).slice(0, 10))
+                        : "";
 
-                    const oldText = safePhenText(latestItem.oldValue);
-                    const newText = safePhenText(latestItem.newValue);
+                      const oldText = safePhenText(latestItem.oldValue);
+                      const newText = safePhenText(latestItem.newValue);
 
-                    return (
-                      <div className="border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="font-medium text-neutral-900">
-                            {fieldLabel}
-                          </div>
-                          <div className="text-xs text-neutral-500">
-                            {changedDate}
-                          </div>
-                        </div>
-
-                        <div className="text-sm text-neutral-700">
-                          <div>
-                            <div className="text-xs font-semibold text-neutral-600">
-                              Trước đó
+                      return (
+                        <div className="border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="font-medium text-neutral-900">
+                              {fieldLabel}
                             </div>
-                            <div className="whitespace-pre-wrap mt-1 text-neutral-800">
-                              {oldText}
+                            <div className="text-xs text-neutral-500">
+                              {changedDate}
                             </div>
                           </div>
 
-                          <div className="mt-3">
-                            <div className="text-xs font-semibold text-neutral-600">
-                              Sau
+                          <div className="text-sm text-neutral-700">
+                            <div>
+                              <div className="text-xs font-semibold text-neutral-600">
+                                Trước đó
+                              </div>
+                              <div className="whitespace-pre-wrap mt-1 text-neutral-800">
+                                {oldText}
+                              </div>
                             </div>
-                            <div className="whitespace-pre-wrap mt-1 text-neutral-800">
-                              {newText}
+
+                            <div className="mt-3">
+                              <div className="text-xs font-semibold text-neutral-600">
+                                Sau
+                              </div>
+                              <div className="whitespace-pre-wrap mt-1 text-neutral-800">
+                                {newText}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-              )}
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
 
@@ -8343,9 +8347,8 @@ function LCTransientPath({
       {headVisible && (
         <g ref={headRef}>
           <polygon
-            points={`0,0 -${headSize},-${headSize / 2} -${headSize},${
-              headSize / 2
-            }`}
+            points={`0,0 -${headSize},-${headSize / 2} -${headSize},${headSize / 2
+              }`}
             fill={color}
             opacity="0.98"
           />
@@ -8475,7 +8478,7 @@ function LifecycleTimeline({
         const { thetaStart, thetaEnd } = trimAngles(fromIdx, toIdx);
         const color =
           PHASE_COLORS[
-            backward ? cyclePhases[toIdx].id : cyclePhases[fromIdx].id
+          backward ? cyclePhases[toIdx].id : cyclePhases[fromIdx].id
           ] || "#10b981";
         const retract = backward;
         const d = retract
@@ -8645,9 +8648,8 @@ function LifecycleTimeline({
 
           <div
             className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg mb-1.5 pointer-events-none
-              ${getColorClasses("emerald", activePhase === phase1.id)} ${
-              isPhase1Completed ? "opacity-40 grayscale" : ""
-            }`}
+              ${getColorClasses("emerald", activePhase === phase1.id)} ${isPhase1Completed ? "opacity-40 grayscale" : ""
+              }`}
           >
             {phase1.icon}
             {activePhase === phase1.id && !isPhase1Completed && (
@@ -8656,11 +8658,10 @@ function LifecycleTimeline({
           </div>
           <div
             className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold text-center ring-1 ring-black/5 shadow-sm
-  ${
-    isPhase1Completed
-      ? "bg-white text-gray-700 border border-gray-200 opacity-70"
-      : "bg-emerald-600 text-white"
-  }`}
+  ${isPhase1Completed
+                ? "bg-white text-gray-700 border border-gray-200 opacity-70"
+                : "bg-emerald-600 text-white"
+              }`}
           >
             {phase1.name} {/* luôn là “Sinh trưởng & Phát triển” */}
           </div>
@@ -8772,9 +8773,8 @@ function LifecycleTimeline({
           </div>
 
           <div
-            className={`absolute inset-0 ${
-              isSpinning ? "animate-spin-once" : ""
-            }`}
+            className={`absolute inset-0 ${isSpinning ? "animate-spin-once" : ""
+              }`}
             style={{ transformOrigin: "50% 50%" }}
           >
             <svg
@@ -8836,19 +8836,18 @@ function LifecycleTimeline({
                           transform={`translate(${endX}, ${endY}) rotate(${tanDeg})`}
                           opacity={
                             hideStaticFrom ||
-                            hideStaticTo ||
-                            hideStaticCurr ||
-                            hideRemoving ||
-                            hidePost
+                              hideStaticTo ||
+                              hideStaticCurr ||
+                              hideRemoving ||
+                              hidePost
                               ? 0
                               : 1
                           }
                           className="fade-in-160"
                         >
                           <polygon
-                            points={`0,0 -${HEAD_SIZE},-${
-                              HEAD_SIZE / 2
-                            } -${HEAD_SIZE},${HEAD_SIZE / 2}`}
+                            points={`0,0 -${HEAD_SIZE},-${HEAD_SIZE / 2
+                              } -${HEAD_SIZE},${HEAD_SIZE / 2}`}
                             fill={persisted ? color : "#d1d5db"}
                             opacity={persisted ? "0.75" : "0.45"}
                           />
@@ -8903,9 +8902,9 @@ function LifecycleTimeline({
                       <div
                         className={`relative w-12 h-12 rounded-full border-4 shadow-lg flex items-center justify-center text-lg
                                       ${getColorClasses(
-                                        phase.color,
-                                        nodeHasColor
-                                      )}`}
+                          phase.color,
+                          nodeHasColor
+                        )}`}
                       >
                         <span
                           className={nodeHasColor ? "" : "grayscale opacity-40"}
@@ -8916,35 +8915,32 @@ function LifecycleTimeline({
                           isActive &&
                           phase.id !== suppressId) ||
                           isPreview) && (
-                          <span
-                            className={`pointer-events-none absolute inset-0 rounded-full animate-ping opacity-60
-                            ${
-                              phase.color === "pink"
-                                ? "bg-pink-400"
-                                : phase.color === "lime"
-                                ? "bg-lime-400"
-                                : phase.color === "amber"
-                                ? "bg-amber-400"
-                                : "bg-teal-400"
-                            }`}
-                          />
-                        )}
+                            <span
+                              className={`pointer-events-none absolute inset-0 rounded-full animate-ping opacity-60
+                            ${phase.color === "pink"
+                                  ? "bg-pink-400"
+                                  : phase.color === "lime"
+                                    ? "bg-lime-400"
+                                    : phase.color === "amber"
+                                      ? "bg-amber-400"
+                                      : "bg-teal-400"
+                                }`}
+                            />
+                          )}
                       </div>
                       <div
                         className={`mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold ring-1 ring-black/5 shadow-sm whitespace-nowrap
-                        ${
-                          nodeHasColor
-                            ? `${
-                                phase.color === "pink"
-                                  ? "bg-pink-600"
-                                  : phase.color === "lime"
-                                  ? "bg-lime-600"
-                                  : phase.color === "amber"
+                        ${nodeHasColor
+                            ? `${phase.color === "pink"
+                              ? "bg-pink-600"
+                              : phase.color === "lime"
+                                ? "bg-lime-600"
+                                : phase.color === "amber"
                                   ? "bg-amber-600"
                                   : "bg-teal-600"
-                              } text-white`
+                            } text-white`
                             : "bg-white text-gray-700 border border-gray-200"
-                        }`}
+                          }`}
                       >
                         {phase.name}
                       </div>
@@ -9039,10 +9035,9 @@ function LCPhaseDropdown({ activePhase, onPickPhase, onStartNewCycle }) {
                     onPickPhase(it.id);
                   }}
                   className={`w-full text-left px-2.5 py-2 rounded-xl border transition-all flex items-center gap-2.5
-                    ${
-                      activePhase === it.id
-                        ? "bg-emerald-50 border-emerald-300 shadow-sm"
-                        : "bg-white hover:bg-blue-50 border-gray-200 hover:shadow-md"
+                    ${activePhase === it.id
+                      ? "bg-emerald-50 border-emerald-300 shadow-sm"
+                      : "bg-white hover:bg-blue-50 border-gray-200 hover:shadow-md"
                     }`}
                 >
                   <span className="text-[18px] leading-none">{it.icon}</span>
@@ -9179,8 +9174,8 @@ async function getAISuggestions(tree, phaseId) {
       const details = Array.isArray(a.details)
         ? a.details
         : a.details
-        ? [String(a.details)]
-        : [];
+          ? [String(a.details)]
+          : [];
 
       suggestions.push({
         type: mapTaskTypeFromApi(a.type ?? a.actionType ?? a.typeName),

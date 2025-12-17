@@ -10,6 +10,7 @@ public class SupportRequestListItemDto
     public string UserFullName { get; set; } = null!;
     public string UserEmail { get; set; } = null!;
     public string Subject { get; set; } = null!;
+    public string? Description { get; set; }
     public string? Category { get; set; }
     public string Priority { get; set; } = null!;
     public string Status { get; set; } = null!;
@@ -18,5 +19,6 @@ public class SupportRequestListItemDto
     public string? TicketNumber { get; set; }
     public int ResponseCount { get; set; }
     public int? SatisfactionRating { get; set; }
+    public string? AttachmentUrls { get; set; }
 }
 

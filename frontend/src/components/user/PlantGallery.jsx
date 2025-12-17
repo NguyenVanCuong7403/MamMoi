@@ -423,7 +423,7 @@ export default function PlantGallery() {
       </section>
 
       {/* Plant Grid Section - Full width with natural decorative elements */}
-      <section className="relative z-10 w-full bg-transparent py-20">
+      <section className="relative z-10 w-full bg-transparent pt-6 pb-12 sm:pt-8 lg:pt-10">
         <div className="w-full">
           {loading ? (
             <div className="flex min-h-[500px] items-center justify-center">
@@ -460,16 +460,16 @@ export default function PlantGallery() {
                 <style>{`
                   @media (min-width: 1024px) {
                     ${Array.from({ length: firstRowItems }, (_, i) => {
-                      // Calculate starting column to center the items for 4 columns:
-                      // startCol = Math.floor((columns - n) / 2) + 1 + i
-                      const columns = 4;
-                      const baseCol =
-                        Math.floor((columns - firstRowItems) / 2) + 1;
-                      const startCol = baseCol + i;
-                      return `.plant-grid-item-first-row-${firstRowItems}-${i} {
+                  // Calculate starting column to center the items for 4 columns:
+                  // startCol = Math.floor((columns - n) / 2) + 1 + i
+                  const columns = 4;
+                  const baseCol =
+                    Math.floor((columns - firstRowItems) / 2) + 1;
+                  const startCol = baseCol + i;
+                  return `.plant-grid-item-first-row-${firstRowItems}-${i} {
                         grid-column-start: ${startCol} !important;
                       }`;
-                    }).join("\n")}
+                }).join("\n")}
                   }
                 `}</style>
               )}
@@ -488,7 +488,7 @@ export default function PlantGallery() {
                         key={tree.treeTypeId}
                         className={cn(
                           shouldCenter &&
-                            `plant-grid-item-first-row-${firstRowItems}-${itemIndexInFirstRow}`
+                          `plant-grid-item-first-row-${firstRowItems}-${itemIndexInFirstRow}`
                         )}
                       >
                         <PlantCard
