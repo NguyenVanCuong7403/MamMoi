@@ -533,14 +533,14 @@ function StatCard({
       className={cn(
         "group relative overflow-hidden rounded-xl bg-gradient-to-br p-2.5 lg:p-3 shadow-md border border-white/20 transition-all duration-300 hover:shadow-lg",
         colorClasses[color],
-        className
+        className,
       )}
     >
       <div className="flex flex-col items-center justify-center text-center w-full min-h-[60px]">
         <div
           className={cn(
             "flex items-center justify-center rounded-lg bg-white/90 shadow-sm backdrop-blur-sm mb-2 flex-shrink-0",
-            iconColorClasses[color]
+            iconColorClasses[color],
           )}
           style={{
             width: "clamp(1.5rem, 2vw + 0.5rem, 2.25rem)",
@@ -608,7 +608,7 @@ function RangeProgressBar({ min, max, unit, label, color = "emerald" }) {
           transition={{ duration: 1, delay: 0.3, ease: "easeOut" }}
           className={cn(
             "h-full bg-gradient-to-r shadow-inner",
-            colorClasses[color]
+            colorClasses[color],
           )}
         />
         <div className="absolute inset-0 flex items-center justify-between px-2 text-[10px] font-semibold text-white drop-shadow-sm">
@@ -749,7 +749,7 @@ function PestCard({ pest, index }) {
       className={cn(
         "rounded-xl border-2 p-4 transition-all hover:shadow-md",
         colors.bg,
-        colors.border
+        colors.border,
       )}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
@@ -772,7 +772,7 @@ function PestCard({ pest, index }) {
           className={cn(
             "rounded-full px-2 py-0.5 text-[10px] font-semibold",
             colors.text,
-            colors.bg
+            colors.bg,
           )}
         >
           {pest.severity === "High"
@@ -849,10 +849,10 @@ export default function PlantDetail() {
           }
         };
 
-        // Get trees from API - filter by treeTypeId to show trees of the same type
-        let trees = [];
+        // Get varieties from API - filter by treeTypeId to show varieties of the same type
+        let varieties = [];
         try {
-          // Get treeTypeId from foundTree to filter trees - only show trees with same treeTypeId
+          // Get treeTypeId from foundTree to filter varieties
           const treeTypeId =
             foundTree.treeTypeId ||
             foundTree.treeTypeID ||
@@ -861,64 +861,41 @@ export default function PlantDetail() {
             parseInt(id);
 
           if (treeTypeId && !isNaN(treeTypeId)) {
-            // Search for trees with this treeTypeId (public search, no authentication required)
-            const searchResponse = await TreeRepository.searchTrees({
-              q: "",
-              treeTypeId: treeTypeId,
-              page: 1,
-              pageSize: VARIETY_LIMIT, // Use same limit as varieties
-            });
+            // Fetch varieties for this tree type
+            const varietiesResponse =
+              await TreeRepository.getTreeVarieties(treeTypeId);
 
-            // Handle response - search returns PagedResult
-            let treesArray = [];
-            if (searchResponse?.items && Array.isArray(searchResponse.items)) {
-              treesArray = searchResponse.items;
-            } else if (Array.isArray(searchResponse)) {
-              treesArray = searchResponse;
+            // Handle response - can be array or wrapped in data
+            let varietiesArray = [];
+            if (Array.isArray(varietiesResponse)) {
+              varietiesArray = varietiesResponse;
             } else if (
-              searchResponse?.data?.items &&
-              Array.isArray(searchResponse.data.items)
+              varietiesResponse?.data &&
+              Array.isArray(varietiesResponse.data)
             ) {
-              treesArray = searchResponse.data.items;
+              varietiesArray = varietiesResponse.data;
+            } else if (
+              varietiesResponse?.items &&
+              Array.isArray(varietiesResponse.items)
+            ) {
+              varietiesArray = varietiesResponse.items;
             }
 
-            if (Array.isArray(treesArray) && treesArray.length > 0) {
-              trees = treesArray
-                .map((t) => {
-                  // Support both camelCase and PascalCase property names
-                  const imageUrl =
-                    t.imageUrl ||
-                    t.ImageUrl ||
-                    t.treeImageUrl ||
-                    t.TreeImageUrl ||
-                    null;
-                  const treeName = t.treeName || t.TreeName || "";
-                  const varietyName =
-                    t.treeVarietyName ||
-                    t.TreeVarietyName ||
-                    t.varietyName ||
-                    t.VarietyName ||
-                    "";
-                  const stageName = t.stageName || t.StageName || "";
-                  const healthStatus = t.healthStatus || t.HealthStatus || "";
-
-                  return {
-                    id: t.treeId || t.TreeId || t.id || null,
-                    name: treeName,
-                    variety: varietyName,
-                    description: stageName || healthStatus || "", // Use stage or health status as description
-                    imageUrl:
-                      forceRefresh && imageUrl
-                        ? addCacheBust(imageUrl)
-                        : imageUrl ||
-                        "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
-                  };
-                })
-                .filter((t) => t.name && t.name.trim().length > 0); // Only include trees with non-empty names
+            if (Array.isArray(varietiesArray) && varietiesArray.length > 0) {
+              varieties = varietiesArray.map((v) => {
+                return {
+                  varietyId: v.varietyId || v.VarietyId,
+                  name: v.varietyName || v.VarietyName || "",
+                  description:
+                    v.varietyDescription || v.VarietyDescription || "",
+                  treeTypeName: v.treeTypeName || v.TreeTypeName || "",
+                  treesCount: v.treesCount || v.TreesCount || 0,
+                };
+              });
             }
           }
         } catch (err) {
-          console.error("PlantDetail: Failed to fetch trees:", err);
+          console.error("PlantDetail: Failed to fetch varieties:", err);
         }
 
         // Parse JSON fields from API
@@ -967,8 +944,8 @@ export default function PlantDetail() {
             foundTree.soilMasterId ||
             foundTree.soilMasterID ||
             demoData?.soilMasterId,
-          // Use only API data - show trees with same treeTypeId instead of varieties
-          varieties: trees, // Reuse varieties field to store trees for display
+          // Use only API data - show varieties from the tree variety library
+          varieties: varieties,
           careGuide: careGuide,
           pests: pests,
           seasonalRoadmap: seasonalRoadmap,
@@ -991,7 +968,7 @@ export default function PlantDetail() {
         setLoading(false);
       }
     },
-    [id]
+    [id],
   );
 
   // Initial fetch
@@ -1134,7 +1111,8 @@ export default function PlantDetail() {
               alt={plantData.treeTypeName}
               className="h-full w-full object-cover"
               onError={(e) => {
-                e.target.src = "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1600";
+                e.target.src =
+                  "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1600";
               }}
             />
             {/* Dark gradient overlay for text readability */}
@@ -1413,23 +1391,24 @@ export default function PlantDetail() {
                 </CardHeader>
                 <CardContent>
                   {plantData.droughtTolerance ||
-                    plantData.floodTolerance ||
-                    plantData.frostTolerance ||
-                    plantData.windTolerance ? (
+                  plantData.floodTolerance ||
+                  plantData.frostTolerance ||
+                  plantData.windTolerance ? (
                     <div className="grid gap-4 sm:grid-cols-2">
                       {plantData.droughtTolerance && (
                         <div
                           className={cn(
                             "rounded-xl border-2 p-4",
                             toleranceColors[plantData.droughtTolerance].bg,
-                            toleranceColors[plantData.droughtTolerance].border
+                            toleranceColors[plantData.droughtTolerance].border,
                           )}
                         >
                           <div className="mb-2 flex items-center gap-2">
                             <Sun
                               className={cn(
                                 "flex-shrink-0",
-                                toleranceColors[plantData.droughtTolerance].icon
+                                toleranceColors[plantData.droughtTolerance]
+                                  .icon,
                               )}
                               style={{
                                 width: "clamp(1rem, 1.5vw + 0.25rem, 1.25rem)",
@@ -1450,7 +1429,7 @@ export default function PlantDetail() {
                             className={cn(
                               "rounded-full",
                               toleranceColors[plantData.droughtTolerance].text,
-                              toleranceColors[plantData.droughtTolerance].bg
+                              toleranceColors[plantData.droughtTolerance].bg,
                             )}
                           >
                             {toleranceLabels[plantData.droughtTolerance]}
@@ -1462,14 +1441,14 @@ export default function PlantDetail() {
                           className={cn(
                             "rounded-xl border-2 p-4",
                             toleranceColors[plantData.floodTolerance].bg,
-                            toleranceColors[plantData.floodTolerance].border
+                            toleranceColors[plantData.floodTolerance].border,
                           )}
                         >
                           <div className="mb-2 flex items-center gap-2">
                             <Waves
                               className={cn(
                                 "flex-shrink-0",
-                                toleranceColors[plantData.floodTolerance].icon
+                                toleranceColors[plantData.floodTolerance].icon,
                               )}
                               style={{
                                 width: "clamp(1rem, 1.5vw + 0.25rem, 1.25rem)",
@@ -1490,7 +1469,7 @@ export default function PlantDetail() {
                             className={cn(
                               "rounded-full",
                               toleranceColors[plantData.floodTolerance].text,
-                              toleranceColors[plantData.floodTolerance].bg
+                              toleranceColors[plantData.floodTolerance].bg,
                             )}
                           >
                             {toleranceLabels[plantData.floodTolerance]}
@@ -1502,14 +1481,14 @@ export default function PlantDetail() {
                           className={cn(
                             "rounded-xl border-2 p-4",
                             toleranceColors[plantData.frostTolerance].bg,
-                            toleranceColors[plantData.frostTolerance].border
+                            toleranceColors[plantData.frostTolerance].border,
                           )}
                         >
                           <div className="mb-2 flex items-center gap-2">
                             <Snowflake
                               className={cn(
                                 "flex-shrink-0",
-                                toleranceColors[plantData.frostTolerance].icon
+                                toleranceColors[plantData.frostTolerance].icon,
                               )}
                               style={{
                                 width: "clamp(1rem, 1.5vw + 0.25rem, 1.25rem)",
@@ -1530,7 +1509,7 @@ export default function PlantDetail() {
                             className={cn(
                               "rounded-full",
                               toleranceColors[plantData.frostTolerance].text,
-                              toleranceColors[plantData.frostTolerance].bg
+                              toleranceColors[plantData.frostTolerance].bg,
                             )}
                           >
                             {toleranceLabels[plantData.frostTolerance]}
@@ -1542,14 +1521,14 @@ export default function PlantDetail() {
                           className={cn(
                             "rounded-xl border-2 p-4",
                             toleranceColors[plantData.windTolerance].bg,
-                            toleranceColors[plantData.windTolerance].border
+                            toleranceColors[plantData.windTolerance].border,
                           )}
                         >
                           <div className="mb-2 flex items-center gap-2">
                             <Wind
                               className={cn(
                                 "flex-shrink-0",
-                                toleranceColors[plantData.windTolerance].icon
+                                toleranceColors[plantData.windTolerance].icon,
                               )}
                               style={{
                                 width: "clamp(1rem, 1.5vw + 0.25rem, 1.25rem)",
@@ -1570,7 +1549,7 @@ export default function PlantDetail() {
                             className={cn(
                               "rounded-full",
                               toleranceColors[plantData.windTolerance].text,
-                              toleranceColors[plantData.windTolerance].bg
+                              toleranceColors[plantData.windTolerance].bg,
                             )}
                           >
                             {toleranceLabels[plantData.windTolerance]}
@@ -1600,7 +1579,7 @@ export default function PlantDetail() {
                 const hasMoreVarieties = totalVarieties > VARIETY_LIMIT;
                 const displayedVarieties = (plantData.varieties || []).slice(
                   0,
-                  VARIETY_LIMIT
+                  VARIETY_LIMIT,
                 );
 
                 return (
@@ -1653,25 +1632,13 @@ export default function PlantDetail() {
                                   : "none",
                               }}
                             >
-                              {displayedVarieties.map((item, index) => {
-                                // Check if this is a tree (has id, variety, garden) or variety (has description)
-                                const isTree =
-                                  item.id || item.variety || item.garden;
-                                return isTree ? (
-                                  <TreeCard
-                                    key={item.id || index}
-                                    tree={item}
-                                    index={index}
-                                    navigate={navigate}
-                                  />
-                                ) : (
-                                  <VarietyCard
-                                    key={index}
-                                    variety={item}
-                                    index={index}
-                                  />
-                                );
-                              })}
+                              {displayedVarieties.map((item, index) => (
+                                <VarietyCard
+                                  key={item.varietyId || index}
+                                  variety={item}
+                                  index={index}
+                                />
+                              ))}
                             </div>
                             {hasMoreVarieties && (
                               <p className="mt-3 text-xs text-slate-500 text-center">
@@ -1703,7 +1670,7 @@ export default function PlantDetail() {
                 const hasMorePests = totalPests > PEST_LIMIT;
                 const displayedPests = (plantData.pests || []).slice(
                   0,
-                  PEST_LIMIT
+                  PEST_LIMIT,
                 );
 
                 return (
