@@ -15,14 +15,76 @@ namespace MamMoi.Api.Controllers;
 public class SupportRequestsController : ControllerBase
 {
     private readonly ISupportRequestService _supportRequestService;
+    private readonly IImageUploadService _imageUploadService;
     private readonly ILogger<SupportRequestsController> _logger;
 
     public SupportRequestsController(
         ISupportRequestService supportRequestService,
+        IImageUploadService imageUploadService,
         ILogger<SupportRequestsController> logger)
     {
         _supportRequestService = supportRequestService;
+        _imageUploadService = imageUploadService;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Upload image for support request
+    /// POST /api/support-requests/upload-image
+    /// </summary>
+    [HttpPost("upload-image")]
+    [ApiExplorerSettings(IgnoreApi = true)]
+    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UploadImage([FromForm] IFormFile file)
+    {
+        try
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(new { success = false, message = "No file uploaded" });
+            }
+
+            // Validate file size (5MB max)
+            const int maxFileSize = 5 * 1024 * 1024; // 5MB
+            if (file.Length > maxFileSize)
+            {
+                return BadRequest(new { success = false, message = "File size exceeds 5MB limit" });
+            }
+
+            // Validate file type
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(extension))
+            {
+                return BadRequest(new { success = false, message = "Only image files are allowed (jpg, jpeg, png, webp, gif)" });
+            }
+
+            // Upload using ImageUploadService
+            using var stream = file.OpenReadStream();
+            var imageUrl = await _imageUploadService.UploadImageAsync(
+                stream,
+                file.FileName,
+                file.ContentType,
+                "support-requests"
+            );
+
+            return Ok(new
+            {
+                success = true,
+                message = "Image uploaded successfully",
+                url = imageUrl
+            });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading support request image");
+            return StatusCode(500, new { success = false, message = "Internal server error while uploading image" });
+        }
     }
 
     /// <summary>

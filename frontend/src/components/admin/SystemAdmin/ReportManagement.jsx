@@ -89,6 +89,7 @@ import {
 import AdminReportRepository from "@/API/repositories/AdminReportRepository";
 import ActionToast from "@/components/admin/components/ActionToast";
 import SupportRequestRepository from "@/API/repositories/SupportRequestRepository";
+import { API_BASE } from "@/API/ApiClient";
 
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
@@ -2073,8 +2074,8 @@ export default function ReportManagement() {
                                           <Star
                                             key={s}
                                             className={`w-4 h-4 ${s <= rating
-                                                ? "fill-yellow-400 text-yellow-400"
-                                                : "text-gray-200"
+                                              ? "fill-yellow-400 text-yellow-400"
+                                              : "text-gray-200"
                                               }`}
                                           />
                                         ))}
@@ -2187,37 +2188,43 @@ export default function ReportManagement() {
                           Ảnh chứng minh
                         </p>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          {selectedReport.evidence.map((item, index) => (
-                            <div
-                              key={`${item.url}-${index}`}
-                              className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
-                            >
-                              <img
-                                src={item.url}
-                                alt={item.caption}
-                                className="h-40 w-full object-cover"
-                                loading="lazy"
-                              />
-                              <div className="flex items-center justify-between px-3 py-2">
-                                <p className="text-sm font-medium text-slate-700">
-                                  {item.caption}
-                                </p>
-                                <Button
-                                  variant="ghost"
-                                  asChild
-                                  className="text-emerald-600 hover:bg-emerald-50"
-                                >
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                          {selectedReport.evidence.map((item, index) => {
+                            // Prepend base URL for relative paths
+                            const imageUrl = item.url?.startsWith('http')
+                              ? item.url
+                              : `${API_BASE}${item.url}`;
+                            return (
+                              <div
+                                key={`${item.url}-${index}`}
+                                className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                              >
+                                <img
+                                  src={imageUrl}
+                                  alt={item.caption}
+                                  className="h-40 w-full object-cover"
+                                  loading="lazy"
+                                />
+                                <div className="flex items-center justify-between px-3 py-2">
+                                  <p className="text-sm font-medium text-slate-700">
+                                    {item.caption}
+                                  </p>
+                                  <Button
+                                    variant="ghost"
+                                    asChild
+                                    className="text-emerald-600 hover:bg-emerald-50"
                                   >
-                                    Xem
-                                  </a>
-                                </Button>
+                                    <a
+                                      href={imageUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      Xem
+                                    </a>
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )}
@@ -2298,9 +2305,9 @@ export default function ReportManagement() {
                                   <Star
                                     key={star}
                                     className={`w-5 h-5 ${star <=
-                                        supportRequestDetail.satisfactionRating
-                                        ? "fill-yellow-400 text-yellow-400"
-                                        : "text-gray-300"
+                                      supportRequestDetail.satisfactionRating
+                                      ? "fill-yellow-400 text-yellow-400"
+                                      : "text-gray-300"
                                       }`}
                                   />
                                 ))}
@@ -2474,37 +2481,43 @@ export default function ReportManagement() {
                           Ảnh chứng minh
                         </p>
                         <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          {selectedReport.evidence.map((item, index) => (
-                            <div
-                              key={`${item.url}-${index}`}
-                              className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
-                            >
-                              <img
-                                src={item.url}
-                                alt={item.caption}
-                                className="h-40 w-full object-cover"
-                                loading="lazy"
-                              />
-                              <div className="flex items-center justify-between px-3 py-2">
-                                <p className="text-sm font-medium text-slate-700">
-                                  {item.caption}
-                                </p>
-                                <Button
-                                  variant="ghost"
-                                  asChild
-                                  className="text-emerald-600 hover:bg-emerald-50"
-                                >
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                          {selectedReport.evidence.map((item, index) => {
+                            // Prepend base URL for relative paths
+                            const imageUrl = item.url?.startsWith('http')
+                              ? item.url
+                              : `${API_BASE}${item.url}`;
+                            return (
+                              <div
+                                key={`${item.url}-${index}`}
+                                className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                              >
+                                <img
+                                  src={imageUrl}
+                                  alt={item.caption}
+                                  className="h-40 w-full object-cover"
+                                  loading="lazy"
+                                />
+                                <div className="flex items-center justify-between px-3 py-2">
+                                  <p className="text-sm font-medium text-slate-700">
+                                    {item.caption}
+                                  </p>
+                                  <Button
+                                    variant="ghost"
+                                    asChild
+                                    className="text-emerald-600 hover:bg-emerald-50"
                                   >
-                                    Xem
-                                  </a>
-                                </Button>
+                                    <a
+                                      href={imageUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      Xem
+                                    </a>
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       </div>
                     )}

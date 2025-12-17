@@ -1,6 +1,6 @@
 // Default API base — override with `VITE_API_BASE` in your env.
 // Keep default as the local backend HTTPS dev URL used by this project.
-const API_BASE = import.meta.env.VITE_API_BASE || "https://localhost:7237";
+export const API_BASE = import.meta.env.VITE_API_BASE || "https://localhost:7237";
 
 // Flag to prevent infinite refresh loops
 let isRefreshing = false;
@@ -54,7 +54,7 @@ export default class ApiClient {
       // Keep this as debug only to avoid noisy logs in production
       // eslint-disable-next-line no-console
       console.debug("ApiClient -> requesting:", `${API_BASE}${path}`);
-    } catch {}
+    } catch { }
 
     let res = await fetch(`${API_BASE}${path}`, options);
 

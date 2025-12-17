@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -82,6 +81,7 @@ import {
 } from "@/components/ui/pagination";
 import AdminReportRepository from "@/API/repositories/AdminReportRepository";
 import ActionToast from "@/components/admin/components/ActionToast";
+import { API_BASE } from "@/API/ApiClient";
 
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
@@ -1988,7 +1988,7 @@ export default function ReportManagementBA() {
                                 className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
                               >
                                 <img
-                                  src={item.url}
+                                  src={item.url?.startsWith('http') ? item.url : `${API_BASE}${item.url}`}
                                   alt={item.caption}
                                   className="h-40 w-full object-cover"
                                   loading="lazy"
@@ -2003,7 +2003,7 @@ export default function ReportManagementBA() {
                                     className="text-emerald-600 hover:bg-emerald-50"
                                   >
                                     <a
-                                      href={item.url}
+                                      href={item.url?.startsWith('http') ? item.url : `${API_BASE}${item.url}`}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                     >
@@ -2229,7 +2229,7 @@ export default function ReportManagementBA() {
                               className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
                             >
                               <img
-                                src={item.url}
+                                src={item.url?.startsWith('http') ? item.url : `${API_BASE}${item.url}`}
                                 alt={item.caption}
                                 className="h-40 w-full object-cover"
                                 loading="lazy"
@@ -2244,7 +2244,7 @@ export default function ReportManagementBA() {
                                   className="text-emerald-600 hover:bg-emerald-50"
                                 >
                                   <a
-                                    href={item.url}
+                                    href={item.url?.startsWith('http') ? item.url : `${API_BASE}${item.url}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                   >

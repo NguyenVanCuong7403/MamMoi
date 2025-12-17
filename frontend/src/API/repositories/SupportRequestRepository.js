@@ -11,6 +11,24 @@ export default class SupportRequestRepository {
   }
 
   /**
+   * Upload image for support request
+   * @param {File} file - Image file to upload
+   * @returns {Promise<string>} - Image URL
+   */
+  static async uploadImage(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    // ApiClient.post(path, body, isFormData)
+    const response = await ApiClient.post(
+      "/api/support-requests/upload-image",
+      formData,
+      true // isFormData flag
+    );
+    return response;
+  }
+
+  /**
    * Get user's own support requests
    * @param {number} page - Page number (default: 1)
    * @param {number} pageSize - Page size (default: 20)

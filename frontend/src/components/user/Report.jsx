@@ -255,25 +255,29 @@ export default function Report() {
         // Priority will be auto-mapped by backend based on category
       };
 
-      // If there's an image, we'll store the URL in attachmentUrls
-      // For now, if you have a file upload service, implement it here
-      // For simplicity, we'll skip image upload for now
-      // You can add file upload functionality later
-      if (form.image) {
-        // TODO: Implement file upload to get URL
-        // For now, we'll proceed without image
-        console.warn(
-          "Image upload not yet implemented, proceeding without image"
-        );
-      }
-
-      // Create support request - Backend expects PascalCase
+      // Create support request payload - Backend expects PascalCase
       // Priority will be auto-mapped by backend based on category
       const requestPayload = {
         Subject: requestData.subject,
         Description: requestData.description,
         Category: requestData.category,
       };
+
+      // If there's an image, upload it first and get the URL
+      if (form.image) {
+        try {
+          const uploadResponse = await SupportRequestRepository.uploadImage(
+            form.image
+          );
+          if (uploadResponse && uploadResponse.url) {
+            requestPayload.AttachmentUrls = uploadResponse.url;
+          }
+        } catch (uploadError) {
+          console.error("Error uploading image:", uploadError);
+          // Continue with request creation even if image upload fails
+          // You could optionally show a warning to the user here
+        }
+      }
 
       const response = await SupportRequestRepository.createRequest(
         requestPayload
@@ -316,16 +320,14 @@ export default function Report() {
     <>
       {!user && (
         <div
-          className={`fixed top-24 left-1/2 z-50 w-full max-w-md -translate-x-1/2 px-4 transition-all duration-300 ease-out ${
-            showLoginNotice
-              ? "opacity-100 translate-y-0 scale-100"
-              : "pointer-events-none opacity-0 -translate-y-4 scale-95"
-          }`}
+          className={`fixed top-24 left-1/2 z-50 w-full max-w-md -translate-x-1/2 px-4 transition-all duration-300 ease-out ${showLoginNotice
+            ? "opacity-100 translate-y-0 scale-100"
+            : "pointer-events-none opacity-0 -translate-y-4 scale-95"
+            }`}
         >
           <div
-            className={`flex items-center gap-3 rounded-3xl bg-gradient-to-r from-emerald-400/90 to-teal-500/90 px-6 py-4 text-white shadow-[0_25px_65px_rgba(0,0,0,0.35)] backdrop-blur-lg ${
-              showLoginNotice ? "animate-[pulse_1.5s_ease-in-out]" : ""
-            }`}
+            className={`flex items-center gap-3 rounded-3xl bg-gradient-to-r from-emerald-400/90 to-teal-500/90 px-6 py-4 text-white shadow-[0_25px_65px_rgba(0,0,0,0.35)] backdrop-blur-lg ${showLoginNotice ? "animate-[pulse_1.5s_ease-in-out]" : ""
+              }`}
           >
             <AlertCircle className="w-6 h-6" />
             <div className="flex-1">
@@ -394,8 +396,8 @@ export default function Report() {
                     onBlur={() => handleFieldBlur("category")}
                     className={
                       shouldShowCategoryError() ||
-                      (touched.category && errors.category) ||
-                      isGuestRestrictedCategory
+                        (touched.category && errors.category) ||
+                        isGuestRestrictedCategory
                         ? SELECT_ERR
                         : SELECT_OK
                     }
@@ -466,7 +468,7 @@ export default function Report() {
                     placeholder="Nhập tiêu đề yêu cầu hỗ trợ"
                     className={
                       shouldShowCategoryError() ||
-                      (touched.title && errors.title)
+                        (touched.title && errors.title)
                         ? INPUT_ERR
                         : INPUT_OK
                     }
@@ -505,16 +507,14 @@ export default function Report() {
                       }
                     }}
                     placeholder="Mô tả chi tiết vấn đề bạn gặp phải..."
-                    className={`${
-                      shouldShowCategoryError() ||
+                    className={`${shouldShowCategoryError() ||
                       (touched.content && errors.content)
-                        ? TEXTAREA_ERR
-                        : TEXTAREA_OK
-                    } ${
-                      isGuestRestrictedCategory
+                      ? TEXTAREA_ERR
+                      : TEXTAREA_OK
+                      } ${isGuestRestrictedCategory
                         ? "opacity-50 cursor-not-allowed"
                         : ""
-                    }`}
+                      }`}
                     disabled={!form.category || isGuestRestrictedCategory}
                     readOnly={isGuestRestrictedCategory}
                   />
@@ -540,11 +540,10 @@ export default function Report() {
                   <div className="space-y-4">
                     {!form.imagePreview ? (
                       <label
-                        className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-white/30 rounded-xl bg-white/5 transition-colors ${
-                          isGuestRestrictedCategory
-                            ? "cursor-not-allowed"
-                            : "hover:bg-white/10 cursor-pointer"
-                        }`}
+                        className={`flex flex-col items-center justify-center w-full h-48 border-2 border-dashed border-white/30 rounded-xl bg-white/5 transition-colors ${isGuestRestrictedCategory
+                          ? "cursor-not-allowed"
+                          : "hover:bg-white/10 cursor-pointer"
+                          }`}
                       >
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                           <Upload className="w-12 h-12 text-white/60 mb-3" />

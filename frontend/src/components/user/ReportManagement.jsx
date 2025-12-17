@@ -35,6 +35,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import SupportRequestRepository from "@/API/repositories/SupportRequestRepository";
+import { API_BASE } from "@/API/ApiClient";
 import { useAuth } from "@/API/context/AuthContext";
 import { LivingBackground } from "@/components/background";
 import { useNavigate } from "react-router-dom";
@@ -165,9 +166,18 @@ export default function ReportManagement() {
   }, [filteredReports.length, totalPages, page]);
 
   // Open detail modal
-  const openDetailModal = (report) => {
-    setSelectedReport(report);
-    setIsDetailModalOpen(true);
+  const openDetailModal = async (report) => {
+    try {
+      // Fetch full details including AttachmentUrls
+      const fullDetails = await SupportRequestRepository.getRequestById(report.requestId);
+      setSelectedReport(fullDetails);
+      setIsDetailModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching report details:", error);
+      // Fallback to using the list item data if fetch fails
+      setSelectedReport(report);
+      setIsDetailModalOpen(true);
+    }
   };
 
   // Open feedback modal
@@ -539,6 +549,28 @@ export default function ReportManagement() {
                     </p>
                   </div>
 
+                  {(selectedReport.attachmentUrls || selectedReport.AttachmentUrls) && (
+                    <div>
+                      <Label className="text-gray-600 font-medium">
+                        Ảnh chứng minh
+                      </Label>
+                      <div className="mt-2">
+                        <img
+                          src={`${API_BASE}${selectedReport.attachmentUrls || selectedReport.AttachmentUrls}`}
+                          alt="Attachment"
+                          className="max-w-full h-auto rounded-lg border border-gray-200"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.nextSibling.style.display = 'block';
+                          }}
+                        />
+                        <p className="text-gray-500 text-sm" style={{ display: 'none' }}>
+                          Không thể tải hình ảnh
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-gray-600 font-medium">
@@ -583,8 +615,8 @@ export default function ReportManagement() {
                           <Star
                             key={star}
                             className={`w-5 h-5 ${star <= selectedReport.satisfactionRating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300"
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300"
                               }`}
                           />
                         ))}
@@ -649,8 +681,8 @@ export default function ReportManagement() {
                         >
                           <Star
                             className={`w-8 h-8 transition-colors ${star <= feedback.rating
-                                ? "fill-yellow-400 text-yellow-400"
-                                : "text-gray-300 hover:text-yellow-300"
+                              ? "fill-yellow-400 text-yellow-400"
+                              : "text-gray-300 hover:text-yellow-300"
                               }`}
                           />
                         </button>
