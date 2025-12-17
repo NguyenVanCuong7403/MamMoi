@@ -713,6 +713,34 @@ export default function LifecycleWidget({
         payload.stageId = stageId;
       }
 
+      // If we have a target stage/phase, attempt to include virtualAgeMonths
+      // so backend can set VirtualAgeMonths reliably. We try to derive a
+      // sensible min age from the phase config subtitle (e.g. "18-20 tháng" or "≥18 tháng").
+      const tryParseMinFromSubtitle = (subtitle) => {
+        if (!subtitle) return null;
+        // match first number in the subtitle
+        const m = subtitle.match(/(\d{1,3})/);
+        if (!m) return null;
+        const v = parseInt(m[1], 10);
+        return Number.isFinite(v) ? v : null;
+      };
+
+      let targetPhaseEntry = null;
+      if (stageId != null) {
+        targetPhaseEntry = findPhaseByStageId(stageId) || null;
+      }
+      if (!targetPhaseEntry && normalizedPhaseId) {
+        targetPhaseEntry = findPhaseByCanonical(normalizedPhaseId) || null;
+      }
+
+      if (targetPhaseEntry) {
+        // prefer explicit stage-level metadata if present
+        const parsed = tryParseMinFromSubtitle(targetPhaseEntry.subtitle);
+        if (parsed != null) {
+          payload.virtualAgeMonths = parsed;
+        }
+      }
+
       // Log ra UI (console browser) để debug
       console.log("[LifecycleWidget] updateLifecyclePhase → sending payload", {
         treeId,
@@ -738,10 +766,6 @@ export default function LifecycleWidget({
 
     const nextState = !autoSyncEnabled;
     let overrideReason = undefined;
-    if (!nextState) {
-      overrideReason =
-        window.prompt("Nhập lý do ghi đè thủ công (tuỳ chọn).") || undefined;
-    }
 
     setTogglingAuto(true);
     try {
@@ -854,11 +878,14 @@ export default function LifecycleWidget({
 
     // Gọi API lifecycle để cập nhật
     try {
+      // Detect whether the visual transition will run backward (used to prompt for override)
+      let extra = undefined;
+
       const lifecycleResponse = await updateLifecyclePhase(
         toCanonical,
         nextCount,
         nextP1,
-        undefined,
+        extra,
         pending.stageId ?? null
       );
 

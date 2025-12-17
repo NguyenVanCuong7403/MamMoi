@@ -51,19 +51,6 @@ const ROLE_NAV_ITEMS = {
   ],
   businessadmin: [
     {
-      key: "reports",
-      label: "Quản lý báo cáo",
-      icon: BarChart3,
-      path: "/admin/business/reports",
-    },
-    {
-      key: "lifecycle",
-      label: "Quy trình vòng đời",
-      icon: RefreshCcw,
-      path: "/admin/business/lifecycle",
-    },
-
-    {
       key: "tree-types",
       label: "Quản lý loại cây",
       icon: Sprout,
@@ -76,10 +63,22 @@ const ROLE_NAV_ITEMS = {
       path: "/admin/business/tree-varieties",
     },
     {
+      key: "lifecycle",
+      label: "Quy trình vòng đời",
+      icon: RefreshCcw,
+      path: "/admin/business/lifecycle",
+    },
+    {
       key: "soils",
       label: "Quản lý loại đất",
       icon: Layers,
       path: "/admin/business/soils",
+    },
+    {
+      key: "reports",
+      label: "Quản lý báo cáo",
+      icon: BarChart3,
+      path: "/admin/business/reports",
     },
   ],
 };
@@ -122,9 +121,15 @@ export default function AdminLayout({ children }) {
   return (
     <div className="flex min-h-screen w-full text-slate-50" style={{ margin: 0, padding: 0 }}>
       {/* Sidebar */}
-      <aside className="relative z-20 flex w-72 flex-col border-r border-emerald-900/40 bg-black/20 px-5 pb-6 text-emerald-50 backdrop-blur-2xl">
-        {/* Wrapper dùng sticky để khối sidebar luôn ở giữa viewport khi cuộn */}
-        <div className="sticky" style={{ top: '80px', paddingTop: '2rem' }}>
+      <aside className="relative z-20 w-72 border-r border-emerald-900/40 bg-black/20 text-emerald-50 backdrop-blur-2xl">
+        {/* Sticky wrapper - luôn ở giữa viewport khi scroll */}
+        <div
+          className="sticky px-5"
+          style={{
+            top: '50%',
+            transform: 'translateY(-50%)',
+          }}
+        >
           <div className="mb-8">
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-300">
               Mầm Mới

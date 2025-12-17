@@ -80,6 +80,7 @@ const css = `
   @keyframes spin-once { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   .animate-spin-once { animation: spin-once 1s ease-in-out; }
   
+  .fade-in-out { transition: opacity 0.15s ease-out; }
   /* Tooltip animation */
   @keyframes tooltipIn { 
     from { opacity: 0; transform: translate(-50%, -100%) scale(0.9); } 
@@ -412,6 +413,7 @@ export default function LifecycleTimeline({
             key={`a-${i}-${k}`}
             transform={`translate(${x}, ${y}) rotate(${deg})`}
             opacity={0.55}
+            className="fade-in-out"
           >
             <polygon points={`0,0 -5,-2.5 -5,2.5`} fill={color} />
           </g>
@@ -948,7 +950,9 @@ export default function LifecycleTimeline({
                             strokeLinejoin="round"
                             style={{ vectorEffect: "non-scaling-stroke" }}
                             strokeDasharray={persisted ? "12 10" : undefined}
-                            className={persisted ? "flow-arc-slow" : undefined}
+                            className={`${
+                              persisted ? "flow-arc-slow" : ""
+                            } fade-in-out`}
                           />
                           <g
                             transform={`translate(${endX}, ${endY}) rotate(${tanDeg})`}
@@ -969,6 +973,7 @@ export default function LifecycleTimeline({
                               } -${HEAD_SIZE},${HEAD_SIZE / 2}`}
                               fill={persisted ? color : "#d1d5db"}
                               opacity={persisted ? "0.75" : "0.45"}
+                              className="fade-in-out"
                             />
                           </g>
                         </>
@@ -1042,7 +1047,7 @@ export default function LifecycleTimeline({
                     };
                   }
                   const nodeWrapperClass = [
-                    "absolute transition-all duration-200 select-none pointer-events-auto",
+                    "absolute select-none pointer-events-auto transition-transform duration-200 ease-out",
                     nodeInteractionEnabled
                       ? "cursor-pointer"
                       : "cursor-default",

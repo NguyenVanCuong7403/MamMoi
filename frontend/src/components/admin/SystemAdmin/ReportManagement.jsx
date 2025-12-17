@@ -1129,6 +1129,9 @@ export default function ReportManagement() {
     setFilters(defaultFilters);
   };
 
+  // SystemAdmin chỉ được xem báo cáo loại: auth, payment, system, other
+  const SA_ALLOWED_TYPES = ["auth", "payment", "system", "other"];
+
   const filteredReports = useMemo(() => {
     const timeWindow = TIME_SEGMENTS.find(
       (item) => item.value === filters.time
@@ -1137,6 +1140,10 @@ export default function ReportManagement() {
     const now = Date.now();
 
     return reports.filter((report) => {
+      // Chỉ hiển thị báo cáo loại auth, payment, system, other cho SystemAdmin
+      const isAllowedType = SA_ALLOWED_TYPES.includes(report.type);
+      if (!isAllowedType) return false;
+
       const createdAt = new Date(report.createdAt).getTime();
       const diffHours = (now - createdAt) / (1000 * 60 * 60);
       const matchesTime = diffHours >= 0 && diffHours <= limitHours;

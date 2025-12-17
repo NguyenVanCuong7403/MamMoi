@@ -95,14 +95,14 @@ export default function TreeVarietyManagement() {
   });
   const [actionNotice, setActionNotice] = useState(null);
 
-  // Fetch tree types for dropdown
+  // Fetch tree types for dropdown (including inactive ones to allow adding varieties)
   const fetchTreeTypes = async () => {
     try {
       const response = await AdminTreeRepository.getAllTreeTypes(
         1,
         100,
         null,
-        true
+        null // Don't filter by isActive to include inactive tree types
       );
       if (response.success && response.data) {
         setTreeTypes(response.data);

@@ -59,7 +59,8 @@
         bool? Phase1Completed = null,
         bool? AutoSyncEnabled = null,
         string? OverrideReason = null,
-        int? StageId = null // Optional TreeGrowthStages.StageId
+        int? StageId = null, // Optional TreeGrowthStages.StageId
+        int? VirtualAgeMonths = null // Optional virtual age in months when manually overriding stage
     );
 
     public record TreeLifecycleDto(
@@ -71,6 +72,7 @@
         bool Phase1Completed,
         int CycleCount,
         bool LifecycleAutoEnabled,
-        DateTime? LifecycleAutoDisabledAt
+        DateTime? LifecycleAutoDisabledAt,
+        int? VirtualAgeMonths
     );
 }

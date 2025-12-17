@@ -248,9 +248,9 @@ export default function BusinessAdminLifecycleProcessManagement() {
           );
           const lineColorMeta = buildColorMeta(
             stage.lineColor ||
-              stage.lineColorKey ||
-              stage.lineColorHex ||
-              nodeColorMeta.hex,
+            stage.lineColorKey ||
+            stage.lineColorHex ||
+            nodeColorMeta.hex,
             nodeColorMeta.key
           );
 
@@ -280,11 +280,17 @@ export default function BusinessAdminLifecycleProcessManagement() {
   );
 
   useEffect(() => {
+    // Fetch all tree types including inactive ones to allow managing lifecycle stages
     const fetchTreeTypes = async () => {
       setTreeTypesLoading(true);
       setTreeTypesError(null);
       try {
-        const response = await AdminTreeRepository.getAllTreeTypes(1, 100);
+        const response = await AdminTreeRepository.getAllTreeTypes(
+          1,
+          100,
+          null, // searchTerm
+          null  // isActive = null to include inactive tree types
+        );
         const parsed = parseTreeTypeList(response);
         setTreeTypes(parsed);
         if (parsed.length && !selectedTreeTypeId) {
@@ -401,10 +407,10 @@ export default function BusinessAdminLifecycleProcessManagement() {
     );
     const lineColorMeta = buildColorMeta(
       stage.lineColor ||
-        stage.lineColorKey ||
-        stage.lineColorHex ||
-        stage.nodeColor ||
-        nodeColorMeta.hex,
+      stage.lineColorKey ||
+      stage.lineColorHex ||
+      stage.nodeColor ||
+      nodeColorMeta.hex,
       nodeColorMeta.key
     );
     return {
@@ -748,11 +754,10 @@ export default function BusinessAdminLifecycleProcessManagement() {
                 <button
                   type="button"
                   key={`${fieldKey}-${opt.key}`}
-                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-medium transition ${
-                    isActive
+                  className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-medium transition ${isActive
                       ? "border-emerald-500 bg-emerald-50 shadow-sm"
                       : "border-slate-200 hover:border-slate-300"
-                  }`}
+                    }`}
                   onClick={() =>
                     setEditingStage((prev) => ({
                       ...prev,
@@ -794,11 +799,10 @@ export default function BusinessAdminLifecycleProcessManagement() {
 
         {notice && (
           <div
-            className={`rounded-xl border px-4 py-3 text-sm ${
-              notice.type === "success"
+            className={`rounded-xl border px-4 py-3 text-sm ${notice.type === "success"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                 : "border-rose-200 bg-rose-50 text-rose-700"
-            }`}
+              }`}
           >
             <div className="flex items-center gap-2">
               {notice.type === "success" ? (
@@ -854,11 +858,10 @@ export default function BusinessAdminLifecycleProcessManagement() {
                     <button
                       key={type.id}
                       onClick={() => handleSelectTreeType(type.id)}
-                      className={`mb-2 w-full rounded-2xl border px-3 py-2 text-left transition ${
-                        selectedTreeTypeId === type.id
+                      className={`mb-2 w-full rounded-2xl border px-3 py-2 text-left transition ${selectedTreeTypeId === type.id
                           ? "border-emerald-300 bg-emerald-50/90 text-emerald-900 shadow"
                           : "border-white/20 bg-white/10 text-white hover:border-emerald-200/40"
-                      }`}
+                        }`}
                     >
                       <p className="text-sm font-semibold">{type.name}</p>
                       {type.scientificName && (
@@ -937,9 +940,8 @@ export default function BusinessAdminLifecycleProcessManagement() {
                           onDragStart={() => handleDragStart(stage.stageId)}
                           onDragOver={handleDragOver}
                           onDrop={() => handleDrop(stage.stageId)}
-                          className={`cursor-move ${
-                            draggedStageId === stage.stageId ? "opacity-50" : ""
-                          }`}
+                          className={`cursor-move ${draggedStageId === stage.stageId ? "opacity-50" : ""
+                            }`}
                         >
                           <TableCell>
                             <GripVertical className="h-4 w-4 text-slate-400" />
@@ -955,13 +957,13 @@ export default function BusinessAdminLifecycleProcessManagement() {
                           </TableCell>
                           <TableCell className="text-sm">
                             {stage.minAgeInMonths !== null &&
-                            stage.maxAgeInMonths !== null
+                              stage.maxAgeInMonths !== null
                               ? `${stage.minAgeInMonths}-${stage.maxAgeInMonths}`
                               : stage.minAgeInMonths !== null
-                              ? `≥${stage.minAgeInMonths}`
-                              : stage.maxAgeInMonths !== null
-                              ? `<${stage.maxAgeInMonths}`
-                              : "—"}
+                                ? `≥${stage.minAgeInMonths}`
+                                : stage.maxAgeInMonths !== null
+                                  ? `<${stage.maxAgeInMonths}`
+                                  : "—"}
                           </TableCell>
                           <TableCell className="text-sm">
                             {stage.treesCount || 0}
@@ -1053,9 +1055,8 @@ export default function BusinessAdminLifecycleProcessManagement() {
             <DialogTitle>
               {editingStage?.stageId
                 ? "Chỉnh sửa giai đoạn"
-                : `Tạo giai đoạn mới của ${
-                    selectedTreeType?.treeTypeName || "loại cây này"
-                  }`}
+                : `Tạo giai đoạn mới của ${selectedTreeType?.treeTypeName || "loại cây này"
+                }`}
             </DialogTitle>
             <DialogDescription>
               {editingStage?.stageId
@@ -1213,7 +1214,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
                       maxLength={8}
                       value={
                         editingStage.icon &&
-                        !isImageIconValue(editingStage.icon)
+                          !isImageIconValue(editingStage.icon)
                           ? editingStage.icon
                           : ""
                       }

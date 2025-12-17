@@ -251,9 +251,9 @@ export default function AuthScreen({ defaultTab = "login" }) {
           localStorage.getItem("user")
         );
 
-        // Use window.location.href to force full page reload and ensure state is loaded
-        // This ensures AuthContext reads from localStorage on mount
-        window.location.href = redirectPath;
+        // Use React Router navigate() for smooth client-side navigation
+        // This prevents the flash caused by full page reload
+        navigate(redirectPath, { replace: true });
       } catch (navError) {
         console.error("❌ Navigation error:", navError);
         // Fallback: try window.location if navigate fails
@@ -436,9 +436,9 @@ export default function AuthScreen({ defaultTab = "login" }) {
           "Redirect to:",
           redirectPath
         );
-        // Use window.location.href to force full page reload
+        // Use React Router navigate() for smooth navigation
         setTimeout(() => {
-          window.location.href = redirectPath;
+          navigate(redirectPath, { replace: true });
         }, 500);
       } else if (pendingAction.type === "register") {
         // Xác thực OTP cho đăng ký tài khoản

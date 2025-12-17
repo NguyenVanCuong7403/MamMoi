@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -1056,6 +1057,9 @@ export default function ReportManagementBA() {
     setFilters(defaultFilters);
   };
 
+  // BusinessAdmin chỉ được xem báo cáo loại: tree (Cây) và other (Khác)
+  const BA_ALLOWED_TYPES = ["tree", "other"];
+
   const filteredReports = useMemo(() => {
     const timeWindow = TIME_SEGMENTS.find(
       (item) => item.value === filters.time
@@ -1064,6 +1068,10 @@ export default function ReportManagementBA() {
     const now = Date.now();
 
     return reports.filter((report) => {
+      // Chỉ hiển thị báo cáo loại tree và other cho BusinessAdmin
+      const isAllowedType = BA_ALLOWED_TYPES.includes(report.type);
+      if (!isAllowedType) return false;
+
       const createdAt = new Date(report.createdAt).getTime();
       const diffHours = (now - createdAt) / (1000 * 60 * 60);
       const matchesTime = diffHours >= 0 && diffHours <= limitHours;
