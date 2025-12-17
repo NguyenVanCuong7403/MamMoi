@@ -365,6 +365,16 @@ const cssStyles = `
 
   .tree-4.right { animation-delay: 0.5s; }
 
+  /* Tree 4 Right - no sway animation to prevent flipping */
+  .tree-4-right {
+    width: 5rem;
+    height: 8rem;
+    animation: treeGlow 3s ease-in-out infinite;
+  }
+
+  @media (min-width: 768px) { .tree-4-right { width: 7rem; height: 11rem; } }
+  @media (min-width: 1024px) { .tree-4-right { width: 8rem; height: 13rem; } }
+
   .leaves-group {
     animation: breathe 3s ease-in-out infinite;
     transform-origin: center;
@@ -667,7 +677,7 @@ export default function NotFound() {
         { icon: '🌱', text: 'Đừng lo, mọi hành trình đều có những ngã rẽ bất ngờ!' },
         { icon: '🍊', text: 'Cây ăn quả cũng cần thời gian để ra trái ngọt.' },
         { icon: '✨', text: 'Lạc đường đôi khi dẫn ta đến những vườn cây tuyệt vời!' },
-        { icon: '🌳', text: 'Hãy để chúng tôi đưa bạn về vườn xanh tươi!' },
+        { icon: '🌳', text: 'Hãy để chúng tôi đưa bạn về vườn của bạn!' },
     ];
 
     // Message rotation
@@ -909,7 +919,7 @@ export default function NotFound() {
                         </div>
 
                         {/* Tree 4 Right */}
-                        <svg viewBox="0 0 120 200" className="tree-4 right" style={{ transform: 'scaleX(-1)' }}>
+                        <svg viewBox="0 0 120 200" className="tree-4-right">
                             <defs>
                                 <linearGradient id="trunk2" x1="0%" y1="0%" x2="100%" y2="100%">
                                     <stop offset="0%" stopColor="#8D6E63" />
@@ -951,7 +961,7 @@ export default function NotFound() {
                     {/* Subtitle */}
                     <p className="subtitle">
                         Có vẻ như bạn đã đi lạc vào một khu vườn chưa được khám phá.<br />
-                        Hãy để Mầm Mới dẫn bạn về vườn cây xanh tươi!
+                        Hãy để Mầm Mới dẫn bạn về khu vườn của bạn!
                     </p>
 
                     {/* Message Card */}

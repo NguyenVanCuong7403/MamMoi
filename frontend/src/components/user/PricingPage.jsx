@@ -535,14 +535,14 @@ export default function PricingPage() {
         "Không! Tất cả dữ liệu của bạn được lưu trữ an toàn trên máy chủ đám mây. Ngay cả khi bạn tạm ngưng đăng ký, dữ liệu vẫn được giữ nguyên khi bạn quay lại.",
     },
     {
-      question: "Tôi có thể hủy hoặc đổi gói đăng ký không?",
+      question: "Gói có tự động gia hạn không?",
       answer:
-        "Có, bạn có thể hủy đăng ký hoặc nâng cấp lên gói cao hơn bất cứ lúc nào. Khi hủy, bạn vẫn sử dụng được dịch vụ đến hết kỳ thanh toán hiện tại.",
+        "Không, gói sẽ không tự động gia hạn. Bạn cần phải thanh toán lại để tiếp tục sử dụng.",
     },
     {
       question: "Có hỗ trợ thanh toán bằng cách nào?",
       answer:
-        "Hiện tại chúng tôi hỗ trợ thanh toán qua VNPay (quét mã QR, thẻ ATM nội địa, thẻ quốc tế Visa/Mastercard). Sau khi thanh toán thành công, gói sẽ được kích hoạt ngay lập tức.",
+        "Hiện tại chúng tôi hỗ trợ thanh toán qua quét mã QR. Sau khi thanh toán thành công, gói sẽ được kích hoạt ngay lập tức.",
     },
   ];
 
@@ -850,37 +850,40 @@ export default function PricingPage() {
                               <div className="absolute inset-0 animate-shimmer" />
                             </div>
 
-                            {/* Plan Icon with Glow */}
-                            <div style={{ marginBottom: 'var(--space-md)' }}>
-                              <div
-                                className={`inline-flex items-center justify-center bg-gradient-to-br ${plan.style?.iconBg} shadow-lg group-hover:scale-105 transition-transform duration-300`}
-                                style={{ width: 'var(--icon-lg)', height: 'var(--icon-lg)', borderRadius: 'var(--radius-md)', boxShadow: `0 8px 24px ${plan.style?.glowColor}` }}
-                              >
-                                <PlanIcon className="text-white" style={{ width: 'var(--icon-md)', height: 'var(--icon-md)' }} />
-                              </div>
-                            </div>
-
-                            {/* Plan Name */}
-                            <h3
-                              className={`font-bold text-transparent bg-clip-text bg-gradient-to-r ${plan.style?.textGradient}`}
-                              style={{ fontSize: 'var(--font-h3)', lineHeight: 'var(--lh-snug)', marginBottom: 'var(--space-xs)' }}
-                            >
-                              {plan.name}
-                            </h3>
-                            <p style={{ fontSize: 'var(--font-caption)', marginBottom: 'var(--space-md)', color: 'rgba(255,255,255,0.85)' }}>
-                              {plan.features[0]}
-                            </p>
-
-                            {/* Price with Animation */}
-                            <div style={{ marginBottom: 'var(--space-lg)' }}>
-                              <div className="flex flex-wrap items-baseline" style={{ gap: 'var(--space-xs)' }}>
-                                <span
-                                  className={`font-black text-transparent bg-clip-text bg-gradient-to-r ${plan.style?.textGradient}`}
-                                  style={{ fontSize: 'var(--font-2xl)', lineHeight: 'var(--lh-tight)' }}
+                            {/* Plan Header - Centered */}
+                            <div style={{ textAlign: 'center', marginBottom: 'var(--space-lg)' }}>
+                              {/* Plan Icon with Glow */}
+                              <div style={{ marginBottom: 'var(--space-md)', display: 'flex', justifyContent: 'center' }}>
+                                <div
+                                  className={`inline-flex items-center justify-center bg-gradient-to-br ${plan.style?.iconBg} shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                                  style={{ width: 'clamp(3rem, 5vw, 4rem)', height: 'clamp(3rem, 5vw, 4rem)', borderRadius: 'var(--radius-lg)', boxShadow: `0 12px 32px ${plan.style?.glowColor}` }}
                                 >
-                                  {formatPrice(plan.monthlyPrice)}đ
-                                </span>
-                                <span style={{ fontSize: 'var(--font-small)', color: 'rgba(255,255,255,0.7)' }}>/tháng</span>
+                                  <PlanIcon className="text-white" style={{ width: 'clamp(1.5rem, 2.5vw, 2rem)', height: 'clamp(1.5rem, 2.5vw, 2rem)' }} />
+                                </div>
+                              </div>
+
+                              {/* Plan Name */}
+                              <h3
+                                className={`font-bold text-transparent bg-clip-text bg-gradient-to-r ${plan.style?.textGradient}`}
+                                style={{ fontSize: 'clamp(1.25rem, 2vw, 1.75rem)', lineHeight: 'var(--lh-snug)', marginBottom: 'var(--space-xs)' }}
+                              >
+                                {plan.name}
+                              </h3>
+                              <p style={{ fontSize: 'var(--font-small)', marginBottom: 'var(--space-md)', color: 'rgba(255,255,255,0.85)' }}>
+                                {plan.features[0]}
+                              </p>
+
+                              {/* Price with Animation */}
+                              <div style={{ marginBottom: '0' }}>
+                                <div className="flex flex-wrap items-baseline justify-center" style={{ gap: 'var(--space-xs)' }}>
+                                  <span
+                                    className={`font-black text-transparent bg-clip-text bg-gradient-to-r ${plan.style?.textGradient}`}
+                                    style={{ fontSize: 'clamp(1.75rem, 3vw, 2.5rem)', lineHeight: 'var(--lh-tight)' }}
+                                  >
+                                    {formatPrice(plan.monthlyPrice)}đ
+                                  </span>
+                                  <span style={{ fontSize: 'var(--font-body)', color: 'rgba(255,255,255,0.7)' }}>/tháng</span>
+                                </div>
                               </div>
                             </div>
 

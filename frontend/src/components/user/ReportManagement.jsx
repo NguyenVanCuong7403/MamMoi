@@ -8,6 +8,7 @@ import {
   Send,
   Plus,
 } from "lucide-react";
+import AutoToast from "@/components/ui/auto-toast";
 import {
   Table,
   TableBody,
@@ -98,8 +99,9 @@ export default function ReportManagement() {
   const [search, setSearch] = useState("");
   const [feedback, setFeedback] = useState({ rating: 0, comment: "" });
   const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [toast, setToast] = useState({ open: false, type: "success", title: "", message: "" });
 
-  const pageSize = 10;
+  const pageSize = 7;
 
   // Fetch reports
   useEffect(() => {
@@ -187,10 +189,15 @@ export default function ReportManagement() {
     setIsFeedbackModalOpen(true);
   };
 
+  // Show toast notification
+  const showToast = (type, title, message = "") => {
+    setToast({ open: true, type, title, message });
+  };
+
   // Submit feedback
   const handleSubmitFeedback = async () => {
     if (!selectedReport || feedback.rating === 0) {
-      alert("Vui lòng chọn đánh giá từ 1-5 sao");
+      showToast("error", "Lỗi", "Vui lòng chọn đánh giá từ 1-5 sao");
       return;
     }
 
@@ -201,15 +208,17 @@ export default function ReportManagement() {
         feedback: feedback.comment || null,
       });
 
-      alert("Cảm ơn bạn đã gửi phản hồi!");
       setIsFeedbackModalOpen(false);
       setSelectedReport(null);
       setFeedback({ rating: 0, comment: "" });
+      showToast("success", "Thành công!", "Cảm ơn bạn đã gửi phản hồi!");
       fetchReports(); // Refresh reports
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      alert(
-        error.message || "Có lỗi xảy ra khi gửi phản hồi. Vui lòng thử lại."
+      showToast(
+        "error",
+        "Có lỗi xảy ra",
+        error.message || "Không thể gửi phản hồi. Vui lòng thử lại."
       );
     } finally {
       setSubmittingFeedback(false);
@@ -745,6 +754,16 @@ export default function ReportManagement() {
           </Dialog>
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <AutoToast
+        open={toast.open}
+        type={toast.type}
+        title={toast.title}
+        message={toast.message}
+        duration={3000}
+        onClose={() => setToast({ ...toast, open: false })}
+      />
     </>
   );
 }

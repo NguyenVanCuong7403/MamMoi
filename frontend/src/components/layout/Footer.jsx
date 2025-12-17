@@ -4,32 +4,28 @@ import { Facebook, Instagram, Youtube, Twitter } from "lucide-react";
 export default function Footer() {
   const footerSections = {
     about: [
-      { label: "Về chúng tôi", href: "/about" },
-      { label: "Câu chuyện thương hiệu", href: "/story" },
-      { label: "Đội ngũ", href: "/team" },
+      { label: "Về chúng tôi", href: "/intro" },
+      { label: "Câu chuyện thương hiệu", href: "/intro" },
+
     ],
     services: [
-      { label: "Chăm sóc cây ăn quả", href: "/care" },
-      { label: "Quản lý vườn cây", href: "/management" },
-      { label: "Gợi ý chăm sóc tự động", href: "/auto-suggestions" },
+      { label: "Chăm sóc cây ăn quả", href: "/garden" },
+      { label: "Quản lý vườn cây", href: "/garden" },
+      { label: "Thư viện cây", href: "/plants" },
     ],
     support: [
-      { label: "Hướng dẫn sử dụng", href: "/guide" },
-      { label: "Chính sách đổi trả", href: "/return-policy" },
-      { label: "Câu hỏi thường gặp", href: "/faq" },
+
+      { label: "Câu hỏi thường gặp", href: "/price" },
+      { label: "Liên hệ hỗ trợ", href: "/report" },
     ],
     contact: {
       address: "Đại học FPT Hà Nội",
-      phone: "+84 123 456 789",
+      phone: "0988284661",
       email: "info@mammoi.vn",
     },
   };
 
   const socialLinks = [
-    { icon: Facebook, href: "https://facebook.com", label: "Facebook" },
-    { icon: Instagram, href: "https://instagram.com", label: "Instagram" },
-    { icon: Youtube, href: "https://youtube.com", label: "Youtube" },
-    { icon: Twitter, href: "https://twitter.com", label: "Twitter" },
   ];
 
   const BG = "#1F302F";
@@ -37,10 +33,24 @@ export default function Footer() {
   const TEXT80 = "rgba(251,255,223,.80)";
   const LINE = "rgba(251,255,223,.22)";
 
+  // Fluid spacing CSS variables
+  const fluidStyles = {
+    "--space-section": "clamp(2rem, 1.5rem + 2vw, 3rem)",
+    "--space-6": "clamp(1.25rem, 1rem + 0.75vw, 1.5rem)",
+    "--space-4": "clamp(0.875rem, 0.75rem + 0.5vw, 1rem)",
+    "--gap-grid": "clamp(1.5rem, 1rem + 1.5vw, 2.5rem)",
+    "--container-pad": "clamp(1rem, 4vw, 2rem)",
+    "--text-sm": "clamp(0.8125rem, 0.75rem + 0.2vw, 0.875rem)",
+    "--text-base": "clamp(0.875rem, 0.8rem + 0.2vw, 1rem)",
+    "--text-lg": "clamp(1rem, 0.9rem + 0.3vw, 1.125rem)",
+    "--icon-sm": "clamp(1rem, 0.9rem + 0.2vw, 1.125rem)",
+  };
+
   return (
     <footer
       className="mm-footer w-full mt-auto"
       style={{
+        ...fluidStyles,
         backgroundColor: BG,
         color: TEXT,
         borderTop: `1px solid ${LINE}`,
@@ -55,10 +65,22 @@ export default function Footer() {
         .mm-footer .mm-inner{position:relative;z-index:1;}
       `}</style>
 
-      {/* FULL-BLEED inner (kéo sát mép) */}
-      <div className="mm-inner w-full max-w-none px-3 sm:px-4 md:px-6 lg:px-8 xl:px-10 2xl:px-12 py-10">
-        <div className="flex flex-wrap items-start justify-between gap-8 pb-8">
-          <div className="flex-shrink-0" style={{ maxWidth: 320 }}>
+      {/* Container with fluid padding - full width */}
+      <div
+        className="mm-inner w-full"
+        style={{
+          padding: "var(--space-section) var(--container-pad)"
+        }}
+      >
+        {/* Main footer content - stacks on mobile, row on desktop */}
+        <div
+          className="flex flex-col lg:flex-row lg:items-start lg:justify-between"
+          style={{ gap: "var(--gap-grid)" }}
+        >
+          {/* Brand section - full width on mobile, constrained on desktop */}
+          <div
+            className="w-full lg:w-auto lg:max-w-xs flex-shrink-0"
+          >
             <a
               href="/"
               className="flex items-center gap-3 mb-4 cursor-pointer group"
@@ -67,25 +89,36 @@ export default function Footer() {
               <img
                 src="/logo/FooterLogo.png"
                 alt="Mầm Mới Logo"
-                className="w-16 h-16 md:w-20 md:h-20 rounded-full flex-shrink-0 group-hover:scale-110 transition-transform object-cover"
+                className="rounded-full flex-shrink-0 group-hover:scale-110 transition-transform object-cover"
+                style={{
+                  width: "clamp(3.5rem, 3rem + 2vw, 5rem)",
+                  height: "clamp(3.5rem, 3rem + 2vw, 5rem)",
+                }}
               />
               <span
-                className="text-xl font-bold"
-                style={{ color: "rgba(251,255,223,.9)" }}
+                className="font-bold"
+                style={{
+                  color: "rgba(251,255,223,.9)",
+                  fontSize: "var(--text-lg)",
+                }}
               >
                 Mầm Mới
               </span>
             </a>
 
             <p
-              className="text-sm leading-relaxed mb-4"
-              style={{ color: TEXT80 }}
+              className="leading-relaxed mb-4"
+              style={{
+                color: TEXT80,
+                fontSize: "var(--text-sm)",
+              }}
             >
               Mang thiên nhiên vào ngôi nhà của bạn. Chúng tôi cung cấp cây xanh
               chất lượng cao với dịch vụ chăm sóc tận tâm.
             </p>
 
-            <div className="flex items-center gap-3">
+            {/* Social icons with proper touch targets (min 44px) */}
+            <div className="flex items-center gap-2 sm:gap-3">
               {socialLinks.map((s, i) => (
                 <a
                   key={i}
@@ -93,33 +126,54 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={s.label}
-                  className="w-9 h-9 rounded-full flex items-center justify-center transition-opacity hover:opacity-100"
+                  className="rounded-full flex items-center justify-center transition-all hover:opacity-100 hover:scale-110"
                   style={{
                     backgroundColor: "rgba(251,255,223,.12)",
                     color: TEXT,
+                    width: "clamp(2.5rem, 2rem + 1vw, 2.75rem)",
+                    height: "clamp(2.5rem, 2rem + 1vw, 2.75rem)",
+                    minWidth: "44px",
+                    minHeight: "44px",
                   }}
                 >
-                  <s.icon className="w-4 h-4" />
+                  <s.icon style={{
+                    width: "var(--icon-sm)",
+                    height: "var(--icon-sm)"
+                  }} />
                 </a>
               ))}
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-12 xl:gap-16 2xl:gap-24 flex-1 justify-end">
+          {/* Links sections - responsive grid: 2 cols on mobile, 4 cols on larger screens */}
+          <div
+            className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 flex-1"
+            style={{
+              gap: "var(--gap-grid)",
+              maxWidth: "800px",
+            }}
+          >
+            {/* Về chúng tôi */}
             <div>
               <h3
-                className="font-semibold text-base mb-3"
-                style={{ color: "#FFFFA5" }}
+                className="font-semibold mb-3"
+                style={{
+                  color: "#FFFFA5",
+                  fontSize: "var(--text-base)",
+                }}
               >
                 Về chúng tôi
               </h3>
-              <ul className="space-y-2">
+              <ul style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                 {footerSections.about.map((link, i) => (
                   <li key={i}>
                     <a
                       href={link.href}
-                      className="text-sm transition-opacity hover:opacity-100"
-                      style={{ color: TEXT80 }}
+                      className="transition-opacity hover:opacity-100"
+                      style={{
+                        color: TEXT80,
+                        fontSize: "var(--text-sm)",
+                      }}
                     >
                       {link.label}
                     </a>
@@ -128,20 +182,27 @@ export default function Footer() {
               </ul>
             </div>
 
+            {/* Dịch vụ */}
             <div>
               <h3
-                className="font-semibold text-base mb-3"
-                style={{ color: "#FFFFA5" }}
+                className="font-semibold mb-3"
+                style={{
+                  color: "#FFFFA5",
+                  fontSize: "var(--text-base)",
+                }}
               >
                 Dịch vụ
               </h3>
-              <ul className="space-y-2">
+              <ul style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                 {footerSections.services.map((link, i) => (
                   <li key={i}>
                     <a
                       href={link.href}
-                      className="text-sm transition-opacity hover:opacity-100"
-                      style={{ color: TEXT80 }}
+                      className="transition-opacity hover:opacity-100"
+                      style={{
+                        color: TEXT80,
+                        fontSize: "var(--text-sm)",
+                      }}
                     >
                       {link.label}
                     </a>
@@ -150,20 +211,27 @@ export default function Footer() {
               </ul>
             </div>
 
+            {/* Hỗ trợ */}
             <div>
               <h3
-                className="font-semibold text-base mb-3"
-                style={{ color: "#FFFFA5" }}
+                className="font-semibold mb-3"
+                style={{
+                  color: "#FFFFA5",
+                  fontSize: "var(--text-base)",
+                }}
               >
                 Hỗ trợ
               </h3>
-              <ul className="space-y-2">
+              <ul style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                 {footerSections.support.map((link, i) => (
                   <li key={i}>
                     <a
                       href={link.href}
-                      className="text-sm transition-opacity hover:opacity-100"
-                      style={{ color: TEXT80 }}
+                      className="transition-opacity hover:opacity-100"
+                      style={{
+                        color: TEXT80,
+                        fontSize: "var(--text-sm)",
+                      }}
                     >
                       {link.label}
                     </a>
@@ -172,21 +240,34 @@ export default function Footer() {
               </ul>
             </div>
 
+            {/* Liên hệ */}
             <div>
               <h3
-                className="font-semibold text-base mb-3"
-                style={{ color: "#FFFFA5" }}
+                className="font-semibold mb-3"
+                style={{
+                  color: "#FFFFA5",
+                  fontSize: "var(--text-base)",
+                }}
               >
                 Liên hệ
               </h3>
-              <ul className="space-y-2 text-sm">
+              <ul style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "var(--space-4)",
+                fontSize: "var(--text-sm)",
+              }}>
                 <li className="flex items-start gap-2">
                   <svg
-                    className="w-4 h-4 mt-0.5 flex-shrink-0"
+                    className="mt-0.5 flex-shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    style={{ color: TEXT }}
+                    style={{
+                      color: TEXT,
+                      width: "var(--icon-sm)",
+                      height: "var(--icon-sm)",
+                    }}
                     aria-hidden
                   >
                     <path
@@ -214,11 +295,15 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center gap-2">
                   <svg
-                    className="w-4 h-4 flex-shrink-0"
+                    className="flex-shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    style={{ color: TEXT }}
+                    style={{
+                      color: TEXT,
+                      width: "var(--icon-sm)",
+                      height: "var(--icon-sm)",
+                    }}
                     aria-hidden
                   >
                     <path
@@ -238,11 +323,15 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center gap-2">
                   <svg
-                    className="w-4 h-4 flex-shrink-0"
+                    className="flex-shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
-                    style={{ color: TEXT }}
+                    style={{
+                      color: TEXT,
+                      width: "var(--icon-sm)",
+                      height: "var(--icon-sm)",
+                    }}
                     aria-hidden
                   >
                     <path
@@ -265,27 +354,38 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* Bottom bar - copyright and links */}
         <div
-          className="border-t pt-6"
-          style={{ borderColor: "rgba(251,255,223,.15)", borderStyle: "solid" }}
+          className="border-t"
+          style={{
+            borderColor: "rgba(251,255,223,.15)",
+            borderStyle: "solid",
+            marginTop: "var(--space-6)",
+            paddingTop: "var(--space-6)",
+          }}
         >
           <div
-            className="flex flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm"
-            style={{ color: "rgba(251,255,223,.75)" }}
+            className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2"
+            style={{
+              color: "rgba(251,255,223,.75)",
+              fontSize: "var(--text-sm)",
+            }}
           >
             <span>© 2025 MamMoi, Inc.</span>
-            <span className="opacity-40">•</span>
-            <a href="/privacy" className="hover:opacity-100">
-              Privacy
-            </a>
-            <span className="opacity-40">•</span>
-            <a href="/terms" className="hover:opacity-100">
-              Terms
-            </a>
-            <span className="opacity-40">•</span>
-            <a href="/sitemap" className="hover:opacity-100">
-              Sitemap
-            </a>
+            <span className="hidden sm:inline opacity-40">•</span>
+            <div className="flex items-center gap-3">
+              <a href="/privacy" className="hover:opacity-100">
+                Privacy
+              </a>
+              <span className="opacity-40">•</span>
+              <a href="/terms" className="hover:opacity-100">
+                Terms
+              </a>
+              <span className="opacity-40">•</span>
+              <a href="/sitemap" className="hover:opacity-100">
+                Sitemap
+              </a>
+            </div>
           </div>
         </div>
       </div>
