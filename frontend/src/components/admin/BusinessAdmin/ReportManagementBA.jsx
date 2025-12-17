@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Textarea } from "@/components/ui/textarea";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -37,6 +36,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -81,6 +81,7 @@ import {
 } from "@/components/ui/pagination";
 import AdminReportRepository from "@/API/repositories/AdminReportRepository";
 import ActionToast from "@/components/admin/components/ActionToast";
+import { API_BASE } from "@/API/ApiClient";
 
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
@@ -561,6 +562,22 @@ function exportReportsToCSV(reports) {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Parse AttachmentUrls string from backend into evidence array format
+ * Backend returns comma-separated URLs as a string, we need to convert to array of objects
+ */
+function parseAttachmentUrls(attachmentUrls) {
+  if (!attachmentUrls || typeof attachmentUrls !== 'string') return [];
+
+  const urls = attachmentUrls.split(',').map(url => url.trim()).filter(url => url);
+
+  return urls.map((url, index) => ({
+    url: url,
+    caption: `Ảnh chứng minh ${index + 1}`
+  }));
+}
+
 
 function ReportTimelineChart({ data, timeframeLabel }) {
   const CustomTooltip = ({ active, payload, label }) => {
@@ -1951,46 +1968,55 @@ export default function ReportManagementBA() {
                       </p>
                     </div>
 
-                    {selectedReport.evidence?.length > 0 && (
-                      <div>
-                        <p className="text-xs font-semibold uppercase text-slate-400">
-                          Ảnh chứng minh
-                        </p>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          {selectedReport.evidence.map((item, index) => (
-                            <div
-                              key={`${item.url}-${index}`}
-                              className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
-                            >
-                              <img
-                                src={item.url}
-                                alt={item.caption}
-                                className="h-40 w-full object-cover"
-                                loading="lazy"
-                              />
-                              <div className="flex items-center justify-between px-3 py-2">
-                                <p className="text-sm font-medium text-slate-700">
-                                  {item.caption}
-                                </p>
-                                <Button
-                                  variant="ghost"
-                                  asChild
-                                  className="text-emerald-600 hover:bg-emerald-50"
-                                >
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                    {(() => {
+                      // Support both 'evidence' array (mock data) and 'attachmentUrls' string (API data)
+                      const evidenceList = selectedReport.evidence?.length > 0
+                        ? selectedReport.evidence
+                        : parseAttachmentUrls(selectedReport.attachmentUrls);
+
+                      if (evidenceList.length === 0) return null;
+
+                      return (
+                        <div>
+                          <p className="text-xs font-semibold uppercase text-slate-400">
+                            Ảnh chứng minh
+                          </p>
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            {evidenceList.map((item, index) => (
+                              <div
+                                key={`${item.url}-${index}`}
+                                className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                              >
+                                <img
+                                  src={item.url?.startsWith('http') ? item.url : `${API_BASE}${item.url}`}
+                                  alt={item.caption}
+                                  className="h-40 w-full object-cover"
+                                  loading="lazy"
+                                />
+                                <div className="flex items-center justify-between px-3 py-2">
+                                  <p className="text-sm font-medium text-slate-700">
+                                    {item.caption}
+                                  </p>
+                                  <Button
+                                    variant="ghost"
+                                    asChild
+                                    className="text-emerald-600 hover:bg-emerald-50"
                                   >
-                                    Xem
-                                  </a>
-                                </Button>
+                                    <a
+                                      href={item.url?.startsWith('http') ? item.url : `${API_BASE}${item.url}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      Xem
+                                    </a>
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
@@ -2203,7 +2229,7 @@ export default function ReportManagementBA() {
                               className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
                             >
                               <img
-                                src={item.url}
+                                src={item.url?.startsWith('http') ? item.url : `${API_BASE}${item.url}`}
                                 alt={item.caption}
                                 className="h-40 w-full object-cover"
                                 loading="lazy"
@@ -2218,7 +2244,7 @@ export default function ReportManagementBA() {
                                   className="text-emerald-600 hover:bg-emerald-50"
                                 >
                                   <a
-                                    href={item.url}
+                                    href={item.url?.startsWith('http') ? item.url : `${API_BASE}${item.url}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                   >
