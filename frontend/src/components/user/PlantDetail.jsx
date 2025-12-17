@@ -531,20 +531,20 @@ function StatCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "group relative overflow-hidden rounded-2xl bg-gradient-to-br p-3 sm:p-4 lg:p-4 shadow-lg border border-white/20 transition-all duration-300 hover:shadow-xl hover:scale-[1.02]",
+        "group relative overflow-hidden rounded-xl bg-gradient-to-br p-2.5 lg:p-3 shadow-md border border-white/20 transition-all duration-300 hover:shadow-lg",
         colorClasses[color],
         className
       )}
     >
-      <div className="mb-3 flex flex-col items-center justify-center text-center w-full min-h-[80px]">
+      <div className="flex flex-col items-center justify-center text-center w-full min-h-[60px]">
         <div
           className={cn(
-            "flex items-center justify-center rounded-xl bg-white/90 shadow-sm backdrop-blur-sm mb-3 flex-shrink-0",
+            "flex items-center justify-center rounded-lg bg-white/90 shadow-sm backdrop-blur-sm mb-2 flex-shrink-0",
             iconColorClasses[color]
           )}
           style={{
-            width: "clamp(2rem, 3vw + 0.5rem, 2.75rem)",
-            height: "clamp(2rem, 3vw + 0.5rem, 2.75rem)",
+            width: "clamp(1.5rem, 2vw + 0.5rem, 2.25rem)",
+            height: "clamp(1.5rem, 2vw + 0.5rem, 2.25rem)",
           }}
         >
           <Icon
@@ -554,11 +554,11 @@ function StatCard({
             }}
           />
         </div>
-        <div className="w-full px-2 min-w-0">
+        <div className="w-full px-1 min-w-0">
           <p
             className="font-semibold uppercase tracking-wide text-slate-700 break-words"
             style={{
-              fontSize: "clamp(0.625rem, 1.25vw + 0.125rem, 0.9375rem)",
+              fontSize: "clamp(0.5625rem, 1vw, 0.75rem)",
             }}
           >
             {label}
@@ -778,8 +778,8 @@ function PestCard({ pest, index }) {
           {pest.severity === "High"
             ? "Cao"
             : pest.severity === "Medium"
-            ? "Trung bình"
-            : "Thấp"}
+              ? "Trung bình"
+              : "Thấp"}
         </Badge>
       </div>
       <p
@@ -911,7 +911,7 @@ export default function PlantDetail() {
                       forceRefresh && imageUrl
                         ? addCacheBust(imageUrl)
                         : imageUrl ||
-                          "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
+                        "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
                   };
                 })
                 .filter((t) => t.name && t.name.trim().length > 0); // Only include trees with non-empty names
@@ -1123,25 +1123,31 @@ export default function PlantDetail() {
         />
       </div>
 
-      {/* Hero Header with Topographic Pattern */}
-      <section className="relative h-[30vh] min-h-[240px] w-full overflow-hidden bg-gradient-to-br from-emerald-900/80 via-emerald-800/70 to-emerald-900/80 sm:h-[35vh] sm:min-h-[280px] lg:h-[40vh] lg:min-h-[320px]">
-        <TopographicPattern />
-        <div className="absolute inset-0">
-          {plantData.imageUrl && (
+      {/* Hero Header with Plant Image Background */}
+      <section className="relative h-[28vh] min-h-[250px] w-full overflow-hidden sm:h-[28vh] sm:min-h-[250px] lg:h-[30vh] lg:min-h-[250px]">
+        {/* Plant Image as Full Background */}
+        {plantData.imageUrl && (
+          <div className="absolute inset-0">
             <img
-              key={plantData.imageUrl} // Force re-render when imageUrl changes (cache busting adds timestamp to URL)
+              key={plantData.imageUrl}
               src={plantData.imageUrl}
               alt={plantData.treeTypeName}
-              className="h-full w-full object-cover opacity-15 scale-75"
+              className="h-full w-full object-cover"
               onError={(e) => {
-                // Fallback if image fails to load
-                e.target.src =
-                  "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1600";
+                e.target.src = "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=1600";
               }}
             />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-emerald-900/90 via-emerald-800/70 to-emerald-900/50" />
-        </div>
+            {/* Dark gradient overlay for text readability */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-black/30" />
+          </div>
+        )}
+        {/* Fallback gradient if no image */}
+        {!plantData.imageUrl && (
+          <>
+            <TopographicPattern />
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-900/80 via-emerald-800/70 to-emerald-900/80" />
+          </>
+        )}
 
         {/* Hero Content */}
         <div className="absolute bottom-0 left-0 right-0 z-20 px-0 pb-6 sm:pb-8 md:pb-10 lg:pb-12">
@@ -1186,9 +1192,9 @@ export default function PlantDetail() {
       </section>
 
       {/* Stats Row - Floating Cards */}
-      <section className="relative -mt-12 z-10 w-full px-0">
+      <section className="relative -mt-8 z-10 w-full px-0">
         <div className="mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8">
-          <div className="grid gap-3 sm:gap-4 md:gap-5 lg:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-2 sm:gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
             <StatCard
               icon={Clock}
               label="Tuổi thọ trung bình"
@@ -1407,9 +1413,9 @@ export default function PlantDetail() {
                 </CardHeader>
                 <CardContent>
                   {plantData.droughtTolerance ||
-                  plantData.floodTolerance ||
-                  plantData.frostTolerance ||
-                  plantData.windTolerance ? (
+                    plantData.floodTolerance ||
+                    plantData.frostTolerance ||
+                    plantData.windTolerance ? (
                     <div className="grid gap-4 sm:grid-cols-2">
                       {plantData.droughtTolerance && (
                         <div
