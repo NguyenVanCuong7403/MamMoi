@@ -378,10 +378,9 @@ export default function ReportManagement() {
                           </TableCell>
                           <TableCell className="py-6 px-6">
                             <span
-                              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[clamp(12px,1.5vw,16px)] font-medium border mm-text-wrap-safe break-words ${
-                                STATUS_MAP[report.status]?.color ||
+                              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[clamp(12px,1.5vw,16px)] font-medium border mm-text-wrap-safe break-words ${STATUS_MAP[report.status]?.color ||
                                 "bg-gray-50 text-gray-700 border-gray-200"
-                              }`}
+                                }`}
                             >
                               <span className="w-2 h-2 rounded-full bg-current flex-shrink-0"></span>
                               {STATUS_MAP[report.status]?.label ||
@@ -483,10 +482,9 @@ export default function ReportManagement() {
                       </Label>
                       <div className="mt-1">
                         <span
-                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-base font-medium border ${
-                            STATUS_MAP[selectedReport.status]?.color ||
+                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-base font-medium border ${STATUS_MAP[selectedReport.status]?.color ||
                             "bg-gray-50 text-gray-700 border-gray-200"
-                          }`}
+                            }`}
                         >
                           <span className="w-2 h-2 rounded-full bg-current"></span>
                           {STATUS_MAP[selectedReport.status]?.label ||
@@ -584,11 +582,10 @@ export default function ReportManagement() {
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Star
                             key={star}
-                            className={`w-5 h-5 ${
-                              star <= selectedReport.satisfactionRating
+                            className={`w-5 h-5 ${star <= selectedReport.satisfactionRating
                                 ? "fill-yellow-400 text-yellow-400"
                                 : "text-gray-300"
-                            }`}
+                              }`}
                           />
                         ))}
                         <span className="ml-2 text-gray-700">
@@ -651,11 +648,10 @@ export default function ReportManagement() {
                           className="focus:outline-none"
                         >
                           <Star
-                            className={`w-8 h-8 transition-colors ${
-                              star <= feedback.rating
+                            className={`w-8 h-8 transition-colors ${star <= feedback.rating
                                 ? "fill-yellow-400 text-yellow-400"
                                 : "text-gray-300 hover:text-yellow-300"
-                            }`}
+                              }`}
                           />
                         </button>
                       ))}

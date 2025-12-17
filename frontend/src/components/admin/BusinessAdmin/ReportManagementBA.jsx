@@ -36,6 +36,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -494,12 +495,12 @@ function formatDateVietnam(value, withTime = true) {
   if (isNaN(d.getTime())) return String(value);
   const options = withTime
     ? {
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }
     : { year: "numeric", month: "2-digit", day: "2-digit" };
   return new Intl.DateTimeFormat("vi-VN", options)
     .format(d)
@@ -560,6 +561,22 @@ function exportReportsToCSV(reports) {
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
 }
+
+/**
+ * Parse AttachmentUrls string from backend into evidence array format
+ * Backend returns comma-separated URLs as a string, we need to convert to array of objects
+ */
+function parseAttachmentUrls(attachmentUrls) {
+  if (!attachmentUrls || typeof attachmentUrls !== 'string') return [];
+
+  const urls = attachmentUrls.split(',').map(url => url.trim()).filter(url => url);
+
+  return urls.map((url, index) => ({
+    url: url,
+    caption: `Ảnh chứng minh ${index + 1}`
+  }));
+}
+
 
 function ReportTimelineChart({ data, timeframeLabel }) {
   const CustomTooltip = ({ active, payload, label }) => {
@@ -1060,8 +1077,8 @@ export default function ReportManagementBA() {
         filters.status === "all"
           ? true
           : filters.status === "in_progress"
-          ? ["in_progress", "new"].includes(report.status)
-          : report.status === filters.status;
+            ? ["in_progress", "new"].includes(report.status)
+            : report.status === filters.status;
       const term = filters.search.trim().toLowerCase();
       const matchesSearch =
         term.length === 0 ||
@@ -1421,8 +1438,7 @@ export default function ReportManagementBA() {
         showActionToast(
           "success",
           "Đã gửi cập nhật",
-          `Báo cáo ${currentReportId} đã chuyển sang trạng thái ${
-            statusLabel || statusUpdate
+          `Báo cáo ${currentReportId} đã chuyển sang trạng thái ${statusLabel || statusUpdate
           }.`
         );
       } catch (err) {
@@ -1838,9 +1854,9 @@ export default function ReportManagementBA() {
                                         <span className="line-clamp-1">
                                           {report.internalNote.length > 100
                                             ? `${report.internalNote.substring(
-                                                0,
-                                                100
-                                              )}...`
+                                              0,
+                                              100
+                                            )}...`
                                             : report.internalNote}
                                         </span>
                                       </div>
@@ -1944,46 +1960,55 @@ export default function ReportManagementBA() {
                       </p>
                     </div>
 
-                    {selectedReport.evidence?.length > 0 && (
-                      <div>
-                        <p className="text-xs font-semibold uppercase text-slate-400">
-                          Ảnh chứng minh
-                        </p>
-                        <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                          {selectedReport.evidence.map((item, index) => (
-                            <div
-                              key={`${item.url}-${index}`}
-                              className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
-                            >
-                              <img
-                                src={item.url}
-                                alt={item.caption}
-                                className="h-40 w-full object-cover"
-                                loading="lazy"
-                              />
-                              <div className="flex items-center justify-between px-3 py-2">
-                                <p className="text-sm font-medium text-slate-700">
-                                  {item.caption}
-                                </p>
-                                <Button
-                                  variant="ghost"
-                                  asChild
-                                  className="text-emerald-600 hover:bg-emerald-50"
-                                >
-                                  <a
-                                    href={item.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                    {(() => {
+                      // Support both 'evidence' array (mock data) and 'attachmentUrls' string (API data)
+                      const evidenceList = selectedReport.evidence?.length > 0
+                        ? selectedReport.evidence
+                        : parseAttachmentUrls(selectedReport.attachmentUrls);
+
+                      if (evidenceList.length === 0) return null;
+
+                      return (
+                        <div>
+                          <p className="text-xs font-semibold uppercase text-slate-400">
+                            Ảnh chứng minh
+                          </p>
+                          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                            {evidenceList.map((item, index) => (
+                              <div
+                                key={`${item.url}-${index}`}
+                                className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm"
+                              >
+                                <img
+                                  src={item.url}
+                                  alt={item.caption}
+                                  className="h-40 w-full object-cover"
+                                  loading="lazy"
+                                />
+                                <div className="flex items-center justify-between px-3 py-2">
+                                  <p className="text-sm font-medium text-slate-700">
+                                    {item.caption}
+                                  </p>
+                                  <Button
+                                    variant="ghost"
+                                    asChild
+                                    className="text-emerald-600 hover:bg-emerald-50"
                                   >
-                                    Xem
-                                  </a>
-                                </Button>
+                                    <a
+                                      href={item.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      Xem
+                                    </a>
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      );
+                    })()}
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2">
@@ -2070,14 +2095,14 @@ export default function ReportManagementBA() {
                                     ]?.className?.includes("rose")
                                       ? "bg-rose-500"
                                       : STATUS_META[
-                                          option.value
-                                        ]?.className?.includes("sky")
-                                      ? "bg-sky-500"
-                                      : STATUS_META[
+                                        option.value
+                                      ]?.className?.includes("sky")
+                                        ? "bg-sky-500"
+                                        : STATUS_META[
                                           option.value
                                         ]?.className?.includes("amber")
-                                      ? "bg-amber-500"
-                                      : "bg-emerald-500"
+                                          ? "bg-amber-500"
+                                          : "bg-emerald-500"
                                   )}
                                 />
                                 {option.label}
