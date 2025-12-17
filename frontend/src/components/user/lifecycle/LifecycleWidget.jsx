@@ -766,10 +766,6 @@ export default function LifecycleWidget({
 
     const nextState = !autoSyncEnabled;
     let overrideReason = undefined;
-    if (!nextState) {
-      overrideReason =
-        window.prompt("Nhập lý do ghi đè thủ công (tuỳ chọn).") || undefined;
-    }
 
     setTogglingAuto(true);
     try {
@@ -884,23 +880,6 @@ export default function LifecycleWidget({
     try {
       // Detect whether the visual transition will run backward (used to prompt for override)
       let extra = undefined;
-      const firstArc = steps.find((s) => s.type === "arc");
-      if (firstArc && cyclePhaseIds.length > 0) {
-        const N = cyclePhaseIds.length;
-        const iFrom = cyclePhaseIds.indexOf(firstArc.from);
-        const iTo = cyclePhaseIds.indexOf(firstArc.to);
-        const isBackward =
-          iFrom === -1 || iTo === -1 ? false : (iFrom + 1) % N !== iTo;
-        if (isBackward) {
-          // Ask user for an override reason when attempting to move backwards
-          const reason = window.prompt(
-            "Bạn đang chuyển giai đoạn lùi lại (quay ngược).\nNhập lý do ghi đè để xác nhận (tuỳ chọn):"
-          );
-          if (reason != null) {
-            extra = { overrideReason: reason || undefined };
-          }
-        }
-      }
 
       const lifecycleResponse = await updateLifecyclePhase(
         toCanonical,
