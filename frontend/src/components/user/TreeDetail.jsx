@@ -3390,14 +3390,25 @@ function mapDtoToTree(dto) {
           : 0
     ),
 
-    // lifecycle cho vòng tròn giai đoạn
+    // tree stageId from backend (to sync with LifecycleWidget)
+    stageId: dto.stageId ?? dto.stage_id ?? null,
+    userId: dto.userId ?? dto.user_id ?? null,
+
+    // lifecycle cho vòng tròn giai đoạn - read from DTO instead of hardcoding
     lifecycle: {
       currentPhaseId: phaseId,
-      phase1Completed: phaseId !== "growth_development",
-      cycleCount: 0,
+      phase1Completed: dto.phase1Completed ?? phaseId !== "growth_development",
+      cycleCount: dto.cycleCount ?? dto.cycle_count ?? 0,
+      stageId: dto.stageId ?? dto.stage_id ?? null,
+      lifecycleAutoEnabled: dto.lifecycleAutoEnabled ?? dto.lifecycle_auto_enabled ?? true,
+      lifecycleAutoDisabledAt: dto.lifecycleAutoDisabledAt ?? dto.lifecycle_auto_disabled_at ?? null,
     },
     phenology: {
       currentPhase: phaseId,
+      leafStatus: dto.leafStatus ?? "",
+      branchStatus: dto.branchStatus ?? "",
+      flowerStatus: dto.flowerStatus ?? "",
+      fruitStatus: dto.fruitStatus ?? "",
     },
 
     // fallback cho phần timeline/planned
@@ -4426,8 +4437,10 @@ export default function TreeDetail() {
     baseTree?.isActive,
   ]);
 
+  // Use || for fallbacks since any of these values can be falsy (0, '', null, undefined)
   const resolvedTreeId =
-    baseTree.id ?? baseTree.treeId ?? meta?.treeId ?? treeId;
+    baseTree?.id || baseTree?.treeId || meta?.treeId || treeId || null;
+
 
   const resolvedTreeOwnerId =
     baseTree.userId ??
@@ -7160,6 +7173,7 @@ export default function TreeDetail() {
                 loai={loai}
                 giong={giong}
                 resolvedTreeId={resolvedTreeId}
+                treeId={resolvedTreeId}
                 resolvedTreeOwnerId={resolvedTreeOwnerId}
                 lifecycleAutoEnabled={lifecycleAutoEnabled}
                 lifecycleAutoDisabledAt={lifecycleAutoDisabledAt}
@@ -7243,6 +7257,11 @@ export default function TreeDetail() {
                       currentPhase: payload.phaseId,
                     },
                   });
+
+                  // Refresh AI recommendations after stage update
+                  if (refreshAiRecommendationsRef.current) {
+                    refreshAiRecommendationsRef.current();
+                  }
                 }}
               />
             </div>

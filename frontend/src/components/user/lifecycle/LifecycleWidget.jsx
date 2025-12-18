@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import TreeRepository from "@/API/repositories/TreeRepository";
 import {
@@ -75,6 +75,16 @@ export default function LifecycleWidget({
       )
     );
 
+  // Use a ref to always have access to the latest treeId (fixes stale closure issue)
+  const treeIdRef = useRef(treeId);
+  useEffect(() => {
+    treeIdRef.current = treeId;
+    console.log("[LifecycleWidget] treeId prop updated:", treeId, "treeIdRef.current:", treeIdRef.current);
+  }, [treeId]);
+
+  // Debug: log on every render
+  //console.log("[LifecycleWidget] render - treeId prop:", treeId);
+
   const themeSource =
     phaseTheme ?? meta?.seasonalRoadmap ?? tree?.seasonalRoadmap;
   const normalizedTheme = useMemo(
@@ -109,8 +119,8 @@ export default function LifecycleWidget({
         typeof override.stageOrder === "number"
           ? override.stageOrder
           : typeof base.stageOrder === "number"
-          ? base.stageOrder
-          : index;
+            ? base.stageOrder
+            : index;
       return {
         phaseId,
         canonicalPhaseId,
@@ -240,10 +250,10 @@ export default function LifecycleWidget({
       !canonicalId
         ? null
         : phaseList.find(
-            (phase) =>
-              phase.canonicalPhaseId === canonicalId ||
-              phase.phaseId === canonicalId
-          ) || null,
+          (phase) =>
+            phase.canonicalPhaseId === canonicalId ||
+            phase.phaseId === canonicalId
+        ) || null,
     [phaseList]
   );
 
@@ -279,13 +289,13 @@ export default function LifecycleWidget({
   // Ưu tiên phase từ props.value (DB) -> fallback text trong tree
   const initPhase = normalizePhaseId(
     value ??
-      tree?.lifecycle?.currentPhaseId ??
-      mapPhaseIdFromText(
-        tree?.phenology?.currentPhase ||
-          tree?.phenology?.stage ||
-          tree?.phase ||
-          ""
-      )
+    tree?.lifecycle?.currentPhaseId ??
+    mapPhaseIdFromText(
+      tree?.phenology?.currentPhase ||
+      tree?.phenology?.stage ||
+      tree?.phase ||
+      ""
+    )
   );
 
   // Tính trạng thái ban đầu từ prop / tree
@@ -441,13 +451,13 @@ export default function LifecycleWidget({
     // Nếu parent đẩy phase/phase1Completed mới từ DB thì đồng bộ lại
     const externalPhase = normalizePhaseId(
       value ??
-        tree?.lifecycle?.currentPhaseId ??
-        mapPhaseIdFromText(
-          tree?.phenology?.currentPhase ||
-            tree?.phenology?.stage ||
-            tree?.phase ||
-            ""
-        )
+      tree?.lifecycle?.currentPhaseId ??
+      mapPhaseIdFromText(
+        tree?.phenology?.currentPhase ||
+        tree?.phenology?.stage ||
+        tree?.phase ||
+        ""
+      )
     );
 
     const externalP1Done =
@@ -628,14 +638,14 @@ export default function LifecycleWidget({
       const targetPhase =
         typeof targetPhaseInput === "string"
           ? findPhaseById(targetPhaseInput) ||
-            findPhaseByCanonical(normalizePhaseId(targetPhaseInput))
+          findPhaseByCanonical(normalizePhaseId(targetPhaseInput))
           : targetPhaseInput && typeof targetPhaseInput === "object"
-          ? findPhaseById(
+            ? findPhaseById(
               targetPhaseInput.phaseId ||
-                targetPhaseInput.id ||
-                targetPhaseInput
+              targetPhaseInput.id ||
+              targetPhaseInput
             ) || targetPhaseInput
-          : null;
+            : null;
       if (!targetPhase) return;
       const fromCanonical =
         findPhaseById(activePhase)?.canonicalPhaseId ||
@@ -645,9 +655,8 @@ export default function LifecycleWidget({
         normalizePhaseId(targetPhase.phaseId || targetPhase.id);
 
       let title = "Xác nhận đổi giai đoạn";
-      let message = `Bạn muốn chuyển từ "${labelOf(fromCanonical)}" sang "${
-        targetPhase.name || labelOf(toCanonical)
-      }"?`;
+      let message = `Bạn muốn chuyển từ "${labelOf(fromCanonical)}" sang "${targetPhase.name || labelOf(toCanonical)
+        }"?`;
       let highlight = "";
       if (fromCanonical === "post_harvest" && toCanonical === "flowering")
         highlight = "Chuyển Sau thu hoạch → Ra Hoa sẽ BẮT ĐẦU MỘT CHU KỲ MỚI.";
@@ -691,7 +700,12 @@ export default function LifecycleWidget({
     extra = {},
     stageId = null
   ) {
-    if (!treeId) return;
+    // Use ref to get latest treeId (avoids stale closure issue)
+    const currentTreeId = treeIdRef.current;
+    if (!currentTreeId) {
+      console.warn("[LifecycleWidget] updateLifecyclePhase called but treeId is falsy:", currentTreeId, "(prop treeId:", treeId, ")");
+      return null;
+    }
 
     try {
       // Đảm bảo phaseId gửi lên API luôn là 1 trong 5 giá trị chuẩn
@@ -743,14 +757,14 @@ export default function LifecycleWidget({
 
       // Log ra UI (console browser) để debug
       console.log("[LifecycleWidget] updateLifecyclePhase → sending payload", {
-        treeId,
+        treeId: currentTreeId,
         payload,
       });
 
-      const response = await TreeRepository.updateLifecycle(treeId, payload);
+      const response = await TreeRepository.updateLifecycle(currentTreeId, payload);
       const data = response?.data ?? response;
       console.log("[LifecycleWidget] updateLifecyclePhase ← response", {
-        treeId,
+        treeId: currentTreeId,
         payload,
         data,
       });
@@ -877,6 +891,29 @@ export default function LifecycleWidget({
     };
 
     // Gọi API lifecycle để cập nhật
+    // Guard: if treeId is missing, skip API call but still run animations
+    const currentTreeId = treeIdRef.current;
+    if (!currentTreeId) {
+      console.warn("[LifecycleWidget] No treeId, skipping API call. treeIdRef.current:", currentTreeId, "prop treeId:", treeId);
+      // Still run local state updates and animations
+      setActivePhase(toPhaseId);
+      setCycleCount(nextCount);
+      setIsPhase1Completed(nextP1);
+      if (steps.length > 0) {
+        await playSteps(steps, toPhaseId, shouldSpin);
+      }
+      if (typeof onChange === "function") {
+        onChange({
+          phaseId: toCanonical,
+          cycleCount: nextCount,
+          phase1Completed: nextP1,
+          stageId: pending.stageId ?? null,
+        });
+      }
+      setIsRunning(false);
+      return;
+    }
+
     try {
       // Detect whether the visual transition will run backward (used to prompt for override)
       let extra = undefined;

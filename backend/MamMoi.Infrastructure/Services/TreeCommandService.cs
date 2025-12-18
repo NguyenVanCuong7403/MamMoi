@@ -489,6 +489,12 @@ namespace MamMoi.Infrastructure.Services
                 }
             }
 
+            // Update CycleCount BEFORE SaveChangesAsync so it persists to database
+            if (req.CycleCount.HasValue)
+            {
+                tree.CycleCount = req.CycleCount.Value;
+            }
+
             await _db.SaveChangesAsync(ct);
 
             // Log activity
@@ -504,12 +510,6 @@ namespace MamMoi.Infrastructure.Services
 
             // Determine phase1Completed: true if not in growth_development
             bool phase1Completed = req.Phase1Completed ?? (targetStageOrder > 1);
-
-            // Ghi nhận số chu kỳ nếu backend được cung cấp, ngược lại giữ nguyên giá trị hiện tại
-            if (req.CycleCount.HasValue)
-            {
-                tree.CycleCount = req.CycleCount.Value;
-            }
 
             var finalCycleCount = tree.CycleCount;
 
