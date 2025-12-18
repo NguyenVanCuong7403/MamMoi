@@ -544,6 +544,10 @@ public class CareScheduleService : ICareScheduleService
         if (gardenId.HasValue && gardenId > 0)
             query = query.Where(c => c.Tree.GardenId == gardenId);
 
+        // Filter out tasks from inactive trees (IsActive == false or null)
+        query = query.Where(c => c.Tree.IsActive == true);
+
+
         if (!string.IsNullOrWhiteSpace(taskType))
         {
             taskType = taskType.Trim();

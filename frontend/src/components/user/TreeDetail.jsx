@@ -3071,8 +3071,8 @@ function TopHeader({
                   {typeof meta?.virtualAgeMonths === "number"
                     ? `${meta.virtualAgeMonths} tháng`
                     : typeof meta?.virtual_age_months === "number"
-                    ? `${meta.virtual_age_months} tháng`
-                    : "—"}
+                      ? `${meta.virtual_age_months} tháng`
+                      : "—"}
                 </div>
               </div>
             </div>
@@ -3360,34 +3360,34 @@ function mapDtoToTree(dto) {
       typeof dto.virtualAgeMonths === "number"
         ? dto.virtualAgeMonths
         : typeof dto.virtual_age_months === "number"
-        ? dto.virtual_age_months
-        : null,
+          ? dto.virtual_age_months
+          : null,
     // Real age: prefer server-provided explicit value if present,
     // otherwise compute from planted date + preMonths.
     realAgeMonths:
       typeof dto.realAgeMonths === "number"
         ? dto.realAgeMonths
         : typeof dto.real_age_months === "number"
-        ? dto.real_age_months
-        : plantedAt
-        ? monthsBetween(plantedAt) +
-          (dto.preMonths ?? dto.preNurseryAgeMonths ?? 0)
-        : 0,
+          ? dto.real_age_months
+          : plantedAt
+            ? monthsBetween(plantedAt) +
+            (dto.preMonths ?? dto.preNurseryAgeMonths ?? 0)
+            : 0,
     // Expected age presented to lifecycle logic (max of realAge and virtualAge)
     expectedAgeMonths: Math.max(
       typeof dto.realAgeMonths === "number"
         ? dto.realAgeMonths
         : typeof dto.real_age_months === "number"
-        ? dto.real_age_months
-        : plantedAt
-        ? monthsBetween(plantedAt) +
-          (dto.preMonths ?? dto.preNurseryAgeMonths ?? 0)
-        : 0,
+          ? dto.real_age_months
+          : plantedAt
+            ? monthsBetween(plantedAt) +
+            (dto.preMonths ?? dto.preNurseryAgeMonths ?? 0)
+            : 0,
       typeof dto.virtualAgeMonths === "number"
         ? dto.virtualAgeMonths
         : typeof dto.virtual_age_months === "number"
-        ? dto.virtual_age_months
-        : 0
+          ? dto.virtual_age_months
+          : 0
     ),
 
     // lifecycle cho vòng tròn giai đoạn
@@ -3805,9 +3805,9 @@ export default function TreeDetail() {
                   .map((s) =>
                     Number(
                       s?.minAgeInMonths ??
-                        s?.min_age_months ??
-                        s?.min_age ??
-                        NaN
+                      s?.min_age_months ??
+                      s?.min_age ??
+                      NaN
                     )
                   )
                   .filter((n) => Number.isFinite(n));
@@ -5945,7 +5945,17 @@ export default function TreeDetail() {
               Đang tải gợi ý từ AI...
             </div>
           </div>
+        ) : total === 0 ? (
+          <div className="rounded-2xl border bg-white p-6 flex flex-col items-center justify-center gap-2">
+            <div className="text-neutral-400 text-3xl">📋</div>
+            <div className="text-sm text-neutral-600">
+              {isStopped
+                ? "Không có dữ liệu gợi ý AI cho cây này"
+                : "Chưa có gợi ý AI cho cây này"}
+            </div>
+          </div>
         ) : (
+
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {pageItems.map((sug, i) => {
               const theme = TYPE_THEME[sug.type];
@@ -5978,17 +5988,20 @@ export default function TreeDetail() {
           </div>
         )}
 
-        {!isLoading && (
+
+        {!isLoading && total > 0 && (
           <div
             className={
               "mt-3 flex items-center text-xs text-neutral-600 " +
               (total > AI_PAGE_SIZE ? "justify-between" : "justify-start")
             }
           >
+
             <div>
               Hiển thị {total === 0 ? 0 : Math.min(total, start + 1)}–
               {Math.min(total, start + pageItems.length)} / {total}
             </div>
+
 
             {total > AI_PAGE_SIZE && (
               <div className="flex items-center gap-2">
@@ -6552,8 +6565,8 @@ export default function TreeDetail() {
                           {typeof meta?.virtualAgeMonths === "number"
                             ? `${meta.virtualAgeMonths} tháng`
                             : typeof meta?.virtual_age_months === "number"
-                            ? `${meta.virtual_age_months} tháng`
-                            : "—"}
+                              ? `${meta.virtual_age_months} tháng`
+                              : "—"}
                         </span>
                       }
                       editable={false}
@@ -6852,15 +6865,15 @@ export default function TreeDetail() {
                 <CardTitle>Gợi ý từ AI</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 relative">
-                {isStopped ? (
-                  <div className="rounded-2xl border p-3 bg-white text-sm text-neutral-700">
+                {isStopped && (
+                  <div className="rounded-2xl border border-amber-300 p-3 bg-amber-50 text-sm text-amber-800">
                     <b>Đã dừng hoạt động:</b> Ngừng mọi gợi ý mới. Chỉ hiển thị
-                    để tra cứu lịch sử.
+                    dữ liệu đã có để tra cứu lịch sử.
                   </div>
-                ) : (
-                  <AISuggestionsList key={meta.stageId || currentPhaseId} />
                 )}
+                <AISuggestionsList key={meta.stageId || currentPhaseId} />
               </CardContent>
+
             </Card>
 
             {/* Thêm việc & Các công việc đã lên kế hoạch */}

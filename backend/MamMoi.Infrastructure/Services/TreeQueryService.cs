@@ -52,11 +52,12 @@ public class TreeQueryService : ITreeQueryService
                 t.LeafStatus,
                 t.BranchStatus,
                 t.TreeImages.OrderBy(img => img.ImageId)
-            .Select(img => img.ImageUrl)
-            .FirstOrDefault(),
+                    .Select(img => img.ImageUrl)
+                    .FirstOrDefault(),
                 t.preMonths,
                 t.CreatedAt,
-                t.PlantDate
+                t.PlantDate,
+                t.IsActive.HasValue ? t.IsActive.Value : false
             ))
             .ToListAsync(ct);
         Console.WriteLine(items.ElementAt(0));
@@ -106,11 +107,12 @@ public class TreeQueryService : ITreeQueryService
                 t.LeafStatus,
                 t.BranchStatus,
                 t.TreeImages.OrderBy(img => img.ImageId)
-            .Select(img => img.ImageUrl)
-            .FirstOrDefault(),
+                    .Select(img => img.ImageUrl)
+                    .FirstOrDefault(),
                 t.preMonths,
                 t.CreatedAt,
-                t.PlantDate
+                t.PlantDate,
+                t.IsActive.HasValue ? t.IsActive.Value : false
             ))
             .ToListAsync(ct);
 

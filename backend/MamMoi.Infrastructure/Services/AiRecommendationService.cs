@@ -364,13 +364,20 @@ YÊU CẦU ĐẦU RA: Một object JSON duy nhất đúng cấu trúc:
 
         public async Task<List<AirecommendationDto>> getAIRecommendations(int treeId, DateOnly forDate, CancellationToken ct)
         {
+            // Check if tree is active - if inactive, only return existing DB data without calling AI
+            var tree = await _db.Trees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.TreeId == treeId, ct);
+            
+            bool isTreeActive = tree?.IsActive ?? false;
+
             // build the 3-day window
             var dates = new[]
             {
-        forDate,
-        forDate.AddDays(1),
-        forDate.AddDays(2)
-    };
+                forDate,
+                forDate.AddDays(1),
+                forDate.AddDays(2)
+            };
             // load existing recommendations for these dates
             var existing = await _db.Airecommendations
                 .AsNoTracking()
@@ -394,6 +401,14 @@ YÊU CẦU ĐẦU RA: Một object JSON duy nhất đúng cấu trúc:
                         rec.ForDate ?? date,
                         rec.ActionsJson ?? "[]",
                         rec.CreatedAt));
+                    continue;
+                }
+
+                // If tree is inactive, do NOT call AI - just skip this date (return empty)
+                if (!isTreeActive)
+                {
+                    Console.WriteLine($"[AI Skip]: Tree {treeId} is inactive, skipping AI generation for date: {date}");
+                    // Don't add anything for this date - no DB record and no AI call
                     continue;
                 }
 
@@ -422,21 +437,66 @@ YÊU CẦU ĐẦU RA: Một object JSON duy nhất đúng cấu trúc:
 
         /// <summary>
         /// Get or generate recommendation for a single day (used for progressive loading)
+        /// If tree is inactive, only return existing DB data without calling AI
         /// </summary>
         public async Task<AirecommendationDto> GetSingleDayRecommendationAsync(
             int treeId,
             DateOnly forDate,
             CancellationToken ct = default)
         {
+            // Check if tree is active - if inactive, only return existing DB data without calling AI
+            var tree = await _db.Trees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.TreeId == treeId, ct);
+            
+            bool isTreeActive = tree?.IsActive ?? false;
+
+            if (!isTreeActive)
+            {
+                // Tree is inactive - only return existing data from DB, don't call AI
+                var existing = await _db.Airecommendations
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(a => a.TreeId == treeId && a.ForDate == forDate, ct);
+
+                if (existing != null)
+                {
+                    Console.WriteLine($"[AI Skip]: Tree {treeId} is inactive, returning existing data for date: {forDate}");
+                    return new AirecommendationDto(
+                        existing.TreeId,
+                        existing.ForDate ?? forDate,
+                        existing.ActionsJson,
+                        existing.CreatedAt);
+                }
+
+                // No existing data and tree is inactive - return empty
+                Console.WriteLine($"[AI Skip]: Tree {treeId} is inactive and no existing data for date: {forDate}");
+                return new AirecommendationDto(treeId, forDate, "[]", DateTime.UtcNow);
+            }
+
+            // Tree is active - normal behavior, generate if needed
             return await EnsureRecommendationForDateAsync(treeId, forDate, ct);
         }
 
         /// <summary>
         /// Refresh recommendations for a tree - delete old ones for today+2 days and regenerate
         /// Only regenerates if deletion was successful; keeps old data if AI fails
+        /// If tree is inactive, do NOT refresh/regenerate AI recommendations
         /// </summary>
         public async Task RefreshRecommendationsAsync(int treeId, CancellationToken ct = default)
         {
+            // Check if tree is active - if inactive, do not refresh AI recommendations
+            var tree = await _db.Trees
+                .AsNoTracking()
+                .FirstOrDefaultAsync(t => t.TreeId == treeId, ct);
+            
+            bool isTreeActive = tree?.IsActive ?? false;
+
+            if (!isTreeActive)
+            {
+                Console.WriteLine($"[AI Refresh Skip]: Tree {treeId} is inactive, skipping AI refresh");
+                return;
+            }
+
             var today = DateOnly.FromDateTime(DateTime.UtcNow);
             var dates = new[] { today, today.AddDays(1), today.AddDays(2) };
 

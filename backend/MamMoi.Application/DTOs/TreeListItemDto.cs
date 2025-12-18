@@ -15,6 +15,8 @@ namespace MamMoi.Application.DTOs
         string? ImageUrl,
         int? preMonths,
         DateTime CreatedAt,
-        DateOnly? PlantDate
+        DateOnly? PlantDate,
+        bool IsActive
     );
 }
+

@@ -789,8 +789,16 @@ function normalizeTree(raw, effectiveGardenId, effectiveGardenName) {
       id.replace(/\W/g, "")
     )}/1200/800`;
 
+  // Handle isActive from backend - check both camelCase and PascalCase
+  const isActiveValue = raw?.isActive ?? raw?.IsActive;
   const status =
-    raw?.status === "stopped" || raw?.isActive === false ? "stopped" : "active";
+    raw?.status === "stopped" ||
+      isActiveValue === false ||
+      isActiveValue === "false" ||
+      (isActiveValue !== undefined && isActiveValue !== null && isActiveValue !== true && isActiveValue !== "true" && String(isActiveValue).toLowerCase() === "false")
+      ? "stopped"
+      : "active";
+
 
   // ====== GIAI ĐOẠN (phase) – dùng stageName như mình vừa làm trước đó ======
   const stageName = (raw?.stageName || raw?.stage || "").trim();
