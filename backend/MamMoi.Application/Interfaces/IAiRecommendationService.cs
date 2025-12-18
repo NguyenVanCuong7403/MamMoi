@@ -14,8 +14,6 @@ namespace MamMoi.Application.Interfaces
             DateOnly forDate,
             CancellationToken ct = default);
 
-        Task<List<AirecommendationDto>> getAIRecommendations(int treeId, DateOnly forDate,
-            CancellationToken ct = default);
 
         /// <summary>
         /// Get or generate recommendation for a single day

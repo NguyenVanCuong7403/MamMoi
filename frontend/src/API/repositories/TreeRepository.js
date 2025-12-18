@@ -8,37 +8,6 @@ export default class TreeRepository {
     return ApiClient.get("/api/trees/types");
   }
 
-  /**
-   * Get AI recommendation(s) for a tree.
-   * The API returns recommendations for the requested date and the next 2 days (3 days total).
-   * @param {number} id - tree id
-   * @param {string|Date} [forDate] - optional. If omitted, server will use today's UTC date.
-   *                                   If a Date is passed, it will be converted to yyyy-MM-dd.
-   * @returns {Promise} ApiClient.get promise
-   */
-  static async getAiRecommendation(id, forDate) {
-    if (!id) throw new Error("Missing tree id");
-
-    const params = new URLSearchParams();
-
-    if (forDate) {
-      if (forDate instanceof Date) {
-        // convert to yyyy-MM-dd (UTC)
-        const yyyy = forDate.getUTCFullYear();
-        const mm = String(forDate.getUTCMonth() + 1).padStart(2, "0");
-        const dd = String(forDate.getUTCDate()).padStart(2, "0");
-        params.append("forDate", `${yyyy}-${mm}-${dd}`);
-      } else {
-        // assume string like "2025-11-22"
-        params.append("forDate", String(forDate));
-      }
-    }
-
-    const qs = params.toString();
-    return ApiClient.get(
-      `/api/trees/${id}/recommendation${qs ? `?${qs}` : ""}`
-    );
-  }
 
   /**
    * Get AI recommendation for a single day (for progressive loading)
