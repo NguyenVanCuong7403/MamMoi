@@ -1,8 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+} from "react";
 import { createPortal } from "react-dom";
 import TreeRepository from "@/API/repositories/TreeRepository";
 import {
-  DEFAULT_PHASE_THEME,
   getOrderedPhases,
   PHASE_IDS,
   normalizeLifecycleTheme,
@@ -79,7 +84,12 @@ export default function LifecycleWidget({
   const treeIdRef = useRef(treeId);
   useEffect(() => {
     treeIdRef.current = treeId;
-    console.log("[LifecycleWidget] treeId prop updated:", treeId, "treeIdRef.current:", treeIdRef.current);
+    console.log(
+      "[LifecycleWidget] treeId prop updated:",
+      treeId,
+      "treeIdRef.current:",
+      treeIdRef.current
+    );
   }, [treeId]);
 
   // Debug: log on every render
@@ -98,40 +108,31 @@ export default function LifecycleWidget({
 
   const mergedThemeMap = useMemo(() => {
     const buildEntry = (phaseId, override = {}, index = 0) => {
-      const base = DEFAULT_PHASE_THEME[phaseId] || {};
-      const colorKey = (override.colorKey || base.colorKey || "emerald")
-        .toString()
-        .toLowerCase();
-      const lineColorKey = (
-        override.lineColorKey ||
-        override.colorKey ||
-        base.lineColorKey ||
-        base.colorKey ||
-        "emerald"
-      )
-        .toString()
-        .toLowerCase();
-      const canonicalPhaseId =
-        override.canonicalPhaseId || base.canonicalPhaseId || phaseId;
-      const stageId =
-        override.stageId ?? base.stageId ?? override.rawStage?.stageId ?? null;
+      // Removed implicit defaults — only use explicit override values.
+      const base = {};
+      const colorKey = override.colorKey
+        ? String(override.colorKey).toLowerCase()
+        : null;
+      const lineColorKey = override.lineColorKey
+        ? String(override.lineColorKey).toLowerCase()
+        : override.colorKey
+        ? String(override.colorKey).toLowerCase()
+        : null;
+      const canonicalPhaseId = override.canonicalPhaseId || phaseId;
+      const stageId = override.stageId ?? override.rawStage?.stageId ?? null;
       const stageOrder =
-        typeof override.stageOrder === "number"
-          ? override.stageOrder
-          : typeof base.stageOrder === "number"
-            ? base.stageOrder
-            : index;
+        typeof override.stageOrder === "number" ? override.stageOrder : index;
       return {
         phaseId,
         canonicalPhaseId,
-        label: override.label || base.label || phaseId,
+        label: override.label || phaseId,
         subtitle: override.subtitle || "",
         description: override.description || "",
-        icon: override.icon || base.icon || "🌿",
+        icon: override.icon || null,
         colorKey,
         lineColorKey,
-        lineStyle: override.lineStyle || base.lineStyle || "solid",
-        durationMs: override.durationMs || base.durationMs || 1150,
+        lineStyle: override.lineStyle || null,
+        durationMs: override.durationMs != null ? override.durationMs : null,
         order: typeof override.order === "number" ? override.order : index,
         stageId,
         stageOrder,
@@ -160,24 +161,7 @@ export default function LifecycleWidget({
     [mergedThemeMap, allowPartialPhases]
   );
 
-  const defaultCycleConfigs = useMemo(
-    () =>
-      PHASE_IDS.filter((id) => id !== "growth_development").map(
-        (phaseId, index) => ({
-          phaseId,
-          label: DEFAULT_PHASE_THEME[phaseId].label,
-          subtitle: "",
-          description: "",
-          icon: DEFAULT_PHASE_THEME[phaseId].icon,
-          colorKey: DEFAULT_PHASE_THEME[phaseId].colorKey,
-          lineColorKey: DEFAULT_PHASE_THEME[phaseId].colorKey,
-          lineStyle: DEFAULT_PHASE_THEME[phaseId].lineStyle || "solid",
-          durationMs: 1150,
-          order: index + 1,
-        })
-      ),
-    []
-  );
+  const defaultCycleConfigs = useMemo(() => [], []);
 
   const phase1Config = useMemo(() => {
     if (allowPartialPhases && orderedPhaseConfigs.length > 0) {
@@ -187,19 +171,8 @@ export default function LifecycleWidget({
       (phase) => phase.phaseId === "growth_development"
     );
     if (found) return found;
-    const base = DEFAULT_PHASE_THEME.growth_development;
-    return {
-      phaseId: "growth_development",
-      label: base.label,
-      subtitle: "",
-      description: "",
-      icon: base.icon,
-      colorKey: base.colorKey,
-      lineColorKey: base.colorKey,
-      lineStyle: base.lineStyle || "solid",
-      durationMs: 1150,
-      order: 0,
-    };
+    // Do not fallback to a hardcoded default phase config; return null
+    return null;
   }, [allowPartialPhases, orderedPhaseConfigs]);
 
   const cyclePhaseConfigs = useMemo(() => {
@@ -214,7 +187,9 @@ export default function LifecycleWidget({
     const filtered = orderedPhaseConfigs.filter(
       (phase) => phase.phaseId !== "growth_development"
     );
-    return filtered.length ? filtered : defaultCycleConfigs;
+    // Do not fallback to defaultCycleConfigs when no theme is provided;
+    // return filtered (may be empty) so default 4 phases are not loaded.
+    return filtered;
   }, [allowPartialPhases, orderedPhaseConfigs, defaultCycleConfigs]);
 
   const phaseList = useMemo(() => {
@@ -250,10 +225,10 @@ export default function LifecycleWidget({
       !canonicalId
         ? null
         : phaseList.find(
-          (phase) =>
-            phase.canonicalPhaseId === canonicalId ||
-            phase.phaseId === canonicalId
-        ) || null,
+            (phase) =>
+              phase.canonicalPhaseId === canonicalId ||
+              phase.phaseId === canonicalId
+          ) || null,
     [phaseList]
   );
 
@@ -287,28 +262,33 @@ export default function LifecycleWidget({
   const displayVariety = treeVariety || getGiong(meta) || getGiong(tree);
 
   // Ưu tiên phase từ props.value (DB) -> fallback text trong tree
-  const initPhase = normalizePhaseId(
+  let initPhase = normalizePhaseId(
     value ??
-    tree?.lifecycle?.currentPhaseId ??
-    mapPhaseIdFromText(
-      tree?.phenology?.currentPhase ||
-      tree?.phenology?.stage ||
-      tree?.phase ||
-      ""
-    )
+      tree?.lifecycle?.currentPhaseId ??
+      mapPhaseIdFromText(
+        tree?.phenology?.currentPhase ||
+          tree?.phenology?.stage ||
+          tree?.phase ||
+          ""
+      )
   );
+  // Do not apply an implicit default when missing; keep `initPhase` null/undefined
+  // so caller code can explicitly handle absence of phase.
 
   // Tính trạng thái ban đầu từ prop / tree
   const initialPhase1Completed =
     typeof phase1CompletedProp === "boolean"
       ? phase1CompletedProp
-      : initPhase !== "growth_development";
+      : initPhase
+      ? initPhase !== "growth_development"
+      : false;
 
   // Nếu đã qua giai đoạn 1 thì trailIndex = index của phase hiện tại
   const initialTrailIndex = initialPhase1Completed
     ? Math.max(0, cyclePhaseIds.indexOf(initPhase))
     : -1;
 
+  // Nếu không có stage từ DB/props thì hiển thị "Unknow"
   const externalStageId =
     tree?.stageId ?? tree?.lifecycle?.stageId ?? meta?.stageId ?? null;
 
@@ -451,13 +431,13 @@ export default function LifecycleWidget({
     // Nếu parent đẩy phase/phase1Completed mới từ DB thì đồng bộ lại
     const externalPhase = normalizePhaseId(
       value ??
-      tree?.lifecycle?.currentPhaseId ??
-      mapPhaseIdFromText(
-        tree?.phenology?.currentPhase ||
-        tree?.phenology?.stage ||
-        tree?.phase ||
-        ""
-      )
+        tree?.lifecycle?.currentPhaseId ??
+        mapPhaseIdFromText(
+          tree?.phenology?.currentPhase ||
+            tree?.phenology?.stage ||
+            tree?.phase ||
+            ""
+        )
     );
 
     const externalP1Done =
@@ -638,14 +618,14 @@ export default function LifecycleWidget({
       const targetPhase =
         typeof targetPhaseInput === "string"
           ? findPhaseById(targetPhaseInput) ||
-          findPhaseByCanonical(normalizePhaseId(targetPhaseInput))
+            findPhaseByCanonical(normalizePhaseId(targetPhaseInput))
           : targetPhaseInput && typeof targetPhaseInput === "object"
-            ? findPhaseById(
+          ? findPhaseById(
               targetPhaseInput.phaseId ||
-              targetPhaseInput.id ||
-              targetPhaseInput
+                targetPhaseInput.id ||
+                targetPhaseInput
             ) || targetPhaseInput
-            : null;
+          : null;
       if (!targetPhase) return;
       const fromCanonical =
         findPhaseById(activePhase)?.canonicalPhaseId ||
@@ -655,8 +635,9 @@ export default function LifecycleWidget({
         normalizePhaseId(targetPhase.phaseId || targetPhase.id);
 
       let title = "Xác nhận đổi giai đoạn";
-      let message = `Bạn muốn chuyển từ "${labelOf(fromCanonical)}" sang "${targetPhase.name || labelOf(toCanonical)
-        }"?`;
+      let message = `Bạn muốn chuyển từ "${labelOf(fromCanonical)}" sang "${
+        targetPhase.name || labelOf(toCanonical)
+      }"?`;
       let highlight = "";
       if (fromCanonical === "post_harvest" && toCanonical === "flowering")
         highlight = "Chuyển Sau thu hoạch → Ra Hoa sẽ BẮT ĐẦU MỘT CHU KỲ MỚI.";
@@ -703,7 +684,13 @@ export default function LifecycleWidget({
     // Use ref to get latest treeId (avoids stale closure issue)
     const currentTreeId = treeIdRef.current;
     if (!currentTreeId) {
-      console.warn("[LifecycleWidget] updateLifecyclePhase called but treeId is falsy:", currentTreeId, "(prop treeId:", treeId, ")");
+      console.warn(
+        "[LifecycleWidget] updateLifecyclePhase called but treeId is falsy:",
+        currentTreeId,
+        "(prop treeId:",
+        treeId,
+        ")"
+      );
       return null;
     }
 
@@ -761,7 +748,10 @@ export default function LifecycleWidget({
         payload,
       });
 
-      const response = await TreeRepository.updateLifecycle(currentTreeId, payload);
+      const response = await TreeRepository.updateLifecycle(
+        currentTreeId,
+        payload
+      );
       const data = response?.data ?? response;
       console.log("[LifecycleWidget] updateLifecyclePhase ← response", {
         treeId: currentTreeId,
@@ -894,7 +884,12 @@ export default function LifecycleWidget({
     // Guard: if treeId is missing, skip API call but still run animations
     const currentTreeId = treeIdRef.current;
     if (!currentTreeId) {
-      console.warn("[LifecycleWidget] No treeId, skipping API call. treeIdRef.current:", currentTreeId, "prop treeId:", treeId);
+      console.warn(
+        "[LifecycleWidget] No treeId, skipping API call. treeIdRef.current:",
+        currentTreeId,
+        "prop treeId:",
+        treeId
+      );
       // Still run local state updates and animations
       setActivePhase(toPhaseId);
       setCycleCount(nextCount);

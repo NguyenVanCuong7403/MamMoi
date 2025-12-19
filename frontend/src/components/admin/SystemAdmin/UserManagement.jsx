@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import SubscriptionPlanRepository from "@/API/repositories/SubscriptionPlanRepository";
 import {
   Filter,
   Leaf,
@@ -118,11 +119,8 @@ const STATUS_OPTIONS = [
   { value: "banned", label: "Khoá" },
 ];
 
-const PACKAGE_OPTIONS = [
+const FALLBACK_PACKAGE_OPTIONS = [
   { value: "all", label: "Tất cả gói" },
-  { value: "seedling", label: "Gói Ươm Mầm" },
-  { value: "orchard", label: "Gói Vườn Xanh" },
-  { value: "harvest", label: "Gói Thu Hoạch" },
   { value: "free", label: "Người dùng Free" },
 ];
 
@@ -166,11 +164,11 @@ const formatDateDisplay = (dateString, fallback = "—") => {
   return date.toLocaleDateString("vi-VN");
 };
 
-const getPlanLabel = (planValue) => {
+const getPlanLabel = (planValue, options = FALLBACK_PACKAGE_OPTIONS) => {
   const normalized = normalizePlanValue(planValue);
   if (normalized === "free") return "Người dùng Free";
   return (
-    PACKAGE_OPTIONS.find((option) => option.value === normalized)?.label ??
+    options.find((option) => option.value === normalized)?.label ??
     "Không xác định"
   );
 };
@@ -198,7 +196,7 @@ const generateMockGardens = (role) => {
   return Array.from({ length: gardenCount }).map((_, index) => {
     const templateName =
       GARDEN_NAME_TEMPLATES[
-        Math.floor(Math.random() * GARDEN_NAME_TEMPLATES.length)
+      Math.floor(Math.random() * GARDEN_NAME_TEMPLATES.length)
       ];
     const treeCount = randomInt(50, 400);
 
@@ -793,6 +791,7 @@ export default function SystemAdminUserManagement() {
   const [activeModal, setActiveModal] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [planDraft, setPlanDraft] = useState("");
+  const [packageOptions, setPackageOptions] = useState(FALLBACK_PACKAGE_OPTIONS); // State for dynamic options
   const [planStartDate, setPlanStartDate] = useState(() =>
     getLocalDateInputValue()
   );
@@ -827,8 +826,8 @@ export default function SystemAdminUserManagement() {
         filters.status === "active"
           ? true
           : filters.status === "inactive" || filters.status === "banned"
-          ? false
-          : null;
+            ? false
+            : null;
 
       const response = await AdminUserRepository.getAllUsers(
         page,
@@ -895,6 +894,29 @@ export default function SystemAdminUserManagement() {
   useEffect(() => {
     fetchUsers();
   }, [page, filters]);
+
+  // Fetch subscription plans dynamically
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const plans = await SubscriptionPlanRepository.getAll(true);
+        if (plans && Array.isArray(plans)) {
+          const dynamicOptions = plans.map(plan => ({
+            value: plan.slug || plan.planName || String(plan.planId), // Use slug or planName as value
+            label: plan.planName
+          }));
+          setPackageOptions([
+            { value: "all", label: "Tất cả gói" },
+            ...dynamicOptions,
+            { value: "free", label: "Người dùng Free" }
+          ]);
+        }
+      } catch (error) {
+        console.error("Error fetching subscription plans:", error);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   // Hàm cập nhật user
   const updateUser = async (userId, updates) => {
@@ -1018,7 +1040,10 @@ export default function SystemAdminUserManagement() {
       return acc;
     }, {});
 
-    const preferredOrder = ["seedling", "orchard", "harvest"];
+    const preferredOrder = packageOptions
+      .map((option) => option.value)
+      .filter((value) => value !== "all" && value !== "free");
+
     const extraKeys = Object.keys(counts).filter(
       (key) => !preferredOrder.includes(key) && key !== "free"
     );
@@ -1026,7 +1051,7 @@ export default function SystemAdminUserManagement() {
 
     const data = orderedKeys.map((key) => ({
       key,
-      label: getPlanLabel(key),
+      label: getPlanLabel(key, packageOptions), // Pass packageOptions
       value: counts[key] ?? 0,
     }));
 
@@ -1084,7 +1109,7 @@ export default function SystemAdminUserManagement() {
     }
 
     return { data, total, change };
-  }, [filteredUsers, users, timeframe, filters]);
+  }, [filteredUsers, users, timeframe, filters, packageOptions]);
 
   // Tính toán user growth chart từ dữ liệu thực tế
   const userGrowthData = useMemo(() => {
@@ -1279,8 +1304,8 @@ export default function SystemAdminUserManagement() {
         typeof selectedUser.userId === "number"
           ? selectedUser.userId
           : typeof selectedUser.id === "string"
-          ? parseInt(selectedUser.id.replace("USR-", ""))
-          : selectedUser.id;
+            ? parseInt(selectedUser.id.replace("USR-", ""))
+            : selectedUser.id;
 
       await AdminUserRepository.updateUserSubscriptionPlan(numericUserId, {
         planType: planDraft,
@@ -1325,8 +1350,8 @@ export default function SystemAdminUserManagement() {
         typeof selectedUser.userId === "number"
           ? selectedUser.userId
           : typeof selectedUser.id === "string"
-          ? parseInt(selectedUser.id.replace("USR-", ""))
-          : selectedUser.id;
+            ? parseInt(selectedUser.id.replace("USR-", ""))
+            : selectedUser.id;
 
       await AdminUserRepository.resetUserPassword(numericUserId, nextPassword);
       showNotice(
@@ -1416,8 +1441,8 @@ export default function SystemAdminUserManagement() {
         typeof selectedUser.userId === "number"
           ? selectedUser.userId
           : typeof selectedUser.id === "string"
-          ? parseInt(selectedUser.id.replace("USR-", ""))
-          : selectedUser.id;
+            ? parseInt(selectedUser.id.replace("USR-", ""))
+            : selectedUser.id;
 
       await AdminUserRepository.deactivateUser(numericUserId);
       showNotice(`Đã khoá tài khoản ${selectedUser.name}.`, "warning");
@@ -1436,8 +1461,8 @@ export default function SystemAdminUserManagement() {
         typeof selectedUser.userId === "number"
           ? selectedUser.userId
           : typeof selectedUser.id === "string"
-          ? parseInt(selectedUser.id.replace("USR-", ""))
-          : selectedUser.id;
+            ? parseInt(selectedUser.id.replace("USR-", ""))
+            : selectedUser.id;
 
       await AdminUserRepository.activateUser(numericUserId);
       showNotice(`Đã mở khoá tài khoản ${selectedUser.name}.`);
@@ -1526,13 +1551,13 @@ export default function SystemAdminUserManagement() {
         user.treesCount || 0,
         user.createdAt
           ? new Date(user.createdAt).toLocaleString("vi-VN", {
-              hour12: false,
-            })
+            hour12: false,
+          })
           : "",
         user.lastLogin
           ? new Date(user.lastLogin).toLocaleString("vi-VN", {
-              hour12: false,
-            })
+            hour12: false,
+          })
           : "Chưa đăng nhập",
       ];
     });
@@ -1660,8 +1685,8 @@ export default function SystemAdminUserManagement() {
                     actionNotice.tone === "warning"
                       ? "border-amber-200 bg-amber-50 text-amber-800"
                       : actionNotice.tone === "error"
-                      ? "border-rose-200 bg-rose-50 text-rose-800"
-                      : "border-emerald-200 bg-emerald-50 text-emerald-800"
+                        ? "border-rose-200 bg-rose-50 text-rose-800"
+                        : "border-emerald-200 bg-emerald-50 text-emerald-800"
                   )}
                 >
                   {actionNotice.message}
@@ -1786,7 +1811,7 @@ export default function SystemAdminUserManagement() {
                       <SearchableSelect
                         value={filters.plan}
                         onChange={(value) => handleFilterChange("plan", value)}
-                        options={PACKAGE_OPTIONS}
+                        options={packageOptions}
                         placeholder="Loại gói"
                       />
                     </div>
@@ -1874,7 +1899,7 @@ export default function SystemAdminUserManagement() {
                                   className={cn(
                                     "px-3 py-1 text-xs font-semibold",
                                     ROLE_META[user.role]?.className ??
-                                      "bg-slate-100 text-slate-600 border border-slate-200"
+                                    "bg-slate-100 text-slate-600 border border-slate-200"
                                   )}
                                 >
                                   {ROLE_META[user.role]?.label ?? user.role}
@@ -1896,11 +1921,11 @@ export default function SystemAdminUserManagement() {
                               <TableCell className="text-slate-500">
                                 {user.lastLogin
                                   ? new Date(user.lastLogin).toLocaleString(
-                                      "vi-VN",
-                                      {
-                                        hour12: false,
-                                      }
-                                    )
+                                    "vi-VN",
+                                    {
+                                      hour12: false,
+                                    }
+                                  )
                                   : "Chưa đăng nhập"}
                               </TableCell>
                               <TableCell className="text-right">
@@ -2000,7 +2025,7 @@ export default function SystemAdminUserManagement() {
                             className={cn(
                               "mt-1 px-3 py-1 text-xs font-semibold",
                               ROLE_META[selectedUser.role]?.className ??
-                                "bg-slate-100 text-slate-600 border border-slate-200"
+                              "bg-slate-100 text-slate-600 border border-slate-200"
                             )}
                           >
                             {ROLE_META[selectedUser.role]?.label ??
@@ -2042,21 +2067,21 @@ export default function SystemAdminUserManagement() {
                         </p>
                         {(selectedUser?.planStartDate ||
                           selectedUser?.planEndDate) && (
-                          <p className="text-sm text-slate-500">
-                            Hiệu lực:{" "}
-                            <span className="font-medium text-slate-700">
-                              {formatDateDisplay(
-                                selectedUser?.planStartDate,
-                                "Chưa xác định"
-                              )}
-                              {" - "}
-                              {formatDateDisplay(
-                                selectedUser?.planEndDate,
-                                "Không giới hạn"
-                              )}
-                            </span>
-                          </p>
-                        )}
+                            <p className="text-sm text-slate-500">
+                              Hiệu lực:{" "}
+                              <span className="font-medium text-slate-700">
+                                {formatDateDisplay(
+                                  selectedUser?.planStartDate,
+                                  "Chưa xác định"
+                                )}
+                                {" - "}
+                                {formatDateDisplay(
+                                  selectedUser?.planEndDate,
+                                  "Không giới hạn"
+                                )}
+                              </span>
+                            </p>
+                          )}
                       </div>
                       <div className="rounded-xl border border-slate-100 p-4">
                         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -2192,7 +2217,7 @@ export default function SystemAdminUserManagement() {
                       setPlanDraft(value);
                       setPlanAcknowledged(false);
                     }}
-                    options={PACKAGE_OPTIONS.filter(
+                    options={packageOptions.filter(
                       (option) => option.value !== "all"
                     )}
                     placeholder="Chọn gói"
@@ -2261,13 +2286,12 @@ export default function SystemAdminUserManagement() {
                         {planDraft === "free"
                           ? "Không áp dụng"
                           : `${formatDateDisplay(
-                              planStartDate,
-                              "Chưa chọn"
-                            )} - ${
-                              planEndDate
-                                ? formatDateDisplay(planEndDate)
-                                : "Theo thời hạn gói"
-                            }`}
+                            planStartDate,
+                            "Chưa chọn"
+                          )} - ${planEndDate
+                            ? formatDateDisplay(planEndDate)
+                            : "Theo thời hạn gói"
+                          }`}
                       </span>
                     </p>
                     <p className="mt-2 text-xs text-emerald-700">

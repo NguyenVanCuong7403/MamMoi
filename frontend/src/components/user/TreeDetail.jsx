@@ -23,7 +23,6 @@ import LifecycleWidget, {
   mapPhaseIdFromText,
 } from "./LifecycleWidget";
 import {
-  DEFAULT_PHASE_THEME,
   PHASE_IDS,
   LIFECYCLE_COLOR_LOOKUP,
   getColorKeyFromHex,
@@ -32,38 +31,7 @@ import {
 import { Label } from "@/components/ui/label"; // nếu bạn dùng Label trong edit modal
 
 // Giai đoạn sinh trưởng (đồng bộ đơn giản với TreeManagement)
-const PHASE_META = {
-  growth_development: {
-    name: "Sinh trưởng & Phát triển",
-    icon: "🌱",
-    description:
-      "Cây tập trung phát triển thân, lá và hệ rễ, cần chăm sóc dinh dưỡng và nước ổn định để tạo nền tảng khỏe mạnh.",
-  },
-  flowering: {
-    name: "Ra hoa",
-    icon: "🌸",
-    description:
-      "Cây hình thành và phát triển nụ hoa, cần chú ý nước, dinh dưỡng và phòng trừ sâu bệnh để tỷ lệ đậu hoa tốt.",
-  },
-  fruiting: {
-    name: "Ra quả",
-    icon: "🍎",
-    description:
-      "Quả được hình thành và lớn dần, cây cần dinh dưỡng cân đối và nước ổn định để quả phát triển đồng đều, hạn chế rụng.",
-  },
-  pre_harvest: {
-    name: "Trước thu hoạch",
-    icon: "🔍",
-    description:
-      "Giai đoạn hoàn thiện chất lượng quả, cần theo dõi kỹ tình trạng sâu bệnh và điều chỉnh chăm sóc để chuẩn bị thu hoạch.",
-  },
-  post_harvest: {
-    name: "Sau thu hoạch",
-    icon: "🌿",
-    description:
-      "Cây phục hồi sau thu hoạch, cần cắt tỉa, bón phân và chăm sóc để tái tạo tán lá và chuẩn bị cho vụ mới.",
-  },
-};
+const PHASE_META = {};
 
 const FIELD_EDIT_LOCK_DAYS = 14;
 
@@ -145,7 +113,7 @@ function buildPhaseThemeFromStages(stages = []) {
 
     // Sử dụng PHASE_IDS nếu có, nếu không thì dùng custom_${index}
     const phaseId = PHASE_IDS[index] || `custom_${index}`;
-    const baseTheme = DEFAULT_PHASE_THEME[phaseId] || {};
+    const baseTheme = {}; // no implicit defaults; rely on stage data or palettes
     const label =
       stage.stageName ||
       stage.stage_name ||
@@ -1709,41 +1677,6 @@ function inList(val, list = []) {
   return list.some((x) => _norm(x) === v);
 }
 
-// === Phase normalization (DB ↔ UI) ===
-const PHASE_ID_ALIASES = {
-  growth_development: [
-    "growth",
-    "sinh trưởng",
-    "sinh truong",
-    "phát triển",
-    "phat trien",
-    "sinh trưởng & phát triển",
-    "phase1",
-    "1",
-  ],
-  flowering: ["ra hoa", "flower", "2"],
-  fruiting: [
-    "ra quả",
-    "ra qua",
-    "đậu quả",
-    "dau qua",
-    "kết trái",
-    "ket trai",
-    "nuôi quả",
-    "nuoi qua",
-    "fruit",
-    "3",
-  ],
-  pre_harvest: [
-    "trước thu hoạch",
-    "truoc thu hoach",
-    "pre harvest",
-    "pre-harvest",
-    "4",
-  ],
-  post_harvest: ["sau thu hoạch", "sau thu hoach", "post harvest", "5"],
-};
-
 function labelPhaseId(id) {
   switch (normalizePhaseId(id)) {
     case "flowering":
@@ -2429,6 +2362,8 @@ function AsideCards({
   lifecycleAutoDisabledAt,
   phaseTheme,
   phaseThemeAllowPartial,
+  loading = false,
+  error = null,
 }) {
   const [editNote, setEditNote] = useState(false);
   const [noteDraft, setNoteDraft] = useState(note || "");
@@ -2643,25 +2578,42 @@ function AsideCards({
         </CardHeader>
 
         <CardContent>
+
           {/* Truyền portalId để widget biết gắn nút lên header */}
-          <LifecycleWidget
-            tree={tree} // ✅ dùng prop tree
-            meta={meta}
-            portalId="lc-controls"
-            value={currentPhaseId}
-            onChange={onPhaseChange}
-            cycleCount={cycleCount}
-            phase1Completed={phase1Completed}
-            disabled={meta.status === "stopped"}
-            treeId={treeId}
-            treeOwnerId={treeOwnerId}
-            treeType={loai} // 👈 thêm
-            treeVariety={giong}
-            autoLifecycleEnabled={lifecycleAutoEnabled}
-            autoLifecycleDisabledAt={lifecycleAutoDisabledAt}
-            phaseTheme={phaseTheme}
-            phaseThemeAllowPartial={phaseThemeAllowPartial}
-          />
+          {error ? (
+            <div className="flex flex-col items-center justify-center py-6 space-y-2 text-center">
+              <div className="p-2 rounded-full bg-rose-50 text-rose-500 mb-1">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+              </div>
+              <div className="text-rose-600 font-medium text-sm">Không tải được dữ liệu</div>
+              <div className="text-xs text-neutral-500 max-w-[220px]">{error}</div>
+            </div>
+          ) : loading ? (
+            <div className="flex flex-col items-center justify-center py-10 space-y-3">
+              <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+              <div className="text-sm text-neutral-500">Đang tải dữ liệu...</div>
+            </div>
+          ) : (
+            <LifecycleWidget
+              tree={tree} // ✅ dùng prop tree
+              meta={meta}
+              portalId="lc-controls"
+              value={currentPhaseId}
+              onChange={onPhaseChange}
+              cycleCount={cycleCount}
+              phase1Completed={phase1Completed}
+              disabled={meta.status === "stopped"}
+              treeId={treeId}
+              treeOwnerId={treeOwnerId}
+              treeType={loai} // 👈 thêm
+              treeVariety={giong}
+              autoLifecycleEnabled={lifecycleAutoEnabled}
+              autoLifecycleDisabledAt={lifecycleAutoDisabledAt}
+              phaseTheme={phaseTheme}
+              phaseThemeAllowPartial={phaseThemeAllowPartial}
+            />
+          )}
+
         </CardContent>
       </Card>
 
@@ -3400,8 +3352,10 @@ function mapDtoToTree(dto) {
       phase1Completed: dto.phase1Completed ?? phaseId !== "growth_development",
       cycleCount: dto.cycleCount ?? dto.cycle_count ?? 0,
       stageId: dto.stageId ?? dto.stage_id ?? null,
-      lifecycleAutoEnabled: dto.lifecycleAutoEnabled ?? dto.lifecycle_auto_enabled ?? true,
-      lifecycleAutoDisabledAt: dto.lifecycleAutoDisabledAt ?? dto.lifecycle_auto_disabled_at ?? null,
+      lifecycleAutoEnabled:
+        dto.lifecycleAutoEnabled ?? dto.lifecycle_auto_enabled ?? true,
+      lifecycleAutoDisabledAt:
+        dto.lifecycleAutoDisabledAt ?? dto.lifecycle_auto_disabled_at ?? null,
     },
     phenology: {
       currentPhase: phaseId,
@@ -4440,7 +4394,6 @@ export default function TreeDetail() {
   // Use || for fallbacks since any of these values can be falsy (0, '', null, undefined)
   const resolvedTreeId =
     baseTree?.id || baseTree?.treeId || meta?.treeId || treeId || null;
-
 
   const resolvedTreeOwnerId =
     baseTree.userId ??
@@ -5968,7 +5921,6 @@ export default function TreeDetail() {
             </div>
           </div>
         ) : (
-
           <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
             {pageItems.map((sug, i) => {
               const theme = TYPE_THEME[sug.type];
@@ -6001,7 +5953,6 @@ export default function TreeDetail() {
           </div>
         )}
 
-
         {!isLoading && total > 0 && (
           <div
             className={
@@ -6009,12 +5960,10 @@ export default function TreeDetail() {
               (total > AI_PAGE_SIZE ? "justify-between" : "justify-start")
             }
           >
-
             <div>
               Hiển thị {total === 0 ? 0 : Math.min(total, start + 1)}–
               {Math.min(total, start + pageItems.length)} / {total}
             </div>
-
 
             {total > AI_PAGE_SIZE && (
               <div className="flex items-center gap-2">
@@ -6886,7 +6835,6 @@ export default function TreeDetail() {
                 )}
                 <AISuggestionsList key={meta.stageId || currentPhaseId} />
               </CardContent>
-
             </Card>
 
             {/* Thêm việc & Các công việc đã lên kế hoạch */}
@@ -7179,6 +7127,8 @@ export default function TreeDetail() {
                 lifecycleAutoDisabledAt={lifecycleAutoDisabledAt}
                 phaseTheme={stageTheme}
                 phaseThemeAllowPartial={Boolean(stageTheme?.length)}
+                loading={loading}
+                error={loadError}
                 onPhaseChange={(payload) => {
                   // payload: { phaseId, cycleCount, phase1Completed, stageId? }
                   // Lifecycle API already handles the update, so we just sync local state
@@ -8044,111 +7994,108 @@ export default function TreeDetail() {
             </div>
           </div>
         </div>
-      )
-      }
+      )}
 
       {/* Dialog Lịch sử thay đổi tình trạng */}
-      {
-        statusHistoryOpen && (
-          <div
-            className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4"
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                setStatusHistoryOpen(false);
-              }
-            }}
-          >
-            <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl max-h-[80vh] flex flex-col">
-              <div className="px-6 py-4 border-b flex items-center justify-between">
-                <div className="text-lg font-semibold text-black">
-                  Lịch sử thay đổi tình trạng
-                </div>
-                <button
-                  type="button"
-                  className="h-8 w-8 grid place-items-center rounded-lg hover:bg-neutral-50 text-neutral-700"
-                  onClick={() => setStatusHistoryOpen(false)}
-                >
-                  <span className="text-xl leading-none">×</span>
-                </button>
+      {statusHistoryOpen && (
+        <div
+          className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setStatusHistoryOpen(false);
+            }
+          }}
+        >
+          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-xl max-h-[80vh] flex flex-col">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <div className="text-lg font-semibold text-black">
+                Lịch sử thay đổi tình trạng
               </div>
+              <button
+                type="button"
+                className="h-8 w-8 grid place-items-center rounded-lg hover:bg-neutral-50 text-neutral-700"
+                onClick={() => setStatusHistoryOpen(false)}
+              >
+                <span className="text-xl leading-none">×</span>
+              </button>
+            </div>
 
-              <div className="flex-1 overflow-y-auto p-6">
-                {loadingHistory ? (
-                  <div className="text-center py-8 text-neutral-500">
-                    Đang tải...
-                  </div>
-                ) : statusHistory.length === 0 ? (
-                  <div className="text-center py-8 text-neutral-500">
-                    Chưa có lịch sử thay đổi nào
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {(() => {
-                      const latestItem = statusHistory[0];
-                      if (!latestItem) return null;
+            <div className="flex-1 overflow-y-auto p-6">
+              {loadingHistory ? (
+                <div className="text-center py-8 text-neutral-500">
+                  Đang tải...
+                </div>
+              ) : statusHistory.length === 0 ? (
+                <div className="text-center py-8 text-neutral-500">
+                  Chưa có lịch sử thay đổi nào
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {(() => {
+                    const latestItem = statusHistory[0];
+                    if (!latestItem) return null;
 
-                      const fieldLabels = {
-                        leaf: "Lá",
-                        branch: "Cành",
-                        flower: "Hoa",
-                        fruit: "Quả",
-                        LeafStatus: "Lá",
-                        BranchStatus: "Cành",
-                        FlowerStatus: "Hoa",
-                        FruitStatus: "Quả",
-                      };
+                    const fieldLabels = {
+                      leaf: "Lá",
+                      branch: "Cành",
+                      flower: "Hoa",
+                      fruit: "Quả",
+                      LeafStatus: "Lá",
+                      BranchStatus: "Cành",
+                      FlowerStatus: "Hoa",
+                      FruitStatus: "Quả",
+                    };
 
-                      const fieldLabel =
-                        fieldLabels[latestItem.statusField] ||
-                        latestItem.statusField;
-                      const changedDate = latestItem.changedAt
-                        ? formatVN(String(latestItem.changedAt).slice(0, 10))
-                        : "";
+                    const fieldLabel =
+                      fieldLabels[latestItem.statusField] ||
+                      latestItem.statusField;
+                    const changedDate = latestItem.changedAt
+                      ? formatVN(String(latestItem.changedAt).slice(0, 10))
+                      : "";
 
-                      const oldText = safePhenText(latestItem.oldValue);
-                      const newText = safePhenText(latestItem.newValue);
+                    const oldText = safePhenText(latestItem.oldValue);
+                    const newText = safePhenText(latestItem.newValue);
 
-                      return (
-                        <div className="border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50">
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="font-medium text-neutral-900">
-                              {fieldLabel}
+                    return (
+                      <div className="border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="font-medium text-neutral-900">
+                            {fieldLabel}
+                          </div>
+                          <div className="text-xs text-neutral-500">
+                            {changedDate}
+                          </div>
+                        </div>
+
+                        <div className="text-sm text-neutral-700">
+                          <div>
+                            <div className="text-xs font-semibold text-neutral-600">
+                              Trước đó
                             </div>
-                            <div className="text-xs text-neutral-500">
-                              {changedDate}
+                            <div className="whitespace-pre-wrap mt-1 text-neutral-800">
+                              {oldText}
                             </div>
                           </div>
 
-                          <div className="text-sm text-neutral-700">
-                            <div>
-                              <div className="text-xs font-semibold text-neutral-600">
-                                Trước đó
-                              </div>
-                              <div className="whitespace-pre-wrap mt-1 text-neutral-800">
-                                {oldText}
-                              </div>
+                          <div className="mt-3">
+                            <div className="text-xs font-semibold text-neutral-600">
+                              Sau
                             </div>
-
-                            <div className="mt-3">
-                              <div className="text-xs font-semibold text-neutral-600">
-                                Sau
-                              </div>
-                              <div className="whitespace-pre-wrap mt-1 text-neutral-800">
-                                {newText}
-                              </div>
+                            <div className="whitespace-pre-wrap mt-1 text-neutral-800">
+                              {newText}
                             </div>
                           </div>
                         </div>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           </div>
-        )
-      }
-    </div >
+        </div>
+      )}
+    </div>
   );
 }
 

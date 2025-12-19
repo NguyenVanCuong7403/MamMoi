@@ -84,57 +84,19 @@ export const LIFECYCLE_LINE_STYLES = [
   { value: "dashed", label: "Nét đứt" },
 ];
 
-export const DEFAULT_PHASE_THEME = {
-  growth_development: {
-    phaseId: "growth_development",
-    label: "Sinh trưởng & Phát triển",
-    icon: "🌱",
-    colorKey: "emerald",
-    colorHex: LIFECYCLE_COLOR_LOOKUP.emerald,
-    lineStyle: "solid",
-  },
-  flowering: {
-    phaseId: "flowering",
-    label: "Ra Hoa",
-    icon: "🌸",
-    colorKey: "pink",
-    colorHex: LIFECYCLE_COLOR_LOOKUP.pink,
-    lineStyle: "solid",
-  },
-  fruiting: {
-    phaseId: "fruiting",
-    label: "Đậu quả",
-    icon: "🍈",
-    colorKey: "lime",
-    colorHex: LIFECYCLE_COLOR_LOOKUP.lime,
-    lineStyle: "solid",
-  },
-  pre_harvest: {
-    phaseId: "pre_harvest",
-    label: "Trước thu hoạch",
-    icon: "🌾",
-    colorKey: "amber",
-    colorHex: LIFECYCLE_COLOR_LOOKUP.amber,
-    lineStyle: "solid",
-  },
-  post_harvest: {
-    phaseId: "post_harvest",
-    label: "Sau thu hoạch",
-    icon: "🍂",
-    colorKey: "teal",
-    colorHex: LIFECYCLE_COLOR_LOOKUP.teal,
-    lineStyle: "solid",
-  },
-};
+// NOTE: Removed DEFAULT_PHASE_THEME — do not provide implicit UI defaults here.
+// Theme values should come explicitly from `themeMap` / `phaseTheme` provided by callers.
 
 export function normalizePhaseId(value) {
-  if (!value) return "growth_development";
+  // Do not assume a default canonical phase when value is missing or not recognized.
+  // Return `null` so callers can decide whether to fallback or keep "no value".
+  if (!value) return null;
   const raw = String(value).trim().toLowerCase();
   if (PHASE_ID_ALIASES[raw]) return raw;
   for (const [id, aliases] of Object.entries(PHASE_ID_ALIASES)) {
     if (id === raw || aliases.includes(raw)) return id;
   }
-  return "growth_development";
+  return null;
 }
 
 export function mapPhaseIdFromText(text = "") {
@@ -217,7 +179,11 @@ export function normalizeLifecycleTheme(input) {
       // Chỉ normalize nếu phaseId là phaseId chuẩn
       const rawPhaseId = raw.phaseId || raw.id || raw.stage || raw.name;
       let phaseId;
-      if (rawPhaseId && typeof rawPhaseId === 'string' && rawPhaseId.startsWith('custom_')) {
+      if (
+        rawPhaseId &&
+        typeof rawPhaseId === "string" &&
+        rawPhaseId.startsWith("custom_")
+      ) {
         // Giữ nguyên custom phaseId
         phaseId = rawPhaseId;
       } else {
@@ -228,7 +194,8 @@ export function normalizeLifecycleTheme(input) {
         raw.stageId ??
         raw.stage_id ??
         raw.StageId ??
-        (raw.rawStage?.stageId ?? raw.rawStage?.StageId) ??
+        raw.rawStage?.stageId ??
+        raw.rawStage?.StageId ??
         null;
       const stageOrder =
         raw.stageOrder ??
@@ -237,7 +204,7 @@ export function normalizeLifecycleTheme(input) {
         raw.StageOrder ??
         index;
       const canonicalPhaseId = raw.canonicalPhaseId || phaseId;
-      const base = DEFAULT_PHASE_THEME[phaseId] || {};
+      const base = {}; // no implicit defaults
       const colorKey =
         normalizeColorKey(
           raw.colorKey || raw.nodeColor || raw.lineColorKey || raw.lineColor
@@ -273,7 +240,11 @@ export function normalizeLifecycleTheme(input) {
         lineStyle: normalizeLineStyle(raw.lineStyle),
         durationMs: Number(raw.durationMs) > 0 ? Number(raw.durationMs) : null,
         order:
-          typeof raw.order === "number" ? raw.order : (typeof raw.order === "number" ? raw.order : index),
+          typeof raw.order === "number"
+            ? raw.order
+            : typeof raw.order === "number"
+            ? raw.order
+            : index,
         stageId,
         stageOrder,
         rawStage: raw.rawStage || raw,
@@ -289,14 +260,18 @@ export function normalizeLifecycleTheme(input) {
     // Chỉ normalize nếu phaseId là phaseId chuẩn
     const rawPhaseId = raw.phaseId || raw.id || raw.stage || raw.name;
     let phaseId;
-    if (rawPhaseId && typeof rawPhaseId === 'string' && rawPhaseId.startsWith('custom_')) {
+    if (
+      rawPhaseId &&
+      typeof rawPhaseId === "string" &&
+      rawPhaseId.startsWith("custom_")
+    ) {
       // Giữ nguyên custom phaseId
       phaseId = rawPhaseId;
     } else {
       // Normalize phaseId chuẩn
       phaseId = normalizePhaseId(rawPhaseId);
     }
-    const base = DEFAULT_PHASE_THEME[phaseId] || {};
+    const base = {}; // no implicit defaults
     const colorKey =
       normalizeColorKey(
         raw.colorKey || raw.nodeColor || raw.lineColorKey || raw.lineColor
@@ -335,7 +310,8 @@ export function normalizeLifecycleTheme(input) {
         raw.stageId ??
         raw.stage_id ??
         raw.StageId ??
-        (raw.rawStage?.stageId ?? raw.rawStage?.StageId) ??
+        raw.rawStage?.stageId ??
+        raw.rawStage?.StageId ??
         null,
       stageOrder:
         raw.stageOrder ??
@@ -356,7 +332,7 @@ export function serializeLifecycleTheme(phases) {
     .filter((phase) => phase && phase.phaseId)
     .map((phase, index) => {
       const phaseId = normalizePhaseId(phase.phaseId);
-      const base = DEFAULT_PHASE_THEME[phaseId] || {};
+      const base = {}; // no implicit defaults
       const colorKey =
         normalizeColorKey(phase.colorKey) || base.colorKey || "emerald";
       const lineColorKey =
@@ -404,12 +380,22 @@ export function getOrderedPhases(themeMap, options = {}) {
   const allowPartial = Boolean(options.allowPartial);
   const entries = Object.values(themeMap || {});
 
+  // If there is no theme override and partial mode is not requested,
+  // do NOT return the default PHASE_IDS rows. This prevents components
+  // from loading the default 4 cycle phases when no theme is provided.
+  if (
+    !allowPartial &&
+    (!themeMap || Object.keys(themeMap || {}).length === 0)
+  ) {
+    return [];
+  }
+
   if (allowPartial && entries.length > 0) {
     return entries
       .map((override, index) => {
         const phaseId =
           override?.phaseId || PHASE_IDS[index] || `custom_${index}`;
-        const base = DEFAULT_PHASE_THEME[phaseId] || {};
+        const base = {}; // no implicit defaults
         const order =
           typeof override?.order === "number"
             ? override.order
@@ -441,9 +427,7 @@ export function getOrderedPhases(themeMap, options = {}) {
           canonicalPhaseId: override?.canonicalPhaseId || phaseId,
           stageId: override?.stageId ?? override?.rawStage?.stageId ?? null,
           stageOrder:
-            override?.stageOrder ??
-            override?.rawStage?.stageOrder ??
-            index + 1,
+            override?.stageOrder ?? override?.rawStage?.stageOrder ?? index + 1,
           label: override?.label || base.label || phaseId,
           subtitle: override?.subtitle || "",
           description: override?.description || "",
@@ -463,7 +447,7 @@ export function getOrderedPhases(themeMap, options = {}) {
 
   const rows = PHASE_IDS.map((phaseId, index) => {
     const override = themeMap?.[phaseId];
-    const base = DEFAULT_PHASE_THEME[phaseId];
+    const base = {}; // do not inject defaults
     const colorKey =
       normalizeColorKey(override?.colorKey || override?.nodeColor) ||
       base.colorKey ||
@@ -485,9 +469,9 @@ export function getOrderedPhases(themeMap, options = {}) {
     return {
       id: `${phaseId}-${index}`,
       phaseId,
-          canonicalPhaseId: phaseId,
-          stageId: override?.stageId ?? null,
-          stageOrder: override?.stageOrder ?? index + 1,
+      canonicalPhaseId: phaseId,
+      stageId: override?.stageId ?? null,
+      stageOrder: override?.stageOrder ?? index + 1,
       label: override?.label || base.label,
       subtitle: override?.subtitle || "",
       description: override?.description || "",

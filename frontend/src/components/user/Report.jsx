@@ -56,6 +56,7 @@ const CATEGORIES = [
   { value: "tree", label: "Cây" },
   { value: "auth", label: "Đăng nhập & Đăng kí" },
   { value: "system", label: "Hệ thống" },
+  { value: "other", label: "Khác" },
 ];
 
 export default function Report() {

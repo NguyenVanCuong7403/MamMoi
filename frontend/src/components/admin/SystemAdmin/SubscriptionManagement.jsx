@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import SubscriptionPlanRepository from "@/API/repositories/SubscriptionPlanRepository";
 import {
   AlertTriangle,
   CreditCard,
@@ -73,18 +74,58 @@ const TRANSACTION_STATUS = [
   { value: "cancelled", label: "Đã hủy" },
 ];
 
-const PLAN_OPTIONS = [
-  { value: "all", label: "Tất cả gói" },
-  { value: "seedling", label: "Gói Ươm Mầm" },
-  { value: "orchard", label: "Gói Vườn Xanh" },
-  { value: "harvest", label: "Gói Thu Hoạch" },
-];
 
-const STATUS_META = {
-  success: { label: "Thành công", className: "bg-emerald-50 text-emerald-700" },
-  failed: { label: "Thất bại", className: "bg-rose-50 text-rose-700" },
-  pending: { label: "Đang xử lý", className: "bg-amber-50 text-amber-700" },
-  cancelled: { label: "Đã hủy", className: "bg-rose-50 text-rose-700" },
+
+const normalizePlanValue = (planValue) => (planValue ? planValue : "free");
+
+const getPlanLabel = (planValue, options, allPlans = []) => {
+  const normalized = normalizePlanValue(planValue);
+  if (normalized === "free") return "Người dùng Free";
+
+  // Try to find in filtered options first
+  const optionMatch = options.find((option) =>
+    option.value == normalized ||
+    option.label === planValue ||
+    option.value === String(planValue)
+  );
+  if (optionMatch) return optionMatch.label;
+
+  // Fallback: search in allPlans by id, slug, or name
+  if (allPlans.length > 0) {
+    const planMatch = allPlans.find(plan =>
+      String(plan.planId) === String(planValue) ||
+      (plan.slug && String(plan.slug).toLowerCase() === String(planValue).toLowerCase()) ||
+      plan.planName === planValue
+    );
+    if (planMatch) return planMatch.planName;
+  }
+
+  return planValue ?? "Không xác định";
+};
+
+const getPlanColor = (planValue, allPlans = []) => {
+  const normalized = normalizePlanValue(planValue);
+  if (normalized === "free") return "#94a3b8"; // Slate for free/unknown
+
+  // Search in allPlans
+  if (allPlans.length > 0) {
+    const planMatch = allPlans.find(plan =>
+      String(plan.planId) === String(planValue) ||
+      (plan.slug && String(plan.slug).toLowerCase() === String(planValue).toLowerCase()) ||
+      plan.planName === planValue
+    );
+    // Use slug matches from PLAN_COLORS, or fallback to primary green
+    if (planMatch && planMatch.slug) {
+      return PLAN_COLORS[planMatch.slug.toLowerCase()] || PLAN_COLORS.seedling;
+    }
+  }
+
+  // Attempt to use planValue as key if valid
+  if (PLAN_COLORS[String(planValue).toLowerCase()]) {
+    return PLAN_COLORS[String(planValue).toLowerCase()];
+  }
+
+  return "#22c55e"; // Fallback green
 };
 
 const BACKGROUND_PALETTE = {
@@ -289,13 +330,13 @@ function RevenueGrowthChart({ data, timeframeLabel, valueFormatter }) {
   );
 }
 
-function RevenueByPlanChart({ data }) {
+function RevenueByPlanChart({ data, packageOptions }) {
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
     const value = payload[0].value;
     return (
       <div className="rounded-xl border border-emerald-100 bg-white px-3 py-2 text-xs shadow-md">
-        <p className="font-medium text-slate-900">{label}</p>
+        <p className="font-medium text-slate-900">{getPlanLabel(label, packageOptions, [])}</p>
         <p className="mt-1 text-emerald-600">
           {formatCurrency(value)}
         </p>
@@ -364,6 +405,7 @@ function RevenueByPlanChart({ data }) {
                 axisLine={false}
                 tickMargin={8}
                 tick={{ fill: "#d1fae5", fontSize: 11 }}
+                tickFormatter={(value) => getPlanLabel(value, packageOptions, [])}
               />
               <YAxis
                 tickLine={false}
@@ -549,6 +591,10 @@ function SubscriptionManagement() {
   const [revenuePayments, setRevenuePayments] = useState([]);
   const [revenueUserIdFilter, setRevenueUserIdFilter] = useState(null);
   const [revenueStatusFilter, setRevenueStatusFilter] = useState(null);
+  const [revenuePlanFilter, setRevenuePlanFilter] = useState(null);
+  const [packageOptions, setPackageOptions] = useState([
+    { value: "all", label: "Tất cả gói" },
+  ]);
 
   // Revenue management functions
   const fetchRevenueStatistics = async () => {
@@ -597,8 +643,11 @@ function SubscriptionManagement() {
         REVENUE_PAGE_SIZE,
         revenueStartDate || null,
         revenueEndDate || null,
+        revenueStartDate || null,
+        revenueEndDate || null,
         revenueUserIdFilter || null,
-        revenueStatusFilter || null
+        revenueStatusFilter || null,
+        revenuePlanFilter ? (revenuePlanFilter === "all" ? null : revenuePlanFilter) : null
       );
 
       if (response.success) {
@@ -627,8 +676,36 @@ function SubscriptionManagement() {
     revenueEndDate,
     revenuePage,
     revenueUserIdFilter,
+    revenuePage,
+    revenueUserIdFilter,
     revenueStatusFilter,
+    revenuePlanFilter,
   ]);
+
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+
+  // Fetch subscription plans dynamically
+  useEffect(() => {
+    const fetchPlans = async () => {
+      try {
+        const plans = await SubscriptionPlanRepository.getAll(true);
+        if (plans && Array.isArray(plans)) {
+          setSubscriptionPlans(plans); // Store full plan objects
+          const dynamicOptions = plans.map(plan => ({
+            value: plan.slug || String(plan.planId),
+            label: plan.planName // Assuming this is the display name
+          }));
+          setPackageOptions([
+            { value: "all", label: "Tất cả gói" },
+            ...dynamicOptions
+          ]);
+        }
+      } catch (error) {
+        console.error("Error fetching subscription plans:", error);
+      }
+    };
+    fetchPlans();
+  }, []);
 
   useEffect(() => {
     if (!banner) return;
@@ -834,7 +911,7 @@ function SubscriptionManagement() {
                 </div>
                 {revenueByPlan.length > 0 && (
                   <div className="xl:col-span-2 h-full">
-                    <RevenueByPlanChart data={revenueByPlan} />
+                    <RevenueByPlanChart data={revenueByPlan} packageOptions={packageOptions} />
                   </div>
                 )}
               </CardContent>
@@ -902,6 +979,17 @@ function SubscriptionManagement() {
                         />
                       </PopoverContent>
                     </Popover>
+                    <div className="lg:col-span-3">
+                      <SearchableSelect
+                        value={revenuePlanFilter || "all"}
+                        onChange={(value) => {
+                          setRevenuePlanFilter(value);
+                          setRevenuePage(1);
+                        }}
+                        options={packageOptions}
+                        placeholder="Gói dịch vụ"
+                      />
+                    </div>
                   </div>
                   <div className="lg:col-span-3">
                     <SearchableSelect
@@ -976,7 +1064,13 @@ function SubscriptionManagement() {
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-slate-800">
-                                  {payment.planName}
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className="h-2 w-2 rounded-full"
+                                      style={{ backgroundColor: getPlanColor(payment.planName || payment.planId, subscriptionPlans) }}
+                                    />
+                                    {getPlanLabel(payment.planName || payment.planId, packageOptions, subscriptionPlans)}
+                                  </div>
                                 </TableCell>
                                 <TableCell className="text-slate-600">
                                   {formatDate(
