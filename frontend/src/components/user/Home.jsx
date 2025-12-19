@@ -127,12 +127,12 @@ function Card3D({ children, className = "" }) {
 const HERO_MEDIA = {
   type: "video",
   srcs: [
-    "https://res.cloudinary.com/ddrxkqez3/video/upload/v1762431369/Advancing_Sustainable_Agriculture___Bayer_srcu15.mp4",
-    "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
-    "https://v0.coverr.co/s3/mp4/coverr-traveling-through-the-forest-9719-1080p.mp4",
-    "https://v0.coverr.co/s3/mp4/coverr-sun-shining-through-the-forest-1210-1080p.mp4",
-    "sandbox:/mnt/data/Advancing Sustainable Agriculture _ Bayer.mp4",
-    "sandbox:/mnt/data/Nông_Dân_Chăm_Sóc_Vườn_Ăn_Quả.mp4",
+    "/data/Video/Vid1.mp4",
+    "/data/Video/vid2.mp4",
+    "/data/Video/vid3.mp4",
+    "/data/Video/vid4.mp4",
+    "/data/Video/Vid5.mp4",
+    "/data/Video/Vid6.mp4",
   ],
   poster:
     "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=2000&auto=format&fit=crop",
@@ -326,7 +326,7 @@ function Reveal({ children, delay = 0, as = "span", className = "" }) {
 // --- Page component ---------------------------------------------------------
 export default function Home() {
   const [cookieAccepted, setCookieAccepted] = useState(false);
-  const videoRef = useRef(null);
+  const videoRef = useRef([]);
   const videoSources = useMemo(() => HERO_MEDIA.srcs, []);
   const [vidIdx, setVidIdx] = useState(0);
   const [sloganImgError, setSloganImgError] = useState(false);
@@ -417,42 +417,53 @@ export default function Home() {
   }, []);
 
   const handleHeroToggle = async () => {
-    const v = videoRef.current;
-    if (!v) return;
+    // Toggle for ALL players
     if (showHeroText) {
       try {
-        v.currentTime = 0;
-        v.muted = false;
         setIsMuted(false);
-        await v.play();
+        // Find active player and ensure it plays with sound
+        const activeIdx = vidIdx % 2;
+        const v = videoRef.current[activeIdx];
+        if (v) {
+          v.muted = false;
+          await v.play();
+        }
       } catch (_) { }
       setShowHeroText(false);
     } else {
-      v.muted = true;
       setIsMuted(true);
+      // Mute all
+      videoRef.current.forEach(v => {
+        if (v) v.muted = true;
+      });
       setShowHeroText(true);
     }
   };
 
-  // Autoplay hero video
+  // Autoplay hero video - play active, reset others to time 0
   useEffect(() => {
     if (HERO_MEDIA.type !== "video") return;
-    const v = videoRef.current;
-    if (!v) return;
+
     const prefersReduced =
       typeof window !== "undefined" &&
       window.matchMedia &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReduced) {
-      v.pause();
-      return;
-    }
-    (async () => {
-      try {
-        await v.play();
-      } catch (_) { }
-    })();
-  }, []);
+
+    if (prefersReduced) return;
+
+    // Play the active video, pause and reset others
+    videoSources.forEach((_, idx) => {
+      const v = videoRef.current[idx];
+      if (!v) return;
+
+      if (idx === vidIdx) {
+        v.play().catch(() => { });
+      } else {
+        v.pause();
+        v.currentTime = 0;
+      }
+    });
+  }, [vidIdx, videoSources]);
 
   // Scroll effects with progress bar
   const { scrollYProgress } = useScroll();
@@ -736,44 +747,39 @@ export default function Home() {
         >
           <div className="relative h-[88svh] min-h-[350px] w-full overflow-hidden">
             {HERO_MEDIA.type === "video" ? (
-              <motion.video
-                ref={videoRef}
-                style={{ scale: videoScale }}
-                className="absolute inset-0 h-full w-full object-cover pointer-events-none transform-gpu will-change-transform"
-                playsInline
-                muted={isMuted}
-                loop
-                autoPlay
-                preload="auto"
-                crossOrigin="anonymous"
-                src={encodeURI(videoSources[vidIdx])}
-                onError={() => {
-                  console.warn(
-                    "[hero] video onError, source failed:",
-                    videoSources[vidIdx]
+              <>
+                {videoSources.map((src, idx) => {
+                  const isActive = vidIdx === idx;
+
+                  return (
+                    <video
+                      key={idx}
+                      ref={(el) => (videoRef.current[idx] = el)}
+                      className={`absolute inset-0 h-full w-full object-cover pointer-events-none ${isActive ? "opacity-100 z-10" : "opacity-0 z-0"}`}
+                      style={{ transition: "opacity 0.3s ease-in-out" }}
+                      playsInline
+                      muted
+                      preload="auto"
+                      src={encodeURI(src)}
+                      onEnded={() => {
+                        if (isActive) {
+                          const nextIdx = (idx + 1) % videoSources.length;
+                          setVidIdx(nextIdx);
+                          // Immediately play next video
+                          videoRef.current[nextIdx]?.play();
+                        }
+                      }}
+                      onError={() => {
+                        if (isActive) {
+                          console.warn("[hero] video onError:", src);
+                          setVidIdx((prev) => (prev + 1) % videoSources.length);
+                        }
+                      }}
+                      data-testid={`hero-media-${idx}`}
+                    />
                   );
-                  setVidIdx((i) =>
-                    videoSources.length ? (i + 1) % videoSources.length : i
-                  );
-                }}
-                onStalled={() => {
-                  console.warn("[hero] video stalled, trying next source");
-                  setVidIdx((i) =>
-                    videoSources.length ? (i + 1) % videoSources.length : i
-                  );
-                }}
-                onLoadedData={async () => {
-                  try {
-                    await videoRef.current?.play();
-                  } catch (_) { }
-                }}
-                onCanPlay={async () => {
-                  try {
-                    await videoRef.current?.play();
-                  } catch (_) { }
-                }}
-                data-testid="hero-media"
-              />
+                })}
+              </>
             ) : (
               <motion.img
                 style={{ scale: videoScale }}
