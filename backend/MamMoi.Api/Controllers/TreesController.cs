@@ -188,49 +188,6 @@ public class TreesController : ControllerBase
         return Ok(dto);
     }
 
-    /// <summary>
-    /// Lấy gợi ý/khuyến nghị AI cho cây tại một ngày cụ thể.
-    /// GET api/trees/{id}/recommendation?forDate=2025-11-23
-    /// </summary>
-    [HttpGet("{id:int}/recommendation")]
-    public async Task<IActionResult> GetAiRecommendation([FromRoute] int id, [FromQuery] string? forDate, CancellationToken ct = default)
-    {
-        // parse forDate (DateOnly) - nếu không có thì dùng ngày hiện tại (UTC date)
-        DateOnly targetDate;
-        if (string.IsNullOrWhiteSpace(forDate))
-        {
-            var utcToday = DateTime.UtcNow.Date;
-            targetDate = DateOnly.FromDateTime(utcToday);
-        }
-        else
-        {
-            if (!DateOnly.TryParse(forDate, out targetDate))
-            {
-                // cố gắng parse theo ISO yyyy-MM-dd nếu TryParse không thành công
-                if (!DateOnly.TryParseExact(forDate, "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out targetDate))
-                {
-                    return BadRequest("Ngày không hợp lệ. Vui lòng truyền ?forDate=yyyy-MM-dd hoặc định dạng hợp lệ cho DateOnly.");
-                }
-            }
-        }
-
-        // Gọi service AI
-        try
-        {
-            var dto = await _aiRecommendationService.getAIRecommendations(id, targetDate, ct);
-            if (dto is null) return NotFound(); // service trả null nếu không tìm thấy cây hoặc ko có data
-            return Ok(dto);
-        }
-        catch (OperationCanceledException)
-        {
-            return StatusCode(499); // Client Closed Request / cancel
-        }
-        catch (Exception ex)
-        {
-            // ghi log nếu bạn có logger (không có logger trong controller này), trả 500 chung
-            return StatusCode(500, $"Lỗi khi gọi AI recommendation: {ex}");
-        }
-    }
 
     /// <summary>
     /// Get AI recommendation for a single day (for progressive loading)
