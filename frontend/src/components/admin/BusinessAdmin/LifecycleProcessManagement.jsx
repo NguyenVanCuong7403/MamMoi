@@ -43,7 +43,6 @@ import {
 } from "@/components/ui/table";
 import LifecycleWidget from "@/components/user/LifecycleWidget";
 import {
-  PHASE_IDS,
   LIFECYCLE_COLOR_OPTIONS,
   LIFECYCLE_COLOR_LOOKUP,
   getColorKeyFromHex,

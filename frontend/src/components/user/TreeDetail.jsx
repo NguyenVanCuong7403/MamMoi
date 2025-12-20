@@ -3253,7 +3253,13 @@ function mapDtoToTree(dto) {
 
   // Accept multiple possible field names coming from different backend versions
   const rawPlantDate =
-    dto.plantDate ?? dto.plantedAt ?? dto.plant_date ?? dto.planted_at ?? "";
+    dto.plantDate ??
+    dto.PlantDate ??
+    dto.plantedAt ??
+    dto.PlantedAt ??
+    dto.plant_date ??
+    dto.planted_at ??
+    "";
   const plantedAt = toDateInput(rawPlantDate);
 
   const rawExpectedHarvest =
@@ -3264,6 +3270,9 @@ function mapDtoToTree(dto) {
   const expectedHarvestDate = toDateInput(rawExpectedHarvest);
 
   const phaseId = mapStageNameToPhaseId(dto.stageName);
+
+  // Pre-calculate preMonths value to use consistently
+  const preMonthsVal = Number(dto.preMonths ?? dto.PreMonths ?? dto.pre_months ?? dto.preNurseryAgeMonths ?? dto.PreNurseryAgeMonths ?? 0) || 0;
 
   return {
     // ID & mã
@@ -3305,8 +3314,8 @@ function mapDtoToTree(dto) {
     fruitStatus: dto.fruitStatus,
 
     // Tuổi cây (preMonths)
-    preMonths: dto.preMonths ?? dto.preNurseryAgeMonths ?? 0,
-    preNurseryAgeMonths: dto.preMonths ?? dto.preNurseryAgeMonths ?? 0,
+    preMonths: preMonthsVal,
+    preNurseryAgeMonths: preMonthsVal,
     // Virtual age (manual override) from backend (prefer explicit server value)
     virtualAgeMonths:
       typeof dto.virtualAgeMonths === "number"
@@ -3322,8 +3331,7 @@ function mapDtoToTree(dto) {
         : typeof dto.real_age_months === "number"
           ? dto.real_age_months
           : plantedAt
-            ? monthsBetween(plantedAt) +
-            (dto.preMonths ?? dto.preNurseryAgeMonths ?? 0)
+            ? monthsBetween(plantedAt) + preMonthsVal
             : 0,
     // Expected age presented to lifecycle logic (max of realAge and virtualAge)
     expectedAgeMonths: Math.max(
@@ -3332,8 +3340,7 @@ function mapDtoToTree(dto) {
         : typeof dto.real_age_months === "number"
           ? dto.real_age_months
           : plantedAt
-            ? monthsBetween(plantedAt) +
-            (dto.preMonths ?? dto.preNurseryAgeMonths ?? 0)
+            ? monthsBetween(plantedAt) + preMonthsVal
             : 0,
       typeof dto.virtualAgeMonths === "number"
         ? dto.virtualAgeMonths

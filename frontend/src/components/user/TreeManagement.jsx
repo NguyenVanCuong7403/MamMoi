@@ -888,12 +888,16 @@ function normalizeTree(raw, effectiveGardenId, effectiveGardenName) {
   // tuổi cây: ưu tiên PlantDate từ backend (plantDate)
   const plantedAt =
     raw?.plantedAt ||
+    raw?.PlantedAt ||
     raw?.planted_date ||
-    (raw?.plantDate
-      ? String(raw.plantDate).slice(0, 10)
-      : raw?.createdAt
-        ? String(raw.createdAt).slice(0, 10)
-        : "2024-01-01");
+    raw?.plantDate ||
+    raw?.PlantDate ||
+    (raw?.createdAt
+      ? String(raw.createdAt).slice(0, 10)
+      : "2024-01-01");
+
+  // Tuổi cây lúc trồng (nếu có)
+  const preMonths = Number(raw?.preMonths || raw?.PreMonths || raw?.pre_months || 0);
 
   const phenology = {
     leafStatus: raw?.leafStatus,
@@ -919,6 +923,7 @@ function normalizeTree(raw, effectiveGardenId, effectiveGardenName) {
     gardenName,
     locationLabel,
     plantedAt,
+    preMonths, // <--- Thêm vào đây để render dùng được
     caretaker: caretakerName,
     stateNote,
     state: raw?.state || {},

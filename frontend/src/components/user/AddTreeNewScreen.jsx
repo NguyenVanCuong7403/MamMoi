@@ -2537,13 +2537,7 @@ export default function AddTreeNewScreen() {
 
                         {/* Chips */}
                         <div className="flex flex-wrap gap-2 text-xs mt-1 min-w-0">
-                          <span className="inline-flex items-center rounded-full border px-2 py-0.5 bg-emerald-50 text-emerald-700 border-emerald-200 shrink-0 mm-chip">
-                            <span>Tổng tuổi:</span>
-                            <span className="ml-1 font-semibold">
-                              {totalAge}
-                            </span>
-                            <span className="ml-1">tháng</span>
-                          </span>
+
                           <span className="inline-flex items-center rounded-full border px-2 py-0.5 shrink-0 mm-chip">
                             <CalIcon className="w-3.5 h-3.5 mr-1 shrink-0" />
                             <span className="whitespace-nowrap">
@@ -2562,7 +2556,7 @@ export default function AddTreeNewScreen() {
                           #{code || "—"}
                         </div>
                         <div className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm min-w-0">
-                          <Field label="Tuổi" value={`${totalAge} tháng`} />
+
                           <Field
                             label="Vườn"
                             value={currentGarden?.name || "—"}
