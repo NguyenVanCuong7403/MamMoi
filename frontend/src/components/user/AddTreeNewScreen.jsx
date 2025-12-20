@@ -1829,6 +1829,18 @@ export default function AddTreeNewScreen() {
     fruitInfo,
   ]);
 
+  const stageOptions = useMemo(() => {
+    if (stagesByType && stagesByType.length > 0) {
+      return [...stagesByType]
+        .sort((a, b) => (a.stageOrder || 0) - (b.stageOrder || 0))
+        .map((stage) => {
+          const name = stage.stageName || `Giai đoạn ${stage.stageOrder || ''}`;
+          return { value: name, label: name };
+        });
+    }
+    return PHASES5.map((p) => ({ value: p, label: p }));
+  }, [stagesByType]);
+
   const doneCount = Object.values(progressChecks).filter(Boolean).length;
   const totalCount = Object.keys(progressChecks).length;
   const progress = Math.round((doneCount / Math.max(1, totalCount)) * 100);
@@ -2259,67 +2271,27 @@ export default function AddTreeNewScreen() {
                       <Label className="text-neutral-700 break-words">
                         Giai đoạn <span className="text-red-500">*</span>
                       </Label>
-                      <div className="relative min-w-0">
-                        <select
+                      <div className="min-w-0">
+                        <SearchableSelect
                           value={phaseOverride}
-                          onChange={(e) => {
-                            setPhaseOverride(e.target.value);
+                          onChange={(val) => {
+                            setPhaseOverride(val);
                             setErrors((x) => ({
                               ...x,
                               phaseOverride: undefined,
                             }));
-                            e.target.blur(); // chọn xong thì bỏ focus, tắt viền xanh
                           }}
-                          disabled={!treeTypeId || stagesByType.length === 0}
-                          className={
-                            "h-11 w-full min-w-0 rounded-xl border bg-white px-3 text-sm appearance-none truncate mm-field-surface " +
-                            (errors.phaseOverride
-                              ? "border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500"
-                              : "border-neutral-300 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500") +
-                            (!treeTypeId || stagesByType.length === 0
-                              ? " opacity-60 cursor-not-allowed"
-                              : "")
-                          }
-                        >
-                          <option value="">
-                            {!treeTypeId
+                          options={stageOptions}
+                          placeholder={
+                            !treeTypeId
                               ? "— Chọn loại cây trước —"
-                              : stagesByType.length === 0
-                                ? "— Loại cây này chưa có giai đoạn —"
-                                : "— Hãy chọn giai đoạn —"}
-                          </option>
-                          {stagesByType.length > 0
-                            ? stagesByType
-                              .sort(
-                                (a, b) =>
-                                  (a.stageOrder || 0) - (b.stageOrder || 0)
-                              )
-                              .map((stage) => {
-                                // Use the real stage name from database
-                                const phaseName =
-                                  stage.stageName ||
-                                  `Giai đoạn ${stage.stageOrder || ''}`;
-                                return (
-                                  <option
-                                    key={stage.stageId}
-                                    value={phaseName}
-                                  >
-                                    {phaseName}
-                                  </option>
-                                );
-                              })
-                            : PHASES5.map((p) => (
-                              <option key={p} value={p}>
-                                {p}
-                              </option>
-                            ))}
-                        </select>
+                              : "— Chọn giai đoạn —"
+                          }
+                          disabled={!treeTypeId}
+                          error={errors.phaseOverride}
+                          inputPlaceholder="Gõ tên giai đoạn (Ra hoa, Ra quả...)"
+                        />
                       </div>
-                      {errors.phaseOverride && (
-                        <p className="mt-1 text-xs text-red-500 break-words">
-                          {errors.phaseOverride}
-                        </p>
-                      )}
                     </div>
 
                     {/* 10. Mô tả tình trạng hoa (always visible, gated) */}

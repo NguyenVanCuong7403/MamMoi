@@ -19,15 +19,26 @@ export default function LCPhaseDropdown({
     { id: "post_harvest", name: "Sau thu hoạch", icon: "🌿", phase: null },
   ];
   const items = useMemo(() => {
-    if (Array.isArray(phaseConfigs?.cycles) && phaseConfigs.cycles.length) {
-      return phaseConfigs.cycles.map((phase) => ({
-        id: phase.phaseId,
-        name: phase.label,
-        icon: phase.icon || "🌿",
-        phase,
-      }));
+    const list = [];
+    if (phaseConfigs?.phase1) {
+      list.push({
+        id: phaseConfigs.phase1.phaseId,
+        name: phaseConfigs.phase1.label,
+        icon: phaseConfigs.phase1.icon || "🌱",
+        phase: phaseConfigs.phase1,
+      });
     }
-    return fallbackItems;
+    if (Array.isArray(phaseConfigs?.cycles) && phaseConfigs.cycles.length) {
+      list.push(
+        ...phaseConfigs.cycles.map((phase) => ({
+          id: phase.phaseId,
+          name: phase.label,
+          icon: phase.icon || "🌿",
+          phase,
+        }))
+      );
+    }
+    return list.length > 0 ? list : fallbackItems;
   }, [phaseConfigs]);
   return (
     <div className="mm-fluid-shell relative">
@@ -52,10 +63,9 @@ export default function LCPhaseDropdown({
                     onPickPhase(it.phase || it.id);
                   }}
                   className={`w-full text-left px-2.5 py-2 rounded-xl border transition-all flex items-center gap-2.5
-                    ${
-                      activePhase === it.id
-                        ? "bg-emerald-50 border-emerald-300 shadow-sm"
-                        : "bg-white hover:bg-blue-50 border-gray-200 hover:shadow-md"
+                    ${activePhase === it.id
+                      ? "bg-emerald-50 border-emerald-300 shadow-sm"
+                      : "bg-white hover:bg-blue-50 border-gray-200 hover:shadow-md"
                     }`}
                   title={it.name}
                 >

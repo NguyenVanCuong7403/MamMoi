@@ -119,6 +119,7 @@ export default function LifecycleTimeline({
   transitionKey,
   p1Transition,
   p1Key,
+  p1Mode,
   trailIndex,
   suppressId,
   isBackwardRun,
@@ -288,10 +289,10 @@ export default function LifecycleTimeline({
       !canonicalId
         ? null
         : phaseList.find(
-            (phase) =>
-              phase.canonicalPhaseId === canonicalId ||
-              phase.phaseId === canonicalId
-          ) || null,
+          (phase) =>
+            phase.canonicalPhaseId === canonicalId ||
+            phase.phaseId === canonicalId
+        ) || null,
     [phaseList]
   );
 
@@ -358,7 +359,7 @@ export default function LifecycleTimeline({
         const { thetaStart, thetaEnd } = trimAngles(fromIdx, toIdx);
         const color =
           PHASE_COLORS[
-            backward ? cyclePhases[toIdx].id : cyclePhases[fromIdx].id
+          backward ? cyclePhases[toIdx].id : cyclePhases[fromIdx].id
           ] || "#10b981";
         const retract = backward;
         const d = retract
@@ -625,28 +626,28 @@ export default function LifecycleTimeline({
       ? phase.color === "pink"
         ? "bg-pink-600"
         : phase.color === "lime"
-        ? "bg-lime-600"
-        : phase.color === "amber"
-        ? "bg-amber-600"
-        : phase.color === "emerald"
-        ? "bg-emerald-600"
-        : phase.color === "slate"
-        ? "bg-slate-700"
-        : "bg-teal-600"
+          ? "bg-lime-600"
+          : phase.color === "amber"
+            ? "bg-amber-600"
+            : phase.color === "emerald"
+              ? "bg-emerald-600"
+              : phase.color === "slate"
+                ? "bg-slate-700"
+                : "bg-teal-600"
       : "bg-gray-700";
 
     const borderColor = nodeHasColor
       ? phase.color === "pink"
         ? "border-t-pink-600"
         : phase.color === "lime"
-        ? "border-t-lime-600"
-        : phase.color === "amber"
-        ? "border-t-amber-600"
-        : phase.color === "emerald"
-        ? "border-t-emerald-600"
-        : phase.color === "slate"
-        ? "border-t-slate-700"
-        : "border-t-teal-600"
+          ? "border-t-lime-600"
+          : phase.color === "amber"
+            ? "border-t-amber-600"
+            : phase.color === "emerald"
+              ? "border-t-emerald-600"
+              : phase.color === "slate"
+                ? "border-t-slate-700"
+                : "border-t-teal-600"
       : "border-t-gray-700";
 
     return createPortal(
@@ -745,14 +746,17 @@ export default function LifecycleTimeline({
               className={`relative w-10 h-10 sm:w-11 sm:h-11 rounded-full border-[3px] shadow-lg flex items-center justify-center text-base sm:text-lg mb-1 
                 pointer-events-auto hover:scale-105 transition-transform
                 ${allowPhase1Click ? "cursor-pointer" : "cursor-default"}
-                ${getColorClasses(phase1.color, activePhase === phase1.id)} 
-                ${isPhase1Completed ? "opacity-40 grayscale" : ""}`}
+                ${getColorClasses(
+                phase1.color,
+                activePhase === phase1.id || isPhase1Completed
+              )} 
+                `}
               onClick={
                 allowPhase1Click
                   ? (event) => {
-                      event.stopPropagation();
-                      onNodeClick(phase1.id);
-                    }
+                    event.stopPropagation();
+                    onNodeClick(phase1.id);
+                  }
                   : undefined
               }
             >
@@ -760,9 +764,7 @@ export default function LifecycleTimeline({
                 <img
                   src={phase1.iconImageUrl}
                   alt={phase1.name}
-                  className={`h-5 w-5 sm:h-6 sm:w-6 object-contain ${
-                    isPhase1Completed ? "opacity-60" : ""
-                  }`}
+                  className="h-5 w-5 sm:h-6 sm:w-6 object-contain"
                 />
               ) : (
                 <span className="text-sm sm:text-base">{phase1.icon}</span>
@@ -819,7 +821,7 @@ export default function LifecycleTimeline({
                 duration={950}
                 headSize={8}
                 headPad={5}
-                mode="grow"
+                mode={p1Mode || "grow"}
                 headVisible
               />
             )}
@@ -890,9 +892,8 @@ export default function LifecycleTimeline({
             </div>
 
             <div
-              className={`absolute inset-0 overflow-visible ${
-                isSpinning ? "animate-spin-once" : ""
-              }`}
+              className={`absolute inset-0 overflow-visible ${isSpinning ? "animate-spin-once" : ""
+                }`}
               style={{ transformOrigin: "50% 50%" }}
             >
               <svg
@@ -950,27 +951,25 @@ export default function LifecycleTimeline({
                             strokeLinejoin="round"
                             style={{ vectorEffect: "non-scaling-stroke" }}
                             strokeDasharray={persisted ? "12 10" : undefined}
-                            className={`${
-                              persisted ? "flow-arc-slow" : ""
-                            } fade-in-out`}
+                            className={`${persisted ? "flow-arc-slow" : ""
+                              } fade-in-out`}
                           />
                           <g
                             transform={`translate(${endX}, ${endY}) rotate(${tanDeg})`}
                             opacity={
                               hideStaticFrom ||
-                              hideStaticTo ||
-                              hideStaticCurr ||
-                              hideRemoving ||
-                              hidePost
+                                hideStaticTo ||
+                                hideStaticCurr ||
+                                hideRemoving ||
+                                hidePost
                                 ? 0
                                 : 1
                             }
                             className="fade-in-160"
                           >
                             <polygon
-                              points={`0,0 -${HEAD_SIZE},-${
-                                HEAD_SIZE / 2
-                              } -${HEAD_SIZE},${HEAD_SIZE / 2}`}
+                              points={`0,0 -${HEAD_SIZE},-${HEAD_SIZE / 2
+                                } -${HEAD_SIZE},${HEAD_SIZE / 2}`}
                               fill={persisted ? color : "#d1d5db"}
                               opacity={persisted ? "0.75" : "0.45"}
                               className="fade-in-out"
@@ -1034,14 +1033,12 @@ export default function LifecycleTimeline({
                     layerRect
                   ) {
                     nodeStyle = {
-                      left: `${
-                        dragState.pointer.x -
+                      left: `${dragState.pointer.x -
                         layerRect.left -
                         dragState.offset.x
-                      }px`,
-                      top: `${
-                        dragState.pointer.y - layerRect.top - dragState.offset.y
-                      }px`,
+                        }px`,
+                      top: `${dragState.pointer.y - layerRect.top - dragState.offset.y
+                        }px`,
                       transform: "translate(-50%, -50%)",
                       zIndex: 50,
                     };
@@ -1078,9 +1075,9 @@ export default function LifecycleTimeline({
                       onClick={
                         !editableNodes && typeof onNodeClick === "function"
                           ? (event) => {
-                              event.stopPropagation();
-                              onNodeClick(phase.id);
-                            }
+                            event.stopPropagation();
+                            onNodeClick(phase.id);
+                          }
                           : undefined
                       }
                     >
@@ -1097,23 +1094,21 @@ export default function LifecycleTimeline({
                       <div
                         className={`relative w-9 h-9 sm:w-10 sm:h-10 rounded-full border-[3px] shadow-lg flex items-center justify-center
                                     ${getColorClasses(
-                                      phase.color,
-                                      nodeHasColor
-                                    )}`}
+                          phase.color,
+                          nodeHasColor
+                        )}`}
                       >
                         {phase.iconImageUrl ? (
                           <img
                             src={phase.iconImageUrl}
                             alt={phase.name}
-                            className={`h-4 w-4 sm:h-5 sm:w-5 object-contain ${
-                              nodeHasColor ? "" : "grayscale opacity-40"
-                            }`}
+                            className={`h-4 w-4 sm:h-5 sm:w-5 object-contain ${nodeHasColor ? "" : "grayscale opacity-40"
+                              }`}
                           />
                         ) : (
                           <span
-                            className={`text-sm sm:text-base ${
-                              nodeHasColor ? "" : "grayscale opacity-40"
-                            }`}
+                            className={`text-sm sm:text-base ${nodeHasColor ? "" : "grayscale opacity-40"
+                              }`}
                           >
                             {phase.icon}
                           </span>
@@ -1122,12 +1117,12 @@ export default function LifecycleTimeline({
                           isActive &&
                           phase.id !== suppressId) ||
                           isPreview) && (
-                          <span
-                            className={`pointer-events-none absolute inset-0 rounded-full animate-ping opacity-60 ${getPingTone(
-                              phase.color
-                            )}`}
-                          />
-                        )}
+                            <span
+                              className={`pointer-events-none absolute inset-0 rounded-full animate-ping opacity-60 ${getPingTone(
+                                phase.color
+                              )}`}
+                            />
+                          )}
                       </div>
                     </div>
                   );

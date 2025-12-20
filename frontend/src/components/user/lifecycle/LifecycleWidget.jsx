@@ -116,8 +116,8 @@ export default function LifecycleWidget({
       const lineColorKey = override.lineColorKey
         ? String(override.lineColorKey).toLowerCase()
         : override.colorKey
-        ? String(override.colorKey).toLowerCase()
-        : null;
+          ? String(override.colorKey).toLowerCase()
+          : null;
       const canonicalPhaseId = override.canonicalPhaseId || phaseId;
       const stageId = override.stageId ?? override.rawStage?.stageId ?? null;
       const stageOrder =
@@ -225,10 +225,10 @@ export default function LifecycleWidget({
       !canonicalId
         ? null
         : phaseList.find(
-            (phase) =>
-              phase.canonicalPhaseId === canonicalId ||
-              phase.phaseId === canonicalId
-          ) || null,
+          (phase) =>
+            phase.canonicalPhaseId === canonicalId ||
+            phase.phaseId === canonicalId
+        ) || null,
     [phaseList]
   );
 
@@ -264,13 +264,13 @@ export default function LifecycleWidget({
   // Ưu tiên phase từ props.value (DB) -> fallback text trong tree
   let initPhase = normalizePhaseId(
     value ??
-      tree?.lifecycle?.currentPhaseId ??
-      mapPhaseIdFromText(
-        tree?.phenology?.currentPhase ||
-          tree?.phenology?.stage ||
-          tree?.phase ||
-          ""
-      )
+    tree?.lifecycle?.currentPhaseId ??
+    mapPhaseIdFromText(
+      tree?.phenology?.currentPhase ||
+      tree?.phenology?.stage ||
+      tree?.phase ||
+      ""
+    )
   );
   // Do not apply an implicit default when missing; keep `initPhase` null/undefined
   // so caller code can explicitly handle absence of phase.
@@ -280,8 +280,8 @@ export default function LifecycleWidget({
     typeof phase1CompletedProp === "boolean"
       ? phase1CompletedProp
       : initPhase
-      ? initPhase !== "growth_development"
-      : false;
+        ? initPhase !== "growth_development"
+        : false;
 
   // Nếu đã qua giai đoạn 1 thì trailIndex = index của phase hiện tại
   const initialTrailIndex = initialPhase1Completed
@@ -416,6 +416,7 @@ export default function LifecycleWidget({
   const [transitionKey, setTransitionKey] = useState(0);
   const [p1Transition, setP1Transition] = useState(false);
   const [p1Key, setP1Key] = useState(0);
+  const [p1Mode, setP1Mode] = useState("grow");
   const [trailIndex, setTrailIndex] = useState(isPhase1Completed ? 0 : -1);
   const [suppressId, setSuppressId] = useState(null);
   const [isBackwardRun, setIsBackwardRun] = useState(false);
@@ -431,13 +432,13 @@ export default function LifecycleWidget({
     // Nếu parent đẩy phase/phase1Completed mới từ DB thì đồng bộ lại
     const externalPhase = normalizePhaseId(
       value ??
-        tree?.lifecycle?.currentPhaseId ??
-        mapPhaseIdFromText(
-          tree?.phenology?.currentPhase ||
-            tree?.phenology?.stage ||
-            tree?.phase ||
-            ""
-        )
+      tree?.lifecycle?.currentPhaseId ??
+      mapPhaseIdFromText(
+        tree?.phenology?.currentPhase ||
+        tree?.phenology?.stage ||
+        tree?.phase ||
+        ""
+      )
     );
 
     const externalP1Done =
@@ -508,18 +509,45 @@ export default function LifecycleWidget({
     const steps = [];
     const N = cyclePhaseIds.length;
     if (N <= 0) return steps;
-    if (from === "growth_development" && isCyclePhase(to)) {
+    const normalizedFrom = normalizePhaseId(from);
+    console.log("[LifecycleWidget] buildSteps", { from, normalizedFrom, to });
+
+    if (normalizedFrom === "growth_development" && isCyclePhase(to)) {
       steps.push({ type: "p1" });
       from = cyclePhaseIds[0] || "flowering";
     }
+
+    const normalizedTo = normalizePhaseId(to);
+    if (isCyclePhase(from) && normalizedTo === "growth_development") {
+      // 1. Walk back to index 0
+      let i = cyclePhaseIds.indexOf(from);
+      const target = 0; // index of first cycle phase
+      const N = cyclePhaseIds.length;
+      if (i !== -1 && N > 0) {
+        while (i !== target) {
+          const prev = (i - 1 + N) % N;
+          steps.push({
+            type: "arc",
+            from: cyclePhaseIds[i],
+            to: cyclePhaseIds[prev],
+          });
+          i = prev;
+        }
+      }
+      // 2. Add retract step
+      steps.push({ type: "p1-retract" });
+      return steps;
+    }
+
     if (isCyclePhase(from) && isCyclePhase(to) && from !== to) {
       let i = cyclePhaseIds.indexOf(from),
         j = cyclePhaseIds.indexOf(to);
       if (i === -1 || j === -1) return steps;
       let dir;
       if ((i + 1) % N === j) dir = +1;
-      else if ((j + 1) % N === i) dir = -1;
+      // else if ((j + 1) % N === i) dir = -1; // Removed to prefer forward fill for 0->Max
       else dir = j > i ? +1 : -1;
+
       while (i !== j) {
         const next = (i + dir + N) % N;
         steps.push({
@@ -542,19 +570,27 @@ export default function LifecycleWidget({
       DWELL = 200;
 
     const firstArc = steps.find((s) => s.type === "arc");
-    if (firstArc && cyclePhaseIds.length > 0) {
+    const hasRetract = steps.some((s) => s.type === "p1-retract");
+
+    if (hasRetract) {
+      setIsBackwardRun(true);
+    } else if (firstArc && cyclePhaseIds.length > 0) {
       const N = cyclePhaseIds.length;
       const iFrom = cyclePhaseIds.indexOf(firstArc.from);
       const iTo = cyclePhaseIds.indexOf(firstArc.to);
       if (iFrom === -1 || iTo === -1) setIsBackwardRun(false);
       else setIsBackwardRun((iFrom + 1) % N !== iTo);
-    } else setIsBackwardRun(false);
+    } else {
+      setIsBackwardRun(false);
+    }
 
     for (let idx = 0; idx < steps.length; idx++) {
       const s = steps[idx];
       if (s.type === "p1") {
+        setP1Mode("grow");
         setP1Transition(true);
         setP1Key((k) => k + 1);
+        await flush(); // Force render before wait
         await wait(950);
         setP1Transition(false);
         if (!isPhase1Completed) setIsPhase1Completed(true);
@@ -562,10 +598,29 @@ export default function LifecycleWidget({
           setTrailIndex(0);
           setPreviewPhase(cyclePhaseIds[0]);
         }
+        await flush(); // Force render updates
         await wait(DWELL);
         setPreviewPhase(null);
         continue;
       }
+
+      if (s.type === "p1-retract") {
+        setP1Mode("shrink");
+        setP1Transition(true);
+        setP1Key((k) => k + 1);
+
+        // Hide trail immediately at 0
+        setTrailIndex(-1);
+        await flush();
+
+        await wait(950);
+        setP1Transition(false);
+        setIsPhase1Completed(false);
+        await flush();
+        await wait(DWELL);
+        continue;
+      }
+
       const N = cyclePhaseIds.length;
       if (N <= 0) break;
       const iFrom = cyclePhaseIds.indexOf(s.from),
@@ -618,14 +673,14 @@ export default function LifecycleWidget({
       const targetPhase =
         typeof targetPhaseInput === "string"
           ? findPhaseById(targetPhaseInput) ||
-            findPhaseByCanonical(normalizePhaseId(targetPhaseInput))
+          findPhaseByCanonical(normalizePhaseId(targetPhaseInput))
           : targetPhaseInput && typeof targetPhaseInput === "object"
-          ? findPhaseById(
+            ? findPhaseById(
               targetPhaseInput.phaseId ||
-                targetPhaseInput.id ||
-                targetPhaseInput
+              targetPhaseInput.id ||
+              targetPhaseInput
             ) || targetPhaseInput
-          : null;
+            : null;
       if (!targetPhase) return;
       const fromCanonical =
         findPhaseById(activePhase)?.canonicalPhaseId ||
@@ -635,9 +690,8 @@ export default function LifecycleWidget({
         normalizePhaseId(targetPhase.phaseId || targetPhase.id);
 
       let title = "Xác nhận đổi giai đoạn";
-      let message = `Bạn muốn chuyển từ "${labelOf(fromCanonical)}" sang "${
-        targetPhase.name || labelOf(toCanonical)
-      }"?`;
+      let message = `Bạn muốn chuyển từ "${labelOf(fromCanonical)}" sang "${targetPhase.name || labelOf(toCanonical)
+        }"?`;
       let highlight = "";
       if (fromCanonical === "post_harvest" && toCanonical === "flowering")
         highlight = "Chuyển Sau thu hoạch → Ra Hoa sẽ BẮT ĐẦU MỘT CHU KỲ MỚI.";
@@ -942,10 +996,18 @@ export default function LifecycleWidget({
           apiPhaseId,
           toPhaseId
         );
-        if (resolvedPhaseId) setActivePhase(resolvedPhaseId);
+        if (resolvedPhaseId && steps.length === 0) {
+          // Chỉ cập nhật phase ngay nếu KHÔNG chạy animation
+          setActivePhase(resolvedPhaseId);
+        }
         if (apiStageId != null) setActiveStageId(apiStageId);
         setCycleCount(apiCycleCount);
-        setIsPhase1Completed(apiPhase1Completed);
+
+        // Nếu animation có bước P1, để animation tự handle việc set P1 completed
+        const hasP1Step = steps.some((s) => s.type === "p1");
+        if (!hasP1Step) {
+          setIsPhase1Completed(apiPhase1Completed);
+        }
         setAutoSyncEnabled(apiAutoEnabled);
         setAutoDisabledAt(apiAutoDisabledAt);
 
@@ -1093,6 +1155,7 @@ export default function LifecycleWidget({
           transitionKey={transitionKey}
           p1Transition={p1Transition}
           p1Key={p1Key}
+          p1Mode={p1Mode}
           trailIndex={trailIndex}
           suppressId={suppressId}
           isBackwardRun={isBackwardRun}
