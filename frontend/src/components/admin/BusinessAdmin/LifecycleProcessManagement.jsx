@@ -755,8 +755,8 @@ export default function BusinessAdminLifecycleProcessManagement() {
                   type="button"
                   key={`${fieldKey}-${opt.key}`}
                   className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-left text-xs font-medium transition ${isActive
-                      ? "border-emerald-500 bg-emerald-50 shadow-sm"
-                      : "border-slate-200 hover:border-slate-300"
+                    ? "border-emerald-500 bg-emerald-50 shadow-sm"
+                    : "border-slate-200 hover:border-slate-300"
                     }`}
                   onClick={() =>
                     setEditingStage((prev) => ({
@@ -800,8 +800,8 @@ export default function BusinessAdminLifecycleProcessManagement() {
         {notice && (
           <div
             className={`rounded-xl border px-4 py-3 text-sm ${notice.type === "success"
-                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                : "border-rose-200 bg-rose-50 text-rose-700"
+              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+              : "border-rose-200 bg-rose-50 text-rose-700"
               }`}
           >
             <div className="flex items-center gap-2">
@@ -859,8 +859,8 @@ export default function BusinessAdminLifecycleProcessManagement() {
                       key={type.id}
                       onClick={() => handleSelectTreeType(type.id)}
                       className={`mb-2 w-full rounded-2xl border px-3 py-2 text-left transition ${selectedTreeTypeId === type.id
-                          ? "border-emerald-300 bg-emerald-50/90 text-emerald-900 shadow"
-                          : "border-white/20 bg-white/10 text-white hover:border-emerald-200/40"
+                        ? "border-emerald-300 bg-emerald-50/90 text-emerald-900 shadow"
+                        : "border-white/20 bg-white/10 text-white hover:border-emerald-200/40"
                         }`}
                     >
                       <p className="text-sm font-semibold">{type.name}</p>

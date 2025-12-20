@@ -179,7 +179,17 @@ public class TreeGrowthStageListItemDto
     public string? Description { get; set; }
     public int? MinAgeInMonths { get; set; }
     public int? MaxAgeInMonths { get; set; }
+    public int? WateringFrequencyDays { get; set; }
+    public decimal? WateringAmountLiters { get; set; }
+    public int? FertilizingFrequencyDays { get; set; }
+    public string? FertilizerType { get; set; }
+    public decimal? FertilizerAmountGrams { get; set; }
+    public int? PruningFrequencyDays { get; set; }
+    public string? CareInstructions { get; set; }
+    public string? CommonIssues { get; set; }
+    public string? CriticalWeatherFactors { get; set; }
     public int VulnerabilityLevel { get; set; }
+    public string? ImageUrl { get; set; }
     public string? Icon { get; set; }
     public string? NodeColor { get; set; }
     public string? LineColor { get; set; }
