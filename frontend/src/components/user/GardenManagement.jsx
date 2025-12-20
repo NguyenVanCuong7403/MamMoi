@@ -651,8 +651,8 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
                 onBlur={() => setTouched((t) => ({ ...t, name: true }))}
                 maxLength={MAX_GARDEN_NAME}
                 className={`h-12 rounded-xl text-[clamp(13px,1.6vw,16px)] ${touched.name && errs.name
-                    ? "border-rose-500"
-                    : "border-neutral-300"
+                  ? "border-rose-500"
+                  : "border-neutral-300"
                   }`}
                 placeholder="Ví dụ: Vườn số 1 FPT"
               />
@@ -828,14 +828,14 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
                           key={soil.id}
                           onClick={() => toggleSoilDraft(soil.id)}
                           className={`w-full text-left rounded-2xl border p-4 transition flex items-start gap-4 bg-white ${selected
-                              ? "border-emerald-500 bg-emerald-50"
-                              : "border-neutral-200 hover:border-emerald-200"
+                            ? "border-emerald-500 bg-emerald-50"
+                            : "border-neutral-200 hover:border-emerald-200"
                             }`}
                         >
                           <span
                             className={`mt-1 flex h-6 w-6 items-center justify-center rounded-full border ${selected
-                                ? "border-emerald-500 bg-emerald-500 text-white"
-                                : "border-neutral-300 text-transparent"
+                              ? "border-emerald-500 bg-emerald-500 text-white"
+                              : "border-neutral-300 text-transparent"
                               }`}
                           >
                             <Check
@@ -1762,8 +1762,8 @@ export default function GardenManagement() {
                           if (idx >= 0) askToggleStatus(idx);
                         }}
                         className={`hidden inline-flex items-center justify-center h-10 px-4 rounded-full text-[clamp(11px,1.4vw,13px)] font-semibold shadow-sm transition-all duration-200 hover:scale-110 hover:shadow-lg active:scale-[0.95] mm-text-wrap-safe ${isActive
-                            ? "bg-rose-500 text-white hover:bg-rose-600 shadow-[0_8px_18px_rgba(244,63,94,0.28)] hover:shadow-[0_12px_28px_rgba(244,63,94,0.40)]"
-                            : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_8px_18px_rgba(16,185,129,0.28)] hover:shadow-[0_12px_28px_rgba(16,185,129,0.40)]"
+                          ? "bg-rose-500 text-white hover:bg-rose-600 shadow-[0_8px_18px_rgba(244,63,94,0.28)] hover:shadow-[0_12px_28px_rgba(244,63,94,0.40)]"
+                          : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_8px_18px_rgba(16,185,129,0.28)] hover:shadow-[0_12px_28px_rgba(16,185,129,0.40)]"
                           }`}
                       >
                         {isActive ? "Dừng hoạt động" : "Khởi động lại"}
@@ -1810,8 +1810,8 @@ export default function GardenManagement() {
                         type="button"
                         onClick={() => setPage(pageNumber)}
                         className={`min-w-[32px] h-9 rounded-full text-[clamp(11px,1.4vw,13px)] px-2 ${isCurrent
-                            ? "bg-[#FFFFA5] text-[#1F302F] font-semibold"
-                            : "bg-white/10 text-white/80 hover:bg-white/20"
+                          ? "bg-[#FFFFA5] text-[#1F302F] font-semibold"
+                          : "bg-white/10 text-white/80 hover:bg-white/20"
                           }`}
                       >
                         {pageNumber}
