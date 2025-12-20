@@ -1,6 +1,9 @@
+using MamMoi.Application.DTOs.Notification;
+using MamMoi.Application.Interfaces;
 using MamMoi.Application.Interfaces.Auth;
 using MamMoi.Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -56,6 +59,8 @@ public class SubscriptionExpiryNotificationBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MamMoiDbContext>();
         var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+        var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
+        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
         _logger.LogInformation("Checking for expiring subscriptions...");
 
@@ -75,6 +80,9 @@ public class SubscriptionExpiryNotificationBackgroundService : BackgroundService
 
         _logger.LogInformation("Found {Count} subscriptions to notify", expiringSubscriptions.Count);
 
+        // Get frontend base URL for renewal links
+        var frontendBaseUrl = configuration["EmailNotifications:FrontendBaseUrl"] ?? "http://localhost:5174";
+
         int successCount = 0;
         int failureCount = 0;
 
@@ -84,14 +92,51 @@ public class SubscriptionExpiryNotificationBackgroundService : BackgroundService
             {
                 var daysUntilExpiry = subscription.EndDate!.Value.DayNumber - today.DayNumber;
                 
-                // Send notification email
+                // Lookup PlanId from SubscriptionPlans using PlanName
+                var plan = await dbContext.SubscriptionPlans
+                    .FirstOrDefaultAsync(p => p.PlanName == subscription.PlanName && p.IsActive);
+                var planId = plan?.PlanId;
+
+                // Build expiry message for notification
+                string expiryMessage;
+                if (daysUntilExpiry > 0)
+                    expiryMessage = $"sẽ hết hạn trong {daysUntilExpiry} ngày";
+                else if (daysUntilExpiry == 0)
+                    expiryMessage = "hết hạn hôm nay";
+                else
+                    expiryMessage = $"đã hết hạn {Math.Abs(daysUntilExpiry)} ngày trước";
+
+                // Send notification email with planId for dynamic renewal link
                 await emailService.SendSubscriptionExpiryNotificationAsync(
                     subscription.User.Email,
                     subscription.User.FullName ?? subscription.User.Email,
                     subscription.PlanName,
                     subscription.EndDate.Value,
-                    daysUntilExpiry
+                    daysUntilExpiry,
+                    planId
                 );
+
+                // Build renewal link for in-app notification
+                var renewalLink = planId.HasValue 
+                    ? $"{frontendBaseUrl}/checkout?planId={planId}" 
+                    : $"{frontendBaseUrl}/price";
+
+                // Create in-app notification
+                await notificationService.CreateNotificationAsync(new CreateNotificationDto
+                {
+                    UserId = subscription.User.UserId,
+                    Title = daysUntilExpiry < 0 ? "Gói dịch vụ đã hết hạn" : "Gói dịch vụ sắp hết hạn",
+                    Message = $"Gói {subscription.PlanName} {expiryMessage}. Gia hạn ngay để tiếp tục sử dụng!",
+                    NotificationType = "SubscriptionExpiry",
+                    Priority = daysUntilExpiry < 0 ? "Critical" : "High",
+                    Category = "Subscription",
+                    ActionUrl = renewalLink,
+                    ActionLabel = "Gia hạn ngay",
+                    RequiresAction = true,
+                    RelatedEntityType = "Subscription",
+                    RelatedEntityId = subscription.SubscriptionId,
+                    IconName = "alert-triangle"
+                });
 
                 // Update subscription status to "Expired" if it has already expired
                 if (daysUntilExpiry < 0 && subscription.Status == "Active")
@@ -107,7 +152,7 @@ public class SubscriptionExpiryNotificationBackgroundService : BackgroundService
 
                 successCount++;
                 _logger.LogInformation(
-                    "Sent expiry notification to {Email} for subscription {SubscriptionId} (Plan: {PlanName}, Days until expiry: {Days})",
+                    "Sent expiry notification (email + in-app) to {Email} for subscription {SubscriptionId} (Plan: {PlanName}, Days until expiry: {Days})",
                     subscription.User.Email,
                     subscription.SubscriptionId,
                     subscription.PlanName,

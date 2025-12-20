@@ -89,7 +89,8 @@ public interface IEmailService
     /// <param name="planName">Tên gói subscription</param>
     /// <param name="endDate">Ngày hết hạn</param>
     /// <param name="daysUntilExpiry">Số ngày còn lại (âm nếu đã hết hạn)</param>
-    Task SendSubscriptionExpiryNotificationAsync(string toEmail, string userName, string planName, DateOnly endDate, int daysUntilExpiry);
+    /// <param name="planId">ID của gói đăng ký để tạo link gia hạn</param>
+    Task SendSubscriptionExpiryNotificationAsync(string toEmail, string userName, string planName, DateOnly endDate, int daysUntilExpiry, int? planId = null);
 }
 
 /// <summary>

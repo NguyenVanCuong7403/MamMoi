@@ -310,7 +310,7 @@ public class EmailService : IEmailService
     /// <summary>
     /// Gửi email thông báo hết hạn gói subscription
     /// </summary>
-    public async Task SendSubscriptionExpiryNotificationAsync(string toEmail, string userName, string planName, DateOnly endDate, int daysUntilExpiry)
+    public async Task SendSubscriptionExpiryNotificationAsync(string toEmail, string userName, string planName, DateOnly endDate, int daysUntilExpiry, int? planId = null)
     {
         var emailSubject = daysUntilExpiry > 0 
             ? $"⚠️ Gói dịch vụ {planName} sắp hết hạn - MamMoi"
@@ -339,8 +339,11 @@ public class EmailService : IEmailService
             statusMessage = $"<span style='color: #e74c3c;'>❌ Đã hết hạn {daysExpired} ngày</span>";
         }
 
-        // In a real application, this would be a proper URL to the subscription renewal page
-        renewalLink = "#"; // TODO: Replace with actual renewal page URL
+        // Build dynamic checkout renewal link using FrontendBaseUrl and planId
+        var frontendBaseUrl = _configuration["EmailNotifications:FrontendBaseUrl"] ?? "http://localhost:5174";
+        renewalLink = planId.HasValue 
+            ? $"{frontendBaseUrl}/checkout?planId={planId}" 
+            : $"{frontendBaseUrl}/price";
 
         var replacements = new Dictionary<string, string>
         {

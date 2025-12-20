@@ -25,6 +25,13 @@ namespace MamMoi.Test
         {
             var logger = new Mock<ILogger<AdminSupportRequestService>>();
             notificationServiceMock = new Mock<INotificationService>();
+            var emailServiceMock = new Mock<MamMoi.Application.Interfaces.Auth.IEmailService>();
+            var configurationMock = new Mock<Microsoft.Extensions.Configuration.IConfiguration>();
+
+            // Mock configuration for email notifications
+            configurationMock
+                .Setup(c => c["EmailNotifications:EnableSupportRequestNotifications"])
+                .Returns("false");
 
             // Mock notification methods
             notificationServiceMock
@@ -51,7 +58,9 @@ namespace MamMoi.Test
             return new AdminSupportRequestService(
                 context,
                 logger.Object,
-                notificationServiceMock.Object);
+                notificationServiceMock.Object,
+                emailServiceMock.Object,
+                configurationMock.Object);
         }
 
         // ============================================================

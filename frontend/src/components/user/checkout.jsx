@@ -333,7 +333,7 @@ export default function MamMoiQrCheckout() {
           planId: parseInt(planId),
           returnUrl: `${window.location.origin}/invoice`,
           cancelUrl: `${window.location.origin}/price`,
-          subscriptionMonth: isYearly ? 12 : null, // Pass 12 months for yearly, null for monthly
+          subscriptionMonth: isYearly ? 12 : 1, // Pass 12 months for yearly, null for monthly
         });
 
         if (response?.success) {
@@ -683,7 +683,7 @@ export default function MamMoiQrCheckout() {
         planId: parseInt(planId),
         returnUrl: `${window.location.origin}/invoice`,
         cancelUrl: `${window.location.origin}/price`,
-        subscriptionMonth: isYearly ? 12 : null, // Pass 12 months for yearly, null for monthly
+        subscriptionMonth: isYearly ? 12 : 1, // Pass 12 months for yearly, null for monthly
       });
 
       if (response?.success) {

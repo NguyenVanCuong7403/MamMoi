@@ -386,7 +386,7 @@ public class PaymentService : IPaymentService
             var displayOrderCode = GenerateDisplayOrderCode(plan.PlanName, numericOrderCode);
             var transactionId = GenerateTransactionId();
 
-            int totalMonth = (int)((plan.DurationInMonths.HasValue ? plan.DurationInMonths.Value : 0) + (request.SubscriptionMonth != null ? request.SubscriptionMonth : 0));
+            int totalMonth = (int)((request.SubscriptionMonth.HasValue ? request.SubscriptionMonth.Value : (plan.DurationInMonths.HasValue ? plan.DurationInMonths.Value : 1)));
 
             // Calculate amounts (PayOS requires integer amount in VND)
             var subtotal = plan.Price;
@@ -394,16 +394,33 @@ public class PaymentService : IPaymentService
             var total = subtotal + fee;
             var amountInt = (int)Math.Round(total) * ((totalMonth == 0) ? 1 : ((totalMonth == 12) ? 10 : totalMonth));
 
+            // Find active subscription for this plan to determine start date
+            // This allows subscription extension (new subscription starts day after current one ends)
+            var activeSubscription = await _context.Subscriptions
+                .Where(s => s.UserId == userId 
+                         && s.PlanName == plan.PlanName 
+                         && s.Status == "Active" 
+                         && s.EndDate.HasValue)
+                .OrderByDescending(s => s.EndDate)
+                .FirstOrDefaultAsync();
+
+            // Calculate start date: day after active subscription ends, or today if no active subscription
+            var startDate = activeSubscription?.EndDate?.AddDays(1) 
+                            ?? DateOnly.FromDateTime(DateTime.UtcNow);
+
+            // Calculate end date from start date
+            var endDate = (totalMonth != 0) 
+                ? startDate.AddMonths(totalMonth) 
+                : (DateOnly?)null;
+
             // Create subscription record (pending)
             var subscription = new Subscription
             {
                 UserId = userId,
                 PlanName = plan.PlanName,
                 PlanType = plan.PlanType,
-                StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                EndDate = (totalMonth != 0)
-                    ? DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(totalMonth))
-                    : null,
+                StartDate = startDate,
+                EndDate = endDate,
                 Status = "Pending",
                 Price = plan.Price,
                 Currency = plan.Currency

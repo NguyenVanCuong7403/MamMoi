@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hóa đơn thanh toán</title>
+</head>
+
+<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;'>
+    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <div style='text-align: center; margin-bottom: 30px;'>
+            <h1 style='color: #27ae60; margin: 0;'>🌱 MamMoi</h1>
+            <p style='color: #7f8c8d; margin: 5px 0;'>Hóa đơn thanh toán</p>
+        </div>
+
+        <div style='background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;'>
+            <h2 style='margin-top: 0; color: #2c3e50;'>Thông tin hóa đơn</h2>
+            <table style='width: 100%;'>
+                <tr>
+                    <td style='padding: 8px 0;'><strong>Số hóa đơn:</strong></td>
+                    <td style='padding: 8px 0; text-align: right;'>{{InvoiceNumber}}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0;'><strong>Ngày thanh toán:</strong></td>
+                    <td style='padding: 8px 0; text-align: right;'>{{PaymentDate}}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0;'><strong>Mã giao dịch:</strong></td>
+                    <td style='padding: 8px 0; text-align: right; color: #7f8c8d;'>{{TransactionId}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div style='background: #fff; padding: 20px; border: 2px solid #27ae60; border-radius: 8px; margin: 20px 0;'>
+            <h3 style='margin-top: 0; color: #27ae60;'>Chi tiết thanh toán</h3>
+            <table style='width: 100%;'>
+                <tr>
+                    <td style='padding: 8px 0;'><strong>Khách hàng:</strong></td>
+                    <td style='padding: 8px 0; text-align: right;'>{{UserName}}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0;'><strong>Gói dịch vụ:</strong></td>
+                    <td style='padding: 8px 0; text-align: right;'>{{PlanName}}</td>
+                </tr>
+                <tr>
+                    <td style='padding: 8px 0;'><strong>Phương thức:</strong></td>
+                    <td style='padding: 8px 0; text-align: right;'>{{PaymentMethod}}</td>
+                </tr>
+                <tr style='border-top: 2px solid #27ae60;'>
+                    <td style='padding: 12px 0;'><strong style='font-size: 18px;'>Tổng cộng:</strong></td>
+                    <td style='padding: 12px 0; text-align: right;'><strong
+                            style='font-size: 20px; color: #27ae60;'>{{Amount}}</strong></td>
+                </tr>
+            </table>
+        </div>
+
+        <div style='background: #e8f5e9; padding: 15px; border-radius: 8px; margin: 20px 0;'>
+            <p style='margin: 0; color: #27ae60;'>✅ <strong>Thanh toán thành công!</strong></p>
+            <p style='margin: 5px 0 0 0; font-size: 14px;'>Cảm ơn bạn đã sử dụng dịch vụ MamMoi.</p>
+        </div>
+
+        <p style='font-size: 14px; color: #7f8c8d; margin-top: 30px;'>Nếu bạn có bất kỳ thắc mắc nào về hóa đơn này, vui
+            lòng liên hệ với chúng tôi.</p>
+
+        <p style='margin-top: 30px;'>Trân trọng,</p>
+        <p><strong>Đội ngũ MamMoi 🌱</strong></p>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nhắc nhở công việc quá hạn</title>
+</head>
+<body style='font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0;'>
+    <div style='max-width: 600px; margin: 0 auto; padding: 20px;'>
+        <h2 style='color: #e74c3c;'>⚠️ Nhắc nhở công việc quá hạn</h2>
+        <p>Xin chào <strong>{{UserName}}</strong>,</p>
+        <p>Bạn có <strong>{{TaskCount}}</strong> công việc chăm sóc cây đã quá hạn cần được hoàn thành:</p>
+        
+        <table style='width: 100%; border-collapse: collapse; margin: 20px 0; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.1);'>
+            <thead>
+                <tr style='background: #f8f9fa;'>
+                    <th style='padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;'>Cây</th>
+                    <th style='padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;'>Công việc</th>
+                    <th style='padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;'>Loại</th>
+                    <th style='padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;'>Ngày hẹn</th>
+                    <th style='padding: 12px; text-align: left; border-bottom: 2px solid #dee2e6;'>Quá hạn</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{TaskRows}}
+            </tbody>
+        </table>
+
+        <p>Vui lòng hoàn thành các công việc này sớm nhất để đảm bảo cây của bạn phát triển tốt.</p>
+        <p style='margin-top: 30px;'>Trân trọng,</p>
+        <p><strong>Đội ngũ MamMoi 🌱</strong></p>
+    </div>
+</body>
+</html>

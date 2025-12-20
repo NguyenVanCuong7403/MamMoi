@@ -188,6 +188,16 @@ namespace MamMoi.Infrastructure.Services
                 ? JsonSerializer.Serialize(weatherInfo)
                 : "null";
 
+            // Use config-based prompt template if available
+            if (!string.IsNullOrWhiteSpace(_options.PromptTemplate))
+            {
+                return _options.PromptTemplate
+                    .Replace("{{ForDate}}", forDate.ToString("yyyy-MM-dd"))
+                    .Replace("{{TreeJson}}", treeJson)
+                    .Replace("{{WeatherJson}}", weatherJson)
+                    .Replace("{{OutputJsonFormat}}", _options.OutputJsonFormat);
+            }
+
             return $@"
 Bạn là trợ lý nông nghiệp cho vườn cây ăn trái tại Việt Nam.
 
