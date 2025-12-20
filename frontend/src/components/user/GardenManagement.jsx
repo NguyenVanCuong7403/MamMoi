@@ -1484,8 +1484,7 @@ export default function GardenManagement() {
                 Danh Sách Quản Lý Vườn
               </h1>
               <p className="text-white/85 mt-2 text-[clamp(13px,1.6vw,17px)] mm-text-wrap-safe">
-                Tạo, chỉnh sửa, lọc và tra cứu thông tin các vườn — dùng chung
-                nguồn dữ liệu với UserProfile.
+                Tạo, chỉnh sửa, lọc và tra cứu thông tin các vườn 
               </p>
             </div>
 
