@@ -540,14 +540,23 @@ const numberField = () =>
 
 const varietySchema = z.object({
   VarietyID: z.string().optional(),
-  VarietyName: z.string().min(1, "Tên giống là bắt buộc"),
-  VarietyDescription: z.string().optional(),
+  VarietyName: z
+    .string()
+    .min(1, "Tên giống là bắt buộc")
+    .max(100, "Tên giống không được quá 100 ký tự"),
+  VarietyDescription: z
+    .string()
+    .max(500, "Mô tả không được quá 500 ký tự")
+    .optional(),
 });
 
 const pestSchema = z
   .object({
-    name: z.string().optional(),
-    description: z.string().optional(),
+    name: z.string().max(100, "Tên bệnh không được quá 100 ký tự").optional(),
+    description: z
+      .string()
+      .max(500, "Mô tả không được quá 500 ký tự")
+      .optional(),
     severity: z.enum(["Low", "Medium", "High"]).optional().or(z.literal("")),
   })
   .refine(
@@ -584,11 +593,20 @@ const pestSchema = z
 
 const formSchema = z
   .object({
-    TreeTypeName: z.string().min(1, "Vui lòng nhập tên loại cây"),
-    ScientificName: z.string().optional(),
+    TreeTypeName: z
+      .string()
+      .min(1, "Vui lòng nhập tên loại cây")
+      .max(100, "Tên loại cây không được quá 100 ký tự"),
+    ScientificName: z
+      .string()
+      .max(100, "Tên khoa học không được quá 100 ký tự")
+      .optional(),
     AverageLifespanYears: numberField(),
     SoilMasterID: z.string().min(1, "Chọn loại đất gợi ý"),
-    Description: z.string().optional(),
+    Description: z
+      .string()
+      .max(2000, "Mô tả không được quá 2000 ký tự")
+      .optional(),
     ImageUrl: z.string().optional(),
     OptimalTemperatureMin: numberField(),
     OptimalTemperatureMax: numberField(),
@@ -599,7 +617,9 @@ const formSchema = z
     FrostTolerance: z.string().min(1),
     WindTolerance: z.string().min(1),
     IsActive: z.boolean().default(true),
-    CareGuide: z.array(z.string()).default([]),
+    CareGuide: z
+      .array(z.string().max(500, "Mỗi bước chăm sóc không được quá 500 ký tự"))
+      .default([]),
     Pests: z.array(pestSchema).default([]),
   })
   .refine(
@@ -644,12 +664,21 @@ const defaultFormValues = {
 };
 
 const soilFormSchema = z.object({
-  SoilName: z.string().min(1, "Tên đất là bắt buộc"),
-  Texture: z.string().optional(),
-  Drainage: z.string().optional(),
+  SoilName: z
+    .string()
+    .min(1, "Tên đất là bắt buộc")
+    .max(100, "Tên đất không được quá 100 ký tự"),
+  Texture: z
+    .string()
+    .max(100, "Thành phần đất không được quá 100 ký tự")
+    .optional(),
+  Drainage: z
+    .string()
+    .max(100, "Khả năng thoát nước không được quá 100 ký tự")
+    .optional(),
   OrganicMatterPct: numberField(),
   EC_dS_m: numberField(),
-  Notes: z.string().optional(),
+  Notes: z.string().max(2000, "Ghi chú không được quá 2000 ký tự").optional(),
 });
 
 const soilDefaultValues = {
@@ -675,6 +704,7 @@ const mapSoilToFormValues = (soil) =>
 
 function ImageDropzone({ value, onChange, onFileChange }) {
   const [isDragging, setIsDragging] = useState(false);
+  const [imageError, setImageError] = useState(null);
   const inputRef = React.useRef(null);
 
   const handleFiles = (fileList) => {
@@ -683,7 +713,7 @@ function ImageDropzone({ value, onChange, onFileChange }) {
 
     // Validate file size (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
-      alert("Kích thước ảnh không được vượt quá 2MB");
+      setImageError("Kích thước ảnh không được vượt quá 2MB");
       return;
     }
 
@@ -698,6 +728,8 @@ function ImageDropzone({ value, onChange, onFileChange }) {
       onChange(reader.result);
     };
     reader.readAsDataURL(file);
+    // Clear any previous image error on success
+    setImageError(null);
   };
 
   const handleDrop = (event) => {
@@ -750,6 +782,11 @@ function ImageDropzone({ value, onChange, onFileChange }) {
         <p className="text-xs text-slate-500">
           Kéo thả hoặc bấm để chọn. Hỗ trợ PNG, JPG (max 2MB).
         </p>
+        {imageError && (
+          <div className="mt-2 rounded-md border border-rose-200 bg-rose-50/60 px-3 py-2 text-xs text-rose-700">
+            {imageError}
+          </div>
+        )}
         {value && value.trim() !== "" && value !== "/vite.svg" && (
           <Button
             size="sm"
@@ -1108,7 +1145,118 @@ export default function TreeTypeManagement() {
   const [statusToggleTarget, setStatusToggleTarget] = useState(null);
   const [statusToggleConfirmOpen, setStatusToggleConfirmOpen] = useState(false);
   const [statusToggleSaving, setStatusToggleSaving] = useState(false);
+
   const [statusToggleValidation, setStatusToggleValidation] = useState(null);
+
+  // State for Care Steps Modal
+  const [careStepModalOpen, setCareStepModalOpen] = useState(false);
+  const [editingCareStepIndex, setEditingCareStepIndex] = useState(null);
+  const [tempCareStep, setTempCareStep] = useState("");
+  const [careStepError, setCareStepError] = useState(null);
+
+  // State for Pests Modal
+  const [pestModalOpen, setPestModalOpen] = useState(false);
+  const [editingPestIndex, setEditingPestIndex] = useState(null);
+  const [tempPest, setTempPest] = useState({
+    name: "",
+    description: "",
+    severity: "",
+  });
+  const [pestError, setPestError] = useState(null);
+
+  // Handlers for Care Steps
+  const openCareStepModal = (step = "", index = null) => {
+    setTempCareStep(step);
+    setEditingCareStepIndex(index);
+    setCareStepError(null);
+    setCareStepModalOpen(true);
+  };
+
+  const handleSaveCareStep = () => {
+    if (!tempCareStep.trim()) {
+      setCareStepError("Nội dung bước chăm sóc không được để trống");
+      return;
+    }
+
+    const currentCareGuide = form.getValues("CareGuide") || [];
+    const newCareGuide = [...currentCareGuide];
+
+    if (editingCareStepIndex !== null) {
+      newCareGuide[editingCareStepIndex] = tempCareStep;
+    } else {
+      newCareGuide.push(tempCareStep);
+    }
+
+    // Check constraints
+    if (newCareGuide.length > 20) {
+      // MAX_CAREGUIDE_ITEMS = 20
+      setCareStepError(`Không thể thêm quá ${MAX_CAREGUIDE_ITEMS} bước`);
+      return;
+    }
+
+    form.setValue("CareGuide", newCareGuide, { shouldDirty: true });
+    setCareStepModalOpen(false);
+  };
+
+  const handleDeleteCareStep = (index) => {
+    const currentCareGuide = form.getValues("CareGuide") || [];
+    const newCareGuide = currentCareGuide.filter((_, i) => i !== index);
+    form.setValue("CareGuide", newCareGuide, { shouldDirty: true });
+  };
+
+  // Handlers for Pests
+  const openPestModal = (pest = null, index = null) => {
+    if (pest) {
+      setTempPest({ ...pest });
+    } else {
+      setTempPest({ name: "", description: "", severity: "" });
+    }
+    setEditingPestIndex(index);
+    setPestError(null);
+    setPestModalOpen(true);
+  };
+
+  const handleSavePest = () => {
+    if (!tempPest.name?.trim() || !tempPest.severity) {
+      setPestError("Vui lòng điền tên bệnh và mức độ nghiêm trọng");
+      return;
+    }
+
+    if (!tempPest.name.trim()) return; // Double check
+
+    const currentPests = form.getValues("Pests") || [];
+    const newPests = [...currentPests];
+
+    if (editingPestIndex !== null) {
+      newPests[editingPestIndex] = tempPest;
+    } else {
+      newPests.push(tempPest);
+    }
+
+    // Check constraints
+    if (newPests.length > 20) {
+      // MAX_PEST_ITEMS = 20
+      setPestError(`Không thể thêm quá ${MAX_PEST_ITEMS} bệnh`);
+      return;
+    }
+
+    form.setValue("Pests", newPests, { shouldDirty: true });
+    setPestModalOpen(false);
+  };
+
+  const handleDeletePest = (index) => {
+    const currentPests = form.getValues("Pests") || [];
+    const newPests = currentPests.filter((_, i) => i !== index);
+    form.setValue("Pests", newPests, { shouldDirty: true });
+  };
+
+  // Effect to reset modals when sheet closes or form resets
+  useEffect(() => {
+    if (!sheetOpen) {
+      setCareStepModalOpen(false);
+      setPestModalOpen(false);
+    }
+  }, [sheetOpen]);
 
   const form = useForm({
     resolver: zodResolver(formSchema),
@@ -2189,7 +2337,7 @@ export default function TreeTypeManagement() {
                 {String(form.formState.errors.root.message)}
               </div>
             )}
-            <div className="grid grid-cols-[1fr_400px] gap-6 flex-1 min-h-0 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 flex-1 min-h-0 overflow-hidden">
               {/* Cột trái: Form chỉnh sửa/thêm loại cây */}
               <ScrollArea className="h-full pr-4">
                 <section className="space-y-4">
@@ -2224,6 +2372,7 @@ export default function TreeTypeManagement() {
                             <Input
                               placeholder="Ví dụ: Xoài,Bưởi,Thanh Long,.."
                               {...field}
+                              maxLength={100}
                               className={cn(
                                 form.formState.isSubmitted &&
                                   fieldState.error &&
@@ -2245,6 +2394,7 @@ export default function TreeTypeManagement() {
                             <Input
                               placeholder="Ví dụ: Mangifera indica"
                               {...field}
+                              maxLength={100}
                             />
                           </FormControl>
                           <FormMessage />
@@ -2319,6 +2469,7 @@ export default function TreeTypeManagement() {
                             placeholder="Thông tin mô tả, lợi thế, quy trình canh tác..."
                             className="min-h-[120px]"
                             {...field}
+                            maxLength={2000}
                           />
                         </FormControl>
                         <FormMessage />
@@ -2491,25 +2642,16 @@ export default function TreeTypeManagement() {
                     <div className="flex items-center justify-between">
                       <FormLabel className="text-base font-semibold flex items-center gap-2">
                         <Leaf className="h-4 w-4 text-emerald-600" />
-                        Các bước chăm sóc
+                        Các bước chăm sóc{" "}
+                        <span className="text-emerald-600">
+                          ({form.watch("CareGuide")?.length || 0})
+                        </span>
                       </FormLabel>
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          const current = form.getValues("CareGuide");
-                          const currentArray = Array.isArray(current)
-                            ? current
-                            : [];
-                          if (currentArray.length >= MAX_CAREGUIDE_ITEMS) {
-                            alert(
-                              `Không thể thêm quá ${MAX_CAREGUIDE_ITEMS} bước`
-                            );
-                            return;
-                          }
-                          form.setValue("CareGuide", [...currentArray, ""]);
-                        }}
+                        onClick={() => openCareStepModal("", null)}
                         className="h-8"
                       >
                         <Plus className="h-3 w-3 mr-1" />
@@ -2524,63 +2666,53 @@ export default function TreeTypeManagement() {
                       render={({ field }) => (
                         <FormItem>
                           <FormControl>
-                            <div className="space-y-3 pb-4">
-                              {Array.isArray(field.value)
-                                ? field.value.map((step, index) => (
-                                    <div
-                                      key={index}
-                                      className="flex gap-3 items-start"
-                                    >
-                                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 mt-1">
-                                        {index + 1}
-                                      </div>
-                                      <div className="flex-1 space-y-2">
-                                        <Textarea
-                                          placeholder={`Bước ${
-                                            index + 1
-                                          }: Mô tả hướng dẫn chăm sóc...`}
-                                          value={step}
-                                          onChange={(e) => {
-                                            const currentValue = Array.isArray(
-                                              field.value
-                                            )
-                                              ? field.value
-                                              : [];
-                                            const newSteps = [...currentValue];
-                                            newSteps[index] = e.target.value;
-                                            field.onChange(newSteps);
-                                          }}
-                                          className="min-h-[80px] text-sm"
-                                        />
-                                      </div>
+                            <div className="space-y-2 pb-4">
+                              {Array.isArray(field.value) &&
+                              field.value.length > 0 ? (
+                                field.value.map((step, index) => (
+                                  <div
+                                    key={index}
+                                    className="group flex gap-3 items-start rounded-xl border border-slate-100 bg-slate-50 p-3 hover:border-emerald-200 hover:bg-emerald-50/30 transition-colors"
+                                  >
+                                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-100 text-xs font-bold text-emerald-700 mt-0.5">
+                                      {index + 1}
+                                    </div>
+                                    <p className="flex-1 text-sm text-slate-700 line-clamp-2 break-all">
+                                      {step}
+                                    </p>
+                                    <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                                       <Button
                                         type="button"
                                         size="icon"
                                         variant="ghost"
-                                        className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
-                                        onClick={() => {
-                                          const currentValue = Array.isArray(
-                                            field.value
-                                          )
-                                            ? field.value
-                                            : [];
-                                          const newSteps = currentValue.filter(
-                                            (_, i) => i !== index
-                                          );
-                                          field.onChange(newSteps);
-                                        }}
+                                        className="h-7 w-7 text-slate-500 hover:text-emerald-600"
+                                        onClick={() =>
+                                          openCareStepModal(step, index)
+                                        }
                                       >
-                                        <X className="h-4 w-4" />
+                                        <Edit3 className="h-3.5 w-3.5" />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-7 w-7 text-slate-500 hover:text-rose-600"
+                                        onClick={() =>
+                                          handleDeleteCareStep(index)
+                                        }
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
                                       </Button>
                                     </div>
-                                  ))
-                                : null}
-                              {(!Array.isArray(field.value) ||
-                                field.value.length === 0) && (
+                                  </div>
+                                ))
+                              ) : (
                                 <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-8 text-center text-sm text-slate-500">
                                   <Leaf className="h-8 w-8 text-emerald-300" />
                                   <p>Chưa có hướng dẫn nào.</p>
-                                  <p>Bấm &quot;Thêm bước&quot; để bắt đầu.</p>
+                                  <p className="text-xs text-slate-400">
+                                    Bấm &quot;Thêm bước&quot; để tạo mới
+                                  </p>
                                 </div>
                               )}
                             </div>
@@ -2592,6 +2724,62 @@ export default function TreeTypeManagement() {
                   </ScrollArea>
                 </div>
 
+                {/* CARE STEP DIALOG */}
+                <Dialog
+                  open={careStepModalOpen}
+                  onOpenChange={(open) => {
+                    setCareStepModalOpen(open);
+                    if (!open) setCareStepError(null);
+                  }}
+                >
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingCareStepIndex !== null
+                          ? "Chỉnh sửa bước chăm sóc"
+                          : "Thêm bước chăm sóc mới"}
+                      </DialogTitle>
+                      <DialogDescription>
+                        Nhập nội dung chi tiết cho bước chăm sóc này.
+                      </DialogDescription>
+                    </DialogHeader>
+                    {careStepError && (
+                      <div className="mb-4 rounded-md border border-rose-200 bg-rose-50/60 p-3 text-sm text-rose-700">
+                        {careStepError}
+                      </div>
+                    )}
+                    <div className="py-4">
+                      <FormLabel className="mb-2 block">
+                        Nội dung hướng dẫn
+                      </FormLabel>
+                      <Textarea
+                        value={tempCareStep}
+                        onChange={(e) => {
+                          setTempCareStep(e.target.value);
+                          if (careStepError) setCareStepError(null);
+                        }}
+                        placeholder="Ví dụ: Tưới nước 2 lần mỗi ngày..."
+                        maxLength={500}
+                        className="min-h-[120px]"
+                      />
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-xs text-slate-500">
+                          {tempCareStep.length}/500 ký tự
+                        </span>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setCareStepModalOpen(false)}
+                      >
+                        Hủy
+                      </Button>
+                      <Button onClick={handleSaveCareStep}>Lưu</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+
                 {/* Phần dưới: Bệnh thường gặp */}
                 <div className="flex flex-col flex-1 min-h-0 border-t border-slate-200 pt-4">
                   <div className="shrink-0 pb-4 mb-4">
@@ -2601,26 +2789,16 @@ export default function TreeTypeManagement() {
                     <div className="flex items-center justify-between">
                       <FormLabel className="text-base font-semibold flex items-center gap-2">
                         <Bug className="h-4 w-4 text-rose-600" />
-                        Bệnh thường gặp
+                        Bệnh thường gặp{" "}
+                        <span className="text-rose-600">
+                          ({form.watch("Pests")?.length || 0})
+                        </span>
                       </FormLabel>
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        onClick={() => {
-                          const current = form.getValues("Pests");
-                          const currentArray = Array.isArray(current)
-                            ? current
-                            : [];
-                          if (currentArray.length >= MAX_PEST_ITEMS) {
-                            alert(`Không thể thêm quá ${MAX_PEST_ITEMS} bệnh`);
-                            return;
-                          }
-                          form.setValue("Pests", [
-                            ...currentArray,
-                            { name: "", description: "", severity: "" },
-                          ]);
-                        }}
+                        onClick={() => openPestModal(null, null)}
                         className="h-8"
                       >
                         <Plus className="h-3 w-3 mr-1" />
@@ -2638,24 +2816,6 @@ export default function TreeTypeManagement() {
                             <div className="space-y-3 pb-4">
                               {Array.isArray(field.value)
                                 ? field.value.map((pest, index) => {
-                                    const nameError = form.formState.isSubmitted
-                                      ? form.formState.errors?.Pests?.[index]
-                                          ?.name
-                                      : null;
-                                    const descriptionError = form.formState
-                                      .isSubmitted
-                                      ? form.formState.errors?.Pests?.[index]
-                                          ?.description
-                                      : null;
-                                    const severityError = form.formState
-                                      .isSubmitted
-                                      ? form.formState.errors?.Pests?.[index]
-                                          ?.severity
-                                      : null;
-                                    const hasError =
-                                      nameError ||
-                                      descriptionError ||
-                                      severityError;
                                     const severityColor = pest.severity
                                       ? severityColors[pest.severity]
                                       : null;
@@ -2663,154 +2823,62 @@ export default function TreeTypeManagement() {
                                     return (
                                       <div
                                         key={index}
-                                        className={cn(
-                                          "rounded-xl border bg-slate-50/50 p-3 space-y-2",
-                                          hasError
-                                            ? "border-red-300 bg-red-50/30"
-                                            : "border-slate-200"
-                                        )}
+                                        className="group relative rounded-xl border border-slate-200 bg-white p-3 hover:border-emerald-300 hover:shadow-sm transition-all"
                                       >
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div className="flex-1 space-y-2">
-                                            <div>
-                                              <Input
-                                                placeholder="Tên bệnh..."
-                                                value={pest.name || ""}
-                                                onChange={(e) => {
-                                                  const currentValue =
-                                                    Array.isArray(field.value)
-                                                      ? field.value
-                                                      : [];
-                                                  const newPests = [
-                                                    ...currentValue,
-                                                  ];
-                                                  newPests[index] = {
-                                                    ...(newPests[index] || {}),
-                                                    name: e.target.value,
-                                                  };
-                                                  field.onChange(newPests);
-                                                }}
-                                                className={cn(
-                                                  "h-9",
-                                                  nameError &&
-                                                    "border-red-500 focus-visible:ring-red-500"
-                                                )}
-                                              />
-                                              {nameError && (
-                                                <p className="text-xs text-red-600 mt-1">
-                                                  {nameError.message}
-                                                </p>
+                                        <div className="flex justify-between items-start mb-1">
+                                          <div className="flex items-center gap-2">
+                                            <Bug
+                                              className={cn(
+                                                "h-4 w-4",
+                                                severityColor?.text
                                               )}
-                                            </div>
-                                            <div>
-                                              <Textarea
-                                                placeholder="Mô tả bệnh và cách phòng trừ..."
-                                                value={pest.description || ""}
-                                                onChange={(e) => {
-                                                  const currentValue =
-                                                    Array.isArray(field.value)
-                                                      ? field.value
-                                                      : [];
-                                                  const newPests = [
-                                                    ...currentValue,
-                                                  ];
-                                                  newPests[index] = {
-                                                    ...(newPests[index] || {}),
-                                                    description: e.target.value,
-                                                  };
-                                                  field.onChange(newPests);
-                                                }}
-                                                className={cn(
-                                                  "min-h-[60px] text-sm",
-                                                  descriptionError &&
-                                                    "border-red-500 focus-visible:ring-red-500"
-                                                )}
-                                              />
-                                              {descriptionError && (
-                                                <p className="text-xs text-red-600 mt-1">
-                                                  {descriptionError.message}
-                                                </p>
-                                              )}
-                                            </div>
-                                            <div>
-                                              <Select
-                                                value={pest.severity || ""}
-                                                onValueChange={(value) => {
-                                                  const currentValue =
-                                                    Array.isArray(field.value)
-                                                      ? field.value
-                                                      : [];
-                                                  const newPests = [
-                                                    ...currentValue,
-                                                  ];
-                                                  newPests[index] = {
-                                                    ...(newPests[index] || {}),
-                                                    severity: value,
-                                                  };
-                                                  field.onChange(newPests);
-                                                }}
-                                              >
-                                                <SelectTrigger
-                                                  className={cn(
-                                                    "h-9",
-                                                    severityError &&
-                                                      "border-red-500 focus-visible:ring-red-500",
-                                                    severityColor &&
-                                                      cn(
-                                                        severityColor.bg,
-                                                        severityColor.text,
-                                                        severityColor.border
-                                                      )
-                                                  )}
-                                                >
-                                                  <SelectValue placeholder="Chọn mức độ" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                  <SelectItem
-                                                    value="High"
-                                                    className="text-red-700 focus:bg-red-50"
-                                                  >
-                                                    Cao
-                                                  </SelectItem>
-                                                  <SelectItem
-                                                    value="Medium"
-                                                    className="text-orange-700 focus:bg-orange-50"
-                                                  >
-                                                    Trung bình
-                                                  </SelectItem>
-                                                  <SelectItem
-                                                    value="Low"
-                                                    className="text-yellow-700 focus:bg-yellow-50"
-                                                  >
-                                                    Thấp
-                                                  </SelectItem>
-                                                </SelectContent>
-                                              </Select>
-                                              {severityError && (
-                                                <p className="text-xs text-red-600 mt-1">
-                                                  {severityError.message}
-                                                </p>
-                                              )}
-                                            </div>
+                                            />
+                                            <span className="font-semibold text-sm text-slate-900 line-clamp-1">
+                                              {pest.name}
+                                            </span>
                                           </div>
+                                          <Badge
+                                            variant="outline"
+                                            className={cn(
+                                              "text-[10px] h-5 px-1.5",
+                                              severityColor?.bg,
+                                              severityColor?.text,
+                                              severityColor?.border
+                                            )}
+                                          >
+                                            {pest.severity === "High"
+                                              ? "Cao"
+                                              : pest.severity === "Medium"
+                                              ? "TB"
+                                              : "Thấp"}
+                                          </Badge>
+                                        </div>
+                                        <p className="text-xs text-slate-600 line-clamp-2 break-word mb-2">
+                                          {pest.description}
+                                        </p>
+
+                                        <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity absolute bottom-2 right-2 bg-white/80 backdrop-blur-sm rounded-lg">
                                           <Button
                                             type="button"
                                             size="icon"
                                             variant="ghost"
-                                            className="h-8 w-8 text-rose-500 hover:text-rose-600 hover:bg-rose-50 shrink-0"
-                                            onClick={() => {
-                                              const currentValue =
-                                                Array.isArray(field.value)
-                                                  ? field.value
-                                                  : [];
-                                              const newPests =
-                                                currentValue.filter(
-                                                  (_, i) => i !== index
-                                                );
-                                              field.onChange(newPests);
-                                            }}
+                                            className="h-7 w-7 text-slate-500 hover:text-emerald-600"
+                                            onClick={() =>
+                                              openPestModal(pest, index)
+                                            }
                                           >
-                                            <X className="h-4 w-4" />
+                                            <Edit3 className="h-3.5 w-3.5" />
+                                          </Button>
+                                          <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-7 w-7 text-slate-500 hover:text-rose-600"
+                                            onClick={() =>
+                                              handleDeletePest(index)
+                                            }
+                                          >
+                                            <Trash2 className="h-3.5 w-3.5" />
                                           </Button>
                                         </div>
                                       </div>
@@ -2819,9 +2887,13 @@ export default function TreeTypeManagement() {
                                 : null}
                               {(!Array.isArray(field.value) ||
                                 field.value.length === 0) && (
-                                <p className="text-sm text-slate-500 text-center py-4">
-                                  Chưa có bệnh nào. Bấm "Thêm bệnh" để bắt đầu.
-                                </p>
+                                <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-rose-200/60 bg-white/80 px-4 py-8 text-center text-sm text-slate-500">
+                                  <Bug className="h-8 w-8 text-rose-300" />
+                                  <p>Chưa có bệnh nào.</p>
+                                  <p className="text-xs text-slate-400">
+                                    Bấm &quot;Thêm bệnh&quot; để tạo mới
+                                  </p>
+                                </div>
                               )}
                             </div>
                           </FormControl>
@@ -2831,6 +2903,112 @@ export default function TreeTypeManagement() {
                     />
                   </ScrollArea>
                 </div>
+
+                {/* PEST DIALOG */}
+                <Dialog
+                  open={pestModalOpen}
+                  onOpenChange={(open) => {
+                    setPestModalOpen(open);
+                    if (!open) setPestError(null);
+                  }}
+                >
+                  <DialogContent className="sm:max-w-[500px]">
+                    <DialogHeader>
+                      <DialogTitle>
+                        {editingPestIndex !== null
+                          ? "Chỉnh sửa bệnh thường gặp"
+                          : "Thêm bệnh thường gặp"}
+                      </DialogTitle>
+                      <DialogDescription>
+                        Nhập thông tin chi tiết về bệnh và mức độ nghiêm trọng.
+                      </DialogDescription>
+                    </DialogHeader>
+                    {pestError && (
+                      <div className="mb-4 rounded-md border border-rose-200 bg-rose-50/60 p-3 text-sm text-rose-700">
+                        {pestError}
+                      </div>
+                    )}
+                    <div className="py-4 space-y-4">
+                      <div className="space-y-2">
+                        <FormLabel>
+                          Tên bệnh <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Input
+                          value={tempPest.name}
+                          maxLength={100}
+                          onChange={(e) => {
+                            setTempPest({ ...tempPest, name: e.target.value });
+                            if (pestError) setPestError(null);
+                          }}
+                          placeholder="Ví dụ: Rệp sáp, Thán thư..."
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <FormLabel>
+                          Mức độ nghiêm trọng{" "}
+                          <span className="text-red-500">*</span>
+                        </FormLabel>
+                        <Select
+                          value={tempPest.severity}
+                          onValueChange={(value) => {
+                            setTempPest({ ...tempPest, severity: value });
+                            if (pestError) setPestError(null);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Chọn mức độ" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Low" className="text-yellow-600">
+                              Thấp
+                            </SelectItem>
+                            <SelectItem
+                              value="Medium"
+                              className="text-orange-600"
+                            >
+                              Trung bình
+                            </SelectItem>
+                            <SelectItem value="High" className="text-red-600">
+                              Cao
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <FormLabel>Mô tả & Cách phòng trừ</FormLabel>
+                        <Textarea
+                          value={tempPest.description}
+                          maxLength={500}
+                          onChange={(e) => {
+                            setTempPest({
+                              ...tempPest,
+                              description: e.target.value,
+                            });
+                            if (pestError) setPestError(null);
+                          }}
+                          placeholder="Mô tả triệu chứng và cách xử lý..."
+                          className="min-h-[100px]"
+                        />
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-xs text-slate-500">
+                            {tempPest.description?.length || 0}/500 ký tự
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        variant="outline"
+                        onClick={() => setPestModalOpen(false)}
+                      >
+                        Hủy
+                      </Button>
+                      <Button onClick={handleSavePest}>Lưu</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
             </div>
             <DialogFooter className="mt-4 pt-4 border-t shrink-0">
@@ -3026,6 +3204,7 @@ export default function TreeTypeManagement() {
                                   !soilDetailEditMode || soilDetailSaving
                                 }
                                 {...field}
+                                maxLength={100}
                               />
                             </FormControl>
                             <FormMessage />
@@ -3046,6 +3225,7 @@ export default function TreeTypeManagement() {
                                     !soilDetailEditMode || soilDetailSaving
                                   }
                                   {...field}
+                                  maxLength={100}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -3065,6 +3245,7 @@ export default function TreeTypeManagement() {
                                     !soilDetailEditMode || soilDetailSaving
                                   }
                                   {...field}
+                                  maxLength={100}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -3135,6 +3316,7 @@ export default function TreeTypeManagement() {
                                   !soilDetailEditMode || soilDetailSaving
                                 }
                                 {...field}
+                                maxLength={2000}
                               />
                             </FormControl>
                             <FormMessage />
