@@ -241,9 +241,9 @@ const TYPE_THEME = {
   },
   fert: {
     name: "Phân bón",
-    pill: "border-lime-300 bg-lime-50 text-lime-800",
-    activeBtn: "bg-lime-600 text-white border-lime-600",
-    edge: "border-lime-500",
+    pill: "border-yellow-300 bg-yellow-50 text-yellow-800",
+    activeBtn: "bg-yellow-600 text-white border-yellow-600",
+    edge: "border-yellow-500",
   },
   pest: {
     name: "Sâu bệnh",

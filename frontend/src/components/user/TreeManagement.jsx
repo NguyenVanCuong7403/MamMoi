@@ -359,6 +359,56 @@ const TASK_TYPE_LABELS = {
   other: "Khác",
 };
 
+const TYPE_THEME = {
+  water: {
+    name: "Tưới tiêu",
+    pill: "bg-emerald-500/10 text-emerald-200 border-emerald-400/40",
+    border: "border-emerald-400/40",
+    bg: "bg-emerald-500/10",
+    edge: "border-emerald-500",
+  },
+  fert: {
+    name: "Phân bón",
+    pill: "bg-yellow-500/10 text-yellow-200 border-yellow-400/40",
+    border: "border-yellow-400/40",
+    bg: "bg-yellow-500/10",
+    edge: "border-yellow-500",
+  },
+  pest: {
+    name: "Sâu bệnh",
+    pill: "bg-rose-500/10 text-rose-200 border-rose-400/40",
+    border: "border-rose-400/40",
+    bg: "bg-rose-500/10",
+    edge: "border-rose-500",
+  },
+  other: {
+    name: "Khác",
+    pill: "bg-white/10 text-white/80 border-white/20",
+    border: "border-white/20",
+    bg: "bg-white/10",
+    edge: "border-white/40",
+  },
+};
+
+function mapTaskType(type) {
+  const norm = String(type || "")
+    .toLowerCase()
+    .trim();
+  if (norm.includes("water") || norm.includes("tuoi") || norm.includes("tưới"))
+    return "water";
+  if (norm.includes("fert") || norm.includes("phan") || norm.includes("phân"))
+    return "fert";
+  if (
+    norm.includes("pest") ||
+    norm.includes("sau") ||
+    norm.includes("sâu") ||
+    norm.includes("benh") ||
+    norm.includes("bệnh")
+  )
+    return "pest";
+  return "other";
+}
+
 const LS_GARDENS = "mm_user_gardens_v3";
 
 const pickArray = (...candidates) => {
@@ -3002,42 +3052,80 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                           (task) => normalizeKey(task.status) === "completed"
                         );
 
+                        // Determine common task type if active
+                        let activeTheme = null;
+                        if (!allCompleted) {
+                          const types = new Set(
+                            filteredTasks.map((t) => mapTaskType(t.taskType))
+                          );
+                          if (types.size === 1) {
+                            const type = types.values().next().value;
+                            activeTheme = TYPE_THEME[type];
+                          }
+                        }
+
+                        let headerClass =
+                          "from-emerald-500/20 to-teal-500/20 border-emerald-400/40"; // Default Green
+                        let iconClass = "text-emerald-400";
+                        let textClass = "text-emerald-200";
+                        let badgeClass =
+                          "bg-emerald-500/30 text-emerald-200 border-emerald-400/40";
+
+                        if (hasOverdue) {
+                          headerClass =
+                            "from-rose-500/20 to-rose-600/20 border-rose-400/40";
+                          iconClass = "text-rose-400";
+                          textClass = "text-rose-200";
+                          badgeClass =
+                            "bg-rose-500/30 text-rose-200 border-rose-400/40";
+                        } else if (allCompleted) {
+                          headerClass =
+                            "from-neutral-500/20 to-neutral-600/20 border-neutral-400/40";
+                          iconClass = "text-neutral-400";
+                          textClass = "text-neutral-300";
+                          badgeClass =
+                            "bg-neutral-500/30 text-neutral-200 border-neutral-400/40";
+                        } else if (activeTheme) {
+                          // Apply specific theme
+                          if (activeTheme === TYPE_THEME.fert) {
+                            headerClass =
+                              "from-yellow-500/20 to-yellow-600/20 border-yellow-400/40";
+                            iconClass = "text-yellow-400";
+                            textClass = "text-yellow-200";
+                            badgeClass =
+                              "bg-yellow-500/30 text-yellow-200 border-yellow-400/40";
+                          } else if (activeTheme === TYPE_THEME.pest) {
+                            headerClass =
+                              "from-rose-500/20 to-rose-600/20 border-rose-400/40";
+                            iconClass = "text-rose-400";
+                            textClass = "text-rose-200";
+                            badgeClass =
+                              "bg-rose-500/30 text-rose-200 border-rose-400/40";
+                          } else if (activeTheme === TYPE_THEME.other) {
+                            headerClass =
+                              "from-white/10 to-white/5 border-white/20";
+                            iconClass = "text-white/80";
+                            textClass = "text-white/90";
+                            badgeClass =
+                              "bg-white/10 text-white/80 border-white/20";
+                          }
+                          // Water uses default Emerald/Green
+                        }
+
                         return (
                           <div
-                            className={`bg-gradient-to-r ${hasOverdue
-                              ? "from-rose-500/20 to-rose-600/20 border-rose-400/40"
-                              : allCompleted
-                                ? "from-neutral-500/20 to-neutral-600/20 border-neutral-400/40"
-                                : "from-emerald-500/20 to-teal-500/20 border-emerald-400/40"
-                              } border rounded-xl px-3 py-2 shadow-sm`}
+                            className={`bg-gradient-to-r ${headerClass} border rounded-xl px-3 py-2 shadow-sm`}
                           >
                             <div className="flex items-center gap-1.5 text-[10px]">
-                              <Sprout
-                                className={`h-5 w-5 ${hasOverdue
-                                  ? "text-rose-400"
-                                  : allCompleted
-                                    ? "text-neutral-400"
-                                    : "text-emerald-400"
-                                  }`}
-                              />
+                              <Sprout className={`h-5 w-5 ${iconClass}`} />
                               <h3
-                                className={`text-[11px] font-semibold ${hasOverdue
-                                  ? "text-rose-200"
-                                  : allCompleted
-                                    ? "text-neutral-300"
-                                    : "text-emerald-200"
-                                  }`}
+                                className={`text-[11px] font-semibold ${textClass}`}
                               >
                                 {treeGroup.treeName}
                               </h3>
                               <Badge
                                 variant="secondary"
-                                className={`ml-auto text-[10px] px-2 py-0 ${hasOverdue
-                                  ? "bg-rose-500/30 text-rose-200 border-rose-400/40"
-                                  : allCompleted
-                                    ? "bg-neutral-500/30 text-neutral-200 border-neutral-400/40"
-                                    : "bg-emerald-500/30 text-emerald-200 border-emerald-400/40"
-                                  } border`}
+                                className={`ml-auto text-[10px] px-2 py-0 border ${badgeClass}`}
                               >
                                 {filteredTasks.length}{" "}
                                 {filteredTasks.length === 1
@@ -3443,16 +3531,30 @@ function TaskItem({
 
   const showHover = hover;
 
+  const taskTypeKey = mapTaskType(task.taskType);
+  const theme = TYPE_THEME[taskTypeKey] || TYPE_THEME.other;
+
+  // Determine container style
+  // Prioritize Active Theme for BORDER style to identify task type
+  // Use Overdue/Completed for BACKGROUND nuance
+  let borderClasses = `${theme.edge} border-l-4`; // Always show type border
+  let bgClasses = theme.bg;
+
+  if (overdue) {
+    bgClasses = "bg-rose-500/10"; // Only affect BG
+  } else if (normalizeKey(task.status) === "completed") {
+    borderClasses = "border-neutral-500/50 border-l-4"; // Completed overrides border to gray? Or keep it?
+    // User wants "border to giống màu công việc". 
+    // If completed, usually we gray it out. Let's keep Gray for Completed to imply "Done".
+    // But for Overdue, we KEEP the Color Border (Identity) and use Red BG.
+    bgClasses = "bg-neutral-500/5";
+  }
+
   return (
     <>
       <div
         ref={containerRef}
-        className={`rounded-2xl border px-2.5 py-2.5 shadow-sm space-y-2 ${overdue
-          ? "border-rose-400/40 bg-rose-500/10"
-          : normalizeKey(task.status) === "completed"
-            ? "border-neutral-400/40 bg-neutral-500/10"
-            : "border-white/20 bg-white/10"
-          }`}
+        className={`rounded-xl border px-3 py-2.5 shadow-sm space-y-2 ${borderClasses} ${bgClasses}`}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
       >
@@ -3466,9 +3568,9 @@ function TaskItem({
               <div className="flex flex-wrap items-center gap-1 text-xs">
                 <Badge
                   variant="secondary"
-                  className="gap-1 px-2 py-0.5 bg-emerald-500/30 text-emerald-200 border-emerald-400/40 text-xs"
+                  className={`gap-1 px-2 py-0.5 text-xs border ${theme.pill}`}
                 >
-                  {taskTypeLabel(task.taskType)}
+                  {theme.name}
                 </Badge>
                 <Badge
                   variant="outline"
