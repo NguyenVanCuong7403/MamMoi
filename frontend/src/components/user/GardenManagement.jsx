@@ -427,8 +427,8 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
             const gardenSoils = Array.isArray(res)
               ? res
               : Array.isArray(res?.data)
-              ? res.data
-              : [];
+                ? res.data
+                : [];
             // Extract SoilMasterIds from GardenSoils
             const soilMasterIds = gardenSoils
               .map((gs) => gs?.soilMasterId ?? gs?.SoilMasterId ?? null)
@@ -468,8 +468,8 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
         const list = Array.isArray(res)
           ? res
           : Array.isArray(res?.data)
-          ? res.data
-          : [];
+            ? res.data
+            : [];
         if (!cancelled) setSoilOptions(list);
       } catch (err) {
         console.error("Failed to load soil masters:", err);
@@ -650,11 +650,10 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
                 }
                 onBlur={() => setTouched((t) => ({ ...t, name: true }))}
                 maxLength={MAX_GARDEN_NAME}
-                className={`h-12 rounded-xl text-[clamp(13px,1.6vw,16px)] ${
-                  touched.name && errs.name
+                className={`h-12 rounded-xl text-[clamp(13px,1.6vw,16px)] ${touched.name && errs.name
                     ? "border-rose-500"
                     : "border-neutral-300"
-                }`}
+                  }`}
                 placeholder="Ví dụ: Vườn số 1 FPT"
               />
 
@@ -679,9 +678,8 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
                 className="w-full h-12 rounded-xl border border-neutral-300 bg-white px-4 text-left text-[15px] md:text-base flex items-center justify-between hover:border-emerald-500 transition"
               >
                 <span
-                  className={`truncate ${
-                    selectedCount ? "text-[#0f1f1e]" : "text-neutral-400"
-                  }`}
+                  className={`truncate ${selectedCount ? "text-[#0f1f1e]" : "text-neutral-400"
+                    }`}
                 >
                   {selectedCount
                     ? `${selectedCount} loại đất đã chọn`
@@ -722,7 +720,7 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
               />
 
               {(touched.province || touched.ward || touched.address) &&
-              (errs.province || errs.ward || errs.address) ? (
+                (errs.province || errs.ward || errs.address) ? (
                 <p className="mt-1 text-xs text-rose-600">
                   Vui lòng nhập đầy đủ Tỉnh/Thành, Phường/Xã và địa chỉ chi
                   tiết.
@@ -829,23 +827,20 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
                           type="button"
                           key={soil.id}
                           onClick={() => toggleSoilDraft(soil.id)}
-                          className={`w-full text-left rounded-2xl border p-4 transition flex items-start gap-4 bg-white ${
-                            selected
+                          className={`w-full text-left rounded-2xl border p-4 transition flex items-start gap-4 bg-white ${selected
                               ? "border-emerald-500 bg-emerald-50"
                               : "border-neutral-200 hover:border-emerald-200"
-                          }`}
+                            }`}
                         >
                           <span
-                            className={`mt-1 flex h-6 w-6 items-center justify-center rounded-full border ${
-                              selected
+                            className={`mt-1 flex h-6 w-6 items-center justify-center rounded-full border ${selected
                                 ? "border-emerald-500 bg-emerald-500 text-white"
                                 : "border-neutral-300 text-transparent"
-                            }`}
+                              }`}
                           >
                             <Check
-                              className={`h-4 w-4 ${
-                                selected ? "opacity-100" : "opacity-0"
-                              }`}
+                              className={`h-4 w-4 ${selected ? "opacity-100" : "opacity-0"
+                                }`}
                             />
                           </span>
                           <div>
@@ -962,8 +957,8 @@ function normalizeGardenRecord(g) {
   const inlineSoils = Array.isArray(g.soils)
     ? g.soils
     : Array.isArray(g.gardenSoils)
-    ? g.gardenSoils
-    : [];
+      ? g.gardenSoils
+      : [];
 
   const fallbackIds = inlineSoils
     .map((soil) => {
@@ -1484,8 +1479,7 @@ export default function GardenManagement() {
                 Danh Sách Quản Lý Vườn
               </h1>
               <p className="text-white/85 mt-2 text-[clamp(13px,1.6vw,17px)] mm-text-wrap-safe">
-                Tạo, chỉnh sửa, lọc và tra cứu thông tin các vườn — dùng chung
-                nguồn dữ liệu với UserProfile.
+                Tạo, chỉnh sửa, lọc và tra cứu thông tin các vườn.
               </p>
             </div>
 
@@ -1602,9 +1596,9 @@ export default function GardenManagement() {
                 </div>
 
                 {q ||
-                provinceFilter ||
-                treeCountRange[0] > 0 ||
-                treeCountRange[1] < maxTreeCount ? (
+                  provinceFilter ||
+                  treeCountRange[0] > 0 ||
+                  treeCountRange[1] < maxTreeCount ? (
                   <Button
                     variant="outline"
                     className="h-12 rounded-full text-[clamp(12px,1.5vw,14px)] transition-all duration-200 hover:scale-105 hover:shadow-md hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700 mm-text-wrap-safe break-words"
@@ -1767,11 +1761,10 @@ export default function GardenManagement() {
                           e.stopPropagation();
                           if (idx >= 0) askToggleStatus(idx);
                         }}
-                        className={`hidden inline-flex items-center justify-center h-10 px-4 rounded-full text-[clamp(11px,1.4vw,13px)] font-semibold shadow-sm transition-all duration-200 hover:scale-110 hover:shadow-lg active:scale-[0.95] mm-text-wrap-safe ${
-                          isActive
+                        className={`hidden inline-flex items-center justify-center h-10 px-4 rounded-full text-[clamp(11px,1.4vw,13px)] font-semibold shadow-sm transition-all duration-200 hover:scale-110 hover:shadow-lg active:scale-[0.95] mm-text-wrap-safe ${isActive
                             ? "bg-rose-500 text-white hover:bg-rose-600 shadow-[0_8px_18px_rgba(244,63,94,0.28)] hover:shadow-[0_12px_28px_rgba(244,63,94,0.40)]"
                             : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-[0_8px_18px_rgba(16,185,129,0.28)] hover:shadow-[0_12px_28px_rgba(16,185,129,0.40)]"
-                        }`}
+                          }`}
                       >
                         {isActive ? "Dừng hoạt động" : "Khởi động lại"}
                       </button>
@@ -1816,11 +1809,10 @@ export default function GardenManagement() {
                         key={pageNumber}
                         type="button"
                         onClick={() => setPage(pageNumber)}
-                        className={`min-w-[32px] h-9 rounded-full text-[clamp(11px,1.4vw,13px)] px-2 ${
-                          isCurrent
+                        className={`min-w-[32px] h-9 rounded-full text-[clamp(11px,1.4vw,13px)] px-2 ${isCurrent
                             ? "bg-[#FFFFA5] text-[#1F302F] font-semibold"
                             : "bg-white/10 text-white/80 hover:bg-white/20"
-                        }`}
+                          }`}
                       >
                         {pageNumber}
                       </button>

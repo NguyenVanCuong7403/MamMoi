@@ -266,14 +266,20 @@ YÊU CẦU ĐẦU RA: Một object JSON duy nhất đúng cấu trúc:
             };
 
             var json = JsonSerializer.Serialize(payload);
+            
             req.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
             using var resp = await _http.SendAsync(req, ct);
-
-            // Throw nếu không thành công (bạn có thể bắt HttpRequestException ở caller)
-            resp.EnsureSuccessStatusCode();
-
+            
+            // Read response body BEFORE checking status to capture error details
             var body = await resp.Content.ReadAsStringAsync(ct);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"[Gemini] ERROR: {resp.StatusCode} - {body}");
+                throw new HttpRequestException($"Gemini API returned {resp.StatusCode}: {body}");
+            }
+
 
             // Response Gemini dạng (ví dụ):
             // {
@@ -358,7 +364,7 @@ YÊU CẦU ĐẦU RA: Một object JSON duy nhất đúng cấu trúc:
                     // otherwise rethrow
                     throw;
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     // other exceptions from GenerateRecommendationForTreeAsync -> rethrow so caller can decide
                     throw;

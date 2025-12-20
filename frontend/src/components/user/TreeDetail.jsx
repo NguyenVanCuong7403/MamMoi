@@ -3424,7 +3424,7 @@ export default function TreeDetail() {
     [stageTheme?.length]
   );
 
-  async function persistTreePatch(partial) {
+  async function persistTreePatch(partial, shouldRefreshAi = false) {
     if (!treeId) return;
 
     try {
@@ -3502,9 +3502,9 @@ export default function TreeDetail() {
         ...updatedPartial,
       }));
 
-      // Refresh AI recommendations after tree update
-      // Run in background, don't block the UI
-      if (refreshAiRecommendationsRef.current) {
+      // Only refresh AI recommendations when explicitly requested
+      // This should only be true for health status updates, plant date changes, etc.
+      if (shouldRefreshAi && refreshAiRecommendationsRef.current) {
         refreshAiRecommendationsRef.current().catch((err) => {
           console.error("Failed to refresh AI after tree update:", err);
         });
@@ -5224,7 +5224,7 @@ export default function TreeDetail() {
       branchStatus: nextPhen.branch,
       flowerStatus: nextPhen.flower,
       fruitStatus: nextPhen.fruit,
-    }).then(() => {
+    }, true).then(() => {
       // Refresh lại lịch sử thay đổi sau khi lưu thành công
       refreshStatusHistory();
     });
@@ -5380,7 +5380,7 @@ export default function TreeDetail() {
       branchStatus: nextPhen.branch,
       flowerStatus: nextPhen.flower,
       fruitStatus: nextPhen.fruit,
-    });
+    }, true);
 
     // Refresh lại lịch sử thay đổi sau khi lưu thành công
     await refreshStatusHistory();
