@@ -33,4 +33,10 @@
     <Folder Include="Services\User\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="EmailTemplates\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

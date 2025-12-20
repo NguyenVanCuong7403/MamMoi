@@ -1,8 +1,10 @@
 using MamMoi.Application.DTOs.SupportRequest;
 using MamMoi.Application.Interfaces;
 using MamMoi.Application.Interfaces.Admin;
+using MamMoi.Application.Interfaces.Auth;
 using MamMoi.Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace MamMoi.Infrastructure.Services.SupportRequests;
@@ -15,15 +17,21 @@ public class AdminSupportRequestService : IAdminSupportRequestService
     private readonly MamMoiDbContext _dbContext;
     private readonly ILogger<AdminSupportRequestService> _logger;
     private readonly INotificationService _notificationService;
+    private readonly IEmailService _emailService;
+    private readonly IConfiguration _configuration;
 
     public AdminSupportRequestService(
         MamMoiDbContext dbContext,
         ILogger<AdminSupportRequestService> logger,
-        INotificationService notificationService)
+        INotificationService notificationService,
+        IEmailService emailService,
+        IConfiguration configuration)
     {
         _dbContext = dbContext;
         _logger = logger;
         _notificationService = notificationService;
+        _emailService = emailService;
+        _configuration = configuration;
     }
 
     public async Task<(List<SupportRequestListItemDto> requests, int totalCount)> GetAllRequestsAsync(
@@ -189,6 +197,32 @@ public class AdminSupportRequestService : IAdminSupportRequestService
         {
             _logger.LogError(ex, "Failed to send notification to user for support request {RequestId}", requestId);
             // Don't throw - notification failure shouldn't break request update
+        }
+
+        // Send email to user when admin responds
+        try
+        {
+            var enableEmailNotifications = bool.Parse(_configuration["EmailNotifications:EnableSupportRequestNotifications"] ?? "true");
+            if (enableEmailNotifications && !string.IsNullOrWhiteSpace(dto.Resolution))
+            {
+                var user = await _dbContext.Users.FindAsync(request.UserId);
+                if (user != null && !string.IsNullOrEmpty(user.Email))
+                {
+                    await _emailService.SendSupportResponseNotificationAsync(
+                        user.Email,
+                        user.FullName ?? user.Email,
+                        request.TicketNumber ?? $"SR-{requestId}",
+                        request.Subject,
+                        dto.Resolution
+                    );
+                    _logger.LogInformation("Sent email notification to user {UserId} for support request {RequestId}", request.UserId, requestId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send email to user for support request {RequestId}", requestId);
+            // Don't throw - email failure shouldn't break request update
         }
 
         return await GetRequestByIdAsync(requestId);

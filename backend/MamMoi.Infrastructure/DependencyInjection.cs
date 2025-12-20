@@ -72,6 +72,12 @@ public static class DependencyInjection
         // Register background service for task expiration notifications
         services.AddHostedService<MamMoi.Infrastructure.Services.Notifications.TaskExpirationNotificationBackgroundService>();
 
+        // Register background service for overdue task notifications
+        services.AddHostedService<MamMoi.Infrastructure.Services.CareSchedules.OverdueTaskNotificationService>();
+
+        // Register background service for subscription expiry notifications
+        services.AddHostedService<MamMoi.Infrastructure.Services.Notifications.SubscriptionExpiryNotificationBackgroundService>();
+
         // Register authentication services
         services.AddScoped<IAuthService, MamMoi.Infrastructure.Services.Auth.AuthService>();
         services.AddScoped<IEmailService, MamMoi.Infrastructure.Services.Auth.EmailService>();

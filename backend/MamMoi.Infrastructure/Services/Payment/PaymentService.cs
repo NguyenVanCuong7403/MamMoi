@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MamMoi.Application.DTOs;
 using MamMoi.Application.Interfaces;
+using MamMoi.Application.Interfaces.Auth;
 using MamMoi.Infrastructure.Models;
 using System.Security.Cryptography;
 using System.Text;
@@ -19,6 +20,7 @@ public class PaymentService : IPaymentService
     private readonly IConfiguration _configuration;
     private readonly ILogger<PaymentService> _logger;
     private readonly HttpClient _httpClient;
+    private readonly IEmailService _emailService;
 
     // PayOS configuration
     private readonly string _payosClientId;
@@ -30,12 +32,14 @@ public class PaymentService : IPaymentService
         MamMoiDbContext context, 
         IConfiguration configuration,
         ILogger<PaymentService> logger,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IEmailService emailService)
     {
         _context = context;
         _configuration = configuration;
         _logger = logger;
         _httpClient = httpClientFactory.CreateClient("PayOS");
+        _emailService = emailService;
 
         // Load PayOS configuration
         _payosClientId = _configuration["PayOS:ClientId"] ?? "";
@@ -550,6 +554,12 @@ public class PaymentService : IPaymentService
                             }
                             await _context.SaveChangesAsync();
                         }
+
+                        // Send invoice email if payment completed
+                        if (payosInfo.Status.ToUpper() == "PAID")
+                        {
+                            await SendPaymentInvoiceEmailAsync(payment);
+                        }
                     }
                 }
             }
@@ -648,6 +658,13 @@ public class PaymentService : IPaymentService
             await _context.SaveChangesAsync();
             _logger.LogInformation("Payment {OrderCode} updated to status {Status}", 
                 webhook.OrderCode, payment.TransactionStatus);
+
+            // Send invoice email if payment completed
+            if (webhook.Status.ToUpper() == "PAID" || webhook.Status.ToUpper() == "COMPLETED")
+            {
+                await SendPaymentInvoiceEmailAsync(payment);
+            }
+
             return true;
         }
         catch (Exception ex)
@@ -1022,6 +1039,52 @@ public class PaymentService : IPaymentService
         public string AccountNumber { get; set; } = "";
         public string Description { get; set; } = "";
         public string TransactionDateTime { get; set; } = "";
+    }
+
+    /// <summary>
+    /// Helper method to send payment invoice email
+    /// </summary>
+    private async Task SendPaymentInvoiceEmailAsync(Models.Payment payment)
+    {
+        try
+        {
+            var enableEmailNotifications = bool.Parse(_configuration["EmailNotifications:EnablePaymentInvoiceEmails"] ?? "true");
+            if (!enableEmailNotifications)
+            {
+                return;
+            }
+
+            // Load user and subscription data
+            var user = await _context.Users.FindAsync(payment.UserId);
+            var subscription = await _context.Subscriptions
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.SubscriptionId == payment.SubscriptionId);
+
+            if (user == null || string.IsNullOrEmpty(user.Email))
+            {
+                _logger.LogWarning("Cannot send invoice email: User {UserId} not found or has no email", payment.UserId);
+                return;
+            }
+
+            await _emailService.SendPaymentInvoiceAsync(
+                user.Email,
+                user.FullName ?? user.Email,
+                payment.InvoiceNumber ?? $"INV-{payment.PaymentId}",
+                payment.Amount,
+                payment.Currency,
+                payment.PaymentDate,
+                payment.PaymentMethod ?? "Online Payment",
+                subscription?.PlanName ?? "Subscription Plan",
+                payment.TransactionId ?? $"TX-{payment.PaymentId}"
+            );
+
+            _logger.LogInformation("Sent payment invoice email to user {UserId} for payment {PaymentId}", payment.UserId, payment.PaymentId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to send payment invoice email for payment {PaymentId}", payment.PaymentId);
+            // Don't throw - email failure shouldn't break payment processing
+        }
     }
 
     #endregion
