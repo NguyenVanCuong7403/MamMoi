@@ -3382,6 +3382,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                       </label>
                       <Input
                         type="date"
+                        min={new Date().toISOString().split("T")[0]}
                         value={editTaskDialog.scheduledDate}
                         onChange={(e) =>
                           setEditTaskDialog((prev) => ({
