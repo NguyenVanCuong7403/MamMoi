@@ -4734,13 +4734,30 @@ export default function TreeDetail() {
   });
   useEffect(() => {
     if (!codeKey) return;
+
+    // Priority: database URL > localStorage (non-blob) > stateTree 
+    // 1. Check database URL first (from API)
+    const dbUrl = baseTree?.imageUrl || apiTree?.imageUrl;
+    if (dbUrl) {
+      setImage(dbUrl);
+      // Clear any blob URLs from localStorage since database has the real URL
+      imageRegistry.set(codeKey, dbUrl);
+      return;
+    }
+
+    // 2. Check localStorage, but skip blob URLs (they are invalid after page reload)
     const saved = imageRegistry.get(codeKey);
-    if (saved) setImage(saved);
-    // Also check if stateTree has image and use it if no saved image
-    else if (stateTree?.imageUrl || stateTree?.img) {
+    const isBlobUrl = saved && saved.startsWith("blob:");
+    if (saved && !isBlobUrl) {
+      setImage(saved);
+      return;
+    }
+
+    // 3. Fallback to stateTree image (from navigation state)
+    if (stateTree?.imageUrl || stateTree?.img) {
       setImage(stateTree.imageUrl || stateTree.img);
     }
-  }, [codeKey, stateTree]);
+  }, [codeKey, stateTree, baseTree?.imageUrl, apiTree?.imageUrl]);
 
   // Ghi chú theo mã cây
   const [note, setNote] = useState("");
