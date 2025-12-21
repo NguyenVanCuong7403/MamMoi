@@ -3072,7 +3072,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                     </div>
                   ) : (
                     (() => {
-                      // Group consecutive tasks from the same tree
+                      // Group consecutive tasks from the same tree AND same completion date
                       const groupedTasks = [];
                       let currentGroup = null;
 
@@ -3081,17 +3081,25 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                         const treeName = task.treeName || "Cây chưa xác định";
                         const treeKey = `${treeId}_${treeName}`;
 
-                        if (!currentGroup || currentGroup.treeKey !== treeKey) {
+                        // Get completion date (only date part, ignore time)
+                        const completedDate = task.completedAt
+                          ? new Date(task.completedAt).toISOString().split('T')[0]
+                          : null;
+
+                        if (!currentGroup ||
+                          currentGroup.treeKey !== treeKey ||
+                          currentGroup.completedDate !== completedDate) {
                           // Start a new group
                           currentGroup = {
                             treeKey,
                             treeId,
                             treeName,
+                            completedDate,
                             tasks: [task],
                           };
                           groupedTasks.push(currentGroup);
                         } else {
-                          // Add to current group
+                          // Add to current group (same tree AND same date)
                           currentGroup.tasks.push(task);
                         }
                       });
