@@ -295,8 +295,9 @@ const TASK_STATUS_META = {
   },
   completed: {
     label: "Quá hạn",
-    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    className: "border-red-300 bg-red-100 text-red-800",
   },
+
   scheduled: {
     label: "Lên lịch",
     className: "border-indigo-200 bg-indigo-50 text-indigo-700",
@@ -2437,11 +2438,23 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     const filterOther = filterType === "Other";
     const apiTaskType =
       filterType !== "all" && !filterOther ? filterType : undefined;
+
+    // Determine status filter based on Tab + Dropdown
+    let apiStatus = taskFilters.status !== "all" ? taskFilters.status : undefined;
+    if (!apiStatus) {
+      if (showCompleted) {
+        apiStatus = "Completed";
+      } else {
+        // Active tab: Pending, InProgress, Postponed
+        apiStatus = "Pending,InProgress,Postponed";
+      }
+    }
+
     try {
       const searchKeyword = taskFilters.search?.trim() || undefined;
       const response = await CareScheduleRepository.searchTasks({
         gardenId: numericGardenId,
-        status: taskFilters.status !== "all" ? taskFilters.status : undefined,
+        status: apiStatus,
         taskType: apiTaskType,
         searchKeyword: searchKeyword,
         pageNumber: taskPage,
@@ -2476,6 +2489,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     taskFilters.search,
     taskFilters.status,
     taskFilters.type,
+    showCompleted,
     taskPage,
   ]);
 
@@ -2490,6 +2504,7 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     taskFilters.search,
     taskFilters.status,
     taskFilters.type,
+    showCompleted,
     numericGardenId,
   ]);
 
@@ -3016,11 +3031,10 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
               </div>
 
               {showTaskStats && (
-                <div className="grid grid-cols-4 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   {[
                     { label: "Tổng việc", value: statusStats.total },
                     { label: "Chờ thực hiện", value: statusStats.pending },
-                    { label: "Đang thực hiện", value: statusStats.inprogress },
                     { label: "Quá hạn", value: statusStats.completed },
                   ].map((stat, idx) => (
                     <div
@@ -3362,43 +3376,21 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-1">
-                          Ngày thực hiện
-                        </label>
-                        <Input
-                          type="date"
-                          value={editTaskDialog.scheduledDate}
-                          onChange={(e) =>
-                            setEditTaskDialog((prev) => ({
-                              ...prev,
-                              scheduledDate: e.target.value,
-                            }))
-                          }
-                          className="w-full text-black"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-neutral-700 mb-1">
-                          Ưu tiên
-                        </label>
-                        <select
-                          value={editTaskDialog.priority}
-                          onChange={(e) =>
-                            setEditTaskDialog((prev) => ({
-                              ...prev,
-                              priority: e.target.value,
-                            }))
-                          }
-                          className="w-full h-10 rounded-md border border-neutral-300 px-3 text-black bg-white"
-                        >
-                          <option value="Low">Thấp</option>
-                          <option value="Normal">Bình thường</option>
-                          <option value="High">Cao</option>
-                        </select>
-                      </div>
+                    <div>
+                      <label className="block text-sm font-medium text-neutral-700 mb-1">
+                        Ngày thực hiện
+                      </label>
+                      <Input
+                        type="date"
+                        value={editTaskDialog.scheduledDate}
+                        onChange={(e) =>
+                          setEditTaskDialog((prev) => ({
+                            ...prev,
+                            scheduledDate: e.target.value,
+                          }))
+                        }
+                        className="w-full text-black"
+                      />
                     </div>
 
                     {taskError && (
@@ -3676,6 +3668,13 @@ function TaskItem({
     bgClasses = "bg-neutral-500/5";
   }
 
+  // Debug completion date
+  console.log('Task:', task.taskName);
+  console.log('Status:', task.status, '| Normalized:', normalizeKey(task.status));
+  console.log('CompletedAt:', task.completedAt);
+  console.log('Is Completed?:', normalizeKey(task.status) === "completed");
+  console.log('Has CompletedAt?:', !!task.completedAt);
+
   return (
     <>
       <div
@@ -3700,21 +3699,24 @@ function TaskItem({
                 </Badge>
                 <Badge
                   variant="outline"
-                  className={`gap-1 px-2 py-0.5 border-white/20 text-white/80 text-xs ${priorityMeta.className}`}
-                >
-                  Ưu tiên: {priorityMeta.label}
-                </Badge>
-                <Badge
-                  variant="outline"
                   className={`gap-1 px-2 py-0.5 text-xs ${overdue
                     ? "border-rose-400/60 text-rose-200 bg-rose-500/20"
                     : "border-white/20 text-white/80"
                     }`}
                 >
                   <Calendar className="h-3.5 w-3.5" />
-                  {formatTaskDate(task.scheduledDate)}
+                  Hạn: {formatTaskDate(task.scheduledDate)}
                   {overdue && " · Quá hạn"}
                 </Badge>
+                {normalizeKey(task.status) === "completed" && task.completedAt && (
+                  <Badge
+                    variant="outline"
+                    className="gap-1 px-2 py-0.5 bg-emerald-500/30 text-emerald-200 border-emerald-400/40 text-xs"
+                  >
+                    <Calendar className="h-3.5 w-3.5" />
+                    Hoàn thành: {formatTaskDate(task.completedAt)}
+                  </Badge>
+                )}
                 {completedLate && (
                   <Badge
                     variant="secondary"
@@ -3769,7 +3771,7 @@ function TaskItem({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2.5 gap-1 text-[10px] border-blue-400/50 text-blue-200 hover:bg-blue-500/20 hover:border-blue-400"
+            className="h-6 px-2.5 gap-1 text-[10px] border-blue-400/50 text-blue-500 hover:bg-blue-500/20 hover:border-blue-400"
             onClick={onEdit}
             disabled={isEditing}
           >
@@ -3783,7 +3785,7 @@ function TaskItem({
           <Button
             size="sm"
             variant="outline"
-            className="h-6 px-2.5 gap-1 text-[10px] border-rose-400/50 text-rose-200 hover:bg-rose-500/20 hover:border-rose-400"
+            className="h-6 px-2.5 gap-1 text-[10px] border-rose-400/50 text-rose-500 hover:bg-rose-500/20 hover:border-rose-400"
             onClick={onDelete}
             disabled={isDeleting}
           >
