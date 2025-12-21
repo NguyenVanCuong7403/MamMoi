@@ -1732,7 +1732,13 @@ function ImagePicker({ code, value, onChange, disabled, treeId }) {
   useEffect(() => {
     if (!code) return;
     const saved = imageRegistry.get(code);
-    if (saved && !value) onChange(saved);
+    // Only use localStorage cache if:
+    // 1. value prop is empty (no database URL provided)
+    // 2. saved URL is NOT a blob: URL (blob URLs are temporary and invalid after page reload)
+    const isBlobUrl = saved && saved.startsWith("blob:");
+    if (saved && !value && !isBlobUrl) {
+      onChange(saved);
+    }
     // eslint-disable-next-line
   }, [code]);
 
@@ -3298,6 +3304,8 @@ function mapDtoToTree(dto) {
     soil: dto.gardenSoilId,
     notes: dto.notes,
     qrUrl: dto.qrcodeUrl,
+    // Image URL from database
+    imageUrl: dto.imageUrl ?? dto.image_url ?? dto.img ?? null,
     stageName: dto.stageName,
     phase: dto.stageName,
 
@@ -4637,7 +4645,7 @@ export default function TreeDetail() {
         status: nextMeta.status,
       });
 
-      persistTreePatch({ preMonths: n }).then(() => {
+      persistTreePatch({ preMonths: n }, true).then(() => {
         // Nếu auto lifecycle enabled, refresh lifecycle sau khi update tuổi
         if (lifecycleAutoEnabled && treeId) {
           refreshLifecycleAfterAgeUpdate();
