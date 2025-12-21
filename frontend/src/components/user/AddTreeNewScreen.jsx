@@ -1523,19 +1523,67 @@ export default function AddTreeNewScreen() {
   const defaultPhase5 = useMemo(() => mapLegacyTo5(legacyPhase), [legacyPhase]);
   const effectivePhase = phaseOverride || defaultPhase5;
   const selectedPhase = phaseOverride || null;
-  // Can edit flower / fruit separately
+
+  // Can edit flower if current or any previous stage contains "hoa" in name
   const canEditFlower = useMemo(() => {
+    if (!stagesByType || !Array.isArray(stagesByType) || stagesByType.length === 0) return false;
     if (!selectedPhase) return false;
-    const idx = PHASE_ORDER.indexOf(selectedPhase);
-    const gateFlower = PHASE_ORDER.indexOf("Ra hoa");
-    return gateFlower !== -1 && idx >= gateFlower;
-  }, [selectedPhase]);
+
+    // Sort stages by order
+    const sortedStages = [...stagesByType].sort((a, b) =>
+      (a.stageOrder || a.StageOrder || 0) - (b.stageOrder || b.StageOrder || 0)
+    );
+
+    // Find current stage index by name
+    const currentIndex = sortedStages.findIndex(s =>
+      (s.stageName || s.StageName || "") === selectedPhase
+    );
+
+    if (currentIndex < 0) return false;
+
+    // Check all stages up to and including current
+    for (let i = 0; i <= currentIndex; i++) {
+      const stageName = (sortedStages[i]?.stageName || sortedStages[i]?.StageName || "").toLowerCase();
+      if (stageName.includes("hoa")) return true;
+    }
+    return false;
+  }, [stagesByType, selectedPhase]);
+
+  // Can edit fruit if current or any previous stage contains "quả" in name
   const canEditFruit = useMemo(() => {
+    if (!stagesByType || !Array.isArray(stagesByType) || stagesByType.length === 0) return false;
     if (!selectedPhase) return false;
-    const idx = PHASE_ORDER.indexOf(selectedPhase);
-    const gateFruit = PHASE_ORDER.indexOf("Ra quả");
-    return gateFruit !== -1 && idx >= gateFruit;
-  }, [selectedPhase]);
+
+    const sortedStages = [...stagesByType].sort((a, b) =>
+      (a.stageOrder || a.StageOrder || 0) - (b.stageOrder || b.StageOrder || 0)
+    );
+
+    const currentIndex = sortedStages.findIndex(s =>
+      (s.stageName || s.StageName || "") === selectedPhase
+    );
+
+    if (currentIndex < 0) return false;
+
+    for (let i = 0; i <= currentIndex; i++) {
+      const stageName = (sortedStages[i]?.stageName || sortedStages[i]?.StageName || "").toLowerCase();
+      if (stageName.includes("quả") || stageName.includes("qua")) return true;
+    }
+    return false;
+  }, [stagesByType, selectedPhase]);
+
+  // Clear flower/fruit descriptions when stage changes to before "hoa"/"quả"
+  // This prevents locked fields from keeping old values
+  useEffect(() => {
+    if (!canEditFlower && flowerInfo) {
+      setFlowerInfo("");
+    }
+  }, [canEditFlower]);
+
+  useEffect(() => {
+    if (!canEditFruit && fruitInfo) {
+      setFruitInfo("");
+    }
+  }, [canEditFruit]);
 
   // Auto mã cây với kiểm tra trùng lặp
   useEffect(() => {

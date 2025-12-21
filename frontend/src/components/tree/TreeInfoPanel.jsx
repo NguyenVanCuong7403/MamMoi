@@ -52,9 +52,8 @@ const KV = ({ icon: Icon, label, value, valueClass = "" }) => (
         {label}
       </div>
       <div
-        className={`truncate text-lg font-semibold ${
-          valueClass || "text-emerald-50"
-        }`}
+        className={`truncate text-lg font-semibold ${valueClass || "text-emerald-50"
+          }`}
       >
         {value}
       </div>
@@ -177,8 +176,8 @@ export default function TreeInfoPanel({ data, className = "" }) {
                 typeof t.virtualAgeMonths === "number"
                   ? t.virtualAgeMonths
                   : typeof t.virtual_age_months === "number"
-                  ? t.virtual_age_months
-                  : null;
+                    ? t.virtual_age_months
+                    : null;
               const expected = virtual ?? totalAge;
 
               return (
@@ -193,7 +192,7 @@ export default function TreeInfoPanel({ data, className = "" }) {
                   />
                   <KV
                     icon={CalendarIcon}
-                    label="Tuổi dự kiến"
+                    label="Tuổi trạng thái"
                     value={
                       Number.isFinite(expected) ? `${expected} tháng` : `—`
                     }

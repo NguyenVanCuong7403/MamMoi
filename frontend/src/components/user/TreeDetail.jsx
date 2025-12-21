@@ -4370,18 +4370,8 @@ export default function TreeDetail() {
   const [editingHealthKey, setEditingHealthKey] = useState(null); // 'leaf' | 'branch' | 'flower' | 'fruit'
   const [editingHealthDraft, setEditingHealthDraft] = useState(""); // nội dung đang sửa
 
-  // [ANCHOR: PHASE-GATING]
-  const canEditFlower = useMemo(
-    () =>
-      ["flowering", "fruiting", "pre_harvest", "post_harvest"].includes(
-        currentPhaseId
-      ),
-    [currentPhaseId]
-  );
-  const canEditFruit = useMemo(
-    () => ["fruiting", "pre_harvest", "post_harvest"].includes(currentPhaseId),
-    [currentPhaseId]
-  );
+  // NOTE: canEditFlower and canEditFruit are now defined later in the file
+  // based on stage names containing "hoa" or "quả" respectively
 
   // ==== META (data thật) + DRAFT (để sửa, không làm bẩn state khi Hủy) ====
   const [meta, setMeta] = useState({
@@ -5251,6 +5241,56 @@ export default function TreeDetail() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [editingPhenField, phenFieldDraft]);
+
+  // Check if flower status can be edited based on stage name containing "hoa"
+  // If current stage or any previous stage has "hoa" in name, enable editing
+  const canEditFlower = useMemo(() => {
+    if (!treeTypeStages || !Array.isArray(treeTypeStages)) return false;
+    const currentStageId = meta?.stageId || baseTree?.stageId;
+    if (!currentStageId) return false;
+
+    // Sort stages by order
+    const sortedStages = [...treeTypeStages].sort((a, b) =>
+      (a.stageOrder || a.StageOrder || 0) - (b.stageOrder || b.StageOrder || 0)
+    );
+
+    // Find current stage index
+    const currentIndex = sortedStages.findIndex(s =>
+      (s.stageId || s.StageId) === currentStageId
+    );
+
+    if (currentIndex < 0) return false;
+
+    // Check all stages up to and including current
+    for (let i = 0; i <= currentIndex; i++) {
+      const stageName = (sortedStages[i]?.stageName || sortedStages[i]?.StageName || "").toLowerCase();
+      if (stageName.includes("hoa")) return true;
+    }
+    return false;
+  }, [treeTypeStages, meta?.stageId, baseTree?.stageId]);
+
+  // Check if fruit status can be edited based on stage name containing "quả"
+  const canEditFruit = useMemo(() => {
+    if (!treeTypeStages || !Array.isArray(treeTypeStages)) return false;
+    const currentStageId = meta?.stageId || baseTree?.stageId;
+    if (!currentStageId) return false;
+
+    const sortedStages = [...treeTypeStages].sort((a, b) =>
+      (a.stageOrder || a.StageOrder || 0) - (b.stageOrder || b.StageOrder || 0)
+    );
+
+    const currentIndex = sortedStages.findIndex(s =>
+      (s.stageId || s.StageId) === currentStageId
+    );
+
+    if (currentIndex < 0) return false;
+
+    for (let i = 0; i <= currentIndex; i++) {
+      const stageName = (sortedStages[i]?.stageName || sortedStages[i]?.StageName || "").toLowerCase();
+      if (stageName.includes("quả")) return true;
+    }
+    return false;
+  }, [treeTypeStages, meta?.stageId, baseTree?.stageId]);
 
   // ==== Inline edit từng trường trong "Tình trạng hiện tại" ====
   function startPhenFieldEdit(fieldKey, initialValue) {
@@ -6636,7 +6676,7 @@ export default function TreeDetail() {
                     {/* Tuổi dự kiến / virtual */}
                     <Field
                       label={
-                        <span className="text-slate-300">Tuổi dự kiến:</span>
+                        <span className="text-slate-300">Tuổi trạng thái:</span>
                       }
                       value={
                         <span className="text-slate-300">
