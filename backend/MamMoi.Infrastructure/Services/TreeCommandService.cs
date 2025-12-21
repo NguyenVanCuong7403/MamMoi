@@ -106,10 +106,10 @@ namespace MamMoi.Infrastructure.Services
                     var expectedStage = ResolveStageForAge(stages, totalRealAge);
 
                     // Get the selected stage details
-                    var selectedStage = stages.FirstOrDefault(s => s.StageId == req.StageId);
+                    var selectedStageForVirtual = stages.FirstOrDefault(s => s.StageId == req.StageId);
 
                     // If selected stage doesn't match expected stage, set VirtualAgeMonths
-                    if (expectedStage != null && selectedStage != null && expectedStage.StageId != selectedStage.StageId)
+                    if (expectedStage != null && selectedStageForVirtual != null && expectedStage.StageId != selectedStageForVirtual.StageId)
                     {
                         // Calculate VirtualAgeMonths considering cycles
                         // Get stage 2 min age and last stage max age for cycle calculation
@@ -117,7 +117,7 @@ namespace MamMoi.Infrastructure.Services
                         var lastStage = stages.LastOrDefault();
                         var minCycleAge = secondStage?.MinAgeInMonths ?? 0;
                         var maxCycleAge = lastStage?.MaxAgeInMonths;
-                        var selectedMinAge = selectedStage.MinAgeInMonths ?? 0;
+                        var selectedMinAge = selectedStageForVirtual.MinAgeInMonths ?? 0;
 
                         // If total age exceeds the cycle range, account for completed cycles
                         if (maxCycleAge.HasValue && totalRealAge > maxCycleAge.Value && minCycleAge > 0)
@@ -168,7 +168,6 @@ namespace MamMoi.Infrastructure.Services
                 FruitStatus = string.IsNullOrWhiteSpace(req.FruitStatus) ? "Bình thường" : req.FruitStatus,
                 IsActive = req.IsActive ?? true,
                 IsFruiting = req.IsFruiting ?? false,
-                VirtualAgeMonths = virtualAgeMonths, // Set expected age based on stage
                 CreatedAt = DateTime.UtcNow
             };
 

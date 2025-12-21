@@ -3603,9 +3603,22 @@ export default function TreeDetail() {
           }));
         }
 
+        // Update virtualAgeMonths in meta AND apiTree so UI reflects the change
+        // meta.virtualAgeMonths is used by the "Tuổi dự kiến" field display
+        setMeta((prev) => ({
+          ...prev,
+          virtualAgeMonths: lifecycleDto.virtualAgeMonths ?? null,
+        }));
+
+        setApiTree((prev) => prev ? ({
+          ...prev,
+          virtualAgeMonths: lifecycleDto.virtualAgeMonths ?? null,
+        }) : prev);
+
         console.log("[TreeDetail] Lifecycle refreshed after age update", {
           phaseId: apiPhaseId,
           stageId: lifecycleDto.stageId,
+          virtualAgeMonths: lifecycleDto.virtualAgeMonths,
         });
       }
     } catch (err) {
@@ -3623,6 +3636,7 @@ export default function TreeDetail() {
   // === Helpers đọc Loại/Giống dùng chung toàn file ===
   function getLoai(src) {
     const s =
+      src?.treeTypeName ??  // API returns treeTypeName
       src?.loai ??
       src?.name ?? // tên cây có thể ở đây
       src?.type ??
@@ -3637,6 +3651,7 @@ export default function TreeDetail() {
 
   function getGiong(src) {
     const s =
+      src?.treeVarietyName ??  // API returns treeVarietyName
       src?.giong ??
       src?.variety ?? // giống thường ở đây
       src?.cultivar ??
@@ -4476,9 +4491,10 @@ export default function TreeDetail() {
   // ưu tiên lấy từ tree -> meta -> info/form
 
   // "Xoài Cát" hoặc chỉ "Xoài" nếu không có giống
-  const loai = getLoai(meta) || getLoai(baseTree);
-  const giong = getGiong(meta) || getGiong(baseTree);
+  const loai = getLoai(baseTree) || getLoai(meta);
+  const giong = getGiong(baseTree) || getGiong(meta);
   const tenCayHero = [loai, giong].filter(Boolean).join(" ");
+
 
   // status flags + ref cho toast hàng ngày
   const isActive = meta.status === "active";
