@@ -1401,6 +1401,7 @@ export default function AddTreeNewScreen() {
   // 1. stagesByType has been loaded (from API for the selected tree type)
   // 2. Required info is available (treeTypeId + age info)
   // Always auto-update stage when age or tree type changes
+  // This logic matches backend ResolveStageForAge in TreeLifecycleAutomationService.cs
   useEffect(() => {
     // Skip if no stages loaded or no tree type selected
     if (!stagesByType.length || !treeTypeId) return;
@@ -1409,27 +1410,69 @@ export default function AddTreeNewScreen() {
 
     console.log("Auto-select stage: totalAge =", totalAge, "stagesByType =", stagesByType);
 
-    // Sort stages by stageOrder
+    // Sort stages by stageOrder (matching backend logic)
     const sortedStages = [...stagesByType].sort(
       (a, b) => (a.stageOrder || a.StageOrder || 0) - (b.stageOrder || b.StageOrder || 0)
     );
 
-    // Find stage that matches totalAge range (minAgeInMonths <= totalAge < maxAgeInMonths)
-    // Backend uses MinAgeInMonths/MaxAgeInMonths (PascalCase) -> camelCase: minAgeInMonths/maxAgeInMonths
-    const matchingStage = sortedStages.find((stage) => {
-      const minAge = stage.minAgeInMonths ?? stage.MinAgeInMonths ?? 0;
-      const maxAge = stage.maxAgeInMonths ?? stage.MaxAgeInMonths ?? Infinity;
-      console.log(`  Stage "${stage.stageName || stage.StageName}": minAge=${minAge}, maxAge=${maxAge}, totalAge=${totalAge}`);
-      return totalAge >= minAge && totalAge < maxAge;
-    });
+    if (sortedStages.length === 0) return;
+
+    // Get the second stage (flowering) min age for cycling - stage 1 (growth_development) only happens once
+    // Cycling happens between stage 2 and last stage
+    const secondStage = sortedStages.length > 1 ? sortedStages[1] : sortedStages[0];
+    const minCycleAge = secondStage?.minAgeInMonths ?? secondStage?.MinAgeInMonths ??
+      (sortedStages[0]?.minAgeInMonths ?? sortedStages[0]?.MinAgeInMonths ?? 0);
+
+    // Get the last stage max age for cycling calculation
+    const lastStage = sortedStages[sortedStages.length - 1];
+    const maxCycleAge = lastStage?.maxAgeInMonths ?? lastStage?.MaxAgeInMonths ?? null;
+
+    // Apply cycling logic if totalAge exceeds the last stage's max age
+    let effectiveAge = totalAge;
+    if (maxCycleAge !== null && totalAge > maxCycleAge) {
+      // Calculate cycle length (from stage 2 min to last stage max)
+      // Stage 1 is excluded from cycling as it only happens once
+      const cycleLength = maxCycleAge - minCycleAge;
+      if (cycleLength > 0) {
+        // Calculate how many complete cycles have passed since entering stage 2
+        const ageAboveCycleStart = totalAge - minCycleAge;
+        const completeCycles = Math.floor(ageAboveCycleStart / cycleLength);
+
+        // Calculate the effective age within the current cycle
+        // Formula: totalAge - (cycleLength * multiplier)
+        effectiveAge = totalAge - (cycleLength * completeCycles);
+
+        // Ensure effectiveAge is at least minCycleAge (stage 2 min)
+        if (effectiveAge < minCycleAge) {
+          effectiveAge = minCycleAge;
+        }
+      }
+    }
+
+    console.log(`  Cycling: minCycleAge=${minCycleAge}, maxCycleAge=${maxCycleAge}, effectiveAge=${effectiveAge}`);
+
+    // Find the appropriate stage for the effective age
+    // Using inclusive range check: effectiveAge >= min AND effectiveAge <= max (matching backend)
+    let matchingStage = null;
+    for (const stage of sortedStages) {
+      const minAge = stage.minAgeInMonths ?? stage.MinAgeInMonths ?? Number.MIN_SAFE_INTEGER;
+      const maxAge = stage.maxAgeInMonths ?? stage.MaxAgeInMonths ?? Number.MAX_SAFE_INTEGER;
+
+      console.log(`  Stage "${stage.stageName || stage.StageName}": minAge=${minAge}, maxAge=${maxAge}, effectiveAge=${effectiveAge}`);
+
+      // Check if age falls within this stage's range (inclusive)
+      if (effectiveAge >= minAge && (maxAge === Number.MAX_SAFE_INTEGER || effectiveAge <= maxAge)) {
+        matchingStage = stage;
+        break;
+      }
+    }
 
     let newStageName = "";
     if (matchingStage) {
       newStageName = matchingStage.stageName || matchingStage.StageName || `Giai đoạn ${matchingStage.stageOrder || matchingStage.StageOrder || ''}`;
       console.log("Matched stage:", newStageName);
     } else if (sortedStages.length > 0) {
-      // Fallback: if age exceeds all stages, pick the last stage
-      const lastStage = sortedStages[sortedStages.length - 1];
+      // Fallback to last stage if no match found (matching backend fallback)
       newStageName = lastStage.stageName || lastStage.StageName || `Giai đoạn ${lastStage.stageOrder || lastStage.StageOrder || ''}`;
       console.log("No match, using last stage:", newStageName);
     }
