@@ -2763,10 +2763,31 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
     return grouped;
   }, [tasks]);
 
+  // Danh sách tasks hoàn thành được sắp xếp theo completedAt (gần nhất lên đầu)
+  const completedTasksSorted = useMemo(() => {
+    return tasks
+      .filter((task) => normalizeKey(task.status) === "completed")
+      .sort((a, b) => {
+        // Sắp xếp theo completedAt (gần nhất lên đầu)
+        const dateA = a.completedAt
+          ? new Date(a.completedAt).getTime()
+          : 0;
+        const dateB = b.completedAt
+          ? new Date(b.completedAt).getTime()
+          : 0;
+        return dateB - dateA; // Descending order (newest first)
+      });
+  }, [tasks]);
+
   const treeKeys = useMemo(() => {
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const nowTime = now.getTime();
+
+    // Nếu đang hiển thị completed tasks, không cần treeKeys vì sẽ hiển thị theo danh sách flat
+    if (showCompleted) {
+      return [];
+    }
 
     return Object.keys(tasksByTree)
       .filter((key) => {
@@ -3042,7 +3063,94 @@ function GardenTaskManagerSheet({ open, onOpenChange, garden, gardenInfo }) {
                 </div>
               )}
 
+              {/* Hiển thị danh sách công việc hoàn thành (flat list, sorted by completedAt) */}
+              {!taskLoading && showCompleted && (
+                <div className="space-y-2.5">
+                  {completedTasksSorted.length === 0 ? (
+                    <div className="rounded-2xl border border-dashed border-white/20 bg-white/5 px-6 py-10 text-center text-sm text-white/70">
+                      Không có công việc hoàn thành nào.
+                    </div>
+                  ) : (
+                    (() => {
+                      // Group consecutive tasks from the same tree
+                      const groupedTasks = [];
+                      let currentGroup = null;
+
+                      completedTasksSorted.forEach((task) => {
+                        const treeId = task.treeId || task.treeCode || "unknown";
+                        const treeName = task.treeName || "Cây chưa xác định";
+                        const treeKey = `${treeId}_${treeName}`;
+
+                        if (!currentGroup || currentGroup.treeKey !== treeKey) {
+                          // Start a new group
+                          currentGroup = {
+                            treeKey,
+                            treeId,
+                            treeName,
+                            tasks: [task],
+                          };
+                          groupedTasks.push(currentGroup);
+                        } else {
+                          // Add to current group
+                          currentGroup.tasks.push(task);
+                        }
+                      });
+
+                      return groupedTasks.map((group, groupIdx) => (
+                        <div key={group.treeKey + "_" + groupIdx} className="space-y-2.5">
+                          {/* Tree name header */}
+                          <div className="bg-gradient-to-r from-neutral-500/20 to-neutral-600/20 border border-neutral-400/40 rounded-xl px-3 py-2 shadow-sm">
+                            <div className="flex items-center gap-1.5 text-[10px]">
+                              <Sprout className="h-5 w-5 text-neutral-400" />
+                              <h3 className="text-[11px] font-semibold text-neutral-300">
+                                {group.treeName}
+                              </h3>
+                              <Badge
+                                variant="secondary"
+                                className="ml-auto text-[10px] px-2 py-0 border bg-neutral-500/30 text-neutral-200 border-neutral-400/40"
+                              >
+                                {group.tasks.length}{" "}
+                                {group.tasks.length === 1 ? "công việc" : "công việc"}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {/* Tasks for this group */}
+                          <div className="space-y-1.5 pl-2.5 border-l border-white/20">
+                            {group.tasks.map((task) => (
+                              <TaskItem
+                                key={task.scheduleId}
+                                task={task}
+                                overdue={isTaskOverdue(
+                                  task.scheduledDate,
+                                  task.status
+                                )}
+                                completedLate={isTaskCompletedLate(
+                                  task.scheduledDate,
+                                  task.completedAt,
+                                  task.status
+                                )}
+                                busyComplete={Boolean(
+                                  completingMap[task.scheduleId]
+                                )}
+                                onComplete={() => handleOpenCompleteDialog(task)}
+                                onEdit={() => handleOpenEditDialog(task)}
+                                onDelete={() => handleOpenDeleteDialog(task)}
+                                isEditing={Boolean(editingMap[task.scheduleId])}
+                                isDeleting={Boolean(deletingMap[task.scheduleId])}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ));
+                    })()
+                  )}
+                </div>
+              )}
+
+              {/* Hiển thị danh sách công việc đang thực hiện (grouped by tree) */}
               {!taskLoading &&
+                !showCompleted &&
                 treeKeys.map((treeKey, treeIdx) => {
                   const treeGroup = tasksByTree[treeKey];
                   if (!treeGroup || treeGroup.tasks.length === 0) return null;
@@ -3556,10 +3664,7 @@ function TaskItem({
   if (overdue) {
     bgClasses = "bg-rose-500/10"; // Only affect BG
   } else if (normalizeKey(task.status) === "completed") {
-    borderClasses = "border-neutral-500/50 border-l-4"; // Completed overrides border to gray? Or keep it?
-    // User wants "border to giống màu công việc". 
-    // If completed, usually we gray it out. Let's keep Gray for Completed to imply "Done".
-    // But for Overdue, we KEEP the Color Border (Identity) and use Red BG.
+    // Keep the colored border based on task type for completed tasks
     bgClasses = "bg-neutral-500/5";
   }
 
