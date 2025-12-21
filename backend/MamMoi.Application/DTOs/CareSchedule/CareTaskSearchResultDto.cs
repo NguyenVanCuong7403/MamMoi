@@ -31,5 +31,7 @@ public class CareTaskSearchResultDto
 
     public string? Priority { get; set; }
 
+    public DateTime? CompletedAt { get; set; }
+
     public DateTime CreatedAt { get; set; }
 }

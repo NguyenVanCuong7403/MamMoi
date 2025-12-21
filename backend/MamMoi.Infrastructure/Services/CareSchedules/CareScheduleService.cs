@@ -556,8 +556,15 @@ public class CareScheduleService : ICareScheduleService
 
         if (!string.IsNullOrWhiteSpace(status))
         {
-            status = status.Trim();
-            query = query.Where(c => c.Status == status);
+            var statuses = status.Split(',').Select(s => s.Trim()).ToList();
+            if (statuses.Count > 1)
+            {
+                query = query.Where(c => statuses.Contains(c.Status));
+            }
+            else
+            {
+                query = query.Where(c => c.Status == statuses[0]);
+            }
         }
 
         if (!string.IsNullOrWhiteSpace(priority))
@@ -601,6 +608,7 @@ public class CareScheduleService : ICareScheduleService
                 ScheduledTimeOfDay = c.ScheduledTimeOfDay,
                 Status = c.Status,
                 Priority = c.Priority,
+                CompletedAt = c.CompletedAt,
                 CreatedAt = c.CreatedAt
             })
             .ToListAsync();
