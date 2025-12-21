@@ -186,6 +186,16 @@ export default class TreeRepository {
   }
 
   /**
+   * Replace tree image (deletes old images before adding new one)
+   * @param {number} id
+   * @param {Object} data - UploadTreeImageRequest
+   */
+  static async replaceTreeImage(id, data) {
+    return ApiClient.put(`/api/trees/${id}/images`, data);
+  }
+
+
+  /**
    * Delete a tree image
    */
   static async deleteTreeImage(id, imageId) {

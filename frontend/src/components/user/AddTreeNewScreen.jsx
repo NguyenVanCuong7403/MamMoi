@@ -1446,10 +1446,9 @@ export default function AddTreeNewScreen() {
         if (effectiveAge < minCycleAge) {
           effectiveAge = minCycleAge;
         }
+        console.log(`  Cycling: minCycleAge=${minCycleAge}, maxCycleAge=${maxCycleAge}, cycleLength=${cycleLength}, ageAboveCycleStart=${ageAboveCycleStart}, completeCycles=${completeCycles}, effectiveAge=${effectiveAge}`);
       }
     }
-
-    console.log(`  Cycling: minCycleAge=${minCycleAge}, maxCycleAge=${maxCycleAge}, effectiveAge=${effectiveAge}`);
 
     // Find the appropriate stage for the effective age
     // Using inclusive range check: effectiveAge >= min AND effectiveAge <= max (matching backend)

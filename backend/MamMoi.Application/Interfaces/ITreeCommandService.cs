@@ -19,6 +19,7 @@ namespace MamMoi.Application.Interfaces
     public interface ITreeImageService
     {
         Task<TreeImageDto> AddImageAsync(int userId, int treeId, UploadTreeImageRequest req, CancellationToken ct);
+        Task<TreeImageDto> ReplaceImageAsync(int userId, int treeId, UploadTreeImageRequest req, CancellationToken ct);
         Task<bool> DeleteImageAsync(int userId, int treeId, int imageId, CancellationToken ct);
         Task<IReadOnlyList<TreeImageDto>> GetGalleryAsync(int treeId, CancellationToken ct);
         Task<IReadOnlyList<GrowthHistoryItemDto>> GetGrowthHistoryAsync(int treeId, CancellationToken ct);

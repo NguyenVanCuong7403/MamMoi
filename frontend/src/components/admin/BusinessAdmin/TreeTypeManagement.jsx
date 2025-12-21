@@ -411,16 +411,15 @@ async function fetchTreeTypes() {
           const varieties = Array.isArray(varietiesResponse.data)
             ? varietiesResponse.data
             : Array.isArray(varietiesResponse)
-            ? varietiesResponse
-            : [];
+              ? varietiesResponse
+              : [];
           return {
             ...treeType,
             varieties: varieties.map(mapVarietyFromApi),
           };
         } catch (error) {
           console.warn(
-            `Failed to fetch varieties for tree type ${
-              treeType.treeTypeId || treeType.TreeTypeId
+            `Failed to fetch varieties for tree type ${treeType.treeTypeId || treeType.TreeTypeId
             }:`,
             error
           );
@@ -480,8 +479,8 @@ async function fetchSoils() {
     const soils = Array.isArray(response.data)
       ? response.data
       : Array.isArray(response)
-      ? response
-      : [];
+        ? response
+        : [];
     return soils.map(mapSoilFromApi);
   } catch (error) {
     console.warn("Error fetching soils, returning empty array:", error);
@@ -693,13 +692,13 @@ const soilDefaultValues = {
 const mapSoilToFormValues = (soil) =>
   soil
     ? {
-        SoilName: soil.SoilName ?? "",
-        Texture: soil.Texture ?? "",
-        Drainage: soil.Drainage ?? "",
-        OrganicMatterPct: soil.OrganicMatterPct ?? undefined,
-        EC_dS_m: soil.EC_dS_m ?? undefined,
-        Notes: soil.Notes ?? "",
-      }
+      SoilName: soil.SoilName ?? "",
+      Texture: soil.Texture ?? "",
+      Drainage: soil.Drainage ?? "",
+      OrganicMatterPct: soil.OrganicMatterPct ?? undefined,
+      EC_dS_m: soil.EC_dS_m ?? undefined,
+      Notes: soil.Notes ?? "",
+    }
     : soilDefaultValues;
 
 function ImageDropzone({ value, onChange, onFileChange }) {
@@ -928,7 +927,7 @@ function TreeTable({
                     className={cn(
                       "flex gap-4",
                       !tree.IsActive &&
-                        "rounded-2xl border border-rose-300/80 bg-rose-50/40 p-2"
+                      "rounded-2xl border border-rose-300/80 bg-rose-50/40 p-2"
                     )}
                   >
                     {tree.ImageUrl ? (
@@ -1022,14 +1021,6 @@ function TreeTable({
                       onClick={() => onEdit(tree)}
                     >
                       <Edit3 className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-rose-500 hover:text-rose-600"
-                      onClick={() => onDelete(tree)}
-                    >
-                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </TableCell>
@@ -1895,8 +1886,8 @@ export default function TreeTypeManagement() {
         const varieties = Array.isArray(varietiesResponse.data)
           ? varietiesResponse.data
           : Array.isArray(varietiesResponse)
-          ? varietiesResponse
-          : [];
+            ? varietiesResponse
+            : [];
 
         const updatedWithVarieties = {
           ...updated,
@@ -1961,15 +1952,15 @@ export default function TreeTypeManagement() {
   const mapVarietyToFormValues = (variety) =>
     variety
       ? {
-          VarietyID: variety.VarietyID ?? "",
-          VarietyName: variety.VarietyName ?? "",
-          VarietyDescription: variety.VarietyDescription ?? "",
-        }
+        VarietyID: variety.VarietyID ?? "",
+        VarietyName: variety.VarietyName ?? "",
+        VarietyDescription: variety.VarietyDescription ?? "",
+      }
       : {
-          VarietyID: "",
-          VarietyName: "",
-          VarietyDescription: "",
-        };
+        VarietyID: "",
+        VarietyName: "",
+        VarietyDescription: "",
+      };
 
   const handleOpenVarietyDialog = (tree) => {
     setActiveVarietyTree(tree);
@@ -2043,9 +2034,9 @@ export default function TreeTypeManagement() {
     : 0;
   const varietyRangeEnd = filteredVarieties.length
     ? Math.min(
-        filteredVarieties.length,
-        varietyRangeStart + paginatedVarieties.length - 1
-      )
+      filteredVarieties.length,
+      varietyRangeStart + paginatedVarieties.length - 1
+    )
     : 0;
   const shouldShowVarietyPagination =
     filteredVarieties.length > VARIETY_PAGE_SIZE;
@@ -2216,10 +2207,10 @@ export default function TreeTypeManagement() {
       const newList = (activeVarietyTree.Varieties || []).map((item) =>
         item.VarietyID === selectedVarietyId
           ? {
-              ...item,
-              VarietyName: values.VarietyName,
-              VarietyDescription: values.VarietyDescription ?? "",
-            }
+            ...item,
+            VarietyName: values.VarietyName,
+            VarietyDescription: values.VarietyDescription ?? "",
+          }
           : item
       );
       const updated = await updateTreeType(activeVarietyTree.TreeTypeID, {
@@ -2375,8 +2366,8 @@ export default function TreeTypeManagement() {
                               maxLength={100}
                               className={cn(
                                 form.formState.isSubmitted &&
-                                  fieldState.error &&
-                                  "border-red-500 focus-visible:ring-red-500"
+                                fieldState.error &&
+                                "border-red-500 focus-visible:ring-red-500"
                               )}
                             />
                           </FormControl>
@@ -2435,8 +2426,8 @@ export default function TreeTypeManagement() {
                                 className={cn(
                                   "h-12 w-full",
                                   form.formState.isSubmitted &&
-                                    fieldState.error &&
-                                    "border-red-500 focus-visible:ring-red-500"
+                                  fieldState.error &&
+                                  "border-red-500 focus-visible:ring-red-500"
                                 )}
                               >
                                 <SelectValue placeholder="Chọn loại đất" />
@@ -2596,12 +2587,12 @@ export default function TreeTypeManagement() {
                                   className={cn(
                                     "h-12",
                                     field.value &&
-                                      toleranceLevels.find(
-                                        (t) => t.value === field.value
-                                      )?.color,
+                                    toleranceLevels.find(
+                                      (t) => t.value === field.value
+                                    )?.color,
                                     form.formState.isSubmitted &&
-                                      form.formState.errors[fieldName] &&
-                                      "border-red-500 focus-visible:ring-red-500"
+                                    form.formState.errors[fieldName] &&
+                                    "border-red-500 focus-visible:ring-red-500"
                                   )}
                                 >
                                   <SelectValue placeholder="Chọn mức độ" />
@@ -2668,7 +2659,7 @@ export default function TreeTypeManagement() {
                           <FormControl>
                             <div className="space-y-2 pb-4">
                               {Array.isArray(field.value) &&
-                              field.value.length > 0 ? (
+                                field.value.length > 0 ? (
                                 field.value.map((step, index) => (
                                   <div
                                     key={index}
@@ -2816,85 +2807,85 @@ export default function TreeTypeManagement() {
                             <div className="space-y-3 pb-4">
                               {Array.isArray(field.value)
                                 ? field.value.map((pest, index) => {
-                                    const severityColor = pest.severity
-                                      ? severityColors[pest.severity]
-                                      : null;
+                                  const severityColor = pest.severity
+                                    ? severityColors[pest.severity]
+                                    : null;
 
-                                    return (
-                                      <div
-                                        key={index}
-                                        className="group relative rounded-xl border border-slate-200 bg-white p-3 hover:border-emerald-300 hover:shadow-sm transition-all"
-                                      >
-                                        <div className="flex justify-between items-start mb-1">
-                                          <div className="flex items-center gap-2">
-                                            <Bug
-                                              className={cn(
-                                                "h-4 w-4",
-                                                severityColor?.text
-                                              )}
-                                            />
-                                            <span className="font-semibold text-sm text-slate-900 line-clamp-1">
-                                              {pest.name}
-                                            </span>
-                                          </div>
-                                          <Badge
-                                            variant="outline"
+                                  return (
+                                    <div
+                                      key={index}
+                                      className="group relative rounded-xl border border-slate-200 bg-white p-3 hover:border-emerald-300 hover:shadow-sm transition-all"
+                                    >
+                                      <div className="flex justify-between items-start mb-1">
+                                        <div className="flex items-center gap-2">
+                                          <Bug
                                             className={cn(
-                                              "text-[10px] h-5 px-1.5",
-                                              severityColor?.bg,
-                                              severityColor?.text,
-                                              severityColor?.border
+                                              "h-4 w-4",
+                                              severityColor?.text
                                             )}
-                                          >
-                                            {pest.severity === "High"
-                                              ? "Cao"
-                                              : pest.severity === "Medium"
+                                          />
+                                          <span className="font-semibold text-sm text-slate-900 line-clamp-1">
+                                            {pest.name}
+                                          </span>
+                                        </div>
+                                        <Badge
+                                          variant="outline"
+                                          className={cn(
+                                            "text-[10px] h-5 px-1.5",
+                                            severityColor?.bg,
+                                            severityColor?.text,
+                                            severityColor?.border
+                                          )}
+                                        >
+                                          {pest.severity === "High"
+                                            ? "Cao"
+                                            : pest.severity === "Medium"
                                               ? "TB"
                                               : "Thấp"}
-                                          </Badge>
-                                        </div>
-                                        <p className="text-xs text-slate-600 line-clamp-2 break-word mb-2">
-                                          {pest.description}
-                                        </p>
-
-                                        <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity absolute bottom-2 right-2 bg-white/80 backdrop-blur-sm rounded-lg">
-                                          <Button
-                                            type="button"
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-7 w-7 text-slate-500 hover:text-emerald-600"
-                                            onClick={() =>
-                                              openPestModal(pest, index)
-                                            }
-                                          >
-                                            <Edit3 className="h-3.5 w-3.5" />
-                                          </Button>
-                                          <Button
-                                            type="button"
-                                            size="icon"
-                                            variant="ghost"
-                                            className="h-7 w-7 text-slate-500 hover:text-rose-600"
-                                            onClick={() =>
-                                              handleDeletePest(index)
-                                            }
-                                          >
-                                            <Trash2 className="h-3.5 w-3.5" />
-                                          </Button>
-                                        </div>
+                                        </Badge>
                                       </div>
-                                    );
-                                  })
+                                      <p className="text-xs text-slate-600 line-clamp-2 break-word mb-2">
+                                        {pest.description}
+                                      </p>
+
+                                      <div className="flex justify-end gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity absolute bottom-2 right-2 bg-white/80 backdrop-blur-sm rounded-lg">
+                                        <Button
+                                          type="button"
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-7 w-7 text-slate-500 hover:text-emerald-600"
+                                          onClick={() =>
+                                            openPestModal(pest, index)
+                                          }
+                                        >
+                                          <Edit3 className="h-3.5 w-3.5" />
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-7 w-7 text-slate-500 hover:text-rose-600"
+                                          onClick={() =>
+                                            handleDeletePest(index)
+                                          }
+                                        >
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  );
+                                })
                                 : null}
                               {(!Array.isArray(field.value) ||
                                 field.value.length === 0) && (
-                                <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-rose-200/60 bg-white/80 px-4 py-8 text-center text-sm text-slate-500">
-                                  <Bug className="h-8 w-8 text-rose-300" />
-                                  <p>Chưa có bệnh nào.</p>
-                                  <p className="text-xs text-slate-400">
-                                    Bấm &quot;Thêm bệnh&quot; để tạo mới
-                                  </p>
-                                </div>
-                              )}
+                                  <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-rose-200/60 bg-white/80 px-4 py-8 text-center text-sm text-slate-500">
+                                    <Bug className="h-8 w-8 text-rose-300" />
+                                    <p>Chưa có bệnh nào.</p>
+                                    <p className="text-xs text-slate-400">
+                                      Bấm &quot;Thêm bệnh&quot; để tạo mới
+                                    </p>
+                                  </div>
+                                )}
                             </div>
                           </FormControl>
                           <FormMessage />
@@ -3840,7 +3831,7 @@ export default function TreeTypeManagement() {
                 <ScrollArea className="max-h-[440px] overflow-visible pr-2">
                   <div className="grid gap-2">
                     {!activeVarietyTree ||
-                    (activeVarietyTree.Varieties || []).length === 0 ? (
+                      (activeVarietyTree.Varieties || []).length === 0 ? (
                       <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-emerald-200/60 bg-white/80 px-4 py-6 text-center text-sm text-slate-500">
                         <Layers className="h-5 w-5 text-emerald-300" />
                         Chưa có giống nào. Bấm &quot;Thêm giống mới&quot; để bắt

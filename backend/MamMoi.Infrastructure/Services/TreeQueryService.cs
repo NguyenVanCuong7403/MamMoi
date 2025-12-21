@@ -51,7 +51,7 @@ public class TreeQueryService : ITreeQueryService
                 (t.FruitStatus ?? t.FlowerStatus ?? "Bình thường"),
                 t.LeafStatus,
                 t.BranchStatus,
-                t.TreeImages.OrderBy(img => img.ImageId)
+                t.TreeImages.OrderByDescending(img => img.ImageId)
                     .Select(img => img.ImageUrl)
                     .FirstOrDefault(),
                 t.preMonths,
@@ -106,7 +106,7 @@ public class TreeQueryService : ITreeQueryService
                 (t.FruitStatus ?? t.FlowerStatus ?? "Bình thường"),
                 t.LeafStatus,
                 t.BranchStatus,
-                t.TreeImages.OrderBy(img => img.ImageId)
+                t.TreeImages.OrderByDescending(img => img.ImageId)
                     .Select(img => img.ImageUrl)
                     .FirstOrDefault(),
                 t.preMonths,

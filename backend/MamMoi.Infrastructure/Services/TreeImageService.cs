@@ -55,6 +55,46 @@ namespace MamMoi.Infrastructure.Services
             );
         }
 
+        public async Task<TreeImageDto> ReplaceImageAsync(int userId, int treeId, UploadTreeImageRequest req, CancellationToken ct)
+        {
+            var treeExists = await _db.Trees.AnyAsync(t => t.TreeId == treeId, ct);
+            if (!treeExists) throw new KeyNotFoundException("Tree not found");
+
+            // Delete all existing images for this tree (both from database and disk)
+            var existingImages = await _db.TreeImages
+                .Where(i => i.TreeId == treeId)
+                .ToListAsync(ct);
+
+            foreach (var img in existingImages)
+            {
+                // Delete physical files
+                if (!string.IsNullOrEmpty(img.ImageUrl))
+                    await _imageUploadService.DeleteImageAsync(img.ImageUrl);
+                if (!string.IsNullOrEmpty(img.ThumbnailUrl))
+                    await _imageUploadService.DeleteImageAsync(img.ThumbnailUrl);
+
+                _db.TreeImages.Remove(img);
+            }
+
+            if (existingImages.Count > 0)
+            {
+                await _db.SaveChangesAsync(ct);
+
+                _db.ActivityLogs.Add(new ActivityLog
+                {
+                    UserId = userId,
+                    TreeId = treeId,
+                    ActivityType = "DeleteImages",
+                    ActivityDescription = $"Deleted {existingImages.Count} old image(s) before replacement",
+                    CreatedAt = DateTime.UtcNow
+                });
+                await _db.SaveChangesAsync(ct);
+            }
+
+            // Add the new image
+            return await AddImageAsync(userId, treeId, req, ct);
+        }
+
         public async Task<bool> DeleteImageAsync(int userId, int treeId, int imageId, CancellationToken ct)
         {
             var img = await _db.TreeImages

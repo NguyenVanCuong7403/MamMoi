@@ -358,6 +358,18 @@ public class TreesController : ControllerBase
         return Ok(dto);
     }
 
+    /// <summary>
+    /// Replace tree image (deletes old images before adding new one)
+    /// PUT /api/trees/{id}/images
+    /// </summary>
+    [HttpPut("{id:int}/images")]
+    public async Task<IActionResult> ReplaceImage([FromRoute] int id, [FromBody] UploadTreeImageRequest req, CancellationToken ct)
+    {
+        if (!TryResolveUserId(out var userId, out var error)) return error!;
+        var dto = await _treeImg.ReplaceImageAsync(userId, id, req, ct);
+        return Ok(dto);
+    }
+
     [HttpDelete("{id:int}/images/{imageId:int}")]
     public async Task<IActionResult> DeleteImage([FromRoute] int id, [FromRoute] int imageId, CancellationToken ct)
     {
