@@ -75,7 +75,11 @@ public interface INotificationService
     /// <summary>
     /// Create notification when user sends support request (notify admin)
     /// </summary>
-    Task NotifyAdminOnSupportRequestAsync(int requestId, int userId, string subject);
+    /// <param name="requestId">Support request ID</param>
+    /// <param name="userId">User ID who created the request</param>
+    /// <param name="subject">Subject of the support request</param>
+    /// <param name="treeId">Optional tree ID if the request is tree-related</param>
+    Task NotifyAdminOnSupportRequestAsync(int requestId, int userId, string subject, int? treeId = null);
 
     /// <summary>
     /// Create notification when admin responds to support request (notify user)

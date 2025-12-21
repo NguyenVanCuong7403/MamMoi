@@ -75,7 +75,7 @@ public class SupportRequestService : ISupportRequestService
         // Notify admin about new support request
         try
         {
-            await _notificationService.NotifyAdminOnSupportRequestAsync(request.RequestId, userId, request.Subject);
+            await _notificationService.NotifyAdminOnSupportRequestAsync(request.RequestId, userId, request.Subject, request.TreeId);
         }
         catch (Exception ex)
         {

@@ -1390,7 +1390,11 @@ export default function AddTreeNewScreen() {
   // Nếu chưa override tay, khi có ngày trồng thì seed lại phase theo lib (1 lần)
 
   const ageAfterPlant = useMemo(() => monthsBetween(plantDate), [plantDate]);
-  const preAgeNum = useMemo(() => parseInt(preAge || "0", 10) || 0, [preAge]);
+  const preAgeNum = useMemo(() => {
+    const parsed = parseInt(preAge || "0", 10);
+    // If empty or 0, default to 1 month
+    return parsed > 0 ? parsed : 1;
+  }, [preAge]);
   const totalAge = (plantDate ? ageAfterPlant : 0) + preAgeNum;
 
   // Auto-select stage based on totalAge when:
@@ -1732,8 +1736,10 @@ export default function AddTreeNewScreen() {
       // Map phase → StageId từ stagesByType
       // Tìm stage tương ứng với phase được chọn (by name match)
       let selectedStageId = null;
+      let virtualAgeMonths = null;
+
       if (stagesByType.length > 0) {
-        // Sắp xếp stages theo stageOrder
+        // Sắp xếp stages theo stageOrder (numeric comparison)
         const sortedStages = [...stagesByType].sort(
           (a, b) => (a.stageOrder || a.StageOrder || 0) - (b.stageOrder || b.StageOrder || 0)
         );
@@ -1781,6 +1787,9 @@ export default function AddTreeNewScreen() {
 
         Notes: (note || userIntent || "").trim() || null,
         preMonths: preAgeNum, // lowercase to match backend CreateTreeRequest
+
+        // Tự động set VirtualAgeMonths dựa trên giai đoạn hiện tại
+        VirtualAgeMonths: virtualAgeMonths,
 
         LeafStatus: leafInfo.trim() || null,
         BranchStatus: branchInfo.trim() || null,

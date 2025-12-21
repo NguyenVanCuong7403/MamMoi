@@ -454,25 +454,29 @@ public class NotificationService : INotificationService
         return recipients.Select(r => (r.UserId, r.FullName, r.Email, r.Phone, r.IsRead, r.ReadAt)).ToList();
     }
 
-    public async Task NotifyAdminOnSupportRequestAsync(int requestId, int userId, string subject)
+    public async Task NotifyAdminOnSupportRequestAsync(int requestId, int userId, string subject, int? treeId = null)
     {
-        // Get all admin users (SystemAdmin and BusinessAdmin)
-        var adminUsers = await _dbContext.Users
+        // Determine which admin roles should receive this notification based on report type
+        // Tree-related reports (treeId is not null) -> Only BusinessAdmin
+        // General reports (treeId is null) -> Both SystemAdmin and BusinessAdmin
+        IQueryable<User> adminQuery = _dbContext.Users
             .Include(u => u.Role)
-            .Where(u => u.IsActive && (u.Role.RoleName == "SystemAdmin" || u.Role.RoleName == "BusinessAdmin"))
-            .Select(u => u.UserId)
-            .ToListAsync();
+            .Where(u => u.IsActive);
 
-        if (!adminUsers.Any())
+        if (treeId.HasValue)
         {
-            _logger.LogWarning("No admin users found to notify about support request {RequestId}", requestId);
-            return;
+            // Tree-related report: Only notify BusinessAdmin
+            adminQuery = adminQuery.Where(u => u.Role.RoleName == "BusinessAdmin");
+            _logger.LogInformation("Tree-related support request {RequestId} - notifying BusinessAdmin only", requestId);
+        }
+        else
+        {
+            // General report: Notify both SystemAdmin and BusinessAdmin
+            adminQuery = adminQuery.Where(u => u.Role.RoleName == "SystemAdmin" || u.Role.RoleName == "BusinessAdmin");
+            _logger.LogInformation("General support request {RequestId} - notifying all admins", requestId);
         }
 
-        // Get admin roles to set correct ActionUrl based on role
-        var adminUsersWithRoles = await _dbContext.Users
-            .Include(u => u.Role)
-            .Where(u => u.IsActive && (u.Role.RoleName == "SystemAdmin" || u.Role.RoleName == "BusinessAdmin"))
+        var adminUsersWithRoles = await adminQuery
             .Select(u => new { u.UserId, u.Role.RoleName })
             .ToListAsync();
 
