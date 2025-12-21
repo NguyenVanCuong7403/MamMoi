@@ -1776,7 +1776,7 @@ function ImagePicker({ code, value, onChange, disabled, treeId }) {
       if (code) {
         imageRegistry.set(code, realUrl);
       }
-      await TreeRepository.uploadTreeImage(treeId, { imageUrl: realUrl });
+      await TreeRepository.replaceTreeImage(treeId, { imageUrl: realUrl });
     } catch (err) {
       console.error("Upload garden image failed", err);
       setUploadError(
@@ -2837,25 +2837,59 @@ function AsideCards({
    Component
    ========================================================================= */
 
-function HeaderPhotoBar({ codeKey, image, setImage, readOnly }) {
+function HeaderPhotoBar({ codeKey, image, setImage, readOnly, treeId }) {
   const [linkOpen, setLinkOpen] = useState(false);
   const [urlInput, setUrlInput] = useState("");
+  const [uploading, setUploading] = useState(false);
 
-  function handleFile(e) {
+  async function uploadImageToServer(file) {
+    if (!treeId) return;
+    try {
+      setUploading(true);
+      // Upload file to server first
+      const res = await GardenRepository.uploadGardenImage(file);
+      const realUrl = res?.url ?? res?.data?.url;
+      if (!realUrl) {
+        console.error("Failed to get image URL from server");
+        return;
+      }
+      // Update local state with real URL
+      setImage(realUrl);
+      if (codeKey) imageRegistry.set(codeKey, realUrl);
+      // Save to tree - use replaceTreeImage to clean up old images
+      await TreeRepository.replaceTreeImage(treeId, { imageUrl: realUrl });
+    } catch (err) {
+      console.error("Upload tree image failed", err);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleFile(e) {
     if (readOnly) return;
     const f = e.target.files?.[0];
     if (!f) return;
     const objectUrl = URL.createObjectURL(f);
     setImage(objectUrl);
     if (codeKey) imageRegistry.set(codeKey, objectUrl);
+    // Upload to server
+    await uploadImageToServer(f);
   }
 
-  function applyUrl() {
+  async function applyUrl() {
     if (readOnly) return;
     const u = (urlInput || "").trim();
     if (!u) return;
     setImage(u);
     if (codeKey) imageRegistry.set(codeKey, u);
+    // Save URL to database
+    if (treeId) {
+      try {
+        await TreeRepository.replaceTreeImage(treeId, { imageUrl: u });
+      } catch (err) {
+        console.error("Save tree image URL failed", err);
+      }
+    }
     setUrlInput("");
     setLinkOpen(false);
   }
@@ -2948,6 +2982,7 @@ function TopHeader({
   preAge,
   totalAge,
   currentPhaseId,
+  treeId,
 }) {
   const stage = phen?.stage || tree?.phenology?.stage || tree?.phase;
 
@@ -3001,6 +3036,7 @@ function TopHeader({
               image={image}
               setImage={setImage}
               readOnly={readOnly}
+              treeId={treeId}
             />
 
             {/* Quick stats – chữ to, dễ đọc */}

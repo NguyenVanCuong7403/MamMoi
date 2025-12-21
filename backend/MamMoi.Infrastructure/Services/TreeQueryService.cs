@@ -135,6 +135,7 @@ public class TreeQueryService : ITreeQueryService
             .Include(t => t.TreeType)
             .Include(t => t.Stage)
             .Include(t => t.TreeVariety)
+            .Include(t => t.TreeImages)
             .Select(t => new TreeDetailDto(
     t.TreeId,
     t.GardenId,
@@ -167,7 +168,8 @@ public class TreeQueryService : ITreeQueryService
     t.BranchStatus,
     t.FlowerStatus,
     t.FruitStatus,
-    t.VirtualAgeMonths
+    t.VirtualAgeMonths,
+    t.TreeImages.OrderByDescending(img => img.ImageId).Select(img => img.ImageUrl).FirstOrDefault()
 ))
             .FirstOrDefaultAsync(ct);
     }
