@@ -689,6 +689,7 @@ export default function LifecycleWidget({
         targetPhase.canonicalPhaseId ||
         normalizePhaseId(targetPhase.phaseId || targetPhase.id);
 
+
       let title = "Xác nhận đổi giai đoạn";
       let message = `Bạn muốn chuyển từ "${labelOf(fromCanonical)}" sang "${targetPhase.name || labelOf(toCanonical)
         }"?`;
@@ -982,6 +983,7 @@ export default function LifecycleWidget({
         const apiCycleCount = lifecycleResponse.cycleCount ?? nextCount;
         const apiPhase1Completed = lifecycleResponse.phase1Completed ?? nextP1;
         const apiStageId = lifecycleResponse.stageId ?? pending.stageId ?? null;
+        const apiVirtualAgeMonths = lifecycleResponse.virtualAgeMonths ?? lifecycleResponse.virtual_age_months ?? null;
         const apiAutoEnabled =
           typeof lifecycleResponse.lifecycleAutoEnabled === "boolean"
             ? lifecycleResponse.lifecycleAutoEnabled
@@ -1027,6 +1029,7 @@ export default function LifecycleWidget({
             cycleCount: apiCycleCount,
             phase1Completed: apiPhase1Completed,
             stageId: apiStageId,
+            virtualAgeMonths: apiVirtualAgeMonths,
             lifecycleAutoEnabled: apiAutoEnabled,
             lifecycleAutoDisabledAt: apiAutoDisabledAt,
           });
@@ -1113,6 +1116,7 @@ export default function LifecycleWidget({
                   : requestChangePhase("flowering", "start-new-cycle")
               }
               phaseConfigs={phaseConfigs}
+              isPhase1Completed={isPhase1Completed}
             />,
             portalEl
           )
@@ -1127,6 +1131,7 @@ export default function LifecycleWidget({
                   : requestChangePhase("flowering", "start-new-cycle")
               }
               phaseConfigs={phaseConfigs}
+              isPhase1Completed={isPhase1Completed}
             />
           </div>
         ))}

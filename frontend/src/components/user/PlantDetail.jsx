@@ -883,12 +883,23 @@ export default function PlantDetail() {
 
             if (Array.isArray(varietiesArray) && varietiesArray.length > 0) {
               varieties = varietiesArray.map((v) => {
+                // Get the tree type name and variety name
+                const typeName = v.treeTypeName || v.TreeTypeName || foundTree.treeTypeName || "";
+                const varName = v.varietyName || v.VarietyName || "";
+
+                // Combine as "loại + giống" (e.g., "Cam Canh")
+                // If varietyName is same as treeTypeName, only show varietyName
+                const displayName = typeName && varName && typeName.toLowerCase() !== varName.toLowerCase()
+                  ? `${typeName} ${varName}`
+                  : varName || typeName;
+
                 return {
                   varietyId: v.varietyId || v.VarietyId,
-                  name: v.varietyName || v.VarietyName || "",
+                  name: displayName,
                   description:
                     v.varietyDescription || v.VarietyDescription || "",
-                  treeTypeName: v.treeTypeName || v.TreeTypeName || "",
+                  treeTypeName: typeName,
+                  varietyName: varName,
                   treesCount: v.treesCount || v.TreesCount || 0,
                 };
               });
@@ -1391,9 +1402,9 @@ export default function PlantDetail() {
                 </CardHeader>
                 <CardContent>
                   {plantData.droughtTolerance ||
-                  plantData.floodTolerance ||
-                  plantData.frostTolerance ||
-                  plantData.windTolerance ? (
+                    plantData.floodTolerance ||
+                    plantData.frostTolerance ||
+                    plantData.windTolerance ? (
                     <div className="grid gap-4 sm:grid-cols-2">
                       {plantData.droughtTolerance && (
                         <div

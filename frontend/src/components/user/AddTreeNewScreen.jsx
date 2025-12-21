@@ -1392,6 +1392,51 @@ export default function AddTreeNewScreen() {
   const ageAfterPlant = useMemo(() => monthsBetween(plantDate), [plantDate]);
   const preAgeNum = useMemo(() => parseInt(preAge || "0", 10) || 0, [preAge]);
   const totalAge = (plantDate ? ageAfterPlant : 0) + preAgeNum;
+
+  // Auto-select stage based on totalAge when:
+  // 1. stagesByType has been loaded (from API for the selected tree type)
+  // 2. Required info is available (treeTypeId + age info)
+  // Always auto-update stage when age or tree type changes
+  useEffect(() => {
+    // Skip if no stages loaded or no tree type selected
+    if (!stagesByType.length || !treeTypeId) return;
+    // Only auto-select if we have enough info to calculate age
+    if (!plantDate && preAge === "") return;
+
+    console.log("Auto-select stage: totalAge =", totalAge, "stagesByType =", stagesByType);
+
+    // Sort stages by stageOrder
+    const sortedStages = [...stagesByType].sort(
+      (a, b) => (a.stageOrder || a.StageOrder || 0) - (b.stageOrder || b.StageOrder || 0)
+    );
+
+    // Find stage that matches totalAge range (minAgeInMonths <= totalAge < maxAgeInMonths)
+    // Backend uses MinAgeInMonths/MaxAgeInMonths (PascalCase) -> camelCase: minAgeInMonths/maxAgeInMonths
+    const matchingStage = sortedStages.find((stage) => {
+      const minAge = stage.minAgeInMonths ?? stage.MinAgeInMonths ?? 0;
+      const maxAge = stage.maxAgeInMonths ?? stage.MaxAgeInMonths ?? Infinity;
+      console.log(`  Stage "${stage.stageName || stage.StageName}": minAge=${minAge}, maxAge=${maxAge}, totalAge=${totalAge}`);
+      return totalAge >= minAge && totalAge < maxAge;
+    });
+
+    let newStageName = "";
+    if (matchingStage) {
+      newStageName = matchingStage.stageName || matchingStage.StageName || `Giai đoạn ${matchingStage.stageOrder || matchingStage.StageOrder || ''}`;
+      console.log("Matched stage:", newStageName);
+    } else if (sortedStages.length > 0) {
+      // Fallback: if age exceeds all stages, pick the last stage
+      const lastStage = sortedStages[sortedStages.length - 1];
+      newStageName = lastStage.stageName || lastStage.StageName || `Giai đoạn ${lastStage.stageOrder || lastStage.StageOrder || ''}`;
+      console.log("No match, using last stage:", newStageName);
+    }
+
+    // Always update to match the calculated age
+    if (newStageName && newStageName !== phaseOverride) {
+      console.log("Setting phaseOverride to:", newStageName);
+      setPhaseOverride(newStageName);
+    }
+  }, [stagesByType, totalAge, treeTypeId, plantDate, preAge]);
+
   const soilKB = useMemo(() => SOIL_KB[speciesKey], [speciesKey]);
   const speciesLabel = useMemo(() => {
     // Ưu tiên lấy từ TreeTypes API
@@ -1685,22 +1730,34 @@ export default function AddTreeNewScreen() {
       console.log("Create Tree Payload (debug)", payload);
 
       // Map phase → StageId từ stagesByType
-      // Tìm stage tương ứng với phase được chọn
+      // Tìm stage tương ứng với phase được chọn (by name match)
       let selectedStageId = null;
       if (stagesByType.length > 0) {
         // Sắp xếp stages theo stageOrder
         const sortedStages = [...stagesByType].sort(
-          (a, b) => (a.stageOrder || 0) - (b.stageOrder || 0)
+          (a, b) => (a.stageOrder || a.StageOrder || 0) - (b.stageOrder || b.StageOrder || 0)
         );
 
-        // Nếu có phaseOverride, tìm stage theo index trong PHASES5
-        const phaseIndex = PHASES5.indexOf(effectivePhase);
-        if (phaseIndex >= 0 && phaseIndex < sortedStages.length) {
-          // Map trực tiếp theo index: phaseIndex 0 -> stage đầu tiên, phaseIndex 1 -> stage thứ 2, ...
-          selectedStageId = sortedStages[phaseIndex].stageId;
+        // Find stage by matching stageName with effectivePhase (phaseOverride)
+        const matchedStage = sortedStages.find((stage) => {
+          const stageName = stage.stageName || stage.StageName || "";
+          return stageName === effectivePhase;
+        });
+
+        if (matchedStage) {
+          selectedStageId = matchedStage.stageId || matchedStage.StageId;
+          console.log("Selected stage by name match:", effectivePhase, "-> stageId:", selectedStageId);
         } else {
-          // Fallback: chọn stage đầu tiên nếu không tìm thấy
-          selectedStageId = sortedStages[0].stageId;
+          // Fallback: try PHASES5 index mapping
+          const phaseIndex = PHASES5.indexOf(effectivePhase);
+          if (phaseIndex >= 0 && phaseIndex < sortedStages.length) {
+            selectedStageId = sortedStages[phaseIndex].stageId || sortedStages[phaseIndex].StageId;
+            console.log("Selected stage by PHASES5 index:", phaseIndex, "-> stageId:", selectedStageId);
+          } else {
+            // Last fallback: first stage
+            selectedStageId = sortedStages[0].stageId || sortedStages[0].StageId;
+            console.log("Fallback to first stage, stageId:", selectedStageId);
+          }
         }
       } else {
         throw new Error(
@@ -1723,7 +1780,7 @@ export default function AddTreeNewScreen() {
         Location: treeLocation,
 
         Notes: (note || userIntent || "").trim() || null,
-        preMonths: preAgeNum,
+        preMonths: preAgeNum, // lowercase to match backend CreateTreeRequest
 
         LeafStatus: leafInfo.trim() || null,
         BranchStatus: branchInfo.trim() || null,
@@ -2406,27 +2463,6 @@ export default function AddTreeNewScreen() {
                   </CardContent>
                 </Card>
 
-                {/* Ghi chú bổ sung cho AI */}
-                <Card className="rounded-2xl bg-white/90 backdrop-blur border border-white/60 shadow-xl ring-1 ring-black/5 overflow-hidden mm-hover-card">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="break-words">
-                      Ghi chú bổ sung cho AI
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-4 min-w-0">
-                    <div className="grid gap-1 min-w-0">
-                      <Label className="text-neutral-700 break-words">
-                        Ghi chú bổ sung
-                      </Label>
-                      <Textarea
-                        value={userIntent}
-                        onChange={(e) => setUserIntent(e.target.value)}
-                        placeholder="Nguồn giống, lịch tưới/bón, mục tiêu, vấn đề đang gặp…"
-                        className="rounded-xl w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400 focus:ring-emerald-500/40 focus:border-emerald-500 resize-y"
-                      />
-                    </div>
-                  </CardContent>
-                </Card>
 
                 {/* Action bar dính (desktop & up) */}
                 <div className="hidden lg:block sticky bottom-4 z-30 mt-6">

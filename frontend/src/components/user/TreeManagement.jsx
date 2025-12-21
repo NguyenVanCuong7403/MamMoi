@@ -895,31 +895,44 @@ function normalizeTree(raw, effectiveGardenId, effectiveGardenName) {
     "Sinh trưởng & Phát triển";
 
   // ====== TÊN + GIỐNG (rất quan trọng cho filter) ======
+  // treeTypeName = "Cam" (loại cây)
   const treeTypeName = (raw?.treeTypeName || raw?.TreeTypeName || "").trim();
 
-  let baseName = (raw?.commonName || raw?.name || raw?.treeName || "").trim();
-
-  // giống: ưu tiên raw.variety, fallback treeTypeName
-  let varietyName = (raw?.variety || treeTypeName || "").trim();
+  // varietyName = "Canh" (giống cây) - check multiple possible field names from backend
+  // Backend uses TreeVarietyName in TreeListItemDto
+  let varietyName = (
+    raw?.treeVarietyName ||
+    raw?.TreeVarietyName ||
+    raw?.varietyName ||
+    raw?.VarietyName ||
+    raw?.variety ||
+    raw?.Variety ||
+    raw?.tree_variety_name ||
+    ""
+  ).trim();
 
   // bỏ placeholder
   if (varietyName === "__" || varietyName === "—") {
     varietyName = "";
   }
 
-  // nếu tên cây đã chứa giống thì không cần lặp lại
+  // Nếu varietyName giống treeTypeName thì không cần lặp lại
   if (
-    baseName &&
+    treeTypeName &&
     varietyName &&
-    baseName.toLowerCase().includes(varietyName.toLowerCase())
+    treeTypeName.toLowerCase() === varietyName.toLowerCase()
   ) {
     varietyName = "";
   }
 
+  // displayName: "loại + giống" (ví dụ: "Cam Canh")
+  // Ưu tiên: treeTypeName + varietyName
+  // Nếu không có treeTypeName thì dùng treeName hoặc name
   const displayName =
-    [baseName, varietyName].filter(Boolean).join(" ") ||
+    [treeTypeName, varietyName].filter(Boolean).join(" ") ||
     raw?.treeName ||
-    treeTypeName ||
+    raw?.commonName ||
+    raw?.name ||
     "Cây ăn quả";
 
   const gardenId = raw?.gardenId ?? raw?.GardenId ?? effectiveGardenId;

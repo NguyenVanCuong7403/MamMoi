@@ -10,6 +10,7 @@ export default function LCPhaseDropdown({
   onPickPhase,
   onStartNewCycle,
   phaseConfigs,
+  isPhase1Completed = false,
 }) {
   const [open, setOpen] = useState(false);
   const fallbackItems = [
@@ -20,7 +21,9 @@ export default function LCPhaseDropdown({
   ];
   const items = useMemo(() => {
     const list = [];
-    if (phaseConfigs?.phase1) {
+    // Only include phase 1 if tree has NOT completed it yet
+    // (hide phase 1 once tree has moved past initial growth phase)
+    if (phaseConfigs?.phase1 && !isPhase1Completed) {
       list.push({
         id: phaseConfigs.phase1.phaseId,
         name: phaseConfigs.phase1.label,
@@ -38,8 +41,14 @@ export default function LCPhaseDropdown({
         }))
       );
     }
-    return list.length > 0 ? list : fallbackItems;
-  }, [phaseConfigs]);
+    // For fallback items, also filter out growth_development if phase1 completed
+    if (list.length === 0) {
+      return isPhase1Completed
+        ? fallbackItems.filter(item => item.id !== "growth_development")
+        : fallbackItems;
+    }
+    return list;
+  }, [phaseConfigs, isPhase1Completed]);
   return (
     <div className="mm-fluid-shell relative">
       <button

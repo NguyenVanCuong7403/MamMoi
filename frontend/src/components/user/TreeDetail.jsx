@@ -858,7 +858,7 @@ function ComboBox({
   );
 }
 
-function DateInput({ value, onChange, error }) {
+function DateInput({ value, onChange, error, maxDate = null }) {
   const [parts, setParts] = React.useState(() => parseIsoToParts(value));
   const [open, setOpen] = React.useState(false);
   const [dropdownStyle, setDropdownStyle] = React.useState({});
@@ -1306,8 +1306,17 @@ function DateInput({ value, onChange, error }) {
                   month === today.getMonth() &&
                   year === today.getFullYear();
 
+                // Check if this date is after maxDate (disabled for future dates)
+                const currentDate = new Date(year, month, d);
+                currentDate.setHours(0, 0, 0, 0);
+                const maxDateNormalized = maxDate ? new Date(maxDate) : null;
+                if (maxDateNormalized) maxDateNormalized.setHours(0, 0, 0, 0);
+                const isFutureDisabled = maxDateNormalized && currentDate > maxDateNormalized;
+
                 let extraClass = "";
-                if (isSelected) {
+                if (isFutureDisabled) {
+                  extraClass = "text-neutral-300 cursor-not-allowed";
+                } else if (isSelected) {
                   extraClass = "bg-emerald-500 text-white";
                 } else if (isToday) {
                   // Đánh dấu hôm nay bằng viền + chữ đậm
@@ -1321,7 +1330,8 @@ function DateInput({ value, onChange, error }) {
                   <button
                     type="button"
                     key={d}
-                    onClick={() => pickDay(d)}
+                    onClick={() => !isFutureDisabled && pickDay(d)}
+                    disabled={isFutureDisabled}
                     className={
                       "h-7 w-7 rounded-full flex items-center justify-center text-xs " +
                       extraClass
@@ -3280,11 +3290,30 @@ function mapDtoToTree(dto) {
   // Pre-calculate preMonths value to use consistently
   const preMonthsVal = Number(dto.preMonths ?? dto.PreMonths ?? dto.pre_months ?? dto.preNurseryAgeMonths ?? dto.PreNurseryAgeMonths ?? 0) || 0;
 
+  // Build display name: "loại + giống" (e.g., "Cam Canh")
+  const typeName = (dto.treeTypeName || dto.TreeTypeName || "").trim();
+  const varietyName = (dto.treeVarietyName || dto.TreeVarietyName || "").trim();
+
+  // Combine as "treeTypeName + treeVarietyName"
+  // Priority: typeName first, then varietyName
+  // If both exist and different, combine them
+  // If only one exists, use that one
+  let displayName;
+  if (typeName && varietyName && typeName.toLowerCase() !== varietyName.toLowerCase()) {
+    displayName = `${typeName} ${varietyName}`;  // "Cam" + "Canh" = "Cam Canh"
+  } else if (typeName) {
+    displayName = typeName;  // Only typeName available
+  } else if (varietyName) {
+    displayName = varietyName;  // Only varietyName available
+  } else {
+    displayName = dto.treeName || "Cây ăn quả";  // Fallback
+  }
+
   return {
     // ID & mã
     id: dto.treeId,
     code: dto.treeCode,
-    name: dto.treeName,
+    name: displayName,  // Use combined name: "Cam Canh"
     treeTypeId: dto.treeTypeId,
 
     // Ngày & vị trí
@@ -3295,9 +3324,11 @@ function mapDtoToTree(dto) {
     gardenName: dto.gardenName,
 
     // Loại / giống: để getLoai / getGiong hoạt động
-    loai: dto.treeTypeName,
-    variety: dto.variety, // nếu DTO sau này có thêm trường này thì tự map
-    tree_type: dto.treeTypeName,
+    loai: typeName,
+    variety: varietyName,
+    treeTypeName: typeName,
+    treeVarietyName: varietyName,
+    tree_type: typeName,
 
     updatedAt: dto.updatedAt,
     createdAt: dto.createdAt,
@@ -6359,6 +6390,7 @@ export default function TreeDetail() {
                               setFieldError("");
                             }}
                             error={fieldError}
+                            maxDate={new Date()}
                           />
                           {fieldError && (
                             <div className="text-xs text-rose-600">
@@ -6800,10 +6832,13 @@ export default function TreeDetail() {
                           lifecycleAutoDisabledAt,
                       }));
 
-                      // Update stageId in meta
+                      // Update stageId and virtualAgeMonths in meta
                       setMeta((prev) => ({
                         ...prev,
                         stageId: payload.stageId,
+                        ...(typeof payload.virtualAgeMonths === "number" && {
+                          virtualAgeMonths: payload.virtualAgeMonths,
+                        }),
                       }));
                     } else {
                       // Update lifecycleFromAPI even if stageId is not provided
@@ -6822,6 +6857,14 @@ export default function TreeDetail() {
                           prev?.lifecycleAutoDisabledAt ??
                           lifecycleAutoDisabledAt,
                       }));
+
+                      // Also update virtualAgeMonths in meta if provided
+                      if (typeof payload.virtualAgeMonths === "number") {
+                        setMeta((prev) => ({
+                          ...prev,
+                          virtualAgeMonths: payload.virtualAgeMonths,
+                        }));
+                      }
                     }
 
                     // Refresh AI recommendations after stage update
@@ -7194,10 +7237,13 @@ export default function TreeDetail() {
                         lifecycleAutoDisabledAt,
                     }));
 
-                    // Update stageId in meta
+                    // Update stageId and virtualAgeMonths in meta
                     setMeta((prev) => ({
                       ...prev,
                       stageId: payload.stageId,
+                      ...(typeof payload.virtualAgeMonths === "number" && {
+                        virtualAgeMonths: payload.virtualAgeMonths,
+                      }),
                     }));
                   } else {
                     // Update lifecycleFromAPI even if stageId is not provided
@@ -7215,6 +7261,14 @@ export default function TreeDetail() {
                         prev?.lifecycleAutoDisabledAt ??
                         lifecycleAutoDisabledAt,
                     }));
+
+                    // Also update virtualAgeMonths in meta if provided
+                    if (typeof payload.virtualAgeMonths === "number") {
+                      setMeta((prev) => ({
+                        ...prev,
+                        virtualAgeMonths: payload.virtualAgeMonths,
+                      }));
+                    }
                   }
 
                   // ✅ đồng bộ lifecycle + phase vào demoTrees (for local state management)

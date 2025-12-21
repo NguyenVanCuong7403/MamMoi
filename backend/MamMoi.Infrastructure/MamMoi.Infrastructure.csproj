@@ -30,6 +30,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Services\SubscriptionPlans\" />
     <Folder Include="Services\User\" />
   </ItemGroup>
 

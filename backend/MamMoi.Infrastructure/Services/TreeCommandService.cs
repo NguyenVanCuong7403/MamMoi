@@ -25,6 +25,9 @@ namespace MamMoi.Infrastructure.Services
             if (!await IsGardenOwner(userId, req.GardenId, ct))
                 throw new UnauthorizedAccessException("User is not garden owner.");
 
+            // DEBUG: Log preMonths value received from request
+            Console.WriteLine($"CreateAsync - req.preMonths = {req.preMonths}");
+
             // Kiểm tra giới hạn số cây mỗi vườn từ subscription plan
             var subscriptionPlan = await _subscriptionPlanService.GetCurrentUserSubscriptionAsync(userId);
             if (subscriptionPlan != null && subscriptionPlan.MaxTreesPerGarden.HasValue)
@@ -56,6 +59,68 @@ namespace MamMoi.Infrastructure.Services
                     throw new InvalidOperationException("GardenSoil does not match Garden/TreeType.");
             }
 
+            // Calculate tree's actual age from plantDate + preMonths
+            int? virtualAgeForMismatch = null;
+            if (req.PlantDate.HasValue)
+            {
+                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                var plantedAt = req.PlantDate.Value;
+                var ageMonths = CalculateAgeInMonths(plantedAt, today);
+                var preMonths = Math.Max(0, req.preMonths ?? 0);
+                var totalRealAge = ageMonths + preMonths;
+
+                // Get all stages for this tree type to determine expected stage
+                var stages = await _db.TreeGrowthStages
+                    .Where(s => s.TreeTypeId == req.TreeTypeId)
+                    .OrderBy(s => s.StageOrder)
+                    .ToListAsync(ct);
+
+                if (stages.Count > 0)
+                {
+                    // Find the expected stage based on actual age
+                    var expectedStage = ResolveStageForAge(stages, totalRealAge);
+
+                    // Get the selected stage details
+                    var selectedStage = stages.FirstOrDefault(s => s.StageId == req.StageId);
+
+                    // If selected stage doesn't match expected stage, set VirtualAgeMonths
+                    if (expectedStage != null && selectedStage != null && expectedStage.StageId != selectedStage.StageId)
+                    {
+                        // Calculate VirtualAgeMonths considering cycles
+                        // Get stage 2 min age and last stage max age for cycle calculation
+                        var secondStage = stages.Skip(1).FirstOrDefault();
+                        var lastStage = stages.LastOrDefault();
+                        var minCycleAge = secondStage?.MinAgeInMonths ?? 0;
+                        var maxCycleAge = lastStage?.MaxAgeInMonths;
+                        var selectedMinAge = selectedStage.MinAgeInMonths ?? 0;
+
+                        // If total age exceeds the cycle range, account for completed cycles
+                        if (maxCycleAge.HasValue && totalRealAge > maxCycleAge.Value && minCycleAge > 0)
+                        {
+                            int cycleLength = maxCycleAge.Value - minCycleAge;
+                            if (cycleLength > 0)
+                            {
+                                // Calculate completed cycles
+                                int ageAboveCycleStart = totalRealAge - minCycleAge;
+                                int completedCycles = ageAboveCycleStart / cycleLength;
+
+                                // Virtual age = selected stage min + (cycles * cycle length)
+                                virtualAgeForMismatch = selectedMinAge + (completedCycles * cycleLength);
+                            }
+                            else
+                            {
+                                virtualAgeForMismatch = selectedMinAge;
+                            }
+                        }
+                        else
+                        {
+                            // No cycling needed, just use the stage's min age
+                            virtualAgeForMismatch = selectedMinAge;
+                        }
+                    }
+                }
+            }
+
             var tree = new Tree
             {
                 GardenId = req.GardenId,
@@ -69,6 +134,8 @@ namespace MamMoi.Infrastructure.Services
                 GardenSoilId = req.GardenSoilId,
                 Location = req.Location,
                 Notes = req.Notes,
+                preMonths = req.preMonths,
+                VirtualAgeMonths = virtualAgeForMismatch, // Set virtual age if stage doesn't match real age
                 // trạng thái mặc định nếu FE không gửi
                 LeafStatus = string.IsNullOrWhiteSpace(req.LeafStatus) ? "Bình thường" : req.LeafStatus,
                 BranchStatus = string.IsNullOrWhiteSpace(req.BranchStatus) ? "Bình thường" : req.BranchStatus,
@@ -165,7 +232,48 @@ namespace MamMoi.Infrastructure.Services
 
                         if (minAge.HasValue)
                         {
-                            tree.VirtualAgeMonths = minAge.Value;
+                            // Calculate tree's total real age to determine which cycle it's in
+                            int totalRealAge = 0;
+                            if (tree.PlantDate.HasValue)
+                            {
+                                var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                                var plantAgeMonths = CalculateAgeInMonths(tree.PlantDate.Value, today);
+                                var preMonths = Math.Max(0, tree.preMonths ?? 0);
+                                totalRealAge = plantAgeMonths + preMonths;
+                            }
+
+                            // Get cycle info
+                            var allStages = await _db.TreeGrowthStages
+                                .Where(s => s.TreeTypeId == tree.TreeTypeId)
+                                .OrderBy(s => s.StageOrder)
+                                .ToListAsync(ct);
+
+                            var secondStage = allStages.Skip(1).FirstOrDefault();
+                            var lastStage = allStages.LastOrDefault();
+                            var minCycleAge = secondStage?.MinAgeInMonths ?? 0;
+                            var maxCycleAge = lastStage?.MaxAgeInMonths;
+
+                            // If tree age exceeds cycle range, account for completed cycles
+                            if (maxCycleAge.HasValue && totalRealAge > maxCycleAge.Value && minCycleAge > 0)
+                            {
+                                int cycleLength = maxCycleAge.Value - minCycleAge;
+                                if (cycleLength > 0)
+                                {
+                                    int ageAboveCycleStart = totalRealAge - minCycleAge;
+                                    int completedCycles = ageAboveCycleStart / cycleLength;
+
+                                    // Virtual age = stage min + (cycles * cycle length)
+                                    tree.VirtualAgeMonths = minAge.Value + (completedCycles * cycleLength);
+                                }
+                                else
+                                {
+                                    tree.VirtualAgeMonths = minAge.Value;
+                                }
+                            }
+                            else
+                            {
+                                tree.VirtualAgeMonths = minAge.Value;
+                            }
                             // Đánh dấu ageChanged để trigger auto-sync lifecycle ở phần sau
                             ageChanged = true;
                         }
@@ -196,9 +304,23 @@ namespace MamMoi.Infrastructure.Services
 
             // Check if age-related fields changed
             if (req.PlantDate.HasValue && req.PlantDate != oldPlantDate)
+            {
                 ageChanged = true;
+                // Clear VirtualAgeMonths when user changes plant date (real age takes priority)
+                if (tree.VirtualAgeMonths.HasValue)
+                {
+                    tree.VirtualAgeMonths = null;
+                }
+            }
             if (req.preMonths.HasValue && req.preMonths != oldPreMonths)
+            {
                 ageChanged = true;
+                // Clear VirtualAgeMonths when user changes pre-nursery age (real age takes priority)
+                if (tree.VirtualAgeMonths.HasValue)
+                {
+                    tree.VirtualAgeMonths = null;
+                }
+            }
 
             // cập nhật 4 trạng thái nếu FE gửi và lưu lịch sử thay đổi
             if (req.LeafStatus != null && req.LeafStatus != tree.LeafStatus)
@@ -333,30 +455,56 @@ namespace MamMoi.Infrastructure.Services
             if (stages == null || stages.Count == 0) return null;
 
             var sortedStages = stages.OrderBy(s => s.StageOrder).ToList();
-            TreeGrowthStage? fallback = null;
+            
+            // Get the second stage (flowering) min age for cycling - stage 1 (growth_development) only happens once
+            // Cycling happens between stage 2 and last stage
+            var secondStage = sortedStages.Skip(1).FirstOrDefault();
+            var minCycleAge = secondStage?.MinAgeInMonths ?? (sortedStages.FirstOrDefault()?.MinAgeInMonths ?? 0);
+            
+            // Get the last stage max age for cycling calculation
+            var lastStage = sortedStages.LastOrDefault();
+            var maxCycleAge = lastStage?.MaxAgeInMonths;
+            
+            // Apply cycling logic if totalAge exceeds the last stage's max age
+            int effectiveAge = totalAgeMonths;
+            if (maxCycleAge.HasValue && totalAgeMonths > maxCycleAge.Value)
+            {
+                // Calculate cycle length (from stage 2 min to last stage max)
+                // Stage 1 is excluded from cycling as it only happens once
+                int cycleLength = maxCycleAge.Value - minCycleAge;
+                if (cycleLength > 0)
+                {
+                    // Calculate how many complete cycles have passed since entering stage 2
+                    int ageAboveCycleStart = totalAgeMonths - minCycleAge;
+                    int completeCycles = ageAboveCycleStart / cycleLength;
+                    
+                    // Calculate the effective age within the current cycle
+                    // Formula: totalAge - (cycleLength * multiplier)
+                    effectiveAge = totalAgeMonths - (cycleLength * completeCycles);
+                    
+                    // Ensure effectiveAge is at least minCycleAge (stage 2 min)
+                    if (effectiveAge < minCycleAge)
+                    {
+                        effectiveAge = minCycleAge;
+                    }
+                }
+            }
 
+            // Find the appropriate stage for the effective age
             foreach (var stage in sortedStages)
             {
                 var min = stage.MinAgeInMonths ?? int.MinValue;
                 var max = stage.MaxAgeInMonths ?? int.MaxValue;
 
-                if (stage.MaxAgeInMonths == null)
-                {
-                    fallback = stage;
-                }
-
-                if (totalAgeMonths >= min && (max == int.MaxValue || totalAgeMonths < max))
+                // For inclusive ranges: age >= min AND age <= max
+                if (effectiveAge >= min && (max == int.MaxValue || effectiveAge <= max))
                 {
                     return stage;
                 }
-
-                if (max != int.MaxValue)
-                {
-                    fallback = stage;
-                }
             }
 
-            return fallback ?? sortedStages.LastOrDefault();
+            // Fallback to last stage if no match found
+            return sortedStages.LastOrDefault();
         }
 
         public async Task<bool> UpdateStatusAsync(int userId, int treeId, UpdateTreeStatusRequest req, CancellationToken ct)
@@ -475,7 +623,48 @@ namespace MamMoi.Infrastructure.Services
 
                     if (minAge.HasValue)
                     {
-                        tree.VirtualAgeMonths = minAge.Value;
+                        // Calculate tree's total real age to determine which cycle it's in
+                        int totalRealAge = 0;
+                        if (tree.PlantDate.HasValue)
+                        {
+                            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+                            var ageMonths = CalculateAgeInMonths(tree.PlantDate.Value, today);
+                            var preMonths = Math.Max(0, tree.preMonths ?? 0);
+                            totalRealAge = ageMonths + preMonths;
+                        }
+
+                        // Get cycle info
+                        var stages = await _db.TreeGrowthStages
+                            .Where(s => s.TreeTypeId == tree.TreeTypeId)
+                            .OrderBy(s => s.StageOrder)
+                            .ToListAsync(ct);
+
+                        var secondStage = stages.Skip(1).FirstOrDefault();
+                        var lastStage = stages.LastOrDefault();
+                        var minCycleAge = secondStage?.MinAgeInMonths ?? 0;
+                        var maxCycleAge = lastStage?.MaxAgeInMonths;
+
+                        // If tree age exceeds cycle range, account for completed cycles
+                        if (maxCycleAge.HasValue && totalRealAge > maxCycleAge.Value && minCycleAge > 0)
+                        {
+                            int cycleLength = maxCycleAge.Value - minCycleAge;
+                            if (cycleLength > 0)
+                            {
+                                int ageAboveCycleStart = totalRealAge - minCycleAge;
+                                int completedCycles = ageAboveCycleStart / cycleLength;
+
+                                // Virtual age = stage min + (cycles * cycle length)
+                                tree.VirtualAgeMonths = minAge.Value + (completedCycles * cycleLength);
+                            }
+                            else
+                            {
+                                tree.VirtualAgeMonths = minAge.Value;
+                            }
+                        }
+                        else
+                        {
+                            tree.VirtualAgeMonths = minAge.Value;
+                        }
                     }
                     else if (req is { } && ((dynamic)req).VirtualAgeMonths is int v)
                     {

@@ -112,36 +112,56 @@ public class TreeLifecycleAutomationService : ITreeLifecycleAutomationService
         // Sort stages by StageOrder to ensure correct processing order
         var sortedStages = stages.OrderBy(s => s.StageOrder).ToList();
 
-        TreeGrowthStage? fallback = null;
+        // Get the second stage (flowering) min age for cycling - stage 1 (growth_development) only happens once
+        // Cycling happens between stage 2 and last stage
+        var secondStage = sortedStages.Skip(1).FirstOrDefault();
+        var minCycleAge = secondStage?.MinAgeInMonths ?? (sortedStages.FirstOrDefault()?.MinAgeInMonths ?? 0);
 
+        // Get the last stage max age for cycling calculation
+        var lastStage = sortedStages.LastOrDefault();
+        var maxCycleAge = lastStage?.MaxAgeInMonths;
+
+        // Apply cycling logic if totalAge exceeds the last stage's max age
+        int effectiveAge = totalAgeMonths;
+        if (maxCycleAge.HasValue && totalAgeMonths > maxCycleAge.Value)
+        {
+            // Calculate cycle length (from stage 2 min to last stage max)
+            // Stage 1 is excluded from cycling as it only happens once
+            int cycleLength = maxCycleAge.Value - minCycleAge;
+            if (cycleLength > 0)
+            {
+                // Calculate how many complete cycles have passed since entering stage 2
+                int ageAboveCycleStart = totalAgeMonths - minCycleAge;
+                int completeCycles = ageAboveCycleStart / cycleLength;
+
+                // Calculate the effective age within the current cycle
+                // Formula: totalAge - (cycleLength * multiplier)
+                effectiveAge = totalAgeMonths - (cycleLength * completeCycles);
+
+                // Ensure effectiveAge is at least minCycleAge (stage 2 min)
+                if (effectiveAge < minCycleAge)
+                {
+                    effectiveAge = minCycleAge;
+                }
+            }
+        }
+
+        // Find the appropriate stage for the effective age
         foreach (var stage in sortedStages)
         {
             var min = stage.MinAgeInMonths ?? int.MinValue;
             var max = stage.MaxAgeInMonths ?? int.MaxValue;
 
-            // If this is the last stage (no MaxAgeInMonths or highest order), use it as fallback
-            if (stage.MaxAgeInMonths == null)
-            {
-                fallback = stage;
-            }
-
             // Check if age falls within this stage's range
-            // For inclusive ranges: age >= min AND (age < max OR max is null)
-            if (totalAgeMonths >= min && (max == int.MaxValue || totalAgeMonths < max))
+            // For inclusive ranges: age >= min AND age <= max
+            if (effectiveAge >= min && (max == int.MaxValue || effectiveAge <= max))
             {
                 return stage;
             }
-
-            // Keep track of the last stage with a valid range as fallback
-            if (max != int.MaxValue)
-            {
-                fallback = stage;
-            }
         }
 
-        // If no stage matches, return the last stage (fallback)
-        // This handles cases where age exceeds all defined ranges
-        return fallback ?? sortedStages.LastOrDefault();
+        // Fallback to last stage if no match found
+        return sortedStages.LastOrDefault();
     }
 
     private static int CalculateAgeInMonths(DateOnly plantedAt, DateOnly today)
