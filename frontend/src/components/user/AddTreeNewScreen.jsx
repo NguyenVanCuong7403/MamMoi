@@ -1390,7 +1390,11 @@ export default function AddTreeNewScreen() {
   // Nếu chưa override tay, khi có ngày trồng thì seed lại phase theo lib (1 lần)
 
   const ageAfterPlant = useMemo(() => monthsBetween(plantDate), [plantDate]);
-  const preAgeNum = useMemo(() => parseInt(preAge || "0", 10) || 0, [preAge]);
+  const preAgeNum = useMemo(() => {
+    const parsed = parseInt(preAge || "0", 10);
+    // If empty or 0, default to 1 month
+    return parsed > 0 ? parsed : 1;
+  }, [preAge]);
   const totalAge = (plantDate ? ageAfterPlant : 0) + preAgeNum;
   const soilKB = useMemo(() => SOIL_KB[speciesKey], [speciesKey]);
   const speciesLabel = useMemo(() => {
@@ -1687,20 +1691,39 @@ export default function AddTreeNewScreen() {
       // Map phase → StageId từ stagesByType
       // Tìm stage tương ứng với phase được chọn
       let selectedStageId = null;
+      let virtualAgeMonths = null;
+
       if (stagesByType.length > 0) {
-        // Sắp xếp stages theo stageOrder
+        // Sắp xếp stages theo stageOrder (numeric comparison)
         const sortedStages = [...stagesByType].sort(
-          (a, b) => (a.stageOrder || 0) - (b.stageOrder || 0)
+          (a, b) => Number(a.stageOrder || 0) - Number(b.stageOrder || 0)
         );
 
         // Nếu có phaseOverride, tìm stage theo index trong PHASES5
         const phaseIndex = PHASES5.indexOf(effectivePhase);
+        let selectedStage = null;
+
         if (phaseIndex >= 0 && phaseIndex < sortedStages.length) {
           // Map trực tiếp theo index: phaseIndex 0 -> stage đầu tiên, phaseIndex 1 -> stage thứ 2, ...
-          selectedStageId = sortedStages[phaseIndex].stageId;
+          selectedStage = sortedStages[phaseIndex];
+          selectedStageId = selectedStage.stageId;
         } else {
           // Fallback: chọn stage đầu tiên nếu không tìm thấy
-          selectedStageId = sortedStages[0].stageId;
+          selectedStage = sortedStages[0];
+          selectedStageId = selectedStage.stageId;
+        }
+
+        // Tính VirtualAgeMonths dựa trên stage được chọn
+        // Ưu tiên minAgeInMonths, nếu không có thì dùng maxAgeInMonths
+        if (selectedStage) {
+          const minAge = selectedStage.minAgeInMonths;
+          const maxAge = selectedStage.maxAgeInMonths;
+
+          if (minAge != null && !isNaN(Number(minAge))) {
+            virtualAgeMonths = Number(minAge);
+          } else if (maxAge != null && !isNaN(Number(maxAge))) {
+            virtualAgeMonths = Number(maxAge);
+          }
         }
       } else {
         throw new Error(
@@ -1724,6 +1747,9 @@ export default function AddTreeNewScreen() {
 
         Notes: (note || userIntent || "").trim() || null,
         preMonths: preAgeNum,
+
+        // Tự động set VirtualAgeMonths dựa trên giai đoạn hiện tại
+        VirtualAgeMonths: virtualAgeMonths,
 
         LeafStatus: leafInfo.trim() || null,
         BranchStatus: branchInfo.trim() || null,

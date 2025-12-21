@@ -46,6 +46,31 @@ namespace MamMoi.Infrastructure.Services
                 .AnyAsync(s => s.StageId == req.StageId && s.TreeTypeId == req.TreeTypeId, ct);
             if (!okStage) throw new InvalidOperationException("Stage does not belong to TreeType.");
 
+            // Initialize VirtualAgeMonths based on stage's MinAgeInMonths (or MaxAgeInMonths if min doesn't exist)
+            // This ensures "Tuổi dự kiến" (Expected Age) displays correctly from the start
+            int? virtualAgeMonths = null;
+            var selectedStage = await _db.TreeGrowthStages
+                .FirstOrDefaultAsync(s => s.StageId == req.StageId && s.TreeTypeId == req.TreeTypeId, ct);
+            
+            if (selectedStage != null)
+            {
+                virtualAgeMonths = selectedStage.MinAgeInMonths;
+                
+                // If the specific stage has no MinAge, try to find the minimum MinAge among stages with same StageOrder
+                if (!virtualAgeMonths.HasValue)
+                {
+                    virtualAgeMonths = await _db.TreeGrowthStages
+                        .Where(s => s.TreeTypeId == req.TreeTypeId && s.StageOrder == selectedStage.StageOrder && s.MinAgeInMonths.HasValue)
+                        .MinAsync(s => (int?)s.MinAgeInMonths, ct);
+                }
+                
+                // If still no MinAge, fallback to MaxAgeInMonths
+                if (!virtualAgeMonths.HasValue)
+                {
+                    virtualAgeMonths = selectedStage.MaxAgeInMonths;
+                }
+            }
+
             // GardenSoil (nếu truyền) phải thuộc đúng Garden và đúng SoilMaster của TreeType
             if (req.GardenSoilId.HasValue)
             {
@@ -76,6 +101,7 @@ namespace MamMoi.Infrastructure.Services
                 FruitStatus = string.IsNullOrWhiteSpace(req.FruitStatus) ? "Bình thường" : req.FruitStatus,
                 IsActive = req.IsActive ?? true,
                 IsFruiting = req.IsFruiting ?? false,
+                VirtualAgeMonths = virtualAgeMonths, // Set expected age based on stage
                 CreatedAt = DateTime.UtcNow
             };
 
