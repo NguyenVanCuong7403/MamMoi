@@ -1500,11 +1500,29 @@ export default function ReportManagement() {
     return closedStatuses.includes(normalizedStatus);
   };
 
-  const openDialog = (report) => {
-    setSelectedReport(report);
+  const openDialog = async (report) => {
+    // For closed reports, fetch full details from API since list API doesn't include resolution
     if (isReportClosed(report)) {
-      setViewDetailOpen(true);
+      try {
+        const requestId = report.requestId || report.id;
+        const fullReport = await AdminReportRepository.getReportById(requestId);
+        // Map API fields to frontend expected fields
+        const mappedReport = {
+          ...report,
+          ...fullReport,
+          internalNote: fullReport.resolution || fullReport.internalNote,
+          emailContent: fullReport.emailContent || fullReport.resolution,
+        };
+        setSelectedReport(mappedReport);
+        setViewDetailOpen(true);
+      } catch (err) {
+        console.error("Error fetching report details:", err);
+        // Fallback to using the list data
+        setSelectedReport(report);
+        setViewDetailOpen(true);
+      }
     } else {
+      setSelectedReport(report);
       setDialogOpen(true);
     }
   };
