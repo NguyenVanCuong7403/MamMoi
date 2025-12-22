@@ -294,6 +294,10 @@ const TASK_STATUS_META = {
     className: "border-sky-200 bg-sky-50 text-sky-700",
   },
   completed: {
+    label: "Hoàn thành",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  },
+  completedlate: {
     label: "Quá hạn",
     className: "border-red-300 bg-red-100 text-red-800",
   },
@@ -3730,7 +3734,7 @@ function TaskItem({
             </div>
             <div className="text-xs text-white/60 mt-1">#{task.scheduleId}</div>
           </div>
-          <TaskStatusBadge status={task.status} />
+          <TaskStatusBadge status={completedLate ? "completedlate" : task.status} />
         </div>
 
         {task.description && descLines.length > 0 && (

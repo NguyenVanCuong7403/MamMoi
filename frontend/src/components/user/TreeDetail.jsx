@@ -3378,8 +3378,10 @@ function mapDtoToTree(dto) {
     soil: dto.gardenSoilId,
     notes: dto.notes,
     qrUrl: dto.qrcodeUrl,
-    // Image URL from database
-    imageUrl: dto.imageUrl ?? dto.image_url ?? dto.img ?? null,
+    // Image URL from database, fallback to picsum.photos with tree id as seed
+    imageUrl: dto.imageUrl ?? dto.image_url ?? dto.img ?? `https://picsum.photos/seed/${encodeURIComponent(
+      String(dto.treeId ?? dto.id ?? "").replace(/\W/g, "")
+    )}/1200/800`,
     stageName: dto.stageName,
     phase: dto.stageName,
 
