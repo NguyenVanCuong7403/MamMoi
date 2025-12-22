@@ -215,7 +215,7 @@ function PaymentHistory({
                         {(page - 1) * pageSize + index + 1}
                       </TableCell>
                       <TableCell className="text-gray-900 text-[clamp(12px,1.4vw,16px)] py-3 md:py-4 lg:py-6 px-3 md:px-4 lg:px-6 break-words whitespace-nowrap">
-                        {t.time}
+                        {t.time.replace("T", " ")}
                       </TableCell>
                       <TableCell className="text-gray-900 text-[clamp(12px,1.4vw,16px)] py-3 md:py-4 lg:py-6 px-3 md:px-4 lg:px-6 break-words">
                         {t.package}
@@ -290,7 +290,7 @@ function PaymentHistory({
                 <div>
                   <div className="text-xs text-gray-500 mb-1">Thời gian</div>
                   <div className="text-sm text-gray-900 break-words">
-                    {t.time}
+                    {t.time.replace("T", " ")}
                   </div>
                 </div>
                 <div>
