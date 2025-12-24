@@ -59,6 +59,7 @@ public class SubscriptionExpiryNotificationBackgroundService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MamMoiDbContext>();
         var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+        var smsService = scope.ServiceProvider.GetRequiredService<ISmsService>();
         var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
         var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
@@ -107,14 +108,41 @@ public class SubscriptionExpiryNotificationBackgroundService : BackgroundService
                     expiryMessage = $"đã hết hạn {Math.Abs(daysUntilExpiry)} ngày trước";
 
                 // Send notification email with planId for dynamic renewal link
-                await emailService.SendSubscriptionExpiryNotificationAsync(
-                    subscription.User.Email,
-                    subscription.User.FullName ?? subscription.User.Email,
-                    subscription.PlanName,
-                    subscription.EndDate.Value,
-                    daysUntilExpiry,
-                    planId
-                );
+                if (!string.IsNullOrEmpty(subscription.User.Email))
+                {
+                    await emailService.SendSubscriptionExpiryNotificationAsync(
+                        subscription.User.Email,
+                        subscription.User.FullName ?? subscription.User.Email,
+                        subscription.PlanName,
+                        subscription.EndDate.Value,
+                        daysUntilExpiry,
+                        planId
+                    );
+                }
+
+                // Send SMS notification if user has phone
+                if (!string.IsNullOrEmpty(subscription.User.Phone))
+                {
+                    try
+                    {
+                        await smsService.SendSubscriptionExpirySmsAsync(
+                            subscription.User.Phone,
+                            subscription.User.FullName ?? "bạn",
+                            subscription.PlanName,
+                            daysUntilExpiry
+                        );
+                        _logger.LogInformation(
+                            "Sent subscription expiry SMS to {Phone} for plan {PlanName}",
+                            subscription.User.Phone,
+                            subscription.PlanName
+                        );
+                    }
+                    catch (Exception smsEx)
+                    {
+                        _logger.LogError(smsEx, "Error sending subscription expiry SMS to user {UserId}", subscription.User.UserId);
+                        // Continue - email may have worked
+                    }
+                }
 
                 // Build renewal link for in-app notification
                 var renewalLink = planId.HasValue 

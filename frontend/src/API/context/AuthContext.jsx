@@ -382,13 +382,20 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const verifyOtp = async (email, otpCode) => {
+  const verifyOtp = async (contact, otpCode) => {
     setLoading(true);
     try {
-      const response = await AuthRepository.verifyOtp({
-        email,
+      // Determine if contact is email or phone
+      const isEmail = contact && contact.includes("@");
+      const isPhone = contact && /^(0|\+84|84)\d{9,10}$/.test(contact.replace(/\D/g, "").replace(/^84/, "0"));
+
+      const requestData = {
         otpCode,
-      });
+        email: isEmail ? contact : undefined,
+        phone: isPhone ? contact : undefined,
+      };
+
+      const response = await AuthRepository.verifyOtp(requestData);
 
       console.log("🔍 AuthContext verifyOtp response:", response);
 

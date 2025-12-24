@@ -1,4 +1,5 @@
 using MamMoi.Application.DTOs.Auth;
+using MamMoi.Application.Interfaces;
 using MamMoi.Application.Interfaces.Auth;
 using MamMoi.Domain.Interfaces;
 using MamMoi.Infrastructure.Models;
@@ -20,6 +21,7 @@ public class AuthService : IAuthService
 {
     private readonly IUserRepository _userRepository;
     private readonly IEmailService _emailService;
+    private readonly ISmsService _smsService;
     private readonly TokenService _tokenService;
     private readonly IMemoryCache _cache;
     private readonly MamMoiDbContext _context;
@@ -27,74 +29,117 @@ public class AuthService : IAuthService
     public AuthService(
         IUserRepository userRepository,
         IEmailService emailService,
+        ISmsService smsService,
         TokenService tokenService,
         IMemoryCache cache,
         MamMoiDbContext context)
     {
         _userRepository = userRepository;
         _emailService = emailService;
+        _smsService = smsService;
         _tokenService = tokenService;
         _cache = cache;
         _context = context;
     }
 
     /// <summary>
-    /// CHỨC NĂNG 1: Đăng ký user mới + Gửi OTP
+    /// CHỨC NĂNG 1: Đăng ký user mới + Gửi OTP (qua Email hoặc SMS)
     /// </summary>
     public async Task<AuthResponseDto> RegisterAsync(RegisterRequestDto request)
     {
-        // 1. Kiểm tra email đã tồn tại chưa
-        if (await _userRepository.ExistsAsync(request.Email))
+        // 1. Normalize phone if provided
+        var normalizedPhone = !string.IsNullOrWhiteSpace(request.Phone) 
+            ? NormalizePhoneNumber(request.Phone) 
+            : null;
+
+        // 2. Kiểm tra email hoặc phone đã tồn tại chưa
+        if (!string.IsNullOrWhiteSpace(request.Email))
         {
-            throw new InvalidOperationException("Email đã được đăng ký. Vui lòng dùng email khác.");
+            if (await _userRepository.ExistsAsync(request.Email))
+            {
+                throw new InvalidOperationException("Email đã được đăng ký. Vui lòng dùng email khác.");
+            }
         }
 
-        // 2. Hash password
+        if (!string.IsNullOrWhiteSpace(normalizedPhone))
+        {
+            var phoneExists = await _context.Users.AnyAsync(u => u.Phone == normalizedPhone);
+            if (phoneExists)
+            {
+                throw new InvalidOperationException("Số điện thoại đã được đăng ký. Vui lòng dùng số khác.");
+            }
+        }
+
+        // 3. Hash password
         var passwordHash = HashPassword(request.Password);
 
-        // 3. Tạo user mới (chưa verify)
+        // 4. Tạo user mới (chưa verify)
         var user = new User
         {
-            Email = request.Email,
+            Email = request.Email ?? "", // Allow empty email for phone-only registration
             FullName = request.FullName,
-            Phone = request.Phone,
+            Phone = normalizedPhone,
             PasswordHash = passwordHash,
-            RoleId = 3, // Role Farmer mặc định - có thể tạo vườn và giao việc cho Staff
-            IsActive = false, // Chưa active vì chưa verify email
+            RoleId = 3, // Role Farmer mặc định
+            IsActive = false, // Chưa active vì chưa verify
             CreatedAt = DateTime.Now
         };
 
-        // 4. Lưu user vào DB
+        // 5. Lưu user vào DB
         var createdUser = await _userRepository.AddAsync(user);
         var userEntity = (User)createdUser;
 
-        // 5. Generate OTP (6 số random)
+        // 6. Generate OTP (6 số random)
         var otpCode = GenerateOtp();
 
-        // 6. Lưu OTP vào cache (expire sau 5 phút)
-        var cacheKey = $"otp_{request.Email}";
-        var otpData = new
-        {
-            Code = otpCode,
-            UserId = userEntity.UserId,
-            CreatedAt = DateTime.Now
-        };
-        _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(5));
+        // 7. Xác định kênh gửi OTP: ưu tiên email, fallback to phone
+        bool sentViaEmail = false;
+        bool sentViaSms = false;
 
-        // 7. Gửi OTP qua email (TEMPORARY: Skip để test)
-        try
+        if (!string.IsNullOrWhiteSpace(request.Email))
         {
-            await _emailService.SendOtpEmailAsync(request.Email, request.FullName, otpCode);
+            // Gửi OTP qua Email
+            var cacheKey = $"otp_{request.Email}";
+            var otpData = new { Code = otpCode, UserId = userEntity.UserId, CreatedAt = DateTime.Now };
+            _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(5));
+
+            try
+            {
+                await _emailService.SendOtpEmailAsync(request.Email, request.FullName, otpCode);
+                sentViaEmail = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WARNING] Failed to send OTP email: {ex.Message}");
+                Console.WriteLine($"[OTP CODE for {request.Email}]: {otpCode}");
+            }
         }
-        catch (Exception ex)
+        else if (!string.IsNullOrWhiteSpace(normalizedPhone))
         {
-            // Log lỗi email nhưng không throw - cho phép register tiếp
-            Console.WriteLine($"[WARNING] Failed to send OTP email: {ex.Message}");
-            // OTP vẫn lưu trong cache, user có thể lấy từ log
-            Console.WriteLine($"[OTP CODE for {request.Email}]: {otpCode}");
+            // Gửi OTP qua SMS (phone-only registration)
+            var cacheKey = $"otp_phone_{normalizedPhone}";
+            var otpData = new { Code = otpCode, UserId = userEntity.UserId, CreatedAt = DateTime.Now };
+            _cache.Set(cacheKey, otpData, TimeSpan.FromMinutes(5));
+
+            try
+            {
+                await _smsService.SendOtpSmsAsync(normalizedPhone, otpCode);
+                sentViaSms = true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WARNING] Failed to send OTP SMS: {ex.Message}");
+                Console.WriteLine($"[OTP CODE for {normalizedPhone}]: {otpCode}");
+            }
         }
 
-        // 8. Trả response (chưa có token vì chưa verify)
+        // 8. Trả response
+        string message = sentViaEmail
+            ? "Đăng ký thành công! Vui lòng kiểm tra email để nhận mã OTP."
+            : sentViaSms
+                ? "Đăng ký thành công! Vui lòng kiểm tra tin nhắn SMS để nhận mã OTP."
+                : "Đăng ký thành công! Mã OTP đã được tạo.";
+
         return new AuthResponseDto
         {
             UserId = userEntity.UserId,
@@ -103,18 +148,35 @@ public class AuthService : IAuthService
             IsEmailVerified = false,
             AccessToken = null,
             RefreshToken = null,
-            Message = "Đăng ký thành công! Vui lòng kiểm tra email để nhận mã OTP."
+            Message = message
         };
     }
 
     /// <summary>
-    /// CHỨC NĂNG 2: Xác thực OTP
+    /// CHỨC NĂNG 2: Xác thực OTP (hỗ trợ cả Email và Phone)
     /// </summary>
     public async Task<AuthResponseDto> VerifyOtpAsync(VerifyOtpRequestDto request)
     {
-        // 1. Lấy OTP từ cache
-        var cacheKey = $"otp_{request.Email}";
-        if (!_cache.TryGetValue<dynamic>(cacheKey, out var otpData) || otpData == null)
+        // 1. Determine cache key based on email or phone
+        dynamic? otpData = null;
+        string cacheKey = "";
+
+        // Try email first
+        if (!string.IsNullOrWhiteSpace(request.Email))
+        {
+            cacheKey = $"otp_{request.Email}";
+            _cache.TryGetValue<dynamic>(cacheKey, out otpData);
+        }
+
+        // If not found and phone is provided, try phone
+        if (otpData == null && !string.IsNullOrWhiteSpace(request.Phone))
+        {
+            var normalizedPhone = NormalizePhoneNumber(request.Phone);
+            cacheKey = $"otp_phone_{normalizedPhone}";
+            _cache.TryGetValue<dynamic>(cacheKey, out otpData);
+        }
+
+        if (otpData == null)
         {
             throw new InvalidOperationException("Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại.");
         }
@@ -134,7 +196,7 @@ public class AuthService : IAuthService
 
         var userEntity = (User)user;
 
-        // 4. Active user (đã verify email)
+        // 4. Active user (đã verify email/phone)
         userEntity.IsActive = true;
         userEntity.UpdatedAt = DateTime.Now;
         await _userRepository.UpdateAsync(userEntity);
@@ -146,7 +208,7 @@ public class AuthService : IAuthService
         var accessToken = _tokenService.GenerateToken(
             userEntity.UserId.ToString(),
             userEntity.FullName,
-            userEntity.Email,
+            userEntity.Email ?? userEntity.Phone ?? "",
             new[] { userEntity.Role?.RoleName ?? "User" }
         );
 
@@ -159,14 +221,17 @@ public class AuthService : IAuthService
         _cache.Set(refreshTokenKey, refreshToken, TimeSpan.FromDays(7));
         _cache.Set(tokenToUserKey, userEntity.UserId, TimeSpan.FromDays(7)); // Lưu userId
 
-        // 8. Gửi email chào mừng (TEMPORARY: Skip để test)
-        try
+        // 8. Gửi email chào mừng (chỉ khi có email)
+        if (!string.IsNullOrEmpty(userEntity.Email))
         {
-            await _emailService.SendWelcomeEmailAsync(userEntity.Email, userEntity.FullName);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[WARNING] Failed to send welcome email: {ex.Message}");
+            try
+            {
+                await _emailService.SendWelcomeEmailAsync(userEntity.Email, userEntity.FullName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WARNING] Failed to send welcome email: {ex.Message}");
+            }
         }
 
         // 9. Trả response với tokens
@@ -822,6 +887,162 @@ public class AuthService : IAuthService
         public string? GivenName { get; set; }
         public string? FamilyName { get; set; }
         public string? Picture { get; set; }
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 10: Gửi OTP qua SMS cho xác thực số điện thoại
+    /// </summary>
+    public async Task<AuthResponseDto> SendPhoneOtpAsync(SendPhoneOtpRequestDto request)
+    {
+        // 1. Normalize phone number
+        var phone = NormalizePhoneNumber(request.Phone);
+
+        // 2. Check if phone already exists and is verified
+        var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Phone == phone && u.IsActive);
+        if (existingUser != null)
+        {
+            throw new InvalidOperationException("Số điện thoại này đã được đăng ký. Vui lòng dùng số khác.");
+        }
+
+        // 3. Generate OTP
+        var otpCode = GenerateOtp();
+
+        // 4. Store OTP in cache (5 minutes)
+        var cacheKey = $"phone_otp_{phone}";
+        _cache.Set(cacheKey, otpCode, TimeSpan.FromMinutes(5));
+
+        // 5. Send OTP via SMS
+        try
+        {
+            await _smsService.SendOtpSmsAsync(phone, otpCode);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[SMS ERROR] Failed to send OTP: {ex.Message}");
+            Console.WriteLine($"[OTP CODE for {phone}]: {otpCode}");
+        }
+
+        return new AuthResponseDto
+        {
+            Success = true,
+            Message = "Mã OTP đã được gửi đến số điện thoại của bạn."
+        };
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 11: Xác thực OTP từ SMS
+    /// </summary>
+    public async Task<AuthResponseDto> VerifyPhoneOtpAsync(VerifyPhoneOtpRequestDto request)
+    {
+        var phone = NormalizePhoneNumber(request.Phone);
+
+        // 1. Get OTP from cache
+        var cacheKey = $"phone_otp_{phone}";
+        if (!_cache.TryGetValue(cacheKey, out string? cachedOtp))
+        {
+            throw new InvalidOperationException("Mã OTP đã hết hạn. Vui lòng yêu cầu gửi lại.");
+        }
+
+        // 2. Verify OTP
+        if (cachedOtp != request.OtpCode)
+        {
+            throw new InvalidOperationException("Mã OTP không đúng. Vui lòng thử lại.");
+        }
+
+        // 3. Mark phone as verified in cache (for registration flow)
+        var verifiedKey = $"phone_verified_{phone}";
+        _cache.Set(verifiedKey, true, TimeSpan.FromMinutes(30));
+
+        // 4. Remove OTP from cache
+        _cache.Remove(cacheKey);
+
+        return new AuthResponseDto
+        {
+            Success = true,
+            Message = "Xác thực số điện thoại thành công!"
+        };
+    }
+
+    /// <summary>
+    /// CHỨC NĂNG 12: Đăng nhập với Phone/Password
+    /// </summary>
+    public async Task<AuthResponseDto> LoginWithPhoneAsync(string phone, string password)
+    {
+        var normalizedPhone = NormalizePhoneNumber(phone);
+
+        // 1. Find user by phone
+        var user = await _context.Users
+            .Include(u => u.Role)
+            .FirstOrDefaultAsync(u => u.Phone == normalizedPhone);
+
+        if (user == null)
+        {
+            throw new InvalidOperationException("Số điện thoại hoặc mật khẩu không đúng.");
+        }
+
+        // 2. Verify password
+        if (!VerifyPassword(password, user.PasswordHash))
+        {
+            throw new InvalidOperationException("Số điện thoại hoặc mật khẩu không đúng.");
+        }
+
+        // 3. Check if account is active
+        if (!user.IsActive)
+        {
+            throw new InvalidOperationException("Tài khoản chưa được xác thực hoặc đã bị khóa.");
+        }
+
+        // 4. Generate tokens
+        var accessToken = _tokenService.GenerateToken(
+            user.UserId.ToString(),
+            user.FullName,
+            user.Email ?? user.Phone ?? "",
+            new[] { user.Role?.RoleName ?? "User" }
+        );
+
+        var refreshToken = GenerateRefreshToken();
+
+        // 5. Save refresh token
+        var refreshTokenKey = $"refresh_{user.UserId}";
+        var tokenToUserKey = $"token_{refreshToken}";
+        _cache.Set(refreshTokenKey, refreshToken, TimeSpan.FromDays(7));
+        _cache.Set(tokenToUserKey, user.UserId, TimeSpan.FromDays(7));
+
+        // 6. Update last login
+        user.LastLoginAt = DateTime.Now;
+        await _context.SaveChangesAsync();
+
+        return new AuthResponseDto
+        {
+            UserId = user.UserId,
+            Email = user.Email,
+            FullName = user.FullName,
+            IsEmailVerified = true,
+            AccessToken = accessToken,
+            RefreshToken = refreshToken,
+            ProfileImageUrl = user.ProfileImageUrl,
+            TokenExpiresAt = DateTime.Now.AddDays(7),
+            Message = "Đăng nhập thành công!",
+            RoleId = user.RoleId
+        };
+    }
+
+    /// <summary>
+    /// Normalize phone number to standard format
+    /// </summary>
+    private string NormalizePhoneNumber(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return phone;
+        phone = phone.Trim().Replace(" ", "").Replace("-", "");
+        if (phone.StartsWith("0") && phone.Length >= 10)
+        {
+            phone = "+84" + phone.Substring(1);
+        }
+        if (!phone.StartsWith("+"))
+        {
+            phone = "+" + phone;
+        }
+        return phone;
     }
 
     #region Helper Methods

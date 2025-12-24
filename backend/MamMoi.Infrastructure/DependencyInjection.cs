@@ -81,6 +81,10 @@ public static class DependencyInjection
         // Register authentication services
         services.AddScoped<IAuthService, MamMoi.Infrastructure.Services.Auth.AuthService>();
         services.AddScoped<IEmailService, MamMoi.Infrastructure.Services.Auth.EmailService>();
+        
+        // Register SMS service
+        services.AddHttpClient("SmsClient");
+        services.AddScoped<ISmsService, MamMoi.Infrastructure.Services.Sms.SmsService>();
 
         // Register infrastructure services
         services.AddScoped<TokenService>();

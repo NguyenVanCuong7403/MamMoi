@@ -464,5 +464,92 @@ public class AuthController : ControllerBase
             });
         }
     }
+
+    /// <summary>
+    /// API 10: Gửi OTP qua SMS cho xác thực số điện thoại
+    /// POST /api/auth/send-phone-otp
+    /// </summary>
+    [HttpPost("send-phone-otp")]
+    [AllowAnonymous]
+    public async Task<IActionResult> SendPhoneOtp([FromBody] SendPhoneOtpRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.SendPhoneOtpAsync(request);
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Message,
+                data = result
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during send phone OTP");
+            return StatusCode(500, new { success = false, message = "Đã xảy ra lỗi. Vui lòng thử lại sau." });
+        }
+    }
+
+    /// <summary>
+    /// API 11: Xác thực OTP từ SMS
+    /// POST /api/auth/verify-phone
+    /// </summary>
+    [HttpPost("verify-phone")]
+    [AllowAnonymous]
+    public async Task<IActionResult> VerifyPhone([FromBody] VerifyPhoneOtpRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.VerifyPhoneOtpAsync(request);
+            return Ok(new
+            {
+                success = result.Success,
+                message = result.Message,
+                data = result
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during verify phone OTP");
+            return StatusCode(500, new { success = false, message = "Đã xảy ra lỗi. Vui lòng thử lại sau." });
+        }
+    }
+
+    /// <summary>
+    /// API 12: Đăng nhập bằng số điện thoại
+    /// POST /api/auth/phone-login
+    /// </summary>
+    [HttpPost("phone-login")]
+    [AllowAnonymous]
+    public async Task<IActionResult> PhoneLogin([FromBody] PhoneLoginRequestDto request)
+    {
+        try
+        {
+            var result = await _authService.LoginWithPhoneAsync(request.Phone, request.Password);
+            return Ok(new
+            {
+                success = true,
+                message = result.Message,
+                data = result
+            });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during phone login");
+            return StatusCode(500, new { success = false, message = "Đã xảy ra lỗi. Vui lòng thử lại sau." });
+        }
+    }
 }
 

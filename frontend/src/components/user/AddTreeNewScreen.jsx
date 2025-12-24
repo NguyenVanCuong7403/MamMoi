@@ -31,6 +31,7 @@ import { normalize as vnNormalize } from "@/lib/useVnAdmin";
 import TreeRepository from "@/API/repositories/TreeRepository";
 import GardenSoilRepository from "@/API/repositories/GardenSoilRepository";
 import GardenRepository from "@/API/repositories/GardenRepository";
+import SubscriptionPlanRepository from "@/API/repositories/SubscriptionPlanRepository";
 
 /**
  * MamMoi — AddTreeNewScreen (updated phases & garden context)
@@ -1248,6 +1249,25 @@ export default function AddTreeNewScreen() {
     };
   }, [currentGarden?.id]);
 
+  // Fetch current user subscription to check maxTreesPerGarden limit
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const subscription = await SubscriptionPlanRepository.getCurrentUserSubscription();
+        if (!cancelled) {
+          setCurrentSubscription(subscription);
+        }
+      } catch (err) {
+        console.error("Failed to load subscription", err);
+        if (!cancelled) setCurrentSubscription(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const regionTag = currentGarden?.region || "";
 
   // States
@@ -1283,6 +1303,18 @@ export default function AddTreeNewScreen() {
   const [lastCreatedVariety, setLastCreatedVariety] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [existingTreeCodes, setExistingTreeCodes] = useState(new Set()); // Lưu các mã cây đã tồn tại
+
+  // =================== BULK ADD MODE ===================
+  const [addMode, setAddMode] = useState("single"); // "single" | "bulk"
+  const [treeCount, setTreeCount] = useState(1);
+  const [currentSubscription, setCurrentSubscription] = useState(null);
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0 }); // For progress display
+
+  // Calculate remaining slots for bulk add validation
+  const currentTreeCount = existingTreeCodes.size;
+  const maxTreesPerGarden = currentSubscription?.maxTreesPerGarden ?? currentSubscription?.MaxTreesPerGarden ?? null;
+  const remainingSlots = maxTreesPerGarden !== null ? Math.max(0, maxTreesPerGarden - currentTreeCount) : Infinity;
+
   const imagePickerRef = useRef(null);
 
   const openImagePicker = () => {
@@ -1715,14 +1747,26 @@ export default function AddTreeNewScreen() {
   };
   function validateBasic() {
     const e = {};
-    const codeTrimmed = String(code).trim();
-    if (!codeTrimmed) {
-      e.code = REQUIRED_MSG.code;
+    // Kiểm tra mã cây cho chế độ single
+    if (addMode === "single") {
+      const codeTrimmed = String(code).trim();
+      if (!codeTrimmed) {
+        e.code = REQUIRED_MSG.code;
+      } else {
+        // Kiểm tra mã đã tồn tại chưa
+        const codeUpper = codeTrimmed.toUpperCase();
+        if (existingTreeCodes.has(codeUpper)) {
+          e.code = "Mã cây này đã tồn tại. Vui lòng chọn mã khác.";
+        }
+      }
     } else {
-      // Kiểm tra mã đã tồn tại chưa
-      const codeUpper = codeTrimmed.toUpperCase();
-      if (existingTreeCodes.has(codeUpper)) {
-        e.code = "Mã cây này đã tồn tại. Vui lòng chọn mã khác.";
+      // Bulk mode validation
+      if (!treeCount || treeCount < 1) {
+        e.treeCount = "Vui lòng nhập số lượng cây hợp lệ (tối thiểu 1).";
+      } else if (treeCount > 100) {
+        e.treeCount = "Số lượng cây tối đa là 100 cây mỗi lần thêm.";
+      } else if (remainingSlots !== Infinity && treeCount > remainingSlots) {
+        e.treeCount = `Bạn chỉ có thể thêm tối đa ${remainingSlots} cây nữa theo gói đăng ký hiện tại. Vui lòng nâng cấp gói để thêm nhiều cây hơn.`;
       }
     }
     if (!treeTypeId) e.speciesKey = REQUIRED_MSG.speciesKey;
@@ -1757,6 +1801,41 @@ export default function AddTreeNewScreen() {
     return e;
   }
 
+  // Generate multiple unique tree codes for bulk add
+  function generateUniqueCodes(count) {
+    if (!speciesLabel || !variety) return [];
+    const s1 = firstLetterVi(speciesLabel || speciesKey);
+    const v1 = firstLetterVi(variety);
+    if (!s1 || !v1) return [];
+
+    const prefix = `${s1}${v1}-`;
+    const codes = [];
+    let nextNum = 1;
+
+    // Find max existing number for this prefix
+    existingTreeCodes.forEach((existingCode) => {
+      if (existingCode.startsWith(prefix.toUpperCase())) {
+        const match = existingCode.match(/\d+$/);
+        if (match) {
+          const num = parseInt(match[0], 10);
+          if (num >= nextNum) nextNum = num + 1;
+        }
+      }
+    });
+
+    // Generate unique codes
+    for (let i = 0; i < count; i++) {
+      let newCode;
+      do {
+        newCode = `${prefix}${String(nextNum).padStart(2, "0")}`;
+        nextNum++;
+      } while (existingTreeCodes.has(newCode.toUpperCase()) || codes.some(c => c.toUpperCase() === newCode.toUpperCase()));
+      codes.push(newCode);
+    }
+
+    return codes;
+  }
+
   function resetAll() {
     setCode("");
     setUserEditedCode(false);
@@ -1779,6 +1858,10 @@ export default function AddTreeNewScreen() {
     setFlowerInfo("");
     setFruitInfo("");
     setPhaseOverride("");
+    // Reset bulk mode states
+    setAddMode("single");
+    setTreeCount(1);
+    setBulkProgress({ current: 0, total: 0 });
   }
 
   async function handleCreate() {
@@ -1795,14 +1878,129 @@ export default function AddTreeNewScreen() {
     }
 
     setIsSubmitting(true);
+
+    // Helper function to build the base create request
+    function buildCreateRequest(treeCode) {
+      // Map phase → StageId từ stagesByType
+      let selectedStageId = null;
+      let virtualAgeMonths = null;
+
+      if (stagesByType.length > 0) {
+        const sortedStages = [...stagesByType].sort(
+          (a, b) => (a.stageOrder || a.StageOrder || 0) - (b.stageOrder || b.StageOrder || 0)
+        );
+
+        const matchedStage = sortedStages.find((stage) => {
+          const stageName = stage.stageName || stage.StageName || "";
+          return stageName === effectivePhase;
+        });
+
+        if (matchedStage) {
+          selectedStageId = matchedStage.stageId || matchedStage.StageId;
+        } else {
+          const phaseIndex = PHASES5.indexOf(effectivePhase);
+          if (phaseIndex >= 0 && phaseIndex < sortedStages.length) {
+            selectedStageId = sortedStages[phaseIndex].stageId || sortedStages[phaseIndex].StageId;
+          } else {
+            selectedStageId = sortedStages[0].stageId || sortedStages[0].StageId;
+          }
+        }
+      } else {
+        throw new Error("Loại cây này chưa có giai đoạn. Vui lòng liên hệ admin.");
+      }
+
+      return {
+        GardenId: Number(currentGarden.id),
+        TreeTypeId: treeTypeId ? Number(treeTypeId) : 0,
+        StageId: selectedStageId,
+        TreeVarietyId: selectedVarietyId,
+        TreeCode: treeCode.trim() || null,
+        TreeName: variety || null,
+        PlantDate: plantDate || null,
+        GardenSoilId: gardenSoilId ? Number(gardenSoilId) : null,
+        Location: treeLocation,
+        Notes: (note || userIntent || "").trim() || null,
+        preMonths: preAgeNum,
+        VirtualAgeMonths: virtualAgeMonths,
+        LeafStatus: leafInfo.trim() || null,
+        BranchStatus: branchInfo.trim() || null,
+        FlowerStatus: (canEditFlower ? flowerInfo.trim() : "").trim() || null,
+        FruitStatus: (canEditFruit ? fruitInfo.trim() : "").trim() || null,
+        IsFruiting: canEditFruit && !!fruitInfo.trim() ? true : null,
+        IsActive: true,
+      };
+    }
+
     try {
-      // Debug: bạn vẫn có thể giữ payload “giả lập” để log
+      // =================== BULK MODE ===================
+      if (addMode === "bulk") {
+        const codes = generateUniqueCodes(treeCount);
+        if (codes.length === 0) {
+          setFailureMessage("Không thể tạo mã cây. Vui lòng kiểm tra thông tin loại cây và giống.");
+          setFailureOpen(true);
+          setIsSubmitting(false);
+          return;
+        }
+
+        setBulkProgress({ current: 0, total: codes.length });
+        let successCount = 0;
+        const failedCodes = [];
+        const newCodesSet = new Set(existingTreeCodes);
+
+        for (let i = 0; i < codes.length; i++) {
+          try {
+            const createReq = buildCreateRequest(codes[i]);
+            console.log(`Creating tree ${i + 1}/${codes.length}:`, codes[i]);
+
+            await TreeRepository.createTree(createReq);
+            successCount++;
+            newCodesSet.add(codes[i].toUpperCase());
+            setBulkProgress({ current: i + 1, total: codes.length });
+          } catch (err) {
+            console.error(`Failed to create tree ${codes[i]}:`, err);
+            failedCodes.push(codes[i]);
+          }
+        }
+
+        // Update existing codes set
+        setExistingTreeCodes(newCodesSet);
+
+        // Show result
+        if (failedCodes.length === 0) {
+          setLastCreatedCode(`${successCount} cây`);
+          setLastCreatedSpecies(speciesLabel);
+          setLastCreatedVariety(variety);
+          setShowSuccess(true);
+          setSuccessOpen(true);
+          resetAll();
+          setTimeout(() => setShowSuccess(false), 2200);
+        } else if (successCount > 0) {
+          // Partial success
+          setFailureMessage(
+            `Đã tạo thành công ${successCount}/${codes.length} cây. ` +
+            `Các mã lỗi: ${failedCodes.join(", ")}`
+          );
+          setFailureOpen(true);
+          // Still reset since some were created
+          setExistingTreeCodes(newCodesSet);
+        } else {
+          // All failed
+          setFailureMessage("Tạo cây thất bại. Vui lòng kiểm tra lại thông tin và thử lại.");
+          setFailureOpen(true);
+        }
+
+        setIsSubmitting(false);
+        setBulkProgress({ current: 0, total: 0 });
+        return;
+      }
+
+      // =================== SINGLE MODE (existing logic) ===================
       const base = {
         code,
         speciesKey,
         speciesLabel,
         selectedVarietyId,
-        soil, // từ soilLabel
+        soil,
         gardenId: currentGarden.id,
         plantDate,
         preAge: preAgeNum,
@@ -1823,90 +2021,19 @@ export default function AddTreeNewScreen() {
       const payload = normalizePhaseBeforeSave(base);
       console.log("Create Tree Payload (debug)", payload);
 
-      // Map phase → StageId từ stagesByType
-      // Tìm stage tương ứng với phase được chọn (by name match)
-      let selectedStageId = null;
-      let virtualAgeMonths = null;
-
-      if (stagesByType.length > 0) {
-        // Sắp xếp stages theo stageOrder (numeric comparison)
-        const sortedStages = [...stagesByType].sort(
-          (a, b) => (a.stageOrder || a.StageOrder || 0) - (b.stageOrder || b.StageOrder || 0)
-        );
-
-        // Find stage by matching stageName with effectivePhase (phaseOverride)
-        const matchedStage = sortedStages.find((stage) => {
-          const stageName = stage.stageName || stage.StageName || "";
-          return stageName === effectivePhase;
-        });
-
-        if (matchedStage) {
-          selectedStageId = matchedStage.stageId || matchedStage.StageId;
-          console.log("Selected stage by name match:", effectivePhase, "-> stageId:", selectedStageId);
-        } else {
-          // Fallback: try PHASES5 index mapping
-          const phaseIndex = PHASES5.indexOf(effectivePhase);
-          if (phaseIndex >= 0 && phaseIndex < sortedStages.length) {
-            selectedStageId = sortedStages[phaseIndex].stageId || sortedStages[phaseIndex].StageId;
-            console.log("Selected stage by PHASES5 index:", phaseIndex, "-> stageId:", selectedStageId);
-          } else {
-            // Last fallback: first stage
-            selectedStageId = sortedStages[0].stageId || sortedStages[0].StageId;
-            console.log("Fallback to first stage, stageId:", selectedStageId);
-          }
-        }
-      } else {
-        throw new Error(
-          "Loại cây này chưa có giai đoạn. Vui lòng liên hệ admin."
-        );
-      }
-
-      // Chuẩn CreateTreeRequest đúng backend
-      const createReq = {
-        GardenId: Number(currentGarden.id),
-        TreeTypeId: treeTypeId ? Number(treeTypeId) : 0, // đã validate không rỗng từ trước
-        StageId: selectedStageId,
-
-        TreeVarietyId: selectedVarietyId,
-        TreeCode: code.trim() || null,
-        TreeName: variety || null,
-        PlantDate: plantDate || null, // dạng "yyyy-MM-dd" → DateOnly? bên C#
-
-        GardenSoilId: gardenSoilId ? Number(gardenSoilId) : null,
-        Location: treeLocation,
-
-        Notes: (note || userIntent || "").trim() || null,
-        preMonths: preAgeNum, // lowercase to match backend CreateTreeRequest
-
-        // Tự động set VirtualAgeMonths dựa trên giai đoạn hiện tại
-        VirtualAgeMonths: virtualAgeMonths,
-
-        LeafStatus: leafInfo.trim() || null,
-        BranchStatus: branchInfo.trim() || null,
-        FlowerStatus: (canEditFlower ? flowerInfo.trim() : "").trim() || null,
-        FruitStatus: (canEditFruit ? fruitInfo.trim() : "").trim() || null,
-
-        IsFruiting: canEditFruit && !!fruitInfo.trim() ? true : null,
-        IsActive: true,
-      };
-
+      const createReq = buildCreateRequest(code);
       console.log("CreateTreeRequest gửi lên API", createReq);
 
       // Gọi API tạo cây
       const res = await TreeRepository.createTree(createReq);
-      const created = res?.data || res; // tuỳ cách bạn wrap ApiClient
-      const newTreeId =
-        created?.treeId ?? created?.TreeId ?? created?.id ?? created?.Id;
+      const created = res?.data || res;
+      const newTreeId = created?.treeId ?? created?.TreeId ?? created?.id ?? created?.Id;
 
       // Nếu có ảnh local + có treeId → upload ảnh
       if (imageFile && newTreeId) {
         const formData = new FormData();
         formData.append("file", imageFile);
 
-        // nếu bạn đổi uploadTreeImage để nhận FormData + isFormData=true
-        //await TreeRepository.uploadTreeImage(newTreeId, formData);
-
-        // hoặc nếu backend /api/trees/{id}/images nhận JSON { url: "..."} thì:
         const uploadRes = await GardenRepository.uploadGardenImage(imageFile);
         const url = uploadRes?.url;
         if (url) {
@@ -2109,59 +2236,149 @@ export default function AddTreeNewScreen() {
 
                   {/* Balanced grid: 12 cols */}
                   <CardContent className="grid grid-cols-1 md:grid-cols-12 gap-4 lg:gap-5 text-sm min-w-0 overflow-visible">
-                    {/* 1. Mã cây */}
-                    <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
-                      <Label
-                        htmlFor="code"
-                        className="text-neutral-700 break-words"
-                      >
-                        Mã cây <span className="text-red-500">*</span>
-                      </Label>
-                      <div className="relative min-w-0">
-                        <Input
-                          id="code"
-                          value={code}
-                          placeholder="Mã cây duy nhất (VD: BD-03)."
-                          maxLength={15} // ✅ GIỚI HẠN TỐI ĐA 15 KÝ TỰ
-                          onChange={(e) => {
-                            const newCode = e.target.value;
-                            setCode(newCode);
-                            // Reset userEditedCode flag nếu người dùng xóa hết
-                            if (!newCode.trim()) {
-                              setUserEditedCode(false);
-                              setErrors((x) => ({ ...x, code: undefined }));
-                            } else {
-                              setUserEditedCode(true);
-                              // Kiểm tra real-time xem mã có tồn tại không
-                              const codeTrimmed = newCode.trim();
-                              const codeUpper = codeTrimmed.toUpperCase();
-                              if (existingTreeCodes.has(codeUpper)) {
-                                // Mã đã tồn tại, hiển thị cảnh báo
-                                setErrors((x) => ({
-                                  ...x,
-                                  code: "Mã cây này đã tồn tại trong vườn. Vui lòng chọn mã khác.",
-                                }));
-                              } else {
-                                // Mã chưa tồn tại, clear error
-                                setErrors((x) => ({ ...x, code: undefined }));
-                              }
-                            }
-                          }}
-                          onKeyDown={handleTextInputKeyDown}
-                          className={`rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400
-    focus:ring-emerald-500/40 focus:border-emerald-500
-    ${errors.code
-                              ? "border-red-500 focus:border-red-500 focus:ring-red-500/40"
-                              : ""
+                    {/* Mode Toggle: Single vs Bulk */}
+                    <div className="col-span-12 flex flex-col gap-2">
+                      <Label className="text-neutral-700">Chế độ thêm cây</Label>
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => { setAddMode("single"); setErrors((x) => ({ ...x, treeCount: undefined })); }}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${addMode === "single"
+                            ? "bg-emerald-500 text-white shadow-md"
+                            : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
                             }`}
-                        />
+                        >
+                          Thêm 1 cây
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setAddMode("bulk"); setErrors((x) => ({ ...x, code: undefined })); }}
+                          className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${addMode === "bulk"
+                            ? "bg-emerald-500 text-white shadow-md"
+                            : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
+                            }`}
+                        >
+                          Thêm nhiều cây
+                        </button>
+                        {maxTreesPerGarden !== null && (
+                          <span className="text-xs text-neutral-500 ml-2">
+                            Còn lại: <b className="text-emerald-600">{remainingSlots}</b> cây ({currentSubscription?.planName || "hiện tại"})
+                          </span>
+                        )}
                       </div>
-                      {errors.code && (
-                        <p className="text-xs text-red-500 mt-1 break-words">
-                          {errors.code}
-                        </p>
+                      {/* Progress indicator for bulk creation */}
+                      {isSubmitting && addMode === "bulk" && bulkProgress.total > 0 && (
+                        <div className="mt-2 flex items-center gap-3">
+                          <div className="flex-1 h-2 bg-neutral-200 rounded-full overflow-hidden">
+                            <div
+                              className="h-full bg-emerald-500 transition-all duration-300"
+                              style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                            />
+                          </div>
+                          <span className="text-sm text-emerald-600 font-medium whitespace-nowrap">
+                            {bulkProgress.current}/{bulkProgress.total} cây
+                          </span>
+                        </div>
                       )}
                     </div>
+
+                    {/* 1. Mã cây (single mode) or Số lượng cây (bulk mode) */}
+                    {addMode === "single" ? (
+                      <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+                        <Label
+                          htmlFor="code"
+                          className="text-neutral-700 break-words"
+                        >
+                          Mã cây <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="relative min-w-0">
+                          <Input
+                            id="code"
+                            value={code}
+                            placeholder="Mã cây duy nhất (VD: BD-03)."
+                            maxLength={15}
+                            onChange={(e) => {
+                              const newCode = e.target.value;
+                              setCode(newCode);
+                              if (!newCode.trim()) {
+                                setUserEditedCode(false);
+                                setErrors((x) => ({ ...x, code: undefined }));
+                              } else {
+                                setUserEditedCode(true);
+                                const codeTrimmed = newCode.trim();
+                                const codeUpper = codeTrimmed.toUpperCase();
+                                if (existingTreeCodes.has(codeUpper)) {
+                                  setErrors((x) => ({
+                                    ...x,
+                                    code: "Mã cây này đã tồn tại trong vườn. Vui lòng chọn mã khác.",
+                                  }));
+                                } else {
+                                  setErrors((x) => ({ ...x, code: undefined }));
+                                }
+                              }
+                            }}
+                            onKeyDown={handleTextInputKeyDown}
+                            className={`rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400
+    focus:ring-emerald-500/40 focus:border-emerald-500
+    ${errors.code
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/40"
+                                : ""
+                              }`}
+                          />
+                        </div>
+                        {errors.code && (
+                          <p className="text-xs text-red-500 mt-1 break-words">
+                            {errors.code}
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">
+                        <Label
+                          htmlFor="treeCount"
+                          className="text-neutral-700 break-words"
+                        >
+                          Số lượng cây <span className="text-red-500">*</span>
+                        </Label>
+                        <div className="relative min-w-0">
+                          <Input
+                            id="treeCount"
+                            type="number"
+                            min={1}
+                            max={Math.min(100, remainingSlots === Infinity ? 100 : remainingSlots)}
+                            value={treeCount}
+                            placeholder="Nhập số lượng cây"
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value, 10) || 1;
+                              setTreeCount(val);
+                              // Real-time validation
+                              if (val < 1) {
+                                setErrors((x) => ({ ...x, treeCount: "Số lượng phải từ 1 trở lên." }));
+                              } else if (val > 100) {
+                                setErrors((x) => ({ ...x, treeCount: "Tối đa 100 cây mỗi lần." }));
+                              } else if (remainingSlots !== Infinity && val > remainingSlots) {
+                                setErrors((x) => ({ ...x, treeCount: `Chỉ có thể thêm tối đa ${remainingSlots} cây.` }));
+                              } else {
+                                setErrors((x) => ({ ...x, treeCount: undefined }));
+                              }
+                            }}
+                            onKeyDown={handleTextInputKeyDown}
+                            className={`rounded-xl h-11 w-full min-w-0 bg-white border-neutral-300 placeholder:text-neutral-400
+    focus:ring-emerald-500/40 focus:border-emerald-500
+    ${errors.treeCount
+                                ? "border-red-500 focus:border-red-500 focus:ring-red-500/40"
+                                : ""
+                              }`}
+                          />
+                          <span className="absolute right-3 top-2.5 text-sm text-neutral-600 pointer-events-none">cây</span>
+                        </div>
+                        {errors.treeCount && (
+                          <p className="text-xs text-red-500 mt-1 break-words">
+                            {errors.treeCount}
+                          </p>
+                        )}
+                      </div>
+                    )}
 
                     {/* 2. Loại cây */}
                     <div className="col-span-12 md:col-span-6 xl:col-span-3 grid gap-1 min-w-0">

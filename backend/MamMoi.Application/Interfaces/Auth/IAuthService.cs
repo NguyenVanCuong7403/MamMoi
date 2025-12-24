@@ -87,4 +87,27 @@ public interface IAuthService
     /// <param name="idToken">Google ID token</param>
     /// <returns>Response chứa token nếu đăng nhập thành công</returns>
     Task<AuthResponseDto> LoginWithGoogleAsync(string idToken);
+
+    /// <summary>
+    /// Gửi OTP qua SMS cho xác thực số điện thoại
+    /// </summary>
+    /// <param name="request">Số điện thoại cần gửi OTP</param>
+    /// <returns>Response xác nhận đã gửi</returns>
+    Task<AuthResponseDto> SendPhoneOtpAsync(SendPhoneOtpRequestDto request);
+
+    /// <summary>
+    /// Xác thực OTP từ SMS
+    /// </summary>
+    /// <param name="request">Số điện thoại và mã OTP</param>
+    /// <returns>Response xác nhận thành công</returns>
+    Task<AuthResponseDto> VerifyPhoneOtpAsync(VerifyPhoneOtpRequestDto request);
+
+    /// <summary>
+    /// Đăng nhập bằng số điện thoại và mật khẩu
+    /// </summary>
+    /// <param name="phone">Số điện thoại</param>
+    /// <param name="password">Mật khẩu</param>
+    /// <returns>Response chứa token nếu đăng nhập thành công</returns>
+    Task<AuthResponseDto> LoginWithPhoneAsync(string phone, string password);
 }
+

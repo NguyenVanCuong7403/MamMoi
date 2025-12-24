@@ -1,3 +1,4 @@
+using MamMoi.Application.Interfaces;
 using MamMoi.Application.Interfaces.Auth;
 using MamMoi.Infrastructure.Models;
 using Microsoft.EntityFrameworkCore;
@@ -84,6 +85,7 @@ public class OverdueTaskNotificationService : BackgroundService
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MamMoiDbContext>();
         var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+        var smsService = scope.ServiceProvider.GetRequiredService<ISmsService>();
 
         try
         {
@@ -115,12 +117,6 @@ public class OverdueTaskNotificationService : BackgroundService
                     var userId = userTasks.Key;
                     var user = userTasks.First().Tree.User;
 
-                    if (string.IsNullOrEmpty(user.Email))
-                    {
-                        _logger.LogWarning("User {UserId} has no email address, skipping notification", userId);
-                        continue;
-                    }
-
                     // Convert to OverdueTaskInfo DTOs
                     var overdueTaskInfos = userTasks.Select(cs => new Application.Interfaces.Auth.OverdueTaskInfo
                     {
@@ -132,16 +128,39 @@ public class OverdueTaskNotificationService : BackgroundService
                         Priority = cs.Priority ?? "Normal"
                     }).ToList();
 
-                    // Send email notification
-                    await emailService.SendOverdueTaskReminderAsync(
-                        user.Email,
-                        user.FullName ?? user.Email,
-                        overdueTaskInfos
-                    );
+                    // Send email notification if user has email
+                    if (!string.IsNullOrEmpty(user.Email))
+                    {
+                        await emailService.SendOverdueTaskReminderAsync(
+                            user.Email,
+                            user.FullName ?? user.Email,
+                            overdueTaskInfos
+                        );
+                        _logger.LogInformation(
+                            "Sent overdue task email to user {UserId} ({Email}) for {TaskCount} tasks",
+                            userId, user.Email, overdueTaskInfos.Count);
+                    }
 
-                    _logger.LogInformation(
-                        "Sent overdue task notification to user {UserId} ({Email}) for {TaskCount} tasks",
-                        userId, user.Email, overdueTaskInfos.Count);
+                    // Send SMS notification if user has phone number
+                    if (!string.IsNullOrEmpty(user.Phone))
+                    {
+                        try
+                        {
+                            await smsService.SendOverdueTaskReminderSmsAsync(
+                                user.Phone,
+                                user.FullName ?? "bạn",
+                                overdueTaskInfos.Count
+                            );
+                            _logger.LogInformation(
+                                "Sent overdue task SMS to user {UserId} ({Phone}) for {TaskCount} tasks",
+                                userId, user.Phone, overdueTaskInfos.Count);
+                        }
+                        catch (Exception smsEx)
+                        {
+                            _logger.LogError(smsEx, "Error sending SMS to user {UserId}", userTasks.Key);
+                            // Continue - email may have worked
+                        }
+                    }
                 }
                 catch (Exception ex)
                 {
