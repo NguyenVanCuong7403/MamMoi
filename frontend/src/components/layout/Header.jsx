@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Menu, Bell, User as UserIcon, ArrowLeft, LogOut } from "lucide-react";
+import { Menu, Bell, User as UserIcon, ArrowLeft, LogOut, X } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/API/context/AuthContext";
 import NotificationRepository from "@/API/repositories/NotificationRepository";
@@ -142,7 +142,8 @@ export default function MMHeader({
   onLogin,
   onRegister,
 }) {
-  // removed drawer/menu state - sidebar is removed and menu replaced by logout
+  // Mobile menu state
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const [avatarMenu, setAvatarMenu] = useState(false);
   const [notificationMenu, setNotificationMenu] = useState(false);
@@ -161,7 +162,7 @@ export default function MMHeader({
         const parsed = JSON.parse(profile);
         return parsed?.avatarUrl || "";
       }
-    } catch {}
+    } catch { }
     return "";
   });
 
@@ -190,10 +191,10 @@ export default function MMHeader({
               if (userFromStorage?.ProfileImageUrl) {
                 setProfileAvatar(userFromStorage.ProfileImageUrl);
               }
-            } catch {}
+            } catch { }
           }
         }
-      } catch {}
+      } catch { }
     }
 
     // Lắng nghe storage event (từ tab khác) và custom event (từ cùng tab)
@@ -410,6 +411,17 @@ export default function MMHeader({
             <ArrowLeft className="w-[18px] h-[18px] sm:w-[22px] sm:h-[22px]" />
           </button>
 
+          {/* Mobile hamburger menu button */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="md:hidden w-11 h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none"
+            style={{ background: palette.ivory, color: palette.bg }}
+            aria-label="Menu"
+            title="Menu"
+          >
+            <Menu className="w-[20px] h-[20px]" />
+          </button>
+
           <div className="flex-1 min-w-0" />
 
           {/* Horizontal nav (show on md+) - centered, background on hover/active */}
@@ -452,7 +464,7 @@ export default function MMHeader({
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 ml-auto">
             {/* Notification bell */}
             {user && (
-              <div className="hidden sm:block relative notification-menu-area">
+              <div className="relative notification-menu-area">
                 <button
                   onClick={() => setNotificationMenu((prev) => !prev)}
                   className="w-9 h-9 sm:w-11 sm:h-11 grid place-items-center rounded-full shadow transition hover:scale-[1.03] focus:outline-none relative flex-shrink-0"
@@ -546,7 +558,7 @@ export default function MMHeader({
                                         className={[
                                           "font-medium text-xs sm:text-sm break-words",
                                           !notification.isRead &&
-                                            "font-semibold",
+                                          "font-semibold",
                                         ].join(" ")}
                                       >
                                         {notification.title}
@@ -741,7 +753,170 @@ export default function MMHeader({
         </div>
       </div>
 
-      {/* Drawer removed - menu/drawer UI intentionally removed (sidebar items moved to centered header) */}
+      {/* Mobile Navigation Drawer */}
+      {mobileMenuOpen && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 bg-black/50 z-[60] md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+          />
+          {/* Drawer */}
+          <div
+            className="fixed top-0 right-0 h-full w-[280px] max-w-[85vw] bg-[#1F302F] z-[70] md:hidden shadow-2xl"
+            style={{ animation: "slideIn 0.3s ease-out" }}
+          >
+            {/* Close button */}
+            <div className="flex items-center justify-between px-4 h-[80px] border-b border-white/10">
+              <span className="text-[#D1DFB6] font-semibold">Menu</span>
+              <button
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-10 h-10 grid place-items-center rounded-full hover:bg-white/10 transition"
+                aria-label="Đóng menu"
+              >
+                <X className="w-5 h-5 text-[#D1DFB6]" />
+              </button>
+            </div>
+
+            {/* User info (if logged in) */}
+            {user && (
+              <div className="px-4 py-4 border-b border-white/10 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-[#D1DFB6] flex-shrink-0">
+                  {profileAvatar || user.ProfileImageUrl ? (
+                    <SafeImage
+                      src={profileAvatar || user.ProfileImageUrl}
+                      alt="avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full grid place-items-center">
+                      <UserIcon className="w-5 h-5 text-[#1F302F]" />
+                    </div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[#FBFFDF] font-medium text-sm truncate">
+                    {user.fullName || user.name || "User"}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Nav items */}
+            <nav className="px-2 py-4">
+              <ul className="space-y-1">
+                {filteredMenuItems.map((item) => (
+                  <li key={item.id}>
+                    <button
+                      onClick={() => {
+                        if (item.id === "dang-ky" && isGuest(user)) {
+                          navigate("/auth");
+                        } else {
+                          navigate(item.href);
+                        }
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-3 rounded-lg text-[#D1DFB6] hover:bg-white/10 transition text-sm font-medium"
+                    >
+                      {item.label}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+
+            {/* Login/Register or Profile/Logout */}
+            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+              {user ? (
+                <div className="space-y-2">
+                  {/* Additional menu items for logged-in users */}
+                  {!isAdmin(user) && (
+                    <>
+                      <button
+                        onClick={() => {
+                          navigate("/garden");
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-3 rounded-lg text-[#D1DFB6] hover:bg-white/10 transition text-sm font-medium text-left"
+                      >
+                        Vườn của tôi
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigate("/reports");
+                          setMobileMenuOpen(false);
+                        }}
+                        className="w-full px-4 py-3 rounded-lg text-[#D1DFB6] hover:bg-white/10 transition text-sm font-medium text-left"
+                      >
+                        Quản lý báo cáo
+                      </button>
+                    </>
+                  )}
+                  {isAdmin(user) && (
+                    <button
+                      onClick={() => {
+                        const adminPath = getAdminPath(user);
+                        if (adminPath) navigate(adminPath);
+                        setMobileMenuOpen(false);
+                      }}
+                      className="w-full px-4 py-3 rounded-lg text-[#D1DFB6] hover:bg-white/10 transition text-sm font-medium text-left"
+                    >
+                      Quản lý Admin
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      navigate("/profile");
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-3 rounded-lg bg-[#D1DFB6] text-[#1F302F] font-medium text-sm hover:bg-[#FBFFDF] transition"
+                  >
+                    Hồ sơ
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleLogoutClick();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-3 rounded-lg border border-red-400 text-red-400 font-medium text-sm hover:bg-red-400/10 transition"
+                  >
+                    Đăng xuất
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      handleLoginClick();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-3 rounded-lg border border-[#D1DFB6] text-[#D1DFB6] font-medium text-sm hover:bg-white/10 transition"
+                  >
+                    Đăng nhập
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleRegisterClick();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-3 rounded-lg bg-[#FFFFA5] text-[#1F302F] font-medium text-sm hover:bg-[#FBFFDF] transition"
+                  >
+                    Đăng ký
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Mobile drawer animation */}
+      <style>{`
+        @keyframes slideIn {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+      `}</style>
 
       {/* Styles */}
       <style>{`

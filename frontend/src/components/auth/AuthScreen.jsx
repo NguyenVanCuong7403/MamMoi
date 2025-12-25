@@ -592,7 +592,7 @@ export default function AuthScreen({ defaultTab = "login" }) {
       <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
         <div className="w-full max-w-xl">
           {/* brand chip */}
-          <div className="mb-5 flex justify-center">
+          <div className="mt-8 mb-5 flex justify-center">
             <div className="flex w-fit items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-white backdrop-blur">
               <ShieldCheck className="h-3.5 w-3.5" />
               Mầm Mới • Luôn bảo mật dữ liệu của bạn

@@ -61,6 +61,7 @@ import {
 } from "@/components/ui/pagination";
 import AdminTreeRepository from "@/API/repositories/AdminTreeRepository";
 
+
 const BACKGROUND_PALETTE = {
   bg: "#1F302F",
   leaf: "#D1DFB6",

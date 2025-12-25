@@ -121,37 +121,37 @@ function StatCard({ label, value, change, icon: Icon, isCurrency }) {
   const percent = `${isPositive ? "+" : ""}${Math.round(change * 100)}%`;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-emerald-200/60">
+    <div className="group relative overflow-hidden rounded-xl sm:rounded-2xl border border-emerald-100 bg-white p-3 sm:p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-emerald-200/60">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-400">
             {label}
           </p>
-          <p className="mt-1 text-3xl font-semibold text-slate-900">
+          <p className="mt-1 text-xl sm:text-2xl md:text-3xl font-semibold text-slate-900 truncate">
             {isCurrency ? formatCurrency(value) : value.toLocaleString("vi-VN")}
           </p>
         </div>
-        <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600 shadow-inner shadow-emerald-100 group-hover:bg-emerald-100">
-          <Icon className="h-5 w-5" />
+        <div className="rounded-xl sm:rounded-2xl bg-emerald-50 p-2 sm:p-3 text-emerald-600 shadow-inner shadow-emerald-100 group-hover:bg-emerald-100 shrink-0">
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </div>
-      <div className="mt-4 flex items-center gap-2 text-sm">
+      <div className="mt-2 sm:mt-4 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
         <Badge
           className={cn(
-            "border-0 px-2.5 py-0.5",
+            "border-0 px-1.5 sm:px-2.5 py-0.5 text-[10px] sm:text-xs",
             isPositive
               ? "bg-emerald-100 text-emerald-700"
               : "bg-rose-50 text-rose-600"
           )}
         >
           {isPositive ? (
-            <TrendingUp className="mr-1 h-3 w-3" />
+            <TrendingUp className="mr-0.5 sm:mr-1 h-2.5 w-2.5 sm:h-3 sm:w-3" />
           ) : (
-            <TrendingDown className="mr-1 h-3 w-3" />
+            <TrendingDown className="mr-0.5 sm:mr-1 h-2.5 w-2.5 sm:h-3 sm:w-3" />
           )}
           {percent}
         </Badge>
-        <span className="text-slate-500">so với kỳ trước</span>
+        <span className="text-slate-500 text-[10px] sm:text-sm">so với kỳ trước</span>
       </div>
     </div>
   );
@@ -486,21 +486,21 @@ export default function RevenueManagement() {
         <AdminLayout>
           <div className="space-y-8">
             {/* Header */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
-                  <ShieldCheck className="h-4 w-4" />
+                <p className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm uppercase tracking-[0.3em] sm:tracking-[0.4em] text-emerald-200">
+                  <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Quản trị hệ thống
                 </p>
-                <h1 className="mt-2 text-3xl font-semibold text-white">
+                <h1 className="mt-1.5 sm:mt-2 text-xl sm:text-2xl md:text-3xl font-semibold text-white">
                   Quản lý doanh thu
                 </h1>
-                <p className="text-emerald-100/80">
+                <p className="text-xs sm:text-sm text-emerald-100/80">
                   Theo dõi doanh thu, giao dịch và phân tích tài chính.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="rounded-full border border-white/30 bg-white/10 p-0.5 sm:p-1 backdrop-blur">
                   {TIME_WINDOWS.map((option) => {
                     const isActive = timeframe === option.value;
                     return (
@@ -508,7 +508,7 @@ export default function RevenueManagement() {
                         key={option.value}
                         onClick={() => setTimeframe(option.value)}
                         className={cn(
-                          "rounded-full px-4 py-2 text-sm font-semibold transition-all",
+                          "rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                           isActive
                             ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/30"
                             : "text-white/70 hover:text-white"
@@ -521,7 +521,7 @@ export default function RevenueManagement() {
                 </div>
                 <Button
                   variant="outline"
-                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white text-xs sm:text-sm px-2.5 sm:px-4"
                   onClick={() => {
                     fetchStatistics();
                     fetchRevenueByPeriod();
@@ -531,9 +531,10 @@ export default function RevenueManagement() {
                   disabled={loading}
                 >
                   <RefreshCcw
-                    className={cn("mr-2 h-4 w-4", loading && "animate-spin")}
+                    className={cn("mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4", loading && "animate-spin")}
                   />
-                  {loading ? "Đang tải..." : "Làm mới"}
+                  <span className="hidden sm:inline">{loading ? "Đang tải..." : "Làm mới"}</span>
+                  <span className="sm:hidden">{loading ? "..." : "Làm mới"}</span>
                 </Button>
               </div>
             </div>
@@ -804,9 +805,9 @@ export default function RevenueManagement() {
                                 <TableCell className="text-slate-600">
                                   {payment.subscriptionEndDate
                                     ? formatDate(
-                                        payment.subscriptionEndDate,
-                                        "Không giới hạn"
-                                      )
+                                      payment.subscriptionEndDate,
+                                      "Không giới hạn"
+                                    )
                                     : "Không giới hạn"}
                                 </TableCell>
                                 <TableCell className="font-semibold text-emerald-700">
@@ -827,15 +828,15 @@ export default function RevenueManagement() {
                                       payment.transactionStatus === "Success"
                                         ? "bg-emerald-50 text-emerald-700"
                                         : payment.transactionStatus === "Failed"
-                                        ? "bg-rose-50 text-rose-700"
-                                        : "bg-amber-50 text-amber-700"
+                                          ? "bg-rose-50 text-rose-700"
+                                          : "bg-amber-50 text-amber-700"
                                     )}
                                   >
                                     {payment.transactionStatus === "Success"
                                       ? "Thành công"
                                       : payment.transactionStatus === "Failed"
-                                      ? "Thất bại"
-                                      : "Đang xử lý"}
+                                        ? "Thất bại"
+                                        : "Đang xử lý"}
                                   </Badge>
                                 </TableCell>
                               </TableRow>
@@ -983,9 +984,9 @@ export default function RevenueManagement() {
                           <TableCell className="text-slate-600">
                             {payment.subscriptionEndDate
                               ? formatDate(
-                                  payment.subscriptionEndDate,
-                                  "Không giới hạn"
-                                )
+                                payment.subscriptionEndDate,
+                                "Không giới hạn"
+                              )
                               : "Không giới hạn"}
                           </TableCell>
                           <TableCell className="font-semibold text-emerald-700">
@@ -1016,15 +1017,15 @@ export default function RevenueManagement() {
                                 payment.transactionStatus === "Success"
                                   ? "bg-emerald-50 text-emerald-700"
                                   : payment.transactionStatus === "Failed"
-                                  ? "bg-rose-50 text-rose-700"
-                                  : "bg-amber-50 text-amber-700"
+                                    ? "bg-rose-50 text-rose-700"
+                                    : "bg-amber-50 text-amber-700"
                               )}
                             >
                               {payment.transactionStatus === "Success"
                                 ? "Thành công"
                                 : payment.transactionStatus === "Failed"
-                                ? "Thất bại"
-                                : "Đang xử lý"}
+                                  ? "Thất bại"
+                                  : "Đang xử lý"}
                             </Badge>
                           </TableCell>
                         </TableRow>

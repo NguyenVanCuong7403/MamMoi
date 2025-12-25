@@ -1,0 +1,22 @@
+{
+    "forDate": "YYYY-MM-DD",
+    "phase": "growth_development | flowering | fruiting | pre_harvest | post_harvest",
+    "overallNote": "string",
+    "actions": [
+        {
+            "type": "Watering | Fertilizing | Pruning | Pest Control | Disease Treatment | Harvesting | Mulching | Inspection",
+            "title": "string",
+            "scheduledDate": "YYYY-MM-DD",
+            "timeOfDay": "Morning | Afternoon | Evening | Night",
+            "priority": "Low | Medium | High | Critical",
+            "estimatedDurationMinutes": "number",
+            "details": [
+                "string",
+                "string"
+            ]
+        }
+    ],
+    "confidence": "number between 0 and 1",
+    "weatherAdjusted": "true or false",
+    "reasoning": "string (ngắn gọn, tiếng Việt)"
+}

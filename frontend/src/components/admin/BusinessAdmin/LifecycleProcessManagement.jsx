@@ -784,14 +784,14 @@ export default function BusinessAdminLifecycleProcessManagement() {
     <AdminLayout>
       <LivingBackground palette={BACKGROUND_PALETTE} dotsOpacity={0.15} />
       <div className="relative z-10 flex flex-col gap-8">
-        <header className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-400">
+        <header className="space-y-1 sm:space-y-2">
+          <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.2em] sm:tracking-[0.28em] text-emerald-400">
             Quy trình
           </p>
-          <h1 className="text-3xl font-bold text-white">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
             Quản lý chu trình giai đoạn cây trồng
           </h1>
-          <p className="text-sm text-emerald-50/80 max-w-3xl">
+          <p className="text-xs sm:text-sm text-emerald-50/80 max-w-3xl">
             Quản lý các giai đoạn phát triển của từng loại cây. Tạo, chỉnh sửa,
             xóa và sắp xếp lại thứ tự các giai đoạn.
           </p>
@@ -815,8 +815,8 @@ export default function BusinessAdminLifecycleProcessManagement() {
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[320px,1fr]">
-          <aside className="rounded-3xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-[280px,1fr]">
+          <aside className="rounded-xl sm:rounded-3xl border border-white/10 bg-white/5 p-3 sm:p-4 backdrop-blur">
             <div className="mb-4">
               <p className="text-sm font-semibold text-white">Loại cây</p>
               <p className="text-xs text-emerald-100/80">
@@ -875,7 +875,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
             </div>
           </aside>
 
-          <section className="space-y-6 rounded-3xl border border-white/10 bg-white/90 p-6 shadow-xl">
+          <section className="space-y-4 sm:space-y-6 rounded-xl sm:rounded-3xl border border-white/10 bg-white/90 p-4 sm:p-6 shadow-xl">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.28em] text-emerald-500">
@@ -918,8 +918,47 @@ export default function BusinessAdminLifecycleProcessManagement() {
             )}
 
             {!stagesLoading && stages.length > 0 && (
-              <div className="space-y-6">
-                <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+              <div className="space-y-4 sm:space-y-6">
+                {/* Mobile Card Layout */}
+                <div className="md:hidden space-y-3">
+                  {stages.map((stage) => (
+                    <div
+                      key={stage.stageId}
+                      className="rounded-xl border border-slate-200 bg-white p-3 space-y-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-emerald-600">#{stage.stageOrder}</span>
+                            <p className="text-sm font-semibold text-slate-900 truncate">{stage.stageName}</p>
+                          </div>
+                          <p className="text-xs text-slate-500 line-clamp-2 mt-1">{stage.description || "—"}</p>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleEditStage(stage)}>
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleDeleteStage(stage)}>
+                            <Trash2 className="h-3.5 w-3.5 text-rose-500" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between text-xs border-t border-slate-100 pt-2">
+                        <span className="text-slate-400">
+                          Tuổi: {stage.minAgeInMonths !== null && stage.maxAgeInMonths !== null
+                            ? `${stage.minAgeInMonths}-${stage.maxAgeInMonths} tháng`
+                            : stage.minAgeInMonths !== null
+                              ? `≥${stage.minAgeInMonths} tháng`
+                              : "—"}
+                        </span>
+                        <span className="text-slate-500">{stage.treesCount || 0} cây</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table */}
+                <div className="hidden md:block rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -1050,7 +1089,7 @@ export default function BusinessAdminLifecycleProcessManagement() {
           }
         }}
       >
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle>
               {editingStage?.stageId

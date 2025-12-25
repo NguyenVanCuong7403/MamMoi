@@ -257,31 +257,32 @@ export default function AdminTreeManagement() {
         <AdminLayout>
           <div className="space-y-8">
             {/* Header */}
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
-                  <ShieldCheck className="h-4 w-4" />
+                <p className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm uppercase tracking-[0.3em] sm:tracking-[0.4em] text-emerald-200">
+                  <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Quản trị kinh doanh
                 </p>
-                <h1 className="mt-2 text-3xl font-semibold text-white">
+                <h1 className="mt-1.5 sm:mt-2 text-xl sm:text-2xl md:text-3xl font-semibold text-white">
                   Quản lý cây trồng
                 </h1>
-                <p className="text-emerald-100/80">
+                <p className="text-xs sm:text-sm text-emerald-100/80 mt-1">
                   Quản lý tất cả cây trồng trong hệ thống, theo dõi trạng thái
                   và thông tin chi tiết.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <Button
                   variant="outline"
-                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white text-xs sm:text-sm px-2.5 sm:px-4"
                   onClick={fetchTrees}
                   disabled={loading}
                 >
                   <RefreshCcw
-                    className={cn("mr-2 h-4 w-4", loading && "animate-spin")}
+                    className={cn("mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4", loading && "animate-spin")}
                   />
-                  {loading ? "Đang tải..." : "Làm mới"}
+                  <span className="hidden sm:inline">{loading ? "Đang tải..." : "Làm mới"}</span>
+                  <span className="sm:hidden">{loading ? "..." : "Làm mới"}</span>
                 </Button>
               </div>
             </div>
@@ -307,9 +308,9 @@ export default function AdminTreeManagement() {
 
             {/* Filters */}
             <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-              <CardContent className="p-6">
-                <div className="grid gap-4 lg:grid-cols-12">
-                  <div className="lg:col-span-4">
+              <CardContent className="p-4 sm:p-6">
+                <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-12">
+                  <div className="sm:col-span-2 lg:col-span-4">
                     <div className="relative">
                       <Input
                         placeholder="Tìm theo mã cây, tên cây..."
@@ -318,12 +319,12 @@ export default function AdminTreeManagement() {
                           setSearchTerm(e.target.value);
                           setPage(1);
                         }}
-                        className="rounded-xl border-slate-200 bg-white pl-10 text-slate-900"
+                        className="rounded-xl border-slate-200 bg-white pl-10 text-slate-900 text-sm"
                       />
                       <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     </div>
                   </div>
-                  <div className="lg:col-span-4">
+                  <div className="sm:col-span-1 lg:col-span-4">
                     <SearchableSelect
                       value={gardenFilter || "all"}
                       onChange={(value) => {
@@ -340,7 +341,7 @@ export default function AdminTreeManagement() {
                       placeholder="Chọn vườn"
                     />
                   </div>
-                  <div className="lg:col-span-4">
+                  <div className="sm:col-span-1 lg:col-span-4">
                     <SearchableSelect
                       value={treeTypeFilter || "all"}
                       onChange={(value) => {
@@ -363,18 +364,18 @@ export default function AdminTreeManagement() {
 
             {/* Trees Table */}
             <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-              <CardHeader>
+              <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-5">
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                  <CardTitle className="text-2xl text-slate-900">
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl text-slate-900">
                     Danh sách cây trồng
                   </CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <Leaf className="h-4 w-4 text-emerald-600" />
+                  <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+                    <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600" />
                     {totalCount} cây trồng
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 sm:px-6 py-4 sm:py-5">
                 {loading && trees.length === 0 ? (
                   <div className="flex items-center justify-center p-12">
                     <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
@@ -384,7 +385,80 @@ export default function AdminTreeManagement() {
                   </div>
                 ) : (
                   <>
-                    <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                    {/* Mobile Card Layout */}
+                    <div className="md:hidden space-y-3">
+                      {trees.length === 0 ? (
+                        <div className="rounded-xl border border-slate-100 bg-white p-8 text-center text-slate-500">
+                          Không có cây trồng nào.
+                        </div>
+                      ) : (
+                        trees.map((tree) => (
+                          <div
+                            key={tree.treeId}
+                            className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-slate-900">{tree.treeName || tree.treeCode || `#${tree.treeId}`}</p>
+                                <p className="text-xs text-slate-500 font-mono">{tree.treeCode || "-"}</p>
+                              </div>
+                              <Badge
+                                className={cn(
+                                  "border-0 text-[10px] px-1.5 py-0.5 shrink-0",
+                                  getHealthStatusClassName(tree.healthStatus)
+                                )}
+                              >
+                                {getHealthStatusLabel(tree.healthStatus)}
+                              </Badge>
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-slate-400">ID:</span>
+                                <span className="ml-1 font-medium text-slate-700">#{tree.treeId}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">Vườn:</span>
+                                <span className="ml-1 text-slate-700">{tree.gardenName}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">Loại:</span>
+                                <Badge className="ml-1 bg-sky-50 text-sky-700 border border-sky-100 text-[10px] px-1.5 py-0">
+                                  {tree.treeTypeName}
+                                </Badge>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">Giống:</span>
+                                <span className="ml-1 text-slate-600">{tree.treeVarietyName || "-"}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">Giai đoạn:</span>
+                                <span className="ml-1 text-slate-600">{tree.stageName || "-"}</span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">Ngày trồng:</span>
+                                <span className="ml-1 text-slate-600">{tree.plantDate ? formatDate(tree.plantDate) : "-"}</span>
+                              </div>
+                            </div>
+                            <div className="mt-3 flex justify-end gap-2">
+                              <Button size="sm" variant="outline" onClick={() => openDetailDialog(tree)}>
+                                <Eye className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-rose-600"
+                                onClick={() => openDeleteDialog(tree)}
+                              >
+                                <Trash className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Desktop Table */}
+                    <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
                       <Table>
                         <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
                           <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
@@ -397,18 +471,13 @@ export default function AdminTreeManagement() {
                             <TableHead>Giai đoạn</TableHead>
                             <TableHead>Trạng thái</TableHead>
                             <TableHead>Ngày trồng</TableHead>
-                            <TableHead className="text-right">
-                              Hành động
-                            </TableHead>
+                            <TableHead className="text-right">Hành động</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {trees.length === 0 ? (
                             <TableRow>
-                              <TableCell
-                                colSpan={10}
-                                className="py-8 text-center text-slate-500"
-                              >
+                              <TableCell colSpan={10} className="py-8 text-center text-slate-500">
                                 Không có cây trồng nào.
                               </TableCell>
                             </TableRow>
@@ -418,53 +487,24 @@ export default function AdminTreeManagement() {
                                 key={tree.treeId}
                                 className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
                               >
-                                <TableCell className="font-semibold text-slate-900">
-                                  #{tree.treeId}
-                                </TableCell>
-                                <TableCell className="font-mono text-xs text-slate-600">
-                                  {tree.treeCode || "-"}
-                                </TableCell>
-                                <TableCell className="font-medium text-slate-800">
-                                  {tree.treeName || "-"}
-                                </TableCell>
-                                <TableCell className="text-slate-700">
-                                  {tree.gardenName}
-                                </TableCell>
+                                <TableCell className="font-semibold text-slate-900">#{tree.treeId}</TableCell>
+                                <TableCell className="font-mono text-xs text-slate-600">{tree.treeCode || "-"}</TableCell>
+                                <TableCell className="font-medium text-slate-800">{tree.treeName || "-"}</TableCell>
+                                <TableCell className="text-slate-700">{tree.gardenName}</TableCell>
                                 <TableCell>
-                                  <Badge className="bg-sky-50 text-sky-700 border border-sky-100">
-                                    {tree.treeTypeName}
-                                  </Badge>
+                                  <Badge className="bg-sky-50 text-sky-700 border border-sky-100">{tree.treeTypeName}</Badge>
                                 </TableCell>
-                                <TableCell className="text-slate-600">
-                                  {tree.treeVarietyName || "-"}
-                                </TableCell>
-                                <TableCell className="text-slate-600">
-                                  {tree.stageName || "-"}
-                                </TableCell>
+                                <TableCell className="text-slate-600">{tree.treeVarietyName || "-"}</TableCell>
+                                <TableCell className="text-slate-600">{tree.stageName || "-"}</TableCell>
                                 <TableCell>
-                                  <Badge
-                                    className={cn(
-                                      "border-0",
-                                      getHealthStatusClassName(
-                                        tree.healthStatus
-                                      )
-                                    )}
-                                  >
+                                  <Badge className={cn("border-0", getHealthStatusClassName(tree.healthStatus))}>
                                     {getHealthStatusLabel(tree.healthStatus)}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-slate-500">
-                                  {tree.plantDate
-                                    ? formatDate(tree.plantDate)
-                                    : "-"}
-                                </TableCell>
+                                <TableCell className="text-slate-500">{tree.plantDate ? formatDate(tree.plantDate) : "-"}</TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex justify-end gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => openDetailDialog(tree)}
-                                    >
+                                    <Button size="sm" variant="outline" onClick={() => openDetailDialog(tree)}>
                                       <Eye className="h-4 w-4" />
                                     </Button>
                                     <Button

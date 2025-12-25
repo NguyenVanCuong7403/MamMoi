@@ -1528,22 +1528,22 @@ export default function ReportManagementBA() {
         <AdminLayout>
           <>
             <div className="space-y-8">
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
-                    <ShieldCheck className="h-4 w-4" />
+                  <p className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm uppercase tracking-[0.3em] sm:tracking-[0.4em] text-emerald-200">
+                    <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Business Admin
                   </p>
-                  <h1 className="mt-2 text-3xl font-semibold text-white">
+                  <h1 className="mt-1.5 sm:mt-2 text-xl sm:text-2xl md:text-3xl font-semibold text-white">
                     Quản lý báo cáo
                   </h1>
-                  <p className="text-emerald-100/80">
+                  <p className="text-xs sm:text-sm text-emerald-100/80 mt-1">
                     Giám sát báo cáo chất lượng cây trồng và những phản hồi kinh
                     doanh liên quan tới nhà vườn.
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <div className="rounded-full border border-white/30 bg-white/10 p-0.5 sm:p-1 backdrop-blur">
                     {TIME_SEGMENTS.map((segment) => {
                       const isActive = filters.time === segment.value;
                       return (
@@ -1553,7 +1553,7 @@ export default function ReportManagementBA() {
                             handleFilterChange("time", segment.value)
                           }
                           className={cn(
-                            "rounded-full px-4 py-2 text-sm font-semibold transition-all",
+                            "rounded-full px-2 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                             isActive
                               ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/30"
                               : "text-white/70 hover:text-white"
@@ -1662,8 +1662,8 @@ export default function ReportManagementBA() {
                     <Filter className="h-4 w-4" /> Đặt lại bộ lọc
                   </Button>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <CardContent className="space-y-4 sm:space-y-6">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-4 md:grid-cols-2 xl:grid-cols-4">
                     {[
                       {
                         key: "total",
@@ -1672,12 +1672,12 @@ export default function ReportManagementBA() {
                       },
                       {
                         key: "rejected",
-                        label: "Báo cáo chưa xử lý",
+                        label: "Chưa xử lý",
                         value: stats.rejected,
                       },
                       {
                         key: "overdue",
-                        label: "Báo cáo xử lý muộn",
+                        label: "Xử lý muộn",
                         value: stats.overdue,
                       },
                       {
@@ -1691,13 +1691,13 @@ export default function ReportManagementBA() {
                         <div
                           key={item.key}
                           className={cn(
-                            "rounded-2xl border border-emerald-50 bg-white px-6 py-5 shadow-sm",
+                            "rounded-xl sm:rounded-2xl border border-emerald-50 bg-white px-3 sm:px-6 py-3 sm:py-5 shadow-sm",
                             isOverdueCard && "border-rose-100 bg-rose-50/70"
                           )}
                         >
                           <p
                             className={cn(
-                              "text-sm",
+                              "text-xs sm:text-sm",
                               isOverdueCard ? "text-rose-600" : "text-slate-500"
                             )}
                           >
@@ -1705,7 +1705,7 @@ export default function ReportManagementBA() {
                           </p>
                           <p
                             className={cn(
-                              "mt-2 text-3xl font-semibold",
+                              "mt-1 sm:mt-2 text-xl sm:text-3xl font-semibold",
                               isOverdueCard ? "text-rose-700" : "text-slate-900"
                             )}
                           >
@@ -1758,52 +1758,126 @@ export default function ReportManagementBA() {
                     Xuất CSV
                   </Button>
                 </CardHeader>
-                <CardContent className="space-y-5">
-                  <div className="flex flex-wrap gap-3">
-                    <div className="relative flex-1 min-w-[220px]">
+                <CardContent className="space-y-4 sm:space-y-5">
+                  <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3">
+                    <div className="col-span-2 relative w-full sm:flex-1 sm:min-w-[220px]">
                       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <Input
                         placeholder="Tìm tiêu đề / nội dung / người gửi"
-                        className="rounded-xl border-slate-200 bg-slate-50 pl-10 text-slate-800"
+                        className="rounded-xl border-slate-200 bg-slate-50 pl-10 text-slate-800 text-sm"
                         value={filters.search}
                         onChange={(event) =>
                           handleFilterChange("search", event.target.value)
                         }
                       />
                     </div>
-                    <SearchableSelect
-                      value={filters.priority}
-                      onChange={(value) =>
-                        handleFilterChange("priority", value)
-                      }
-                      options={PRIORITY_OPTIONS}
-                      placeholder="Ưu tiên"
-                    />
-                    <SearchableSelect
-                      value={filters.type}
-                      onChange={(value) => handleFilterChange("type", value)}
-                      options={[
-                        { value: "all", label: "Tất cả loại" },
-                        ...BA_REPORT_TYPES,
-                      ]}
-                      placeholder="Loại báo cáo"
-                    />
-                    <SearchableSelect
-                      value={filters.status}
-                      onChange={(value) => handleFilterChange("status", value)}
-                      options={STATUS_OPTIONS}
-                      placeholder="Trạng thái"
-                    />
-                    <Button
-                      variant="outline"
-                      className="rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                      onClick={resetFilters}
-                    >
-                      Đặt lại
-                    </Button>
+                    <div className="col-span-1">
+                      <SearchableSelect
+                        value={filters.priority}
+                        onChange={(value) =>
+                          handleFilterChange("priority", value)
+                        }
+                        options={PRIORITY_OPTIONS}
+                        placeholder="Ưu tiên"
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <SearchableSelect
+                        value={filters.type}
+                        onChange={(value) => handleFilterChange("type", value)}
+                        options={[
+                          { value: "all", label: "Tất cả loại" },
+                          ...BA_REPORT_TYPES,
+                        ]}
+                        placeholder="Loại báo cáo"
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <SearchableSelect
+                        value={filters.status}
+                        onChange={(value) => handleFilterChange("status", value)}
+                        options={STATUS_OPTIONS}
+                        placeholder="Trạng thái"
+                      />
+                    </div>
+                    <div className="col-span-1">
+                      <Button
+                        variant="outline"
+                        className="w-full rounded-xl border-emerald-200 text-emerald-700 hover:bg-emerald-50 text-sm"
+                        onClick={resetFilters}
+                      >
+                        Đặt lại
+                      </Button>
+                    </div>
                   </div>
 
-                  <div className="overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
+                  {/* Mobile Card Layout */}
+                  <div className="md:hidden space-y-3">
+                    {sortedReports.map((report) => {
+                      const overdue = isOverdue(report);
+                      const overdueMeta = getOverdueBadgeMeta(report);
+                      return (
+                        <div
+                          key={report.id}
+                          className={cn(
+                            "rounded-xl border p-3 space-y-2",
+                            overdue
+                              ? "border-rose-200 bg-rose-50/70"
+                              : "border-slate-100 bg-white"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-slate-900">{report.id}</p>
+                              <p className="text-xs text-slate-600 truncate">{report.user.name}</p>
+                            </div>
+                            <div className="flex flex-wrap gap-1 shrink-0">
+                              <Badge className={cn("border-0 text-[10px]", getStatusBadgeClass(report.status))}>
+                                {getStatusLabel(report.status)}
+                              </Badge>
+                              {overdueMeta && (
+                                <Badge className={cn("border-0 text-[10px]", overdueMeta.className)}>
+                                  Muộn
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-slate-400">Loại:</span>
+                              <span className="ml-1 font-medium text-slate-700">{TYPE_META[report.type]?.label}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400">Ưu tiên:</span>
+                              <Badge className={cn("ml-1 border-0 text-[10px]", PRIORITY_META[report.priority]?.className)}>
+                                {PRIORITY_META[report.priority]?.label}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                            <p className="text-[10px] text-slate-400">{formatDateVietnam(report.createdAt)}</p>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className={cn(
+                                "text-xs h-7 px-2",
+                                isReportClosed(report)
+                                  ? "text-slate-700 hover:bg-slate-50"
+                                  : "text-emerald-700 hover:bg-emerald-50"
+                              )}
+                              onClick={() => openDialog(report)}
+                            >
+                              {isReportClosed(report) ? "Chi tiết" : "Xử lý"}
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {emptyState}
+                  </div>
+
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-x-auto rounded-2xl border border-slate-100 shadow-sm">
                     <Table>
                       <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
                         <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
@@ -1927,7 +2001,7 @@ export default function ReportManagementBA() {
               open={dialogOpen}
               onOpenChange={(open) => setDialogOpen(open)}
             >
-              <DialogContent className="max-w-2xl w-full max-h-[80vh] overflow-y-auto rounded-3xl">
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl w-full max-h-[85vh] overflow-y-auto rounded-xl sm:rounded-3xl p-4 sm:p-6">
                 <DialogHeader>
                   <DialogTitle className="text-2xl text-slate-900">
                     Xử lý báo cáo

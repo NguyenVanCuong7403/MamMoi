@@ -450,24 +450,24 @@ function AmbientDecor() {
 function PageHero({ breadcrumb, title, subtitle, right }) {
   return (
     <header className="relative">
-      <div className="mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-10 2xl:px-16 pt-20 md:pt-24">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+      <div className="mx-auto w-full max-w-[1760px] px-4 sm:px-6 lg:px-10 2xl:px-16 pt-16 sm:pt-20 md:pt-24">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+          <div className="min-w-0 flex-1">
             {/* Tiêu đề */}
-            <h1 className="text-white text-3xl sm:text-4xl font-extrabold">
+            <h1 className="text-white text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold break-words">
               {title || "Chi tiết cây"}
             </h1>
 
             {/* ⬇️ DI CHUYỂN TAG XUỐNG DƯỚI H1 */}
             {breadcrumb ? (
-              <div className="mt-2 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[12px] font-semibold text-emerald-800">
+              <div className="mt-2 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 sm:px-3 py-0.5 sm:py-1 text-[10px] sm:text-[12px] font-semibold text-emerald-800">
                 {breadcrumb}
               </div>
             ) : null}
 
             {/* Mô tả */}
             {subtitle ? (
-              <p className="mt-2 text-sm md:text-base text-emerald-50/90 max-w-3xl">
+              <p className="mt-2 text-xs sm:text-sm md:text-base text-emerald-50/90 max-w-3xl">
                 {subtitle}
               </p>
             ) : null}
@@ -487,7 +487,7 @@ const Card = ({ className = "", children }) => (
   <div
     className={
       // giấy trắng, viền mảnh + shadow sâu, bo lớn, hover nhấc card
-      "rounded-3xl border border-neutral-200 bg-white shadow-[0_8px_28px_rgba(2,6,23,0.08)] " +
+      "rounded-2xl sm:rounded-3xl border border-neutral-200 bg-white shadow-[0_8px_28px_rgba(2,6,23,0.08)] " +
       "transition-shadow hover:shadow-[0_14px_40px_rgba(2,6,23,0.12)] " +
       className
     }
@@ -498,8 +498,8 @@ const Card = ({ className = "", children }) => (
 const CardHeader = ({ className = "", children }) => (
   <div
     className={
-      // header thoáng + đường viền sáng + khoảng cách lớn
-      "px-6 pt-5 pb-3 border-b border-neutral-200/80 flex items-center justify-between " +
+      // header thoáng + đường viền sáng + khoảng cách lớn - responsive flex
+      "px-4 sm:px-6 pt-4 sm:pt-5 pb-2 sm:pb-3 border-b border-neutral-200/80 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 " +
       className
     }
   >
@@ -507,17 +507,17 @@ const CardHeader = ({ className = "", children }) => (
   </div>
 );
 const CardTitle = ({ className = "", children }) => (
-  <div className={"text-lg font-semibold tracking-tight " + className}>
+  <div className={"text-base sm:text-lg font-semibold tracking-tight " + className}>
     {children}
   </div>
 );
 const CardContent = ({ className = "", children }) => (
-  <div className={"px-6 py-5 " + className}>{children}</div>
+  <div className={"px-4 sm:px-6 py-4 sm:py-5 " + className}>{children}</div>
 );
 const Badge = ({ className = "", children, variant = "outline" }) => (
   <span
     className={
-      "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium " +
+      "inline-flex items-center rounded-full border px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-xs font-medium " +
       (variant === "secondary" ? "bg-neutral-100 border-neutral-200" : "") +
       " " +
       className
@@ -539,8 +539,8 @@ const Button = ({
     onClick={onClick}
     disabled={disabled}
     className={
-      "inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-medium " +
-      "shadow-sm transition-all hover:shadow-md active:scale-[0.99] " +
+      "inline-flex items-center justify-center rounded-lg sm:rounded-xl px-3 sm:px-3.5 py-2 text-xs sm:text-sm font-medium " +
+      "shadow-sm transition-all hover:shadow-md active:scale-[0.99] min-h-[40px] sm:min-h-[36px] " +
       (disabled ? "opacity-60 cursor-not-allowed " : "") +
       (variant === "outline"
         ? "border bg-white hover:bg-neutral-50"
@@ -556,7 +556,7 @@ const Button = ({
 const Input = ({ className = "", ...props }) => (
   <input
     className={
-      "h-12 w-full rounded-2xl border px-4 py-2.5 text-base outline-none " +
+      "h-11 sm:h-12 w-full rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base outline-none " +
       "focus:ring-2 focus:ring-neutral-300 " +
       (props.disabled ? "bg-neutral-100 cursor-not-allowed " : "") +
       className
@@ -569,7 +569,7 @@ const Textarea = ({ className = "", rows = 3, ...props }) => (
   <textarea
     rows={rows}
     className={
-      "w-full rounded-2xl border px-4 py-2.5 text-base outline-none " +
+      "w-full rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base outline-none " +
       "focus:ring-2 focus:ring-neutral-300 " +
       (props.disabled ? "bg-neutral-100 cursor-not-allowed " : "") +
       className
@@ -581,7 +581,7 @@ const Textarea = ({ className = "", rows = 3, ...props }) => (
 const Select = ({ className = "", children, ...props }) => (
   <select
     className={
-      "h-12 w-full rounded-2xl border px-4 py-2.5 text-base outline-none bg-white " +
+      "h-11 sm:h-12 w-full rounded-xl sm:rounded-2xl border px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base outline-none bg-white " +
       "focus:ring-2 focus:ring-neutral-300 " +
       (props.disabled ? "bg-neutral-100 cursor-not-allowed " : "") +
       className
@@ -5943,8 +5943,8 @@ export default function TreeDetail() {
   }
 
   /* ---------------------------------------------------------------------
-     Subviews
-     --------------------------------------------------------------------- */
+   Subviews
+   --------------------------------------------------------------------- */
   function PlannedSection({ type, disabled = false }) {
     const list = filteredPlannedBy(type);
     const theme = TYPE_THEME[type];
@@ -5966,24 +5966,24 @@ export default function TreeDetail() {
       <section className="mb-2">
         {/* Hiển thị tên cây ở đầu khi phân trang (từ trang 2 trở đi) */}
         {safePage > 1 && (
-          <div className="mb-3 p-2 rounded-lg bg-emerald-50 border border-emerald-200">
-            <div className="text-sm font-medium text-emerald-800">
+          <div className="mb-2 sm:mb-3 p-2 rounded-lg bg-emerald-50 border border-emerald-200">
+            <div className="text-xs sm:text-sm font-medium text-emerald-800">
               🌳 {treeName} — Trang {safePage}/{totalPages}
             </div>
           </div>
         )}
 
-        <div className="text-sm font-medium mb-2 flex items-center gap-2">
-          <ClipboardList className="inline h-4 w-4" />
+        <div className="text-xs sm:text-sm font-medium mb-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
+          <ClipboardList className="inline h-3.5 w-3.5 sm:h-4 sm:w-4" />
           <span>Các công việc đã lên kế hoạch — {theme.name}</span>
           {overdueInPage > 0 && (
-            <span className="px-2 py-0.5 text-xs rounded-full bg-rose-100 text-rose-700 font-semibold">
+            <span className="px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs rounded-full bg-rose-100 text-rose-700 font-semibold">
               {overdueInPage} quá hạn
             </span>
           )}
         </div>
 
-        <ul className="space-y-3">
+        <ul className="space-y-2 sm:space-y-3">
           {pageItems.map((p) => (
             <PlannedRow
               key={p.id}
@@ -5997,7 +5997,7 @@ export default function TreeDetail() {
           ))}
 
           {pageItems.length === 0 && (
-            <li className="text-sm text-neutral-500">
+            <li className="text-xs sm:text-sm text-neutral-500">
               Không có công việc phù hợp bộ lọc.
             </li>
           )}
@@ -6005,8 +6005,8 @@ export default function TreeDetail() {
 
         <div
           className={
-            "mt-3 flex items-center text-xs text-neutral-600 " +
-            (total > PAGE_SIZE ? "justify-between" : "justify-start")
+            "mt-2 sm:mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-[10px] sm:text-xs text-neutral-600 " +
+            (total > PAGE_SIZE ? "sm:justify-between" : "sm:justify-start")
           }
         >
           <div>
@@ -6015,9 +6015,9 @@ export default function TreeDetail() {
           </div>
 
           {total > PAGE_SIZE && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
-                className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
+                className="h-8 px-2.5 sm:px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98] text-[10px] sm:text-xs"
                 onClick={() =>
                   setPlannedPage((prev) => ({
                     ...prev,
@@ -6026,15 +6026,15 @@ export default function TreeDetail() {
                 }
                 disabled={page <= 1}
               >
-                Trang trước
+                Trước
               </button>
 
-              <span>
+              <span className="text-[10px] sm:text-xs">
                 {safePage}/{totalPages}
               </span>
 
               <button
-                className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
+                className="h-8 px-2.5 sm:px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98] text-[10px] sm:text-xs"
                 onClick={() =>
                   setPlannedPage((prev) => ({
                     ...prev,
@@ -6043,7 +6043,7 @@ export default function TreeDetail() {
                 }
                 disabled={page >= totalPages}
               >
-                Trang sau
+                Sau
               </button>
             </div>
           )}
@@ -6051,7 +6051,6 @@ export default function TreeDetail() {
       </section>
     );
   }
-
   function AISuggestionsList() {
     const list = aiSuggestions;
     const total = list.length;
@@ -6065,47 +6064,47 @@ export default function TreeDetail() {
 
     return (
       <section className="mb-2">
-        <div className="text-sm font-medium mb-2">Gợi ý từ AI</div>
+        <div className="text-xs sm:text-sm font-medium mb-2">Gợi ý từ AI</div>
 
         {isLoading ? (
-          <div className="rounded-2xl border bg-white p-6 flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-            <div className="text-sm text-neutral-600">
+          <div className="rounded-xl sm:rounded-2xl border bg-white p-4 sm:p-6 flex flex-col items-center justify-center gap-2 sm:gap-3">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 border-3 sm:border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+            <div className="text-xs sm:text-sm text-neutral-600">
               Đang tải gợi ý từ AI...
             </div>
           </div>
         ) : total === 0 ? (
-          <div className="rounded-2xl border bg-white p-6 flex flex-col items-center justify-center gap-2">
-            <div className="text-neutral-400 text-3xl">📋</div>
-            <div className="text-sm text-neutral-600">
+          <div className="rounded-xl sm:rounded-2xl border bg-white p-4 sm:p-6 flex flex-col items-center justify-center gap-2">
+            <div className="text-neutral-400 text-2xl sm:text-3xl">📋</div>
+            <div className="text-xs sm:text-sm text-neutral-600 text-center">
               {isStopped
                 ? "Không có dữ liệu gợi ý AI cho cây này"
                 : "Chưa có gợi ý AI cho cây này"}
             </div>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2 sm:gap-3">
             {pageItems.map((sug, i) => {
               const theme = TYPE_THEME[sug.type];
               return (
                 <div
                   key={start + i}
                   className={
-                    "rounded-2xl border bg-white p-3 border-l-4 " +
+                    "rounded-xl sm:rounded-2xl border bg-white p-2.5 sm:p-3 border-l-4 " +
                     theme.edge +
                     " hover:shadow-md transition-shadow"
                   }
                 >
-                  <div className="flex items-center gap-2">
-                    <div className="text-sm font-semibold">{sug.title}</div>
+                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                    <div className="text-xs sm:text-sm font-semibold">{sug.title}</div>
                     <Badge className={"border " + theme.pill}>
                       {theme.name}
                     </Badge>
                   </div>
-                  <div className="text-xs text-neutral-600 mt-0.5">
+                  <div className="text-[10px] sm:text-xs text-neutral-600 mt-0.5">
                     Nên làm: {formatVN(sug.due)}
                   </div>
-                  <ol className="mt-2 ml-5 list-decimal text-sm text-neutral-700 space-y-1">
+                  <ol className="mt-1.5 sm:mt-2 ml-4 sm:ml-5 list-decimal text-xs sm:text-sm text-neutral-700 space-y-0.5 sm:space-y-1">
                     {sug.details.map((d, idx) => (
                       <li key={idx}>{d}</li>
                     ))}
@@ -6119,8 +6118,8 @@ export default function TreeDetail() {
         {!isLoading && total > 0 && (
           <div
             className={
-              "mt-3 flex items-center text-xs text-neutral-600 " +
-              (total > AI_PAGE_SIZE ? "justify-between" : "justify-start")
+              "mt-2 sm:mt-3 flex flex-col sm:flex-row items-start sm:items-center gap-2 text-[10px] sm:text-xs text-neutral-600 " +
+              (total > AI_PAGE_SIZE ? "sm:justify-between" : "sm:justify-start")
             }
           >
             <div>
@@ -6129,25 +6128,25 @@ export default function TreeDetail() {
             </div>
 
             {total > AI_PAGE_SIZE && (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 sm:gap-2">
                 <button
-                  className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
+                  className="h-8 sm:h-8 px-2.5 sm:px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98] text-[10px] sm:text-xs min-w-[70px] sm:min-w-0"
                   onClick={() => setAiPage(Math.max(1, aiPage - 1))}
                   disabled={aiPage <= 1}
                 >
-                  Trang trước
+                  Trước
                 </button>
 
-                <span>
+                <span className="text-[10px] sm:text-xs">
                   {aiPage}/{totalPages}
                 </span>
 
                 <button
-                  className="h-8 px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98]"
+                  className="h-8 sm:h-8 px-2.5 sm:px-3 rounded-full border bg-white hover:bg-neutral-50 transition-all hover:shadow-md active:scale-[0.98] text-[10px] sm:text-xs min-w-[70px] sm:min-w-0"
                   onClick={() => setAiPage(Math.min(totalPages, aiPage + 1))}
                   disabled={aiPage >= totalPages}
                 >
-                  Trang sau
+                  Sau
                 </button>
               </div>
             )}
@@ -8297,27 +8296,27 @@ function TypeSwitch({ type, active, onClick, overdue = 0 }) {
   const theme = TYPE_THEME[type];
   const icon =
     type === "water" ? (
-      <Droplets className="h-4 w-4" />
+      <Droplets className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
     ) : type === "fert" ? (
-      <Leaf className="h-4 w-4" />
+      <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
     ) : type === "pest" ? (
-      <AlertTriangle className="h-4 w-4" />
+      <AlertTriangle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
     ) : (
-      <ClipboardList className="h-4 w-4" />
+      <ClipboardList className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
     );
   return (
     <button
       type="button"
       onClick={onClick}
       className={
-        "relative h-9 rounded-full px-3 gap-2 border flex items-center " +
+        "relative h-8 sm:h-9 rounded-full px-2 sm:px-3 gap-1.5 sm:gap-2 border flex items-center " +
         (active ? theme.activeBtn : "bg-white hover:bg-neutral-50")
       }
     >
       {icon}
-      <span className="text-sm">{theme.name}</span>
+      <span className="text-xs sm:text-sm">{theme.name}</span>
       {overdue > 0 && (
-        <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-600 text-white text-[10px] leading-[18px] text-center border border-white shadow">
+        <span className="absolute -top-1.5 -right-1.5 min-w-[16px] sm:min-w-[18px] h-[16px] sm:h-[18px] px-0.5 sm:px-1 rounded-full bg-rose-600 text-white text-[9px] sm:text-[10px] leading-[16px] sm:leading-[18px] text-center border border-white shadow">
           {overdue > 99 ? "99+" : overdue}
         </span>
       )}
@@ -8355,7 +8354,7 @@ function FilterChip({ active, onClick, children }) {
     <button
       onClick={onClick}
       className={
-        "h-8 px-3 rounded-full text-xs border " +
+        "h-7 sm:h-8 px-2 sm:px-3 rounded-full text-[10px] sm:text-xs border whitespace-nowrap " +
         (active
           ? "bg-emerald-50 border-emerald-300 text-emerald-800"
           : "bg-white hover:bg-neutral-50")

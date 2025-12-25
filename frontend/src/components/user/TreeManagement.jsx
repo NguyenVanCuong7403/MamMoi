@@ -1513,7 +1513,7 @@ export default function TreeManagement() {
                 {/* Nút thêm cây ăn quả – sát dưới header */}
                 <div className="flex flex-wrap gap-3">
                   <Button
-                    className="h-11 md:h-12 px-5 md:px-6 rounded-2xl text-sm md:text-base font-semibold shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5 transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5"
+                    className="h-11 md:h-12 px-4 md:px-6 rounded-2xl text-sm md:text-base font-semibold shadow-[0_10px_28px_rgba(255,255,165,0.20)] ring-1 ring-black/5 transition-all hover:shadow-[0_14px_44px_rgba(255,255,165,0.26)] hover:-translate-y-0.5"
                     style={{
                       background:
                         "linear-gradient(135deg,#FFFFA5 0%, #D1DFB6 100%)",
@@ -1521,24 +1521,26 @@ export default function TreeManagement() {
                     }}
                     onClick={() => navigate("/new", { state: { garden } })}
                   >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="grid place-items-center w-8 h-8 rounded-xl bg-white/70 backdrop-blur">
-                        <Plus className="w-5 h-5" />
+                    <span className="inline-flex items-center gap-2 md:gap-3">
+                      <span className="grid place-items-center w-7 h-7 md:w-8 md:h-8 rounded-xl bg-white/70 backdrop-blur">
+                        <Plus className="w-4 h-4 md:w-5 md:h-5" />
                       </span>
-                      Thêm cây ăn quả
+                      <span className="hidden sm:inline">Thêm cây ăn quả</span>
+                      <span className="sm:hidden">Thêm cây</span>
                     </span>
                   </Button>
 
                   <Button
                     variant="outline"
-                    className="h-11 md:h-12 px-5 md:px-6 rounded-2xl text-sm md:text-base font-semibold border-white/30 bg-white/15 text-white/95 hover:bg-white/25 hover:text-white transition-all"
+                    className="h-11 md:h-12 px-4 md:px-6 rounded-2xl text-sm md:text-base font-semibold border-white/30 bg-white/15 text-white/95 hover:bg-white/25 hover:text-white transition-all"
                     onClick={() => setTaskPanelOpen(true)}
                   >
-                    <span className="inline-flex items-center gap-3">
-                      <span className="grid place-items-center w-8 h-8 rounded-xl bg-white/20 backdrop-blur">
-                        <ClipboardList className="w-5 h-5" />
+                    <span className="inline-flex items-center gap-2 md:gap-3">
+                      <span className="grid place-items-center w-7 h-7 md:w-8 md:h-8 rounded-xl bg-white/20 backdrop-blur">
+                        <ClipboardList className="w-4 h-4 md:w-5 md:h-5" />
                       </span>
-                      Quản lý công việc vườn
+                      <span className="hidden sm:inline">Quản lý công việc vườn</span>
+                      <span className="sm:hidden">Công việc</span>
                     </span>
                   </Button>
                 </div>
@@ -1829,7 +1831,7 @@ export default function TreeManagement() {
             </div>
 
             {showGardenStats && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 gap-2 md:gap-3">
                 {[
                   { label: "Tổng cây", value: stats.total },
                   { label: "Đang hoạt động", value: stats.active },

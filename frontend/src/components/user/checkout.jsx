@@ -821,7 +821,7 @@ export default function MamMoiQrCheckout() {
                   <div className="flex flex-col items-center gap-3 sm:gap-4 relative w-full min-w-0">
                     <div
                       data-qr-container
-                      className="rounded-xl sm:rounded-2xl border-2 border-white/30 bg-white/95 p-4 sm:p-5 md:p-6 shadow-lg w-full flex items-center justify-center overflow-hidden min-w-0"
+                      className="rounded-xl sm:rounded-2xl border-2 border-white/30 bg-white/95 p-3 sm:p-5 md:p-6 shadow-lg w-full flex items-center justify-center overflow-hidden min-w-0 mx-auto"
                       style={{ maxWidth: 'min(100%, 320px)', width: '100%' }}
                     >
                       {QR && QR.$$typeof ? (
@@ -885,10 +885,10 @@ export default function MamMoiQrCheckout() {
                     )}
                   </div>
                 </CardContent>
-                <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex justify-end min-w-0">
+                <div className="px-4 sm:px-6 pb-4 sm:pb-6 min-w-0">
                   <Button
                     onClick={() => setShowCancelDialog(true)}
-                    className="bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2 rounded-lg font-medium transition-colors text-sm sm:text-base shrink-0"
+                    className="w-full sm:w-auto sm:ml-auto bg-red-600 hover:bg-red-700 text-white px-4 sm:px-6 py-2.5 sm:py-2 rounded-lg font-medium transition-colors text-sm sm:text-base block sm:inline-block"
                   >
                     Hủy thanh toán
                   </Button>

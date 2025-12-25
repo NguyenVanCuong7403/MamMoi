@@ -363,92 +363,87 @@ function PaymentHistory({
 
       {/* Detail Modal */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-lg bg-white rounded-lg overflow-hidden shadow-lg mx-4">
-          <DialogHeader>
-            <DialogTitle className="text-[clamp(18px,2.5vw,24px)] font-semibold">
-              Chi Tiết giao dịch
+        <DialogContent className="max-w-[92vw] sm:max-w-md md:max-w-lg bg-white rounded-xl sm:rounded-lg overflow-hidden shadow-lg mx-2 sm:mx-4 p-0">
+          <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-2 sm:pb-4">
+            <DialogTitle className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900">
+              Chi tiết giao dịch
             </DialogTitle>
           </DialogHeader>
 
-          <div className="px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 space-y-4 sm:space-y-5">
+          <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-3 sm:space-y-4 max-h-[60vh] overflow-y-auto">
             {selectedTransaction && (
               <>
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                <div className="flex justify-between items-start gap-2 py-2 border-b border-gray-100">
+                  <span className="text-gray-500 text-xs sm:text-sm font-medium shrink-0">
                     Mã đơn
                   </span>
-                  <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
+                  <span className="font-semibold text-gray-900 text-xs sm:text-sm text-right break-all">
                     {selectedTransaction.id}
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                <div className="flex justify-between items-start gap-2 py-2 border-b border-gray-100">
+                  <span className="text-gray-500 text-xs sm:text-sm font-medium shrink-0">
                     Mã giao dịch
                   </span>
-                  <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
-                    {selectedTransaction.txId}
+                  <span className="font-semibold text-gray-900 text-xs sm:text-sm text-right break-all">
+                    {selectedTransaction.txId || "—"}
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                <div className="flex justify-between items-start gap-2 py-2 border-b border-gray-100">
+                  <span className="text-gray-500 text-xs sm:text-sm font-medium shrink-0">
                     Gói
                   </span>
-                  <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
+                  <span className="font-semibold text-gray-900 text-xs sm:text-sm text-right">
                     {selectedTransaction.package}
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                <div className="flex justify-between items-start gap-2 py-2 border-b border-gray-100">
+                  <span className="text-gray-500 text-xs sm:text-sm font-medium shrink-0">
                     Thời gian
                   </span>
-                  <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
-                    {selectedTransaction.time}
+                  <span className="font-semibold text-gray-900 text-xs sm:text-sm text-right">
+                    {selectedTransaction.time?.replace("T", " ")}
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                <div className="flex justify-between items-start gap-2 py-2 border-b border-gray-100">
+                  <span className="text-gray-500 text-xs sm:text-sm font-medium shrink-0">
                     Phương thức
                   </span>
-                  <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
+                  <span className="font-semibold text-gray-900 text-xs sm:text-sm text-right">
                     {selectedTransaction.method}
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                <div className="flex justify-between items-start gap-2 py-2 border-b border-gray-100">
+                  <span className="text-gray-500 text-xs sm:text-sm font-medium shrink-0">
                     Số tiền
                   </span>
-                  <span className="font-semibold text-gray-900 text-[clamp(14px,2vw,18px)] break-words text-right sm:text-left">
+                  <span className="font-bold text-emerald-600 text-sm sm:text-base text-right">
                     {selectedTransaction.amount}
                   </span>
                 </div>
 
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
-                  <span className="text-gray-600 font-medium text-[clamp(13px,1.8vw,16px)]">
+                <div className="flex justify-between items-center gap-2 py-2">
+                  <span className="text-gray-500 text-xs sm:text-sm font-medium shrink-0">
                     Trạng thái
                   </span>
                   <span
-                    className={`
-                      inline-flex items-center gap-2 px-3 sm:px-4 py-2 rounded-full text-[clamp(12px,1.6vw,16px)] font-medium border
-                      ${selectedTransaction.statusColor}
-                    `}
+                    className={`inline-flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium border ${selectedTransaction.statusColor}`}
                   >
-                    <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-current flex-shrink-0"></span>
-                    <span className="break-words">
-                      {selectedTransaction.status}
-                    </span>
+                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-current flex-shrink-0"></span>
+                    {selectedTransaction.status}
                   </span>
                 </div>
               </>
             )}
           </div>
 
-          <div className="border-t border-gray-200 px-4 sm:px-6 md:px-8 py-3 sm:py-4 bg-gray-50 text-center">
-            <p className="text-[clamp(11px,1.5vw,14px)] text-gray-500">
+          <div className="border-t border-gray-200 px-4 sm:px-6 py-3 sm:py-4 bg-gray-50 text-center">
+            <p className="text-[10px] sm:text-xs text-gray-500">
               * Nếu cần hỗ trợ hoá đơn hoặc hoàn tiền, vui lòng liên hệ support
             </p>
           </div>

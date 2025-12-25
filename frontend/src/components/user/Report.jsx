@@ -284,6 +284,7 @@ export default function Report() {
         requestPayload
       );
 
+
       if (response && response.success !== false) {
         // Show success modal
         setShowSuccessModal(true);

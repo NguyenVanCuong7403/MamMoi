@@ -1181,7 +1181,7 @@ export default function PlantDetail() {
       </section>
 
       {/* Stats Row - Floating Cards */}
-      <section className="relative -mt-8 z-10 w-full px-0">
+      <section className="relative -mt-4 md:-mt-8 z-10 w-full px-0">
         <div className="mx-auto w-full px-2 sm:px-4 md:px-6 lg:px-8">
           <div className="grid gap-2 sm:gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
             <StatCard

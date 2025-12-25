@@ -97,8 +97,8 @@ async function fetchSoils() {
     const soils = Array.isArray(response.data)
       ? response.data
       : Array.isArray(response)
-      ? response
-      : [];
+        ? response
+        : [];
     return soils.map(mapSoilFromApi).filter((soil) => soil !== null);
   } catch (error) {
     console.warn("Error fetching soils, returning empty array:", error);
@@ -166,13 +166,13 @@ const soilDefaultValues = {
 const mapSoilToFormValues = (soil) =>
   soil
     ? {
-        SoilName: soil.SoilName ?? "",
-        Texture: soil.Texture ?? "",
-        Drainage: soil.Drainage ?? "",
-        OrganicMatterPct: soil.OrganicMatterPct ?? undefined,
-        EC_dS_m: soil.EC_dS_m ?? undefined,
-        Notes: soil.Notes ?? "",
-      }
+      SoilName: soil.SoilName ?? "",
+      Texture: soil.Texture ?? "",
+      Drainage: soil.Drainage ?? "",
+      OrganicMatterPct: soil.OrganicMatterPct ?? undefined,
+      EC_dS_m: soil.EC_dS_m ?? undefined,
+      Notes: soil.Notes ?? "",
+    }
     : soilDefaultValues;
 
 export default function SoilManagement() {
@@ -510,22 +510,22 @@ export default function SoilManagement() {
       <div className="relative z-10 min-h-screen">
         <AdminLayout>
           <div className="flex h-full min-h-full w-full flex-1 flex-col gap-6 px-4 py-8 text-[15px] leading-relaxed sm:px-6 sm:text-base lg:px-12">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
               <div>
-                <p className="flex items-center gap-2 text-sm font-semibold uppercase tracking-[0.4em] text-emerald-200">
-                  <Layers className="h-4 w-4" />
+                <p className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm font-semibold uppercase tracking-[0.3em] sm:tracking-[0.4em] text-emerald-200">
+                  <Layers className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Business Admin
                 </p>
-                <h1 className="mt-2 text-4xl font-bold text-white">
+                <h1 className="mt-1.5 sm:mt-2 text-xl sm:text-2xl md:text-4xl font-bold text-white">
                   Quản lý loại đất
                 </h1>
-                <p className="text-base text-white/80">
+                <p className="text-xs sm:text-sm md:text-base text-white/80 mt-1">
                   Quản lý các loại đất (SoilMaster) trong hệ thống, bao gồm
                   thông tin về thành phần, khả năng thoát nước, độ hữu cơ và độ
                   mặn.
                 </p>
                 {endpointError && (
-                  <div className="mt-4 rounded-xl border border-amber-500/50 bg-amber-50/90 p-4 text-sm text-amber-900 shadow-lg">
+                  <div className="mt-3 sm:mt-4 rounded-lg sm:rounded-xl border border-amber-500/50 bg-amber-50/90 p-3 sm:p-4 text-xs sm:text-sm text-amber-900 shadow-lg">
                     <p className="font-semibold">⚠️ Thông báo</p>
                     <p>{endpointError}</p>
                   </div>
@@ -557,9 +557,9 @@ export default function SoilManagement() {
                   <div className="h-12 w-12 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-500" />
                 </div>
               ) : (
-                <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
+                <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)]">
                   <div className="space-y-3">
-                    <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="rounded-xl sm:rounded-3xl border border-slate-200 bg-white p-3 sm:p-4 shadow-sm">
                       <ScrollArea className="max-h-[600px] overflow-visible pr-2">
                         <div className="grid gap-2">
                           {soils.length === 0 ? (
@@ -665,11 +665,11 @@ export default function SoilManagement() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border-2 border-slate-300 bg-white p-6 shadow-xl">
+                  <div className="rounded-xl sm:rounded-2xl border-2 border-slate-300 bg-white p-4 sm:p-6 shadow-xl">
                     {selectedSoil ? (
                       <>
-                        <div className="mb-6 rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
-                          <h3 className="mt-2 text-2xl font-bold text-slate-900">
+                        <div className="mb-4 sm:mb-6 rounded-lg sm:rounded-xl border-2 border-slate-200 bg-slate-50 p-3 sm:p-4">
+                          <h3 className="mt-1 sm:mt-2 text-lg sm:text-2xl font-bold text-slate-900">
                             {selectedSoil.SoilName}
                           </h3>
                           <p className="mt-1 text-sm font-medium text-slate-600">
@@ -899,7 +899,7 @@ export default function SoilManagement() {
                 }
               }}
             >
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto p-4 sm:p-6">
                 <DialogHeader>
                   <DialogTitle>Thêm loại đất mới</DialogTitle>
                   <DialogDescription>

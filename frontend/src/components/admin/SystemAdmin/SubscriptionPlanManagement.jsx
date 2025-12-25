@@ -380,37 +380,39 @@ export default function SubscriptionPlanManagement() {
           <>
             <div className="space-y-8">
               {/* Header */}
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
-                    <ShieldCheck className="h-4 w-4" />
+                  <p className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm uppercase tracking-[0.3em] sm:tracking-[0.4em] text-emerald-200">
+                    <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Quản trị hệ thống
                   </p>
-                  <h1 className="mt-2 text-3xl font-semibold text-white">
+                  <h1 className="mt-1.5 sm:mt-2 text-xl sm:text-2xl md:text-3xl font-semibold text-white">
                     Quản lý gói dịch vụ
                   </h1>
-                  <p className="text-emerald-100/80">
+                  <p className="text-xs sm:text-sm text-emerald-100/80 mt-1">
                     Quản lý các gói dịch vụ, giá cả và tính năng của từng gói.
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   <Button
                     variant="outline"
-                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white text-xs sm:text-sm px-2.5 sm:px-4"
                     onClick={fetchPlans}
                     disabled={loading}
                   >
                     <RefreshCcw
-                      className={cn("mr-2 h-4 w-4", loading && "animate-spin")}
+                      className={cn("mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4", loading && "animate-spin")}
                     />
-                    {loading ? "Đang tải..." : "Làm mới"}
+                    <span className="hidden sm:inline">{loading ? "Đang tải..." : "Làm mới"}</span>
+                    <span className="sm:hidden">{loading ? "..." : "Làm mới"}</span>
                   </Button>
                   <Button
-                    className="bg-emerald-600 text-white hover:bg-emerald-700"
+                    className="bg-emerald-600 text-white hover:bg-emerald-700 text-xs sm:text-sm px-2.5 sm:px-4"
                     onClick={openCreateDialog}
                   >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Tạo gói mới
+                    <Plus className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <span className="hidden sm:inline">Tạo gói mới</span>
+                    <span className="sm:hidden">Tạo</span>
                   </Button>
                 </div>
               </div>
@@ -436,9 +438,9 @@ export default function SubscriptionPlanManagement() {
 
               {/* Filters */}
               <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-                <CardContent className="p-6">
-                  <div className="grid gap-4 lg:grid-cols-12">
-                    <div className="lg:col-span-6">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-12">
+                    <div className="sm:col-span-1 lg:col-span-6">
                       <div className="relative">
                         <Input
                           placeholder="Tìm theo tên gói hoặc mô tả..."
@@ -447,19 +449,19 @@ export default function SubscriptionPlanManagement() {
                             setSearchTerm(e.target.value);
                             setPage(1);
                           }}
-                          className="rounded-xl border-slate-200 bg-white pl-10 text-slate-900"
+                          className="rounded-xl border-slate-200 bg-white pl-10 text-slate-900 text-sm"
                         />
                         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       </div>
                     </div>
-                    <div className="lg:col-span-6">
+                    <div className="sm:col-span-1 lg:col-span-6">
                       <SearchableSelect
                         value={
                           activeFilter === null
                             ? "all"
                             : activeFilter
-                            ? "active"
-                            : "inactive"
+                              ? "active"
+                              : "inactive"
                         }
                         onChange={(value) => {
                           setActiveFilter(
@@ -481,18 +483,18 @@ export default function SubscriptionPlanManagement() {
 
               {/* Plans Table */}
               <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-                <CardHeader>
+                <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-5">
                   <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                    <CardTitle className="text-2xl text-slate-900">
+                    <CardTitle className="text-lg sm:text-xl md:text-2xl text-slate-900">
                       Danh sách gói dịch vụ
                     </CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                      <Package className="h-4 w-4 text-emerald-600" />
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-slate-500">
+                      <Package className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600" />
                       {totalCount} gói dịch vụ
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="px-4 sm:px-6 py-4 sm:py-5">
                   {loading && plans.length === 0 ? (
                     <div className="flex items-center justify-center p-12">
                       <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
@@ -502,7 +504,95 @@ export default function SubscriptionPlanManagement() {
                     </div>
                   ) : (
                     <>
-                      <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                      {/* Mobile Card Layout */}
+                      <div className="md:hidden space-y-3">
+                        {plans.length === 0 ? (
+                          <div className="rounded-xl border border-slate-100 bg-white p-8 text-center text-slate-500">
+                            Không có gói dịch vụ nào.
+                          </div>
+                        ) : (
+                          plans.map((plan) => (
+                            <div
+                              key={plan.planId}
+                              className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-slate-900">{plan.planName}</p>
+                                  <p className="text-xs text-slate-500 truncate">{plan.description || "Không có mô tả"}</p>
+                                </div>
+                                <Badge
+                                  className={cn(
+                                    "border-0 text-[10px] px-1.5 py-0.5 shrink-0",
+                                    plan.isActive
+                                      ? "bg-emerald-50 text-emerald-700"
+                                      : "bg-amber-50 text-amber-700"
+                                  )}
+                                >
+                                  {plan.isActive ? "Hoạt động" : "Tạm dừng"}
+                                </Badge>
+                              </div>
+                              <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                                <div>
+                                  <span className="text-slate-400">ID:</span>
+                                  <span className="ml-1 font-medium text-slate-700">#{plan.planId}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-400">Loại:</span>
+                                  {plan.planType ? (
+                                    <Badge className="ml-1 bg-sky-50 text-sky-700 border border-sky-100 text-[10px] px-1.5 py-0">
+                                      {plan.planType}
+                                    </Badge>
+                                  ) : (
+                                    <span className="ml-1 text-slate-500">-</span>
+                                  )}
+                                </div>
+                                <div className="col-span-2">
+                                  <span className="text-slate-400">Giá:</span>
+                                  <span className="ml-1 font-semibold text-emerald-700">
+                                    {formatCurrency(plan.price, plan.currency || "VND")}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="mt-3 flex justify-end gap-2">
+                                <Button size="sm" variant="outline" onClick={() => openEditDialog(plan)}>
+                                  <Edit className="h-3.5 w-3.5" />
+                                </Button>
+                                {plan.isActive ? (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-amber-600"
+                                    onClick={() => handleDeactivate(plan)}
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-emerald-600"
+                                    onClick={() => handleActivate(plan)}
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-rose-600"
+                                  onClick={() => openDeleteDialog(plan)}
+                                >
+                                  <Trash className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+
+                      {/* Desktop Table */}
+                      <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
                         <Table>
                           <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
                             <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
@@ -512,18 +602,13 @@ export default function SubscriptionPlanManagement() {
                               <TableHead>Giá</TableHead>
                               <TableHead>Mô tả</TableHead>
                               <TableHead>Trạng thái</TableHead>
-                              <TableHead className="text-right">
-                                Hành động
-                              </TableHead>
+                              <TableHead className="text-right">Hành động</TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
                             {plans.length === 0 ? (
                               <TableRow>
-                                <TableCell
-                                  colSpan={7}
-                                  className="py-8 text-center text-slate-500"
-                                >
+                                <TableCell colSpan={7} className="py-8 text-center text-slate-500">
                                   Không có gói dịch vụ nào.
                                 </TableCell>
                               </TableRow>
@@ -533,37 +618,24 @@ export default function SubscriptionPlanManagement() {
                                   key={plan.planId}
                                   className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
                                 >
-                                  <TableCell className="font-semibold text-slate-900">
-                                    #{plan.planId}
-                                  </TableCell>
-                                  <TableCell className="font-medium text-slate-800">
-                                    {plan.planName}
-                                  </TableCell>
+                                  <TableCell className="font-semibold text-slate-900">#{plan.planId}</TableCell>
+                                  <TableCell className="font-medium text-slate-800">{plan.planName}</TableCell>
                                   <TableCell>
                                     {plan.planType ? (
-                                      <Badge className="bg-sky-50 text-sky-700 border border-sky-100">
-                                        {plan.planType}
-                                      </Badge>
+                                      <Badge className="bg-sky-50 text-sky-700 border border-sky-100">{plan.planType}</Badge>
                                     ) : (
                                       "-"
                                     )}
                                   </TableCell>
                                   <TableCell className="font-semibold text-emerald-700">
-                                    {formatCurrency(
-                                      plan.price,
-                                      plan.currency || "VND"
-                                    )}
+                                    {formatCurrency(plan.price, plan.currency || "VND")}
                                   </TableCell>
-                                  <TableCell className="text-slate-600 max-w-md truncate">
-                                    {plan.description || "-"}
-                                  </TableCell>
+                                  <TableCell className="text-slate-600 max-w-md truncate">{plan.description || "-"}</TableCell>
                                   <TableCell>
                                     <Badge
                                       className={cn(
                                         "border-0",
-                                        plan.isActive
-                                          ? "bg-emerald-50 text-emerald-700"
-                                          : "bg-amber-50 text-amber-700"
+                                        plan.isActive ? "bg-emerald-50 text-emerald-700" : "bg-amber-50 text-amber-700"
                                       )}
                                     >
                                       {plan.isActive ? "Hoạt động" : "Tạm dừng"}
@@ -571,11 +643,7 @@ export default function SubscriptionPlanManagement() {
                                   </TableCell>
                                   <TableCell className="text-right">
                                     <div className="flex justify-end gap-2">
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => openEditDialog(plan)}
-                                      >
+                                      <Button size="sm" variant="outline" onClick={() => openEditDialog(plan)}>
                                         <Edit className="h-4 w-4" />
                                       </Button>
                                       {plan.isActive ? (
@@ -679,21 +747,21 @@ export default function SubscriptionPlanManagement() {
 
       {/* Create Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Tạo gói dịch vụ mới</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-[95vw] sm:max-w-xl md:max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-2xl p-4 sm:p-6">
+          <DialogHeader className="pb-2 sm:pb-4">
+            <DialogTitle className="text-base sm:text-lg">Tạo gói dịch vụ mới</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Tạo một gói dịch vụ mới cho hệ thống.
             </DialogDescription>
           </DialogHeader>
           {formError && (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+            <div className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs sm:text-sm text-rose-800">
               {formError}
             </div>
           )}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <div>
-              <label className="text-sm font-medium text-slate-700">
+              <label className="text-xs sm:text-sm font-medium text-slate-700">
                 Tên gói *
               </label>
               <Input
@@ -702,10 +770,10 @@ export default function SubscriptionPlanManagement() {
                   setFormData({ ...formData, planName: e.target.value })
                 }
                 placeholder="Ví dụ: Gói Ươm Mầm"
-                className="mt-1"
+                className="mt-1 text-sm"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="text-sm font-medium text-slate-700">
                   Loại gói

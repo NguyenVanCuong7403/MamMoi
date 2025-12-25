@@ -185,26 +185,26 @@ function StatCard({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-emerald-200/60",
+        "group relative overflow-hidden rounded-xl sm:rounded-2xl border bg-white p-3 sm:p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-emerald-200/60",
         isDanger ? "border-rose-200" : "border-emerald-100"
       )}
     >
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-slate-500">{label}</p>
-          <p className="mt-1 text-3xl font-semibold text-slate-900">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs sm:text-sm text-slate-500">{label}</p>
+          <p className="mt-1 text-xl sm:text-2xl md:text-3xl font-semibold text-slate-900 truncate">
             {isCurrency ? formatCurrency(value) : value.toLocaleString("vi-VN")}
           </p>
         </div>
         <div
           className={cn(
-            "rounded-2xl p-3 shadow-inner group-hover:bg-emerald-100",
+            "rounded-xl sm:rounded-2xl p-2 sm:p-3 shadow-inner group-hover:bg-emerald-100 shrink-0",
             isDanger
               ? "bg-rose-50 text-rose-600 shadow-rose-100 group-hover:bg-rose-100"
               : "bg-emerald-50 text-emerald-600 shadow-emerald-100"
           )}
         >
-          <Icon className="h-5 w-5" />
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </div>
       <div
@@ -800,22 +800,22 @@ function SubscriptionManagement() {
       <div className="relative min-h-screen z-10">
         <AdminLayout>
           <div className="space-y-8">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
-                  <ShieldCheck className="h-4 w-4" />
+                <p className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm uppercase tracking-[0.3em] sm:tracking-[0.4em] text-emerald-200">
+                  <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Quản trị hệ thống
                 </p>
-                <h1 className="mt-2 text-3xl font-semibold text-white">
+                <h1 className="mt-1.5 sm:mt-2 text-xl sm:text-2xl md:text-3xl font-semibold text-white">
                   Quản lý thanh toán
                 </h1>
-                <p className="text-emerald-100/80">
+                <p className="text-xs sm:text-sm text-emerald-100/80 mt-1">
                   Theo dõi doanh thu, trạng thái giao dịch và phân bổ gói trong
                   hệ sinh thái Mầm Mới.
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <div className="rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                <div className="rounded-full border border-white/30 bg-white/10 p-0.5 sm:p-1 backdrop-blur">
                   {TIME_WINDOWS.map((option) => {
                     const isActive = timeframe === option.value;
                     return (
@@ -823,7 +823,7 @@ function SubscriptionManagement() {
                         key={option.value}
                         onClick={() => setTimeframe(option.value)}
                         className={cn(
-                          "rounded-full px-4 py-2 text-sm font-semibold transition-all",
+                          "rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                           isActive
                             ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/30"
                             : "text-white/70 hover:text-white"
@@ -836,10 +836,11 @@ function SubscriptionManagement() {
                 </div>
                 <Button
                   variant="outline"
-                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                  className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white text-xs sm:text-sm px-2.5 sm:px-4"
                 >
-                  <LineChart className="mr-2 h-4 w-4" />
-                  Đồng bộ dữ liệu
+                  <LineChart className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Đồng bộ dữ liệu</span>
+                  <span className="sm:hidden">Đồng bộ</span>
                 </Button>
               </div>
             </div>
@@ -864,13 +865,13 @@ function SubscriptionManagement() {
             {/* Revenue Statistics Cards */}
             {revenueStats && (
               <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-                <CardHeader>
-                  <CardTitle className="text-2xl text-slate-900">
+                <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-5">
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl text-slate-900">
                     Tổng quan doanh thu
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <CardContent className="px-4 sm:px-6 py-4 sm:py-5">
+                  <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 xl:grid-cols-4">
                     {Object.entries(revenueStats).map(([key, config]) => (
                       <StatCard
                         key={key}
@@ -929,17 +930,17 @@ function SubscriptionManagement() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 sm:px-6 py-4 sm:py-5">
                 {/* Filters */}
-                <div className="mb-6 grid gap-4 lg:grid-cols-12">
-                  <div className="lg:col-span-3">
+                <div className="mb-4 sm:mb-6 grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-12">
+                  <div className="col-span-1 lg:col-span-3">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start text-left font-normal"
+                          className="w-full justify-start text-left font-normal text-xs sm:text-sm"
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           {revenueStartDate
                             ? new Date(revenueStartDate).toLocaleDateString(
                               "vi-VN"
@@ -956,14 +957,14 @@ function SubscriptionManagement() {
                       </PopoverContent>
                     </Popover>
                   </div>
-                  <div className="lg:col-span-3">
+                  <div className="col-span-1 lg:col-span-3">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full justify-start text-left font-normal"
+                          className="w-full justify-start text-left font-normal text-xs sm:text-sm"
                         >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                           {revenueEndDate
                             ? new Date(revenueEndDate).toLocaleDateString(
                               "vi-VN"
@@ -979,19 +980,19 @@ function SubscriptionManagement() {
                         />
                       </PopoverContent>
                     </Popover>
-                    <div className="lg:col-span-3">
-                      <SearchableSelect
-                        value={revenuePlanFilter || "all"}
-                        onChange={(value) => {
-                          setRevenuePlanFilter(value);
-                          setRevenuePage(1);
-                        }}
-                        options={packageOptions}
-                        placeholder="Gói dịch vụ"
-                      />
-                    </div>
                   </div>
-                  <div className="lg:col-span-3">
+                  <div className="col-span-1 lg:col-span-3">
+                    <SearchableSelect
+                      value={revenuePlanFilter || "all"}
+                      onChange={(value) => {
+                        setRevenuePlanFilter(value);
+                        setRevenuePage(1);
+                      }}
+                      options={packageOptions}
+                      placeholder="Gói dịch vụ"
+                    />
+                  </div>
+                  <div className="col-span-1 lg:col-span-3">
                     <SearchableSelect
                       value={revenueStatusFilter || "all"}
                       onChange={(value) => {
@@ -1018,7 +1019,85 @@ function SubscriptionManagement() {
                   </div>
                 ) : (
                   <>
-                    <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                    {/* Mobile Card Layout */}
+                    <div className="md:hidden space-y-3">
+                      {revenuePayments.length === 0 ? (
+                        <div className="rounded-xl border border-slate-100 bg-white p-8 text-center text-slate-500">
+                          Không có giao dịch nào.
+                        </div>
+                      ) : (
+                        revenuePayments.map((payment, index) => (
+                          <div
+                            key={payment.paymentId}
+                            className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-slate-900 truncate">{payment.userName}</p>
+                                <p className="text-xs text-slate-500 truncate">{payment.userEmail}</p>
+                              </div>
+                              <Badge
+                                className={cn(
+                                  "border-0 text-[10px] px-1.5 py-0.5",
+                                  payment.transactionStatus === "Success"
+                                    ? "bg-emerald-50 text-emerald-700"
+                                    : payment.transactionStatus === "Failed"
+                                      ? "bg-rose-50 text-rose-700"
+                                      : payment.transactionStatus === "Cancelled"
+                                        ? "bg-rose-50 text-rose-700"
+                                        : "bg-amber-50 text-amber-700"
+                                )}
+                              >
+                                {payment.transactionStatus === "Success"
+                                  ? "Thành công"
+                                  : payment.transactionStatus === "Failed"
+                                    ? "Thất bại"
+                                    : payment.transactionStatus === "Cancelled"
+                                      ? "Đã hủy"
+                                      : "Đang xử lý"}
+                              </Badge>
+                            </div>
+                            <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                              <div>
+                                <span className="text-slate-400">Gói:</span>
+                                <span className="ml-1 font-medium text-slate-700">
+                                  {getPlanLabel(payment.planName || payment.planId, packageOptions, subscriptionPlans)}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">Số tiền:</span>
+                                <span className="ml-1 font-semibold text-emerald-700">
+                                  {payment.amount.toLocaleString("vi-VN", {
+                                    style: "currency",
+                                    currency: payment.currency || "VND",
+                                  })}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">Bắt đầu:</span>
+                                <span className="ml-1 text-slate-700">
+                                  {formatDate(payment.subscriptionStartDate, "Chưa xác định")}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-slate-400">Kết thúc:</span>
+                                <span className="ml-1 text-slate-700">
+                                  {payment.subscriptionEndDate
+                                    ? formatDate(payment.subscriptionEndDate, "Không giới hạn")
+                                    : "Không giới hạn"}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-xs text-slate-400">
+                              Thanh toán: {new Date(payment.paymentDate).toLocaleDateString("vi-VN")}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {/* Desktop Table */}
+                    <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
                       <Table>
                         <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
                           <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
@@ -1035,10 +1114,7 @@ function SubscriptionManagement() {
                         <TableBody>
                           {revenuePayments.length === 0 ? (
                             <TableRow>
-                              <TableCell
-                                colSpan={8}
-                                className="py-8 text-center text-slate-500"
-                              >
+                              <TableCell colSpan={8} className="py-8 text-center text-slate-500">
                                 Không có giao dịch nào.
                               </TableCell>
                             </TableRow>
@@ -1049,18 +1125,12 @@ function SubscriptionManagement() {
                                 className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
                               >
                                 <TableCell className="font-semibold text-slate-900">
-                                  {(revenuePage - 1) * REVENUE_PAGE_SIZE +
-                                    index +
-                                    1}
+                                  {(revenuePage - 1) * REVENUE_PAGE_SIZE + index + 1}
                                 </TableCell>
                                 <TableCell>
                                   <div>
-                                    <p className="font-medium text-slate-900">
-                                      {payment.userName}
-                                    </p>
-                                    <p className="text-xs text-slate-500">
-                                      {payment.userEmail}
-                                    </p>
+                                    <p className="font-medium text-slate-900">{payment.userName}</p>
+                                    <p className="text-xs text-slate-500">{payment.userEmail}</p>
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-slate-800">
@@ -1073,17 +1143,11 @@ function SubscriptionManagement() {
                                   </div>
                                 </TableCell>
                                 <TableCell className="text-slate-600">
-                                  {formatDate(
-                                    payment.subscriptionStartDate,
-                                    "Chưa xác định"
-                                  )}
+                                  {formatDate(payment.subscriptionStartDate, "Chưa xác định")}
                                 </TableCell>
                                 <TableCell className="text-slate-600">
                                   {payment.subscriptionEndDate
-                                    ? formatDate(
-                                      payment.subscriptionEndDate,
-                                      "Không giới hạn"
-                                    )
+                                    ? formatDate(payment.subscriptionEndDate, "Không giới hạn")
                                     : "Không giới hạn"}
                                 </TableCell>
                                 <TableCell className="font-semibold text-emerald-700">
@@ -1093,9 +1157,7 @@ function SubscriptionManagement() {
                                   })}
                                 </TableCell>
                                 <TableCell className="text-slate-500">
-                                  {new Date(
-                                    payment.paymentDate
-                                  ).toLocaleDateString("vi-VN")}
+                                  {new Date(payment.paymentDate).toLocaleDateString("vi-VN")}
                                 </TableCell>
                                 <TableCell>
                                   <Badge

@@ -208,21 +208,21 @@ export default function Notifications() {
 
   return (
     <div className="min-h-screen">
-      <main className="mm-fluid-shell px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 py-8 sm:py-10 lg:py-12">
+      <main className="mm-fluid-shell px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12 pt-20 sm:pt-24 pb-8 sm:pb-10 lg:pb-12">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="min-w-0 flex-1">
-              <h2 className="text-[clamp(32px,4vw,40px)] font-semibold text-white mm-text-wrap-safe break-words">
+              <h2 className="text-xl sm:text-2xl lg:text-[clamp(32px,4vw,40px)] font-semibold text-white mm-text-wrap-safe break-words">
                 Thông báo của tôi
               </h2>
-              <p className="mt-1 text-[clamp(16px,2vw,20px)] text-white mm-text-wrap-safe break-words">
+              <p className="mt-1 text-sm sm:text-base lg:text-[clamp(16px,2vw,20px)] text-white/80 mm-text-wrap-safe break-words">
                 Quản lý và xem tất cả thông báo bạn đã nhận
               </p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
               {unreadCount > 0 && (
-                <Badge className="bg-emerald-600 text-white">
+                <Badge className="bg-emerald-600 text-white text-xs">
                   {unreadCount} chưa đọc
                 </Badge>
               )}
@@ -232,20 +232,25 @@ export default function Notifications() {
                   size="sm"
                   onClick={handleMarkAllAsRead}
                   disabled={markingAsRead}
+                  className="text-xs sm:text-sm h-8 sm:h-9"
                 >
-                  <CheckCheck className="mr-2 h-4 w-4" />
-                  Đánh dấu tất cả đã đọc
+                  <CheckCheck className="mr-1 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Đánh dấu tất cả đã đọc</span>
+                  <span className="sm:hidden">Đã đọc hết</span>
                 </Button>
               )}
               <Button
                 variant="outline"
                 onClick={fetchNotifications}
                 disabled={loading}
+                size="sm"
+                className="text-xs sm:text-sm h-8 sm:h-9"
               >
                 <RefreshCcw
-                  className={cn("mr-2 h-4 w-4", loading && "animate-spin")}
+                  className={cn("mr-1 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4", loading && "animate-spin")}
                 />
-                Làm mới
+                <span className="hidden sm:inline">Làm mới</span>
+                <span className="sm:hidden">Mới</span>
               </Button>
             </div>
           </div>
@@ -285,8 +290,8 @@ export default function Notifications() {
                       isReadFilter === null
                         ? "all"
                         : isReadFilter
-                        ? "read"
-                        : "unread"
+                          ? "read"
+                          : "unread"
                     }
                     onValueChange={(value) => {
                       setIsReadFilter(
@@ -354,7 +359,103 @@ export default function Notifications() {
                 </div>
               ) : (
                 <>
-                  <div className="overflow-hidden rounded-lg border border-slate-100">
+                  {/* Mobile Card Layout */}
+                  <div className="md:hidden space-y-3">
+                    {filteredNotifications.map((notification) => {
+                      const route = getNotificationRoute(notification, user);
+                      const hasValidRoute = route && route !== "/notifications";
+                      const handleNotificationClick = () => {
+                        if (hasValidRoute) {
+                          navigate(route);
+                        }
+                      };
+
+                      return (
+                        <div
+                          key={notification.notificationId}
+                          className={cn(
+                            "p-4 rounded-xl border transition-colors",
+                            !notification.isRead
+                              ? "bg-blue-50/80 border-blue-200"
+                              : "bg-white border-slate-200"
+                          )}
+                        >
+                          {/* Top row: Title + Priority */}
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div
+                              className={cn(
+                                "flex-1 min-w-0",
+                                hasValidRoute && "cursor-pointer"
+                              )}
+                              onClick={hasValidRoute ? handleNotificationClick : undefined}
+                            >
+                              <div className={cn(
+                                "text-sm text-slate-900 break-words",
+                                !notification.isRead && "font-semibold"
+                              )}>
+                                {notification.title}
+                              </div>
+                            </div>
+                            <Badge
+                              variant={getPriorityBadgeVariant(notification.priority)}
+                              className="text-[10px] px-2 py-0.5 shrink-0"
+                            >
+                              {notification.priority}
+                            </Badge>
+                          </div>
+
+                          {/* Message */}
+                          {notification.message && (
+                            <div className="text-xs text-slate-600 line-clamp-2 mb-2">
+                              {notification.message}
+                            </div>
+                          )}
+
+                          {/* Bottom row: Type, Date, Action */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-[10px] px-2 py-0.5">
+                                {translateNotificationType(notification.notificationType)}
+                              </Badge>
+                              <span className="text-[10px] text-slate-500">
+                                {formatDate(notification.sentAt)}
+                              </span>
+                            </div>
+                            {!notification.isRead ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkAsRead(notification.notificationId);
+                                }}
+                                disabled={markingAsRead}
+                                className="h-7 text-xs text-emerald-600 hover:text-emerald-700 px-2"
+                              >
+                                <Check className="mr-1 h-3 w-3" />
+                                Đã đọc
+                              </Button>
+                            ) : (
+                              <span className="text-[10px] text-slate-400">Đã đọc</span>
+                            )}
+                          </div>
+
+                          {/* View detail link */}
+                          {hasValidRoute && (
+                            <div
+                              className="text-xs text-emerald-600 hover:underline mt-2 cursor-pointer"
+                              onClick={handleNotificationClick}
+                            >
+                              {notification.actionLabel || "Xem chi tiết"} →
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Desktop Table Layout */}
+                  <div className="hidden md:block overflow-hidden rounded-lg border border-slate-100">
                     <Table>
                       <TableHeader className="bg-slate-50">
                         <TableRow>
@@ -371,7 +472,6 @@ export default function Notifications() {
                             notification,
                             user
                           );
-                          // Chỉ cho phép navigation nếu có route hợp lệ và khác với trang notifications hiện tại
                           const hasValidRoute = route && route !== "/notifications";
                           const handleNotificationClick = () => {
                             if (hasValidRoute) {
@@ -385,7 +485,7 @@ export default function Notifications() {
                               className={cn(
                                 "transition",
                                 !notification.isRead &&
-                                  "bg-blue-50/50 font-semibold"
+                                "bg-blue-50/50 font-semibold"
                               )}
                             >
                               <TableCell
@@ -492,7 +592,7 @@ export default function Notifications() {
                               }
                               className={cn(
                                 page === totalPages &&
-                                  "pointer-events-none opacity-50"
+                                "pointer-events-none opacity-50"
                               )}
                             />
                           </PaginationItem>

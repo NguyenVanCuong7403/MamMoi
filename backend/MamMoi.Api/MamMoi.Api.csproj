@@ -30,4 +30,11 @@
     <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 
+  <!-- Copy prompt template files to output directory -->
+  <ItemGroup>
+    <None Update="Prompts\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

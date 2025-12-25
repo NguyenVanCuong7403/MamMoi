@@ -646,6 +646,12 @@ export default function Home() {
           .orb-large { width: 150px !important; height: 150px !important; }
           .orb-medium { width: 100px !important; height: 100px !important; }
           .orb-small { width: 80px !important; height: 80px !important; }
+          
+          /* Intro images smaller on mobile */
+          .intro-images-grid {
+            max-height: 140px;
+            overflow: hidden;
+          }
         }
 
         .font-hero{font-family:'Be Vietnam Pro',ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Noto Sans','Apple Color Emoji','Segoe UI Emoji';}
@@ -1027,7 +1033,7 @@ export default function Home() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.7, delay: 0.2 }}
-                className="grid grid-cols-2 gap-4 md:gap-6"
+                className="intro-images-grid grid grid-cols-2 gap-4 md:gap-6"
               >
                 <motion.div
                   style={{ y: introImage1Y }}

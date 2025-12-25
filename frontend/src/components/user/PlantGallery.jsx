@@ -21,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { LivingBackground } from "@/components/background";
 
+
 function PlantCard({ tree, index, onClick }) {
   return (
     <motion.div

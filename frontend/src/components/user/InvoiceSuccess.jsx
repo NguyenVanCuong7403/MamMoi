@@ -10,11 +10,11 @@ import { LivingBackground } from '@/components/background';
 /* =========================================================
    Theme & constants
 ========================================================= */
-const PALETTE = { 
-  bg: "#1F302F", 
-  leaf: "#D1DFB6", 
-  ivory: "#FBFFDF", 
-  accent: "#FFFFA5" 
+const PALETTE = {
+  bg: "#1F302F",
+  leaf: "#D1DFB6",
+  ivory: "#FBFFDF",
+  accent: "#FFFFA5"
 };
 
 /* ========================== Utilities ========================== */
@@ -70,14 +70,14 @@ const extractTransactionId = (note) => {
 export default function InvoiceSuccess({ order: orderProp, bank: bankProp, transactionId: transactionIdProp }) {
   const location = useLocation();
   const [showNotification, setShowNotification] = useState(true);
-  
+
   // ====== Get data from location.state FIRST (fastest), then props, then defaults ======
   // This ensures NO API FETCH - data comes directly from checkout navigation
   const stateData = location.state || {};
   const stateOrder = stateData.order || orderProp;
   const stateBank = stateData.bank || bankProp;
   const stateTransactionId = stateData.transactionId || transactionIdProp;
-  
+
   // ====== Safe data (read from state immediately - NO DELAY) ======
   const order = {
     code: toStr(stateOrder?.code) || "SUB-STARTER-03933",
@@ -98,10 +98,10 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
   };
 
   const total = useMemo(() => Number(order.subtotal) + Number(order.fee), [order.subtotal, order.fee]);
-  
+
   // Extract transaction ID from note or use prop
   const transactionId = toStr(stateTransactionId) || extractTransactionId(bank.note) || "Tv-DEMO123";
-  
+
   // Auto-hide notification after 3 seconds
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -109,18 +109,18 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
     }, 3000);
     return () => clearTimeout(timer);
   }, []);
-  
+
   // Format current date/time
   const currentDate = new Date();
-  const dateStr = currentDate.toLocaleDateString("vi-VN", { 
-    day: "2-digit", 
-    month: "2-digit", 
-    year: "numeric" 
+  const dateStr = currentDate.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric"
   });
-  const timeStr = currentDate.toLocaleTimeString("vi-VN", { 
-    hour: "2-digit", 
-    minute: "2-digit", 
-    second: "2-digit" 
+  const timeStr = currentDate.toLocaleTimeString("vi-VN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
   });
 
   return (
@@ -145,26 +145,26 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
       )}
 
       {/* UI trên nền sống */}
-      <div className="relative min-h-screen pt-[64px] z-10 flex items-center justify-center px-6 py-12">
-        <Card className="w-full max-w-4xl border border-gray-200 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-3xl">
-          <CardContent className="p-8">
+      <div className="relative min-h-screen pt-[64px] z-10 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
+        <Card className="w-full max-w-4xl border border-gray-200 bg-white shadow-[0_20px_60px_rgba(0,0,0,0.15)] rounded-2xl sm:rounded-3xl">
+          <CardContent className="p-4 sm:p-6 md:p-8">
             {/* Success Header */}
-            <div className="text-center mb-8">
+            <div className="text-center mb-6 sm:mb-8">
               {/* Animated Success Icon */}
               <div className="relative inline-flex items-center justify-center mb-4">
                 {/* Outer ripple rings */}
                 <div className="absolute inset-0 rounded-full bg-emerald-400/30 animate-ping"></div>
                 <div className="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping" style={{ animationDelay: '0.5s' }}></div>
-                
+
                 {/* Glowing background circle with rotation */}
-                <motion.div 
+                <motion.div
                   className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 blur-xl opacity-60"
-                  animate={{ 
+                  animate={{
                     rotate: 360,
                     scale: [1, 1.1, 1],
                     opacity: [0.4, 0.7, 0.4]
                   }}
-                  transition={{ 
+                  transition={{
                     rotate: {
                       duration: 20,
                       repeat: Infinity,
@@ -182,13 +182,13 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
                     }
                   }}
                 ></motion.div>
-                
+
                 {/* Main circle with gradient */}
-                <motion.div 
+                <motion.div
                   className="relative inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400 via-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/50"
                   initial={{ scale: 0, rotate: -180 }}
                   animate={{ scale: 1, rotate: 0 }}
-                  transition={{ 
+                  transition={{
                     type: "spring",
                     stiffness: 200,
                     damping: 15,
@@ -196,18 +196,18 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
                   }}
                 >
                   {/* Inner white circle with subtle pulse */}
-                  <motion.div 
+                  <motion.div
                     className="absolute inset-2 rounded-full bg-white"
                     animate={{ scale: [1, 1.05, 1] }}
-                    transition={{ 
+                    transition={{
                       duration: 2,
                       repeat: Infinity,
                       ease: "easeInOut"
                     }}
                   ></motion.div>
-                  
+
                   {/* Animated checkmark */}
-                  <motion.svg 
+                  <motion.svg
                     className="relative w-10 h-10 text-emerald-600 z-10"
                     viewBox="0 0 24 24"
                     fill="none"
@@ -217,7 +217,7 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
                     strokeLinejoin="round"
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
-                    transition={{ 
+                    transition={{
                       type: "spring",
                       stiffness: 300,
                       damping: 20,
@@ -228,46 +228,46 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
                       d="M5 13l4 4L19 7"
                       initial={{ pathLength: 0, opacity: 0 }}
                       animate={{ pathLength: 1, opacity: 1 }}
-                      transition={{ 
-                        duration: 0.8, 
+                      transition={{
+                        duration: 0.8,
                         delay: 0.6,
                         ease: "easeInOut"
                       }}
                     />
                   </motion.svg>
-                  
+
                   {/* Sparkle particles */}
-                  <motion.div 
+                  <motion.div
                     className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full"
-                    animate={{ 
+                    animate={{
                       scale: [1, 1.5, 1],
                       opacity: [0.5, 1, 0.5]
                     }}
-                    transition={{ 
+                    transition={{
                       duration: 1.5,
                       repeat: Infinity,
                       delay: 0.2
                     }}
                   ></motion.div>
-                  <motion.div 
+                  <motion.div
                     className="absolute -bottom-1 -left-1 w-2 h-2 bg-yellow-300 rounded-full"
-                    animate={{ 
+                    animate={{
                       scale: [1, 1.5, 1],
                       opacity: [0.5, 1, 0.5]
                     }}
-                    transition={{ 
+                    transition={{
                       duration: 1.5,
                       repeat: Infinity,
                       delay: 0.4
                     }}
                   ></motion.div>
-                  <motion.div 
+                  <motion.div
                     className="absolute top-0 -left-2 w-2.5 h-2.5 bg-emerald-300 rounded-full"
-                    animate={{ 
+                    animate={{
                       scale: [1, 1.5, 1],
                       opacity: [0.5, 1, 0.5]
                     }}
-                    transition={{ 
+                    transition={{
                       duration: 1.5,
                       repeat: Infinity,
                       delay: 0.6
@@ -275,39 +275,39 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
                   ></motion.div>
                 </motion.div>
               </div>
-              
-              <h1 className="text-2xl font-bold text-gray-900 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
+
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 animate-in fade-in slide-in-from-bottom-2 duration-500">
                 Thanh toán thành công
               </h1>
-             
+
             </div>
 
             {/* Invoice Details */}
-            <div className="border-t border-b border-gray-200 py-6 mb-6">
-              <div className="flex justify-between items-start mb-6">
+            <div className="border-t border-b border-gray-200 py-4 sm:py-6 mb-4 sm:mb-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 sm:gap-6 mb-4 sm:mb-6">
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                     Hóa đơn
                   </h2>
                   <div className="space-y-1">
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-xs sm:text-sm font-bold text-gray-900">
                       Thông tin khách hàng
                     </p>
-                    <p className="text-sm text-gray-700">{toStr(order.payer)}</p>
-                    <p className="text-sm text-gray-700">{toStr(order.email)}</p>
+                    <p className="text-xs sm:text-sm text-gray-700">{toStr(order.payer)}</p>
+                    <p className="text-xs sm:text-sm text-gray-700 break-all">{toStr(order.email)}</p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-700 mb-4">
+                <div className="sm:text-right">
+                  <p className="text-xs sm:text-sm text-gray-700 mb-3 sm:mb-4">
                     {timeStr} {dateStr}
                   </p>
                   <div className="space-y-1">
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-xs sm:text-sm font-bold text-gray-900">
                       Đơn vị nhận
                     </p>
-                    <p className="text-sm text-gray-700">Công ty TNHH Mầm Mới</p>
-                    <p className="text-sm text-gray-700">MST: 0312345678</p>
-                    <p className="text-sm text-gray-700">
+                    <p className="text-xs sm:text-sm text-gray-700">Công ty TNHH Mầm Mới</p>
+                    <p className="text-xs sm:text-sm text-gray-700">MST: 0312345678</p>
+                    <p className="text-xs sm:text-sm text-gray-700">
                       177 West Street, Linh Đàm, Hà Nội
                     </p>
                   </div>
@@ -315,22 +315,22 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
               </div>
 
               {/* Mã đơn và Mã giao dịch - Tiêu đề in đậm */}
-              <div className="grid grid-cols-2 gap-6 mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                 <div>
-                  <p className="text-sm font-bold text-gray-900 mb-2">Mã đơn:</p>
-                  <p className="text-base font-semibold text-emerald-600 mb-1">
+                  <p className="text-xs sm:text-sm font-bold text-gray-900 mb-1 sm:mb-2">Mã đơn:</p>
+                  <p className="text-sm sm:text-base font-semibold text-emerald-600 mb-1 break-all">
                     {toStr(order.code)}
                   </p>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-[10px] sm:text-xs text-gray-600">
                     Hình thức: Chuyển khoản QR (VNPay)
                   </p>
                 </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold text-gray-900 mb-2">Mã giao dịch:</p>
-                  <p className="text-base font-semibold text-emerald-600 mb-1">
+                <div className="sm:text-right">
+                  <p className="text-xs sm:text-sm font-bold text-gray-900 mb-1 sm:mb-2">Mã giao dịch:</p>
+                  <p className="text-sm sm:text-base font-semibold text-emerald-600 mb-1">
                     {transactionId}
                   </p>
-                  <p className="text-xs text-gray-600">
+                  <p className="text-[10px] sm:text-xs text-gray-600">
                     GÓI: {toStr(order.plan)}
                   </p>
                 </div>
@@ -339,27 +339,27 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
               <Separator className="my-5 bg-gray-200" />
 
               {/* Items Table */}
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm font-medium text-gray-900 pb-2 border-b border-gray-200">
+              <div className="space-y-2 sm:space-y-3">
+                <div className="flex justify-between text-xs sm:text-sm font-medium text-gray-900 pb-2 border-b border-gray-200">
                   <span>Nội dung</span>
                   <span>Thành tiền</span>
                 </div>
-                
+
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-700">
+                  <div className="flex justify-between text-xs sm:text-sm gap-2">
+                    <span className="text-gray-700 flex-1 min-w-0">
                       {toStr(order.plan)} – Kỳ hạn {toStr(order.period)}
                     </span>
-                    <span className="text-gray-900 font-medium">{currency(order.subtotal)}</span>
+                    <span className="text-gray-900 font-medium shrink-0">{currency(order.subtotal)}</span>
                   </div>
-                  
-                  <div className="flex justify-between text-sm">
+
+                  <div className="flex justify-between text-xs sm:text-sm">
                     <span className="text-gray-700">Phí Vat</span>
                     <span className="text-gray-900 font-medium">{currency(order.fee)}</span>
                   </div>
                 </div>
 
-                <div className="flex justify-between text-lg font-bold pt-3 border-t border-gray-200">
+                <div className="flex justify-between text-base sm:text-lg font-bold pt-2 sm:pt-3 border-t border-gray-200">
                   <span className="text-emerald-600">TỔNG CỘNG</span>
                   <span className="text-emerald-600">{currency(total)}</span>
                 </div>
@@ -367,26 +367,27 @@ export default function InvoiceSuccess({ order: orderProp, bank: bankProp, trans
             </div>
 
             {/* Footer Actions */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-              <p className="text-sm text-gray-600">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+              <p className="text-xs sm:text-sm text-gray-600 break-all">
                 * Bản sao hóa đơn đã được gửi tới {toStr(order.email)}.
               </p>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2 bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 sm:flex-initial gap-1.5 sm:gap-2 bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 text-xs sm:text-sm h-9 sm:h-10"
                 >
-                  <Printer className="w-4 h-4" />
+                  <Printer className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   In
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="gap-2 bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 sm:flex-initial gap-1.5 sm:gap-2 bg-white border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-gray-400 text-xs sm:text-sm h-9 sm:h-10"
                 >
-                  <Download className="w-4 h-4" />
-                  Tải PDF (demo)
+                  <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="hidden sm:inline">Tải PDF</span>
+                  <span className="sm:hidden">PDF</span>
                 </Button>
               </div>
             </div>

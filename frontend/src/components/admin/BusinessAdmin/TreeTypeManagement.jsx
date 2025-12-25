@@ -818,8 +818,8 @@ function ImageDropzone({ value, onChange, onFileChange }) {
 function FilterBar({ filters, onChange, soils }) {
   const soilOptions = Array.isArray(soils) ? soils : [];
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-5 text-[16px] shadow-sm">
-      <div className="w-48">
+    <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-3 rounded-xl sm:rounded-2xl border border-slate-200 bg-white p-3 sm:p-5 text-[16px] shadow-sm">
+      <div className="col-span-1 w-full sm:w-48">
         <SearchableSelect
           value={filters.soil}
           onChange={(value) => onChange({ ...filters, soil: value })}
@@ -833,7 +833,7 @@ function FilterBar({ filters, onChange, soils }) {
           placeholder="Loại đất"
         />
       </div>
-      <div className="w-40">
+      <div className="col-span-1 w-full sm:w-40">
         <SearchableSelect
           value={filters.status}
           onChange={(value) => onChange({ ...filters, status: value })}
@@ -888,29 +888,89 @@ function TreeTable({
   );
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white text-[16px] shadow-sm">
-      <ScrollArea className="w-full flex-1">
+    <div className="flex flex-1 flex-col overflow-hidden rounded-xl sm:rounded-3xl border border-slate-200 bg-white text-[14px] sm:text-[16px] shadow-sm">
+      {/* Mobile Card Layout */}
+      <div className="md:hidden divide-y divide-slate-100">
+        {trees.map((tree) => (
+          <div
+            key={tree.TreeTypeID}
+            className={cn(
+              "p-4 space-y-3",
+              !tree.IsActive && "bg-rose-50/40"
+            )}
+          >
+            <div className="flex items-start gap-3">
+              {tree.ImageUrl ? (
+                <img
+                  src={tree.ImageUrl}
+                  alt={tree.TreeTypeName}
+                  className="h-12 w-12 rounded-xl object-contain shrink-0"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-xl bg-slate-100 flex items-center justify-center shrink-0">
+                  <ImageIcon className="h-5 w-5 text-slate-400" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-slate-900 text-sm">{tree.TreeTypeName}</p>
+                <p className="text-xs italic text-slate-500 truncate">{tree.ScientificName || "—"}</p>
+              </div>
+              <Badge
+                variant={tree.IsActive ? "default" : "secondary"}
+                className={cn(
+                  "rounded-full px-2 py-0.5 text-[10px] shrink-0",
+                  tree.IsActive
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-slate-100 text-slate-500"
+                )}
+              >
+                {tree.IsActive ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+            <p className="text-xs text-slate-600 line-clamp-2">{truncateText(tree.Description, 80)}</p>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-slate-400">Đất:</span>
+                <span className="ml-1 text-amber-600">{soilLookup[tree.SoilMasterID] || "Chưa gán"}</span>
+              </div>
+              <div>
+                <span className="text-slate-400">Giống:</span>
+                <span className="ml-1 text-emerald-700">{tree.Varieties.length} giống</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={tree.IsActive}
+                  onCheckedChange={() => onToggleStatus(tree)}
+                  className="scale-90"
+                />
+                <span className="text-xs text-slate-500">{tree.IsActive ? "Active" : "Inactive"}</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-slate-500 hover:text-emerald-600"
+                onClick={() => onEdit(tree)}
+              >
+                <Edit3 className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Desktop Table */}
+      <ScrollArea className="hidden md:block w-full flex-1">
         <Table className="text-base">
           <TableHeader className="bg-slate-50 text-base text-slate-600">
             <TableRow>
-              <TableHead className="text-base font-semibold">
-                Loại cây
-              </TableHead>
-              <TableHead className="hidden text-base font-semibold text-center md:table-cell">
-                Đất gợi ý
-              </TableHead>
-              <TableHead className="hidden text-base font-semibold text-center md:table-cell">
-                Giống
-              </TableHead>
-              <TableHead className="hidden text-base font-semibold lg:table-cell">
-                Thông số
-              </TableHead>
-              <TableHead className="text-base font-semibold">
-                Trạng thái
-              </TableHead>
-              <TableHead className="text-right text-base font-semibold">
-                Thao tác
-              </TableHead>
+              <TableHead className="text-base font-semibold">Loại cây</TableHead>
+              <TableHead className="text-base font-semibold text-center">Đất gợi ý</TableHead>
+              <TableHead className="text-base font-semibold text-center">Giống</TableHead>
+              <TableHead className="hidden text-base font-semibold lg:table-cell">Thông số</TableHead>
+              <TableHead className="text-base font-semibold">Trạng thái</TableHead>
+              <TableHead className="text-right text-base font-semibold">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -2311,16 +2371,16 @@ export default function TreeTypeManagement() {
 
   const renderSheet = () => (
     <Dialog open={sheetOpen} onOpenChange={setSheetOpen}>
-      <DialogContent className="max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl md:max-w-4xl lg:max-w-7xl max-h-[85vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-lg sm:text-xl">
             {editingTree ? "Chỉnh sửa loại cây" : "Thêm loại cây mới"}
           </DialogTitle>
         </DialogHeader>
-        <Separator className="my-4" />
+        <Separator className="my-3 sm:my-4" />
         <Form {...form}>
           <form
-            className="flex flex-col flex-1 min-h-0"
+            className="flex flex-col"
             onSubmit={form.handleSubmit(handleSubmit)}
           >
             {form.formState?.errors?.root && (
@@ -2328,11 +2388,11 @@ export default function TreeTypeManagement() {
                 {String(form.formState.errors.root.message)}
               </div>
             )}
-            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-6 flex-1 min-h-0 overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 sm:gap-6">
               {/* Cột trái: Form chỉnh sửa/thêm loại cây */}
-              <ScrollArea className="h-full pr-4">
+              <div className="space-y-4">
                 <section className="space-y-4">
-                  <p className="inline-flex items-center rounded-full bg-emerald-600/90 px-4 py-1 text-sm font-semibold uppercase tracking-[0.3em] text-white">
+                  <p className="inline-flex items-center rounded-full bg-emerald-600/90 px-3 sm:px-4 py-1 text-xs sm:text-sm font-semibold uppercase tracking-[0.3em] text-white">
                     Thông tin chung
                   </p>
                   <FormField
@@ -2620,7 +2680,7 @@ export default function TreeTypeManagement() {
                     ))}
                   </div>
                 </section>
-              </ScrollArea>
+              </div>
 
               {/* Cột phải: Hướng dẫn chăm sóc và Bệnh thường gặp */}
               <div className="border-l border-slate-200 pl-6 flex flex-col h-full min-h-0 gap-4">

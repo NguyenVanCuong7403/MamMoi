@@ -24,6 +24,9 @@ namespace MamMoi.Infrastructure.Services
         private readonly IWeatherService _weatherService;
 
         private static readonly ConcurrentDictionary<string, SemaphoreSlim> _generationLocks = new();
+        
+        // Cache for prompt files - loaded once at first use
+        private static readonly ConcurrentDictionary<string, string> _promptCache = new();
 
         private static SemaphoreSlim GetLockForKey(string key)
         {
@@ -41,6 +44,34 @@ namespace MamMoi.Infrastructure.Services
             _weatherService = weatherService;
         }
 
+        /// <summary>
+        /// Load prompt from file with caching, falls back to config value if file not found.
+        /// </summary>
+        private string LoadPromptFromFile(string fileName, string fallbackValue)
+        {
+            var cacheKey = $"{_options.PromptsFolder}/{fileName}";
+            
+            return _promptCache.GetOrAdd(cacheKey, key =>
+            {
+                try
+                {
+                    var filePath = Path.Combine(AppContext.BaseDirectory, _options.PromptsFolder, fileName);
+                    if (File.Exists(filePath))
+                    {
+                        Console.WriteLine($"[Gemini] Loaded prompt from: {filePath}");
+                        return File.ReadAllText(filePath);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Gemini] Failed to load prompt file {fileName}: {ex.Message}");
+                }
+                
+                // Fallback to config value
+                return fallbackValue;
+            });
+        }
+
         public async Task<AirecommendationDto> GenerateRecommendationForTreeAsync(
             int treeId,
             DateOnly forDate,
@@ -50,9 +81,11 @@ namespace MamMoi.Infrastructure.Services
             var tree = await _db.Trees
                 .Include(t => t.Garden)
                 .Include(t => t.TreeType)
+                    .ThenInclude(tt => tt.SoilMaster)
                 .Include(t => t.Stage)
                 .Include(t => t.TreeVariety)
                 .Include(t => t.GardenSoil)
+                    .ThenInclude(gs => gs.SoilMaster)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(t => t.TreeId == treeId, ct);
 
@@ -73,7 +106,7 @@ namespace MamMoi.Infrastructure.Services
             }
 
             // 2. Convert sang DTO nhẹ cho prompt (tránh ném cả EF nav)
-            var dto = new
+            var treeDto = new
             {
                 tree.TreeId,
                 tree.TreeCode,
@@ -81,6 +114,7 @@ namespace MamMoi.Infrastructure.Services
                 tree.PlantDate,
                 tree.GardenId,
                 GardenName = tree.Garden?.Name,
+                GardenLocation = tree.Garden?.Location,
                 tree.TreeTypeId,
                 TreeVarietyName = tree.TreeVariety?.VarietyName,
                 TreeTypeName = tree.TreeType?.TreeTypeName,
@@ -88,7 +122,7 @@ namespace MamMoi.Infrastructure.Services
                 tree.IsActive,
                 tree.IsFruiting,
                 tree.ExpectedHarvestDate,
-                GardenSoilName = tree.GardenSoil?.CustomLabel,
+                GardenSoilName = tree.GardenSoil?.SoilMaster?.SoilName,
                 preMonthsPlantBefore = tree.preMonths,
                 tree.LeafStatus,
                 tree.BranchStatus,
@@ -96,11 +130,57 @@ namespace MamMoi.Infrastructure.Services
                 tree.FruitStatus
             };
 
-            // 3. Build prompt
-            var prompt = BuildGeminiPrompt(dto, forDate, weatherInfo);
+            // 2b. Build TreeType professional knowledge (expert data)
+            var treeTypeDto = tree.TreeType == null ? null : new
+            {
+                tree.TreeType.TreeTypeName,
+                tree.TreeType.ScientificName,
+                tree.TreeType.Description,
+                tree.TreeType.Category,
+                tree.TreeType.AverageLifespanYears,
+                tree.TreeType.OptimalTemperatureMin,
+                tree.TreeType.OptimalTemperatureMax,
+                tree.TreeType.OptimalHumidityMin,
+                tree.TreeType.OptimalHumidityMax,
+                tree.TreeType.DroughtTolerance,
+                tree.TreeType.FloodTolerance,
+                tree.TreeType.FrostTolerance,
+                tree.TreeType.WindTolerance,
+                tree.TreeType.LightRequirement,
+                tree.TreeType.WaterRequirement,
+                tree.TreeType.CareGuide,
+                tree.TreeType.Pests,
+                tree.TreeType.SeasonalRoadmap,
+                SoilRequirement = tree.TreeType.SoilMaster?.SoilName,
+                SoilTexture = tree.TreeType.SoilMaster?.Texture,
+                SoilDrainage = tree.TreeType.SoilMaster?.Drainage
+            };
 
-            // 4. Gọi Gemini
-            var jsonResponse = await CallGeminiJsonAsync(prompt, ct);
+            // 2c. Build current GrowthStage professional knowledge (care specifications)
+            var stageDto = tree.Stage == null ? null : new
+            {
+                tree.Stage.StageName,
+                tree.Stage.StageOrder,
+                tree.Stage.Description,
+                tree.Stage.MinAgeInMonths,
+                tree.Stage.MaxAgeInMonths,
+                tree.Stage.WateringFrequencyDays,
+                tree.Stage.WateringAmountLiters,
+                tree.Stage.FertilizingFrequencyDays,
+                tree.Stage.FertilizerType,
+                tree.Stage.FertilizerAmountGrams,
+                tree.Stage.PruningFrequencyDays,
+                tree.Stage.CareInstructions,
+                tree.Stage.CommonIssues,
+                tree.Stage.CriticalWeatherFactors,
+                tree.Stage.VulnerabilityLevel
+            };
+
+            // 3. Build multi-role conversation contents
+            var contents = BuildGeminiContents(treeDto, treeTypeDto, stageDto, forDate, weatherInfo);
+
+            // 4. Gọi Gemini with multi-role structure
+            var jsonResponse = await CallGeminiWithContentsAsync(contents, ct);
 
 
             if (jsonResponse.StartsWith("```json\n"))
@@ -177,61 +257,80 @@ namespace MamMoi.Infrastructure.Services
                 recommendation.CreatedAt);
         }
 
-        private string BuildGeminiPrompt(object treeDto, DateOnly forDate, object? weatherInfo)
+        /// <summary>
+        /// Build multi-role conversation structure for Gemini API.
+        /// Returns array of content objects with professional knowledge and user request.
+        /// </summary>
+        private object[] BuildGeminiContents(object treeDto, object? treeTypeDto, object? stageDto, DateOnly forDate, object? weatherInfo)
         {
-            var treeJson = JsonSerializer.Serialize(treeDto, new JsonSerializerOptions
-            {
-                WriteIndented = false
-            });
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = false };
+            
+            var treeJson = JsonSerializer.Serialize(treeDto, jsonOptions);
+            var weatherJson = weatherInfo != null ? JsonSerializer.Serialize(weatherInfo, jsonOptions) : "null";
+            var treeTypeJson = treeTypeDto != null ? JsonSerializer.Serialize(treeTypeDto, jsonOptions) : "null";
+            var stageJson = stageDto != null ? JsonSerializer.Serialize(stageDto, jsonOptions) : "null";
 
-            var weatherJson = weatherInfo != null
-                ? JsonSerializer.Serialize(weatherInfo)
-                : "null";
+            // Load prompts from files (with fallback to config values)
+            var professionalTemplate = LoadPromptFromFile("ProfessionalPrompt.md", _options.ProfessionalPromptTemplate);
+            var modelAcknowledgment = LoadPromptFromFile("ModelAcknowledgment.md", _options.ModelAcknowledgment);
+            var userTemplate = LoadPromptFromFile("UserPrompt.md", _options.UserPromptTemplate);
+            var outputJsonFormat = LoadPromptFromFile("OutputJsonSchema.json", _options.OutputJsonFormat);
 
-            // Use config-based prompt template if available
-            if (!string.IsNullOrWhiteSpace(_options.PromptTemplate))
+            // Role 1: Professional/Expert context - TreeType knowledge & current GrowthStage specifications
+            var professionalMessage = professionalTemplate
+                .Replace("{{TreeTypeJson}}", treeTypeJson)
+                .Replace("{{StageJson}}", stageJson);
+
+            // Role 2: User request with actual tree data
+            var userMessage = userTemplate
+                .Replace("{{ForDate}}", forDate.ToString("yyyy-MM-dd"))
+                .Replace("{{TreeJson}}", treeJson)
+                .Replace("{{WeatherJson}}", weatherJson)
+                .Replace("{{OutputJsonFormat}}", outputJsonFormat);
+
+            return new object[]
             {
-                return _options.PromptTemplate
-                    .Replace("{{ForDate}}", forDate.ToString("yyyy-MM-dd"))
-                    .Replace("{{TreeJson}}", treeJson)
-                    .Replace("{{WeatherJson}}", weatherJson)
-                    .Replace("{{OutputJsonFormat}}", _options.OutputJsonFormat);
-            }
+                new { role = "user", parts = new[] { new { text = professionalMessage } } },
+                new { role = "model", parts = new[] { new { text = modelAcknowledgment } } },
+                new { role = "user", parts = new[] { new { text = userMessage } } }
+            };
+        }
+
+        [Obsolete("Use BuildGeminiContents instead for multi-role conversation")]
+        private string BuildGeminiPrompt(object treeDto, object? treeTypeDto, object? stageDto, DateOnly forDate, object? weatherInfo)
+        {
+            // This method is kept for backward compatibility but now returns a single combined prompt
+            // The actual multi-role logic is in BuildGeminiContents
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = false };
+            var treeJson = JsonSerializer.Serialize(treeDto, jsonOptions);
+            var weatherJson = weatherInfo != null ? JsonSerializer.Serialize(weatherInfo, jsonOptions) : "null";
+            var treeTypeJson = treeTypeDto != null ? JsonSerializer.Serialize(treeTypeDto, jsonOptions) : "null";
+            var stageJson = stageDto != null ? JsonSerializer.Serialize(stageDto, jsonOptions) : "null";
 
             return $@"
-Bạn là trợ lý nông nghiệp cho vườn cây ăn trái tại Việt Nam.
+Bạn là chuyên gia nông nghiệp cây ăn trái Việt Nam.
 
-Nhiệm vụ:
-- Đọc kỹ dữ liệu cây trồng và (nếu có) thông tin thời tiết.
-- Đề xuất các công việc chăm sóc chi tiết cho CÂY ĐÓ trong khoảng 1–3 ngày tới (bao gồm ngày: {forDate:yyyy-MM-dd}).
-- CHỈ trả về JSON đúng schema bên dưới, không thêm giải thích.
+=== KIẾN THỨC CHUYÊN GIA VỀ LOẠI CÂY ===
+{treeTypeJson}
 
-DỮ LIỆU CÂY (JSON):
+=== THÔNG TIN GIAI ĐOẠN HIỆN TẠI ===
+{stageJson}
+
+=== DỮ LIỆU CÂY CỤ THỂ ===
 {treeJson}
 
-DỮ LIỆU THỜI TIẾT (nếu có, JSON):
+=== THỜI TIẾT ===
 {weatherJson}
 
-YÊU CẦU ĐẦU RA: Một object JSON duy nhất đúng cấu trúc:
-
+Đề xuất chăm sóc cho ngày {forDate:yyyy-MM-dd} và 1-2 ngày tới. CHỈ trả về JSON:
 {{
   ""forDate"": ""YYYY-MM-DD"",
   ""phase"": ""growth_development | flowering | fruiting | pre_harvest | post_harvest"",
   ""overallNote"": ""string"",
-  ""actions"": [
-    {{
-      ""type"": ""Watering | Fertilizing | Pruning | Pest Control | Disease Treatment | Harvesting | Mulching | Inspection"",
-      ""title"": ""string"",
-      ""scheduledDate"": ""YYYY-MM-DD"",
-      ""timeOfDay"": ""Morning | Afternoon | Evening | Night"",
-      ""priority"": ""Low | Medium | High | Critical"",
-      ""estimatedDurationMinutes"": number,
-      ""details"": [ ""string"", ""string"" ]
-    }}
-  ],
-  ""confidence"": number between 0 and 1,
-  ""weatherAdjusted"": true or false,
-  ""reasoning"": ""string (ngắn gọn, tiếng Việt)""
+  ""actions"": [{{""type"": ""..., ""title"": ""..."", ""scheduledDate"": ""..."", ""timeOfDay"": ""..."", ""priority"": ""..."", ""estimatedDurationMinutes"": n, ""details"": []}}],
+  ""confidence"": 0-1,
+  ""weatherAdjusted"": bool,
+  ""reasoning"": ""string""
 }}
 ";
         }
@@ -291,6 +390,56 @@ YÊU CẦU ĐẦU RA: Một object JSON duy nhất đúng cấu trúc:
             //     }
             //   ]
             // }
+            using var doc = JsonDocument.Parse(body);
+
+            if (!doc.RootElement.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)
+                throw new InvalidOperationException("Gemini returned no candidates.");
+
+            var first = candidates[0];
+            if (!first.TryGetProperty("content", out var content)
+                || !content.TryGetProperty("parts", out var parts)
+                || parts.GetArrayLength() == 0)
+            {
+                throw new InvalidOperationException("Gemini returned unexpected content format.");
+            }
+
+            var text = parts[0].GetProperty("text").GetString();
+            if (string.IsNullOrWhiteSpace(text))
+                throw new InvalidOperationException("Gemini returned empty text.");
+
+            return text;
+        }
+
+        /// <summary>
+        /// Call Gemini API with multi-role conversation contents.
+        /// </summary>
+        private async Task<string> CallGeminiWithContentsAsync(object[] contents, CancellationToken ct)
+        {
+            var apiKey = _options.ApiKey;
+            if (string.IsNullOrWhiteSpace(apiKey))
+                throw new InvalidOperationException("Gemini API key is not configured.");
+
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_options.Model}:generateContent";
+
+            using var req = new HttpRequestMessage(HttpMethod.Post, url);
+            req.Headers.Add("x-goog-api-key", apiKey);
+
+            var payload = new { contents };
+            var json = JsonSerializer.Serialize(payload);
+            
+            Console.WriteLine($"[Gemini] Multi-role request with {contents.Length} content blocks");
+            
+            req.Content = new StringContent(json, Encoding.UTF8, "application/json");
+
+            using var resp = await _http.SendAsync(req, ct);
+            var body = await resp.Content.ReadAsStringAsync(ct);
+
+            if (!resp.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"[Gemini] ERROR: {resp.StatusCode} - {body}");
+                throw new HttpRequestException($"Gemini API returned {resp.StatusCode}: {body}");
+            }
+
             using var doc = JsonDocument.Parse(body);
 
             if (!doc.RootElement.TryGetProperty("candidates", out var candidates) || candidates.GetArrayLength() == 0)

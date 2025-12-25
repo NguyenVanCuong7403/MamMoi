@@ -3241,7 +3241,7 @@ export default function UserProfile() {
 
         {/* Stats - Only show for non-admin users */}
         {!isAdmin && (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+          <div className="grid grid-cols-3 gap-2 md:gap-3">
             {[
               {
                 label: "Gói hiện tại",
@@ -3261,17 +3261,17 @@ export default function UserProfile() {
             ].map((s, i) => (
               <div
                 key={i}
-                className="rounded-2xl border border-white/25 bg-white/20 backdrop-blur-[10px] p-4"
+                className="rounded-2xl border border-white/25 bg-white/20 backdrop-blur-[10px] p-2 md:p-4"
               >
-                <div className="flex items-center justify-between text-2xl font-semibold text-white/90 mb-2">
-                  <span>{s.label}</span>
-                  {s.icon}
+                <div className="flex items-center justify-between text-xs md:text-lg lg:text-2xl font-semibold text-white/90 mb-1 md:mb-2">
+                  <span className="truncate">{s.label}</span>
+                  <span className="flex-shrink-0 ml-1">{s.icon}</span>
                 </div>
                 <div
                   className={`${s.label.includes("vườn") || s.label.includes("cây")
-                    ? "text-4xl"
-                    : "text-2xl"
-                    } font-medium text-white drop-shadow-sm`}
+                    ? "text-lg md:text-2xl lg:text-4xl"
+                    : "text-sm md:text-xl lg:text-2xl"
+                    } font-medium text-white drop-shadow-sm truncate`}
                 >
                   {s.value}
                 </div>
@@ -3286,6 +3286,35 @@ export default function UserProfile() {
         className={`${CONTAINER} pb-16`}
         inert={overlayOpen ? "" : undefined}
       >
+        {/* Mobile Navigation - visible only on small screens */}
+        <div className="md:hidden mb-4 overflow-x-auto">
+          <div className="flex gap-2 min-w-max pb-2">
+            {(isAdmin
+              ? [
+                { key: "account", label: "Tài khoản", icon: <UserIcon className="h-4 w-4" /> },
+                { key: "password", label: "Mật khẩu", icon: <Lock className="h-4 w-4" /> },
+              ]
+              : [
+                { key: "account", label: "Tài khoản", icon: <UserIcon className="h-4 w-4" /> },
+                { key: "password", label: "Mật khẩu", icon: <Lock className="h-4 w-4" /> },
+                { key: "history", label: "Giao dịch", icon: <CreditCard className="h-4 w-4" /> },
+                { key: "upgrade", label: "Nâng cấp", icon: <TrendingUp className="h-4 w-4" /> },
+              ]
+            ).map((item) => (
+              <button
+                key={item.key}
+                onClick={() => setActiveMenu(item.key)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors ${activeMenu === item.key
+                  ? "bg-yellow-500/30 text-yellow-300 border border-yellow-500/40"
+                  : "bg-white/10 text-white/80 border border-white/20 hover:bg-white/20"
+                  }`}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="flex gap-4 md:gap-6 lg:gap-8 w-full min-w-0">
           {/* Sidebar Menu - Left (restored; hidden on small screens) */}
           <aside className="hidden md:block md:w-72">
@@ -4121,21 +4150,21 @@ export default function UserProfile() {
                       </div>
 
                       {/* Date Filter Row */}
-                      <div className="flex flex-wrap items-center gap-3 p-2.5 rounded-xl bg-white/20 border border-white/10">
+                      <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-2 sm:gap-3 p-2.5 rounded-xl bg-white/20 border border-white/10">
                         <div className="flex items-center gap-2 shrink-0">
-                          <Calendar className="w-5 h-5 text-white/80" />
-                          <span className="text-white/90 text-base font-medium tracking-wide px-1">
+                          <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-white/80" />
+                          <span className="text-white/90 text-sm sm:text-base font-medium tracking-wide">
                             Lọc theo ngày:
                           </span>
                         </div>
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 flex-1 min-w-0">
                           <div className="flex-1 min-w-0">
                             <DateInput
                               value={paymentDateFrom}
                               onChange={setPaymentDateFrom}
                             />
                           </div>
-                          <span className="text-white/70 text-xl shrink-0 px-1">
+                          <span className="text-white/70 text-lg sm:text-xl text-center sm:shrink-0 sm:px-1">
                             →
                           </span>
                           <div className="flex-1 min-w-0">
@@ -4153,7 +4182,7 @@ export default function UserProfile() {
                               setPaymentDateFrom("");
                               setPaymentDateTo("");
                             }}
-                            className="h-11 text-sm text-white/90 hover:text-white hover:bg-white/20 px-4 shrink-0"
+                            className="h-10 sm:h-11 text-sm text-white/90 hover:text-white hover:bg-white/20 px-3 sm:px-4 shrink-0 w-full sm:w-auto"
                           >
                             <X className="w-4 h-4 mr-1" /> Xóa lọc
                           </Button>
@@ -4181,24 +4210,24 @@ export default function UserProfile() {
             {activeMenu === "upgrade" && (
               <section className="space-y-6">
                 <Card className="bg-white/20 backdrop-blur-md border border-white/25 rounded-3xl shadow-[0_10px_35px_rgba(0,0,0,0.3)]">
-                  <CardContent className="p-8">
-                    <div className="mb-6">
-                      <h1 className="text-2xl font-semibold text-white mb-1 drop-shadow-lg">
+                  <CardContent className="p-4 sm:p-6 md:p-8">
+                    <div className="mb-4 sm:mb-6">
+                      <h1 className="text-xl sm:text-2xl font-semibold text-white mb-1 drop-shadow-lg">
                         Nâng cấp gói
                       </h1>
-                      <p className="text-sm text-white/80">
+                      <p className="text-xs sm:text-sm text-white/80">
                         Chọn gói phù hợp với nhu cầu của bạn
                       </p>
                     </div>
 
-                    <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-4 sm:space-y-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
                         {plansLoading
                           ? // Loading skeleton
                           [1, 2, 3].map((i) => (
                             <div
                               key={i}
-                              className="p-6 rounded-2xl bg-white/20 border border-white/25 animate-pulse"
+                              className="p-4 sm:p-6 rounded-2xl bg-white/20 border border-white/25 animate-pulse"
                             >
                               <div className="h-6 bg-white/30 rounded mb-4 w-1/2"></div>
                               <div className="h-10 bg-white/30 rounded mb-6 w-3/4"></div>
@@ -4242,66 +4271,66 @@ export default function UserProfile() {
                             return (
                               <div
                                 key={plan.planId}
-                                className={`p-6 rounded-2xl transition-colors relative ${isPopular
+                                className={`p-4 sm:p-6 rounded-2xl transition-colors relative flex flex-col ${isPopular
                                   ? "bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border-2 border-yellow-500/50"
                                   : "bg-white/20 border border-white/25 hover:border-yellow-500/50"
                                   }`}
                               >
                                 {isPopular && (
-                                  <div className="absolute top-4 right-4 bg-yellow-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                                  <div className="absolute top-3 sm:top-4 right-3 sm:right-4 bg-yellow-500 text-white text-[10px] sm:text-xs font-semibold px-2 sm:px-3 py-0.5 sm:py-1 rounded-full">
                                     Phổ biến
                                   </div>
                                 )}
-                                <div className="mb-4">
-                                  <h3 className="text-xl font-semibold text-white mb-2">
+                                <div className="mb-3 sm:mb-4">
+                                  <h3 className="text-lg sm:text-xl font-semibold text-white mb-1 sm:mb-2">
                                     {plan.planName}
                                   </h3>
-                                  <div className="text-3xl font-bold text-yellow-400 mb-1">
+                                  <div className="text-2xl sm:text-3xl font-bold text-yellow-400 mb-1">
                                     {plan.price.toLocaleString("vi-VN")}đ
                                   </div>
-                                  <div className="text-sm text-white/80">
+                                  <div className="text-xs sm:text-sm text-white/80">
                                     /tháng
                                   </div>
                                 </div>
-                                <ul className="space-y-2 text-sm text-white/70">
+                                <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm text-white/70 flex-grow">
                                   {features.length > 0 ? (
                                     features.map((feature, fIndex) => (
                                       <li
                                         key={fIndex}
-                                        className="flex items-center gap-2"
+                                        className="flex items-start gap-2"
                                       >
                                         <CheckCircle2
-                                          className={`h-4 w-4 shrink-0 ${isPopular
+                                          className={`h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 mt-0.5 ${isPopular
                                             ? "text-yellow-400"
                                             : "text-emerald-400"
                                             }`}
                                         />
-                                        <span>{feature}</span>
+                                        <span className="leading-tight">{feature}</span>
                                       </li>
                                     ))
                                   ) : (
                                     <>
-                                      <li className="flex items-center gap-2">
+                                      <li className="flex items-start gap-2">
                                         <CheckCircle2
-                                          className={`h-4 w-4 shrink-0 ${isPopular
+                                          className={`h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 mt-0.5 ${isPopular
                                             ? "text-yellow-400"
                                             : "text-emerald-400"
                                             }`}
                                         />
-                                        <span>
+                                        <span className="leading-tight">
                                           {plan.maxGardens
                                             ? `Tối đa ${plan.maxGardens} vườn`
                                             : "Không giới hạn vườn"}
                                         </span>
                                       </li>
-                                      <li className="flex items-center gap-2">
+                                      <li className="flex items-start gap-2">
                                         <CheckCircle2
-                                          className={`h-4 w-4 shrink-0 ${isPopular
+                                          className={`h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 mt-0.5 ${isPopular
                                             ? "text-yellow-400"
                                             : "text-emerald-400"
                                             }`}
                                         />
-                                        <span>
+                                        <span className="leading-tight">
                                           {plan.maxTreesPerGarden
                                             ? `Tối đa ${plan.maxTreesPerGarden} cây/vườn`
                                             : "Không giới hạn cây"}
@@ -4310,48 +4339,32 @@ export default function UserProfile() {
                                     </>
                                   )}
                                 </ul>
+
+                                {/* Button inside each plan card */}
+                                <Button
+                                  className={`w-full h-10 sm:h-12 rounded-xl font-medium mt-4 sm:mt-6 text-sm sm:text-base ${isCurrentPlan
+                                    ? "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                    : isLowerPlan
+                                      ? "bg-neutral-500/50 hover:bg-neutral-500/50 text-white/50 cursor-not-allowed"
+                                      : isPopular
+                                        ? "bg-yellow-500 hover:bg-yellow-600 text-white"
+                                        : "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
+                                    }`}
+                                  disabled={isCurrentPlan || isLowerPlan}
+                                  onClick={() =>
+                                    !(isCurrentPlan || isLowerPlan) && handleUpgradePlan(plan)
+                                  }
+                                >
+                                  {isCurrentPlan
+                                    ? "Gói hiện tại"
+                                    : isLowerPlan
+                                      ? "Gói thấp hơn"
+                                      : "Nâng cấp ngay"}
+                                </Button>
                               </div>
                             );
                           })}
                       </div>
-
-                      {/* Upgrade buttons at the bottom */}
-                      {!plansLoading && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          {subscriptionPlans.map((plan, index) => {
-                            const isPopular = index === 1;
-                            const currentPlanId =
-                              currentSubscription?.planId || 1;
-                            const isCurrentPlan = plan.planId === currentPlanId;
-                            const isLowerPlan = plan.planId < currentPlanId;
-                            const shouldDisable = isCurrentPlan || isLowerPlan;
-
-                            return (
-                              <Button
-                                key={plan.planId}
-                                className={`w-full h-12 rounded-xl font-medium ${isCurrentPlan
-                                  ? "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
-                                  : isLowerPlan
-                                    ? "bg-neutral-500/50 hover:bg-neutral-500/50 text-white/50 cursor-not-allowed"
-                                    : isPopular
-                                      ? "bg-yellow-500 hover:bg-yellow-600 text-white"
-                                      : "bg-emerald-600/80 hover:bg-emerald-600 text-white border border-emerald-400/40 shadow-lg"
-                                  }`}
-                                disabled={shouldDisable}
-                                onClick={() =>
-                                  !shouldDisable && handleUpgradePlan(plan)
-                                }
-                              >
-                                {isCurrentPlan
-                                  ? "Gói hiện tại"
-                                  : isLowerPlan
-                                    ? "Gói thấp hơn"
-                                    : "Nâng cấp ngay"}
-                              </Button>
-                            );
-                          })}
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>

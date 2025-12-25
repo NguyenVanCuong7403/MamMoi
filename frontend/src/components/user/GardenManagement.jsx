@@ -616,10 +616,10 @@ function GardenFormModal({ open, initial, onClose, onSubmit }) {
   return (
     <>
       <style>{CLICKABLE_FORM_STYLES}</style>
-      <div className="fixed inset-0 z-[9999] grid place-items-center p-4 mm-clickable-form overflow-y-auto">
+      <div className="fixed inset-0 z-[9999] grid place-items-center p-4 pt-20 md:pt-4 mm-clickable-form overflow-y-auto">
         <div className="absolute inset-0 bg-black/60" onClick={onClose} />
         <div
-          className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl my-auto max-h-[90vh] overflow-y-auto"
+          className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl my-auto max-h-[85vh] md:max-h-[90vh] overflow-y-auto"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="mb-3 flex items-center justify-between">
@@ -1518,7 +1518,7 @@ export default function GardenManagement() {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Tìm tên/địa chỉ/tỉnh..."
-                  className="pl-11 bg-white text-[#0f1f1e] placeholder:text-neutral-400 rounded-full h-14 text-[clamp(14px,1.6vw,16px)] mm-text-wrap-safe shadow-sm"
+                  className="pl-11 bg-white text-[#0f1f1e] placeholder:text-neutral-400 rounded-full h-11 md:h-14 text-[clamp(14px,1.6vw,16px)] mm-text-wrap-safe shadow-sm"
                 />
               </div>
 
@@ -1539,8 +1539,8 @@ export default function GardenManagement() {
                 </select>
 
                 {/* Filter theo số lượng cây - numeric inputs */}
-                <div className="flex-1 min-w-[200px] xl:min-w-[320px] bg-white rounded-full px-4 py-3 shadow-sm flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0 xl:min-w-[320px] bg-white rounded-2xl md:rounded-full px-3 md:px-4 py-2 md:py-3 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
+                  <div className="flex flex-wrap items-center gap-2 md:gap-3">
                     <div className="text-sm text-neutral-700 font-medium mr-2 hidden sm:block">
                       Số lượng cây
                     </div>
@@ -1558,7 +1558,7 @@ export default function GardenManagement() {
                         }}
                         min={0}
                         max={maxTreeCount}
-                        className="w-28 rounded-full border border-neutral-200 px-4 py-2 text-sm shadow-sm"
+                        className="w-20 md:w-28 rounded-full border border-neutral-200 px-3 md:px-4 py-2 text-sm shadow-sm"
                         aria-label="Số lượng cây tối thiểu"
                       />
                       <span className="text-sm text-neutral-500">-</span>
@@ -1575,7 +1575,7 @@ export default function GardenManagement() {
                         }}
                         min={0}
                         max={maxTreeCount}
-                        className="w-28 rounded-full border border-neutral-200 px-4 py-2 text-sm shadow-sm"
+                        className="w-20 md:w-28 rounded-full border border-neutral-200 px-3 md:px-4 py-2 text-sm shadow-sm"
                         aria-label="Số lượng cây tối đa"
                       />
                     </div>
@@ -1616,7 +1616,7 @@ export default function GardenManagement() {
           </section>
 
           {/* Mini stats */}
-          <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
+          <section className="grid grid-cols-3 gap-2 md:gap-3">
             {[
               { label: "Tổng vườn", value: stats.total },
               { label: "Tổng cây", value: stats.totalTrees },

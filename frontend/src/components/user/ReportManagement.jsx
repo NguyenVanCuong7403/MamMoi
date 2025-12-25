@@ -325,29 +325,94 @@ export default function ReportManagement() {
             </div>
           ) : (
             <div className="bg-white/10 backdrop-blur-lg rounded-xl border border-white/20 overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-white/10">
+                {currentPageReports.length === 0 ? (
+                  <div className="text-center py-16 text-white/80 text-lg">
+                    Không tìm thấy báo cáo nào
+                  </div>
+                ) : (
+                  currentPageReports.map((report) => (
+                    <div
+                      key={report.requestId}
+                      className="p-4 space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-semibold text-sm truncate">
+                            {report.subject}
+                          </p>
+                          <p className="text-white/60 text-xs mt-1">
+                            {report.ticketNumber || `#${report.requestId}`}
+                          </p>
+                        </div>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium border ${STATUS_MAP[report.status]?.color || "bg-gray-50 text-gray-700 border-gray-200"}`}
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0"></span>
+                          {STATUS_MAP[report.status]?.label || report.status}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-white/70">
+                        <span>{CATEGORY_MAP[report.category] || report.category || "N/A"}</span>
+                        <span>•</span>
+                        <Badge
+                          className={`text-xs ${PRIORITY_MAP[report.priority]?.color || "bg-gray-100 text-gray-700"}`}
+                        >
+                          {PRIORITY_MAP[report.priority]?.label || report.priority}
+                        </Badge>
+                        <span>•</span>
+                        <span>{formatDate(report.requestDate)}</span>
+                      </div>
+                      <div className="flex gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          className="flex-1 h-9 text-xs bg-white/10 hover:bg-white/20 text-white border border-white/30"
+                          onClick={() => openDetailModal(report)}
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1.5" />
+                          Chi tiết
+                        </Button>
+                        {canSubmitFeedback(report) && (
+                          <Button
+                            size="sm"
+                            className="flex-1 h-9 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                            onClick={() => openFeedbackModal(report)}
+                          >
+                            <Star className="w-3.5 h-3.5 mr-1.5" />
+                            Đánh giá
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-white/10 hover:bg-white/10">
-                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
+                      <TableHead className="text-white font-semibold text-base py-4 px-4">
                         Mã ticket
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
+                      <TableHead className="text-white font-semibold text-base py-4 px-4">
                         Tiêu đề
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
+                      <TableHead className="text-white font-semibold text-base py-4 px-4">
                         Phân loại
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
+                      <TableHead className="text-white font-semibold text-base py-4 px-4">
                         Độ ưu tiên
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
+                      <TableHead className="text-white font-semibold text-base py-4 px-4">
                         Trạng thái
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
+                      <TableHead className="text-white font-semibold text-base py-4 px-4">
                         Ngày gửi
                       </TableHead>
-                      <TableHead className="text-white font-semibold text-[clamp(14px,2vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
+                      <TableHead className="text-white font-semibold text-base py-4 px-4">
                         Thao tác
                       </TableHead>
                     </TableRow>
@@ -368,23 +433,23 @@ export default function ReportManagement() {
                           key={report.requestId}
                           className="hover:bg-white/5 border-white/10"
                         >
-                          <TableCell className="text-white text-[clamp(14px,1.8vw,18px)] py-6 px-6 mm-text-wrap-safe break-words">
+                          <TableCell className="text-white text-sm py-4 px-4">
                             {report.ticketNumber || `#${report.requestId}`}
                           </TableCell>
-                          <TableCell className="text-white text-[clamp(14px,1.8vw,18px)] py-6 px-6 min-w-0">
+                          <TableCell className="text-white text-sm py-4 px-4 min-w-0">
                             <div
-                              className="max-w-xs mm-text-wrap-safe break-words"
+                              className="max-w-xs truncate"
                               title={report.subject}
                             >
                               {report.subject}
                             </div>
                           </TableCell>
-                          <TableCell className="text-white/80 text-[clamp(13px,1.6vw,16px)] py-6 px-6 mm-text-wrap-safe break-words">
+                          <TableCell className="text-white/80 text-sm py-4 px-4">
                             {CATEGORY_MAP[report.category] ||
                               report.category ||
                               "N/A"}
                           </TableCell>
-                          <TableCell className="py-6 px-6">
+                          <TableCell className="py-4 px-4">
                             <Badge
                               className={
                                 PRIORITY_MAP[report.priority]?.color ||
@@ -395,9 +460,9 @@ export default function ReportManagement() {
                                 report.priority}
                             </Badge>
                           </TableCell>
-                          <TableCell className="py-6 px-6">
+                          <TableCell className="py-4 px-4">
                             <span
-                              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-[clamp(12px,1.5vw,16px)] font-medium border mm-text-wrap-safe break-words ${STATUS_MAP[report.status]?.color ||
+                              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border ${STATUS_MAP[report.status]?.color ||
                                 "bg-gray-50 text-gray-700 border-gray-200"
                                 }`}
                             >
@@ -406,10 +471,10 @@ export default function ReportManagement() {
                                 report.status}
                             </span>
                           </TableCell>
-                          <TableCell className="text-white/80 text-[clamp(13px,1.6vw,16px)] py-6 px-6 mm-text-wrap-safe break-words">
+                          <TableCell className="text-white/80 text-sm py-4 px-4">
                             {formatDate(report.requestDate)}
                           </TableCell>
-                          <TableCell className="py-6 px-6">
+                          <TableCell className="py-4 px-4">
                             <div className="flex items-center gap-2">
                               <Button
                                 variant="ghost"

@@ -358,37 +358,37 @@ function StatCard({ label, value, change, icon: Icon }) {
   const percent = `${isPositive ? "+" : ""}${Math.round(change * 100)}%`;
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-emerald-200/60">
+    <div className="group relative overflow-hidden rounded-xl sm:rounded-2xl border border-emerald-100 bg-white p-3 sm:p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-emerald-200/60">
       <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-slate-400">
             {label}
           </p>
-          <p className="mt-1 text-3xl font-semibold text-slate-900">
+          <p className="mt-1 text-xl sm:text-2xl md:text-3xl font-semibold text-slate-900 truncate">
             {value.toLocaleString("vi-VN")}
           </p>
         </div>
-        <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-600 shadow-inner shadow-emerald-100 group-hover:bg-emerald-100">
-          <Icon className="h-5 w-5" />
+        <div className="rounded-xl sm:rounded-2xl bg-emerald-50 p-2 sm:p-3 text-emerald-600 shadow-inner shadow-emerald-100 group-hover:bg-emerald-100 shrink-0">
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </div>
-      <div className="mt-4 flex items-center gap-2 text-sm">
+      <div className="mt-2 sm:mt-4 flex flex-wrap items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
         <Badge
           className={cn(
-            "border-0 px-2.5 py-0.5",
+            "border-0 px-1.5 sm:px-2.5 py-0.5 text-[10px] sm:text-xs",
             isPositive
               ? "bg-emerald-100 text-emerald-700"
               : "bg-rose-50 text-rose-600"
           )}
         >
           {isPositive ? (
-            <TrendingUp className="mr-1 h-3 w-3" />
+            <TrendingUp className="mr-0.5 sm:mr-1 h-2.5 w-2.5 sm:h-3 sm:w-3" />
           ) : (
-            <TrendingDown className="mr-1 h-3 w-3" />
+            <TrendingDown className="mr-0.5 sm:mr-1 h-2.5 w-2.5 sm:h-3 sm:w-3" />
           )}
           {percent}
         </Badge>
-        <span className="text-slate-500">so với kỳ trước</span>
+        <span className="text-slate-500 text-[10px] sm:text-sm">so với kỳ trước</span>
       </div>
       <div className="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-emerald-400/90 via-emerald-500/70 to-lime-400 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
     </div>
@@ -1624,22 +1624,22 @@ export default function SystemAdminUserManagement() {
           <>
             <div className="space-y-8">
               {/* Header */}
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex flex-col gap-3 sm:gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="flex items-center gap-2 text-sm uppercase tracking-[0.4em] text-emerald-200">
-                    <ShieldCheck className="h-4 w-4" />
+                  <p className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm uppercase tracking-[0.3em] sm:tracking-[0.4em] text-emerald-200">
+                    <ShieldCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     Quản trị hệ thống
                   </p>
-                  <h1 className="mt-2 text-3xl font-semibold text-white">
+                  <h1 className="mt-1.5 sm:mt-2 text-xl sm:text-2xl md:text-3xl font-semibold text-white">
                     Quản lý người dùng
                   </h1>
-                  <p className="text-emerald-100/80">
+                  <p className="text-xs sm:text-sm text-emerald-100/80 mt-1">
                     Giám sát, lọc và thao tác nhanh với toàn bộ người dùng trong
                     hệ sinh thái Mầm Mới.
                   </p>
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
-                  <div className="rounded-full border border-white/30 bg-white/10 p-1 backdrop-blur">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                  <div className="rounded-full border border-white/30 bg-white/10 p-0.5 sm:p-1 backdrop-blur">
                     {TIME_WINDOWS.map((option) => {
                       const isActive = timeframe === option.value;
                       return (
@@ -1647,7 +1647,7 @@ export default function SystemAdminUserManagement() {
                           key={option.value}
                           onClick={() => setTimeframe(option.value)}
                           className={cn(
-                            "rounded-full px-4 py-2 text-sm font-semibold transition-all",
+                            "rounded-full px-2.5 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm font-semibold transition-all",
                             isActive
                               ? "bg-white text-emerald-700 shadow-lg shadow-emerald-500/30"
                               : "text-white/70 hover:text-white"
@@ -1660,14 +1660,15 @@ export default function SystemAdminUserManagement() {
                   </div>
                   <Button
                     variant="outline"
-                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    className="border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white text-xs sm:text-sm px-2.5 sm:px-4"
                     onClick={fetchUsers}
                     disabled={loading}
                   >
                     <RefreshCcw
-                      className={cn("mr-2 h-4 w-4", loading && "animate-spin")}
+                      className={cn("mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4", loading && "animate-spin")}
                     />
-                    {loading ? "Đang tải..." : "Đồng bộ dữ liệu"}
+                    <span className="hidden sm:inline">{loading ? "Đang tải..." : "Đồng bộ dữ liệu"}</span>
+                    <span className="sm:hidden">{loading ? "..." : "Đồng bộ"}</span>
                   </Button>
                 </div>
               </div>
@@ -1704,20 +1705,20 @@ export default function SystemAdminUserManagement() {
 
               {/* Tổng quan stat */}
               <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-                <CardHeader className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                  <CardTitle className="text-2xl text-slate-900">
+                <CardHeader className="flex flex-col gap-2 sm:gap-3 lg:flex-row lg:items-center lg:justify-between px-4 sm:px-6 pt-4 sm:pt-5">
+                  <CardTitle className="text-lg sm:text-xl md:text-2xl text-slate-900">
                     Tổng quan người dùng
                   </CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-slate-500">
-                    <LineChart className="h-4 w-4 text-emerald-600" />
-                    Dữ liệu {timeframeLabel.toLowerCase()} hiện tại{" "}
+                  <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-500">
+                    <LineChart className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600" />
+                    <span>Dữ liệu {timeframeLabel.toLowerCase()} hiện tại{" "}</span>
                     <span className="font-semibold text-emerald-600">
                       so với kỳ trước
                     </span>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6 py-4 sm:py-5">
+                  <div className="grid gap-3 sm:gap-4 grid-cols-2 md:grid-cols-2 xl:grid-cols-4">
                     {Object.entries(stats).map(([key, config]) => (
                       <StatCard
                         key={key}
@@ -1740,8 +1741,8 @@ export default function SystemAdminUserManagement() {
 
               {/* Chart nâng cấp */}
               <Card className="border-none bg-transparent text-slate-900 shadow-none">
-                <CardContent className="grid gap-6 p-0 lg:grid-cols-3 lg:min-h-[360px]">
-                  <div className="lg:col-span-2 h-full">
+                <CardContent className="grid gap-4 sm:gap-6 p-0 grid-cols-1 lg:grid-cols-3 lg:min-h-[360px]">
+                  <div className="lg:col-span-2 h-full min-h-[280px] sm:min-h-[300px]">
                     <UserGrowthChart
                       data={userGrowthData}
                       change={userGrowthChange}
@@ -1762,21 +1763,21 @@ export default function SystemAdminUserManagement() {
 
               {/* Danh sách người dùng */}
               <Card className="border-none bg-white/95 text-slate-900 shadow-2xl shadow-emerald-900/10">
-                <CardHeader>
+                <CardHeader className="px-4 sm:px-6 pt-4 sm:pt-5">
                   <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                    <CardTitle className="text-2xl text-slate-900">
+                    <CardTitle className="text-lg sm:text-xl md:text-2xl text-slate-900">
                       Danh sách người dùng
                     </CardTitle>
-                    <div className="flex items-center gap-2 text-sm text-slate-500">
-                      <Leaf className="h-4 w-4 text-emerald-600" />
+                    <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm text-slate-500">
+                      <Leaf className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-emerald-600" />
                       {filteredUsers.length} người dùng khớp bộ lọc
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4 sm:space-y-6 px-4 sm:px-6 py-4 sm:py-5">
                   {/* Bộ lọc */}
-                  <div className="grid gap-4 lg:grid-cols-12">
-                    <div className="lg:col-span-4">
+                  <div className="grid gap-3 sm:gap-4 grid-cols-2 sm:grid-cols-2 lg:grid-cols-12">
+                    <div className="col-span-2 lg:col-span-4">
                       <div className="relative">
                         <Input
                           placeholder="Tìm theo tên hoặc email..."
@@ -1784,12 +1785,12 @@ export default function SystemAdminUserManagement() {
                           onChange={(event) =>
                             handleFilterChange("search", event.target.value)
                           }
-                          className="rounded-xl border-slate-200 bg-white pl-10 text-slate-900 shadow-inner shadow-emerald-50 placeholder:text-slate-400"
+                          className="rounded-xl border-slate-200 bg-white pl-10 text-slate-900 shadow-inner shadow-emerald-50 placeholder:text-slate-400 text-sm"
                         />
                         <Filter className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       </div>
                     </div>
-                    <div className="lg:col-span-2">
+                    <div className="col-span-1 lg:col-span-2">
                       <SearchableSelect
                         value={filters.role}
                         onChange={(value) => handleFilterChange("role", value)}
@@ -1797,7 +1798,7 @@ export default function SystemAdminUserManagement() {
                         placeholder="Vai trò"
                       />
                     </div>
-                    <div className="lg:col-span-2">
+                    <div className="col-span-1 lg:col-span-2">
                       <SearchableSelect
                         value={filters.status}
                         onChange={(value) =>
@@ -1807,7 +1808,7 @@ export default function SystemAdminUserManagement() {
                         placeholder="Trạng thái"
                       />
                     </div>
-                    <div className="lg:col-span-2">
+                    <div className="col-span-1 lg:col-span-2">
                       <SearchableSelect
                         value={filters.plan}
                         onChange={(value) => handleFilterChange("plan", value)}
@@ -1815,11 +1816,10 @@ export default function SystemAdminUserManagement() {
                         placeholder="Loại gói"
                       />
                     </div>
-                    <div className="lg:col-span-2">
+                    <div className="col-span-2 lg:col-span-2">
                       <Button
                         variant="outline"
-                        size="lg"
-                        className="h-12 w-full rounded-xl border-emerald-100 bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100"
+                        className="h-10 sm:h-12 w-full rounded-xl border-emerald-100 bg-emerald-50/70 text-emerald-700 hover:bg-emerald-100 text-xs sm:text-sm"
                         onClick={handleResetFilters}
                       >
                         Đặt lại bộ lọc
@@ -1842,8 +1842,75 @@ export default function SystemAdminUserManagement() {
                     </div>
                   </div>
 
-                  {/* Bảng người dùng */}
-                  <div className="overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
+                  {/* Mobile Card Layout */}
+                  <div className="md:hidden space-y-3">
+                    {loading && users.length === 0 ? (
+                      <div className="flex items-center justify-center rounded-xl border border-slate-100 bg-white p-8">
+                        <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+                        <span className="ml-3 text-slate-600">Đang tải...</span>
+                      </div>
+                    ) : paginatedUsers.length === 0 ? (
+                      <div className="rounded-xl border border-slate-100 bg-white p-8 text-center text-slate-500">
+                        Không có người dùng nào.
+                      </div>
+                    ) : (
+                      paginatedUsers.map((user) => (
+                        <div
+                          key={user.id}
+                          className="rounded-xl border border-slate-100 bg-white p-4 shadow-sm"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-slate-900 truncate">{user.name}</p>
+                              <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                            </div>
+                            <ActionMenu user={user} onOpenModal={openModal} />
+                          </div>
+                          <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                              <span className="text-slate-400">Mã:</span>
+                              <span className="ml-1 font-medium text-slate-700">{user.id}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-400">Vai trò:</span>
+                              <Badge
+                                className={cn(
+                                  "ml-1 px-1.5 py-0.5 text-[10px]",
+                                  ROLE_META[user.role]?.className ??
+                                  "bg-slate-100 text-slate-600 border border-slate-200"
+                                )}
+                              >
+                                {ROLE_META[user.role]?.label ?? user.role}
+                              </Badge>
+                            </div>
+                            <div>
+                              <span className="text-slate-400">Trạng thái:</span>
+                              <Badge
+                                className={cn(
+                                  "ml-1 border-0 px-1.5 py-0.5 text-[10px]",
+                                  STATUS_META[user.status]?.className
+                                )}
+                              >
+                                {STATUS_META[user.status]?.label}
+                              </Badge>
+                            </div>
+                            <div>
+                              <span className="text-slate-400">Gói:</span>
+                              <span className="ml-1 font-medium text-slate-700">{getPlanLabel(user.plan)}</span>
+                            </div>
+                          </div>
+                          <div className="mt-2 text-xs text-slate-400">
+                            Đăng nhập: {user.lastLogin
+                              ? new Date(user.lastLogin).toLocaleString("vi-VN", { hour12: false })
+                              : "Chưa đăng nhập"}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Desktop Table */}
+                  <div className="hidden md:block overflow-hidden rounded-2xl border border-slate-100 shadow-sm">
                     <Table>
                       <TableHeader className="sticky top-0 bg-emerald-50/80 backdrop-blur">
                         <TableRow className="border-none text-xs uppercase tracking-wider text-slate-500">
@@ -1854,28 +1921,20 @@ export default function SystemAdminUserManagement() {
                           <TableHead>Trạng thái</TableHead>
                           <TableHead>Gói hiện tại</TableHead>
                           <TableHead>Đăng nhập gần nhất</TableHead>
-                          <TableHead className="text-right">
-                            Hành động
-                          </TableHead>
+                          <TableHead className="text-right">Hành động</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {loading && users.length === 0 ? (
                           <TableRow>
-                            <TableCell
-                              colSpan={8}
-                              className="py-8 text-center text-slate-500"
-                            >
+                            <TableCell colSpan={8} className="py-8 text-center text-slate-500">
                               <Loader2 className="mx-auto h-6 w-6 animate-spin text-emerald-600" />
                               <p className="mt-2">Đang tải dữ liệu...</p>
                             </TableCell>
                           </TableRow>
                         ) : paginatedUsers.length === 0 ? (
                           <TableRow>
-                            <TableCell
-                              colSpan={8}
-                              className="py-8 text-center text-slate-500"
-                            >
+                            <TableCell colSpan={8} className="py-8 text-center text-slate-500">
                               Không có người dùng nào.
                             </TableCell>
                           </TableRow>
@@ -1885,15 +1944,9 @@ export default function SystemAdminUserManagement() {
                               key={user.id}
                               className="border-b border-slate-100 bg-white/60 transition hover:bg-emerald-50/40"
                             >
-                              <TableCell className="font-semibold text-slate-900">
-                                {user.id}
-                              </TableCell>
-                              <TableCell className="text-slate-800">
-                                {user.name}
-                              </TableCell>
-                              <TableCell className="text-slate-500">
-                                {user.email}
-                              </TableCell>
+                              <TableCell className="font-semibold text-slate-900">{user.id}</TableCell>
+                              <TableCell className="text-slate-800">{user.name}</TableCell>
+                              <TableCell className="text-slate-500">{user.email}</TableCell>
                               <TableCell>
                                 <Badge
                                   className={cn(
@@ -1906,33 +1959,18 @@ export default function SystemAdminUserManagement() {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                <Badge
-                                  className={cn(
-                                    "border-0",
-                                    STATUS_META[user.status]?.className
-                                  )}
-                                >
+                                <Badge className={cn("border-0", STATUS_META[user.status]?.className)}>
                                   {STATUS_META[user.status]?.label}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="font-medium text-slate-800">
-                                {getPlanLabel(user.plan)}
-                              </TableCell>
+                              <TableCell className="font-medium text-slate-800">{getPlanLabel(user.plan)}</TableCell>
                               <TableCell className="text-slate-500">
                                 {user.lastLogin
-                                  ? new Date(user.lastLogin).toLocaleString(
-                                    "vi-VN",
-                                    {
-                                      hour12: false,
-                                    }
-                                  )
+                                  ? new Date(user.lastLogin).toLocaleString("vi-VN", { hour12: false })
                                   : "Chưa đăng nhập"}
                               </TableCell>
                               <TableCell className="text-right">
-                                <ActionMenu
-                                  user={user}
-                                  onOpenModal={openModal}
-                                />
+                                <ActionMenu user={user} onOpenModal={openModal} />
                               </TableCell>
                             </TableRow>
                           ))
@@ -1990,24 +2028,24 @@ export default function SystemAdminUserManagement() {
                 if (!open) closeModal();
               }}
             >
-              <DialogContent className="max-w-3xl rounded-2xl border border-emerald-50 shadow-2xl">
-                <DialogHeader>
-                  <DialogTitle>Thông tin chi tiết</DialogTitle>
-                  <DialogDescription>
+              <DialogContent className="max-w-[95vw] sm:max-w-xl md:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl sm:rounded-2xl border border-emerald-50 shadow-2xl p-4 sm:p-6">
+                <DialogHeader className="pb-2 sm:pb-4">
+                  <DialogTitle className="text-base sm:text-lg">Thông tin chi tiết</DialogTitle>
+                  <DialogDescription className="text-xs sm:text-sm">
                     Hồ sơ chi tiết của {selectedUser?.name}
                   </DialogDescription>
                 </DialogHeader>
                 {selectedUser && (
-                  <div className="grid gap-6 md:grid-cols-[3fr,2fr]">
-                    <div className="space-y-4">
-                      <div className="rounded-xl border border-slate-100 bg-slate-50 p-4">
-                        <p className="text-sm text-slate-500">Họ tên</p>
-                        <p className="text-lg font-semibold text-slate-900">
+                  <div className="grid gap-4 sm:gap-6 grid-cols-1 md:grid-cols-[3fr,2fr]">
+                    <div className="space-y-3 sm:space-y-4">
+                      <div className="rounded-lg sm:rounded-xl border border-slate-100 bg-slate-50 p-3 sm:p-4">
+                        <p className="text-xs sm:text-sm text-slate-500">Họ tên</p>
+                        <p className="text-base sm:text-lg font-semibold text-slate-900">
                           {selectedUser.name}
                         </p>
                       </div>
-                      <div className="grid gap-4 md:grid-cols-2">
-                        <div className="rounded-xl border border-slate-100 p-4">
+                      <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+                        <div className="rounded-lg sm:rounded-xl border border-slate-100 p-3 sm:p-4">
                           <p className="text-sm text-slate-500">Email</p>
                           <p className="break-all font-medium">
                             {selectedUser.email}
